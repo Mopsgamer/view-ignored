@@ -1,10 +1,30 @@
-# template
+# view-ignored
 
-description
+Get a list of ignored files by targets: git, npm, yaml, docker, ... .
 
 ## Features
 
-- [x] use template repo
+- View a list of ignored and included files.
+- Sorting a list.
+
+### Targets
+
+- Git (.gitignore, git config get core.excludesFile)
+
+Broken:
+
+- NPM
+- Yarn
+- VSC Extension
+
+Planned:
+
+- pnpm
+- ESLint
+
+###
+
+## Planned
 
 ## Install
 

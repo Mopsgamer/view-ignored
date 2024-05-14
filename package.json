@@ -1,9 +1,15 @@
 {
-	"name": "template-npm-pub-ts",
+	"name": "view-ignored",
 	"version": "0.0.1",
-	"description": "Template repo for creating public packages written in typescript. Lintable, testable and releasable.",
+	"description": "Get a list of ignored files by targets: git, npm, yaml, docker, ... .",
+	"type": "module",
+	"bin": {
+		"viewig": "./bin/viewig",
+		"view-ignored": "./bin/viewig"
+	},
 	"scripts": {
-		"prerelease": "npm run lint & npm run build & npm run test",
+		"prerelease": "npm run lint & npm run test",
+		"pretest": "npm run build",
 		"test": "npx mocha --require tsx ./test/**/*.test.ts",
 		"build": "npx tsc",
 		"lint": "npx eslint .",
@@ -42,6 +48,10 @@
 	"devDependencies": {
 		"@eslint/js": "^9.2.0",
 		"@release-it/keep-a-changelog": "^5.0.0",
+		"@types/get-value": "^3.0.5",
+		"@types/mocha": "^10.0.6",
+		"@types/node": "^20.12.11",
+		"@types/treeify": "^1.0.3",
 		"eslint": "^8.57.0",
 		"globals": "^15.2.0",
 		"mocha": "^10.4.0",
@@ -91,6 +101,7 @@
 		"clone": "^1.0.4",
 		"color-convert": "^2.0.1",
 		"color-name": "^1.1.4",
+		"commander": "^12.0.0",
 		"concat-map": "^0.0.1",
 		"config-chain": "^1.1.13",
 		"configstore": "^6.0.0",
@@ -164,6 +175,7 @@
 		"get-stream": "^8.0.1",
 		"get-symbol-description": "^1.0.2",
 		"get-uri": "^6.0.3",
+		"get-value": "^3.0.1",
 		"git-up": "^7.0.0",
 		"git-url-parse": "^14.0.0",
 		"glob": "^7.2.3",
@@ -248,7 +260,9 @@
 		"json-parse-even-better-errors": "^2.3.1",
 		"json-schema-traverse": "^0.4.1",
 		"json-stable-stringify-without-jsonify": "^1.0.1",
+		"jsonc-parser": "^3.2.1",
 		"jsonfile": "^6.1.0",
+		"jsonify-paths": "^1.1.0",
 		"keyv": "^4.5.4",
 		"latest-version": "^7.0.0",
 		"levn": "^0.4.1",
@@ -372,6 +386,7 @@
 		"text-table": "^0.2.0",
 		"tmp": "^0.0.33",
 		"to-regex-range": "^5.0.1",
+		"treeify": "^1.1.0",
 		"tslib": "^2.6.2",
 		"type-check": "^0.4.0",
 		"type-fest": "^0.21.3",
@@ -407,7 +422,19 @@
 		"yocto-queue": "^0.1.0"
 	},
 	"directories": {
-		"lib": "lib",
 		"test": "test"
-	}
+	},
+	"keywords": [
+		"tree",
+		"ignore",
+		"gitignore",
+		"npmignore",
+		"dockerignore",
+		"cli",
+		"fs",
+		"file-system",
+		"output",
+		"project",
+		"migration"
+	]
 }
