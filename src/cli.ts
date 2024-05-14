@@ -4,7 +4,7 @@ import {PresetName, presetNameList, Presets} from "./presets.js";
 import {stdout} from "process";
 import {default as tree} from "treeify";
 import jsonifyPaths from "jsonify-paths";
-import ora, {spinners} from "ora"
+import ora from "ora"
 
 export {program}
 
@@ -14,7 +14,7 @@ program
 	.addOption(new Option("-sr, --sort [sorter]").default("firstFolders" satisfies SortName).choices(sortNameList))
 	.addOption(new Option("--paths"))
 	.action(({target, filter, sort, paths: showPaths}) => {
-		const spinner = ora({spinner: spinners.dots10})
+		const spinner = ora()
 		spinner.start("Scanning")
 		const pathList = lookProjectSync({
 			...Presets[target as PresetName | undefined ?? "git"],
@@ -23,6 +23,7 @@ program
 		spinner.stop()
 		spinner.clear()
 		const pathListSorted = pathList.sort(Sorters[sort as SortName | undefined ?? "firstFolders"])
+		stdout.write(process.cwd() + "\n")
 		if (showPaths) {
 			stdout.write(pathListSorted.join('\n') + "\n")
 			return
