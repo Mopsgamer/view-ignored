@@ -6,9 +6,9 @@ declare module "jsonify-paths" {
 		options: Options
 	}
 	interface Options {
-		delimiter: string,
-		ignoreSpacesAroundDelimiters: boolean,
-			defaultValue: unknown
+		delimiter?: string,
+		ignoreSpacesAroundDelimiters?: boolean,
+		defaultValue?: unknown
 	}
 	function from(paths: string | string[], options?: Options): Record<string, Tree>
 }
