@@ -27,5 +27,7 @@ program
 			stdout.write(pathListSorted.join('\n') + "\n")
 			return
 		}
-		stdout.write(tree.asTree(jsonifyPaths.from(pathListSorted), false, true))
+		const pathsAsObject = jsonifyPaths.from(pathListSorted, {delimiter: "/"})
+		const pathsAsTree = tree.asTree(pathsAsObject, true, true)
+		stdout.write(pathsAsTree)
 	})

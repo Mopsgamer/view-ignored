@@ -1,5 +1,5 @@
-import PATH from "path";
-import {globbySync} from "globby";
+import path from "path";
+import FastGlob from "fast-glob";
 import {readFileSync} from "fs";
 import ignore, {Ignore} from "ignore";
 import {execSync} from "child_process";
@@ -9,16 +9,16 @@ export function findFiles(pattern: (string | string[])[], cwd: string): string[]
 	let i = 0
 	let paths: string[]
 	do {
-		paths = globbySync(pattern[i], {cwd: cwd, onlyFiles: true, dot: true})
+		paths = FastGlob.sync(pattern[i], {cwd: cwd, onlyFiles: true, dot: true})
 		i++
 	} while (paths.length === 0)
 	return paths
 }
 
 export function closestFilePath(filePath: string, paths: string[]): string {
-	const filePathDir = PATH.dirname(filePath)
+	const filePathDir = path.dirname(filePath)
 	const result = paths.reverse().find(p => {
-		const pd = PATH.dirname(p)
+		const pd = path.dirname(p)
 		const result = filePathDir.startsWith(pd) || pd === '.'
 		return result
 	})
@@ -68,7 +68,7 @@ export function lookFile(filePath: string, options: LookFileOptions): [Ignore, b
 
 	const matches = findFiles(pattern, cwd)
 	const closestIgnFilePath = closestFilePath(filePath, matches)
-	const closestIgnContent = readFileSync(PATH.join(cwd, closestIgnFilePath)).toString()
+	const closestIgnContent = readFileSync(path.join(cwd, closestIgnFilePath)).toString()
 	const instance = ignore.default({
 		allowRelativePaths: allowRelativePaths ?? true,
 		ignoreCase: gitConfigBool('core.ignoreCase'),
@@ -102,20 +102,21 @@ export function lookProjectSync(options: LookFolderOptions): string[] {
 	// caching Ignore instances so as not to parse everything again.
 	const cache = new Map<string, [Ignore, boolean]>()
 	const resultPaths: string[] = []
-	for (const p of globbySync(["**", ...defaultIgnore], {cwd: options.cwd, onlyFiles: true, dot: true, ignore: options.ignore})) {
+	const allPaths = FastGlob.sync(["**", ...defaultIgnore], {cwd: options.cwd, dot: true, ignore: options.ignore, onlyFiles: true})
+	for (const somePath of allPaths) {
 		const matches = findFiles(options.pattern, options.cwd ?? process.cwd())
-		const ignPath = closestFilePath(p, matches)
+		const ignPath = closestFilePath(somePath, matches)
 		let cign = cache.get(ignPath)
 		if (!cign) {
-			cache.set(ignPath, cign = lookFile(p, options))
+			cache.set(ignPath, cign = lookFile(somePath, options))
 		}
 		const [instance, negated] = cign
-		const isIgnored = instance.test(p)[negated ? "unignored" : "ignored"]
+		const isIgnored = instance.test(somePath)[negated ? "unignored" : "ignored"]
 		const filterIgnore = (view === "ignored") && isIgnored
 		const filterInclude = (view === "included") && !isIgnored
 		const filterAll = view === "all"
 		if (filterIgnore || filterInclude || filterAll) {
-			resultPaths.push(p)
+			resultPaths.push(somePath)
 		}
 	}
 	return resultPaths
