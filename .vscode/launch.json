@@ -7,15 +7,19 @@
 		{
 			"type": "node",
 			"request": "launch",
-			"name": "Launch command line cli no params",
+			"name": "Launch command line - npm",
 			"skipFiles": [
 				"<node_internals>/**"
+			],
+			"args": [
+				"-t","npm"
 			],
 			"program": "${workspaceFolder}\\bin\\viewig",
 			"cwd": "${workspaceFolder}",
 			"outFiles": [
 				"${workspaceFolder}/lib/*.js"
-			]
+			],
+			"preLaunchTask": "Build",
 		}
 	]
 }

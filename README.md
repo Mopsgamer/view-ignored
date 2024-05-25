@@ -9,18 +9,14 @@ Get a list of ignored files by targets: git, npm, yaml, docker, ... .
 
 ### Targets
 
-- Git (.gitignore, git config get core.excludesFile)
-
-Broken:
-
-- NPM
-- Yarn
-- VSC Extension
+- Git (.gitignore, git config get `core.excludesFile`)
+- NPM (package.json, .npmignore, .gitignore)
+- Yarn (package.json, .yarnignore, .npmignore, .gitignore)
+- VSC Extension (.vscodeignore, .gitignore)
 
 Planned:
 
-- pnpm
-- ESLint
+- PNPM
 
 ###
 

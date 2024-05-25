@@ -1,14 +1,17 @@
-import {LookFileOptions, LookMethod, gitConfigString} from "./lib.js"
-import * as JSONC from "jsonc-parser"
+import { LookFileOptions, LookMethod, LookMethodData, Looker, gitConfigString } from "./lib.js"
 import getValue from "get-value"
-import ignore from "ignore"
 
 export const presetNameList = ['git', 'npm', 'yarn', 'vscodeExtension'] as const
 export type PresetName = typeof presetNameList[number]
 export type Preset = LookFileOptions
 
 //#region native patterns
-const npmNativeIgnorePattern = [
+export const patternsExclude: string[] = [
+	".git/**",
+	"node_modules/**",
+	".DS_Store/**"
+]
+export const npmPatternExclude = [
 	'.*.swp',
 	'._*',
 	'.DS_Store',
@@ -23,22 +26,12 @@ const npmNativeIgnorePattern = [
 	'config.gypi',
 	'CVS',
 	'npm-debug.log',
-	'!package.json',
-	'!README',
-	'!README.*',
-	'!CHANGELOG',
-	'!CHANGELOG.*',
-	'!LICENSE',
-	'!LICENSE.*',
-	'!LICENCE',
-	'!LICENCE.*',
 ];
-const npmNativeIncludePattern = [
+export const npmPatternInclude = [
+	'bin/',
 	'package.json',
 	'README',
 	'README.*',
-	'CHANGELOG',
-	'CHANGELOG.*',
 	'LICENSE',
 	'LICENSE.*',
 	'LICENCE',
@@ -46,61 +39,103 @@ const npmNativeIncludePattern = [
 ];
 //#endregion
 
-//#region readers
-const readIgnNpm = ((data) => {
+//#region parsers
+export type ParserFunction = (text: string) => object | undefined
+
+export const parserJSONDict: ParserFunction = (text) => {
 	try {
-		const [instance, negated] = readIgnGit(data)
-		instance.add(npmNativeIgnorePattern)
-		return [instance, negated]
+		const result = JSON.parse(text)
+		const isDict = typeof result === 'object' && result !== null && !Array.isArray(result)
+		if (!isDict) throw new Error(`JSON is not dictionary`)
+		return result
 	} catch (error) {
-		const [instance, negated] =  readIncJsoncProp("files")(data)
-		instance.add(npmNativeIncludePattern)
-		return [instance, negated]
+		return
 	}
-}) as LookMethod
-const readIncJsoncProp = (prop: string) => {
-	return (function (data) {
-		const {instance, ignContent, ignPath} = data
-		const errors: JSONC.ParseError[] = []
-		const parsed = JSONC.parse(ignContent, errors)
-		if (!errors.length) {
-			instance.add(getValue(parsed, prop))
-			return [instance, true]
-		}
-		throw new Error(`Invalid jsonc in '${ignPath}'.`)
-	}) as LookMethod
 }
-const readIgnGit = ((data) => {
-	const {instance, ignContent, ignPath} = data
-	if (ignore.default.isPathValid(ignContent)) {
-		instance.add(ignContent)
-		return [instance, false]
-	}
-	throw new Error(`Invalid gitignore pattern in '${ignPath}'. Do you use current dir prefix './path' ?`)
-}) as LookMethod
+//#endregion
+
+//#region look methods
+export function superPresetLookOptions(looker: Looker, options?: PresetLookOptions) {
+	const { negate = false } = options ?? {};
+	looker.negated = negate
+}
+
+export interface PresetLookOptions {
+	negate?: boolean
+}
+
+export interface PresetLookPropertyOptions extends PresetLookOptions {
+	parserFunc?: ParserFunction,
+	prop: string,
+}
+
+export const lookProperty = (options: PresetLookPropertyOptions) => {
+	const { parserFunc = parserJSONDict, prop } = options
+	return (function (data: LookMethodData) {
+		const { looker, sourceContent } = data
+		const parsed = parserFunc(sourceContent)
+		if (!parsed) {
+			return false
+		}
+		const propVal = getValue(parsed, prop)
+		if (!Array.isArray(propVal)) {
+			return false
+		}
+		superPresetLookOptions(looker, options)
+		looker.add(propVal)
+		return true
+	} satisfies LookMethod)
+}
+
+export const lookGit = ((options?: PresetLookOptions) => {
+	return (function (data: LookMethodData) {
+		const { looker, sourceContent } = data
+		if (!looker.isValidPattern(sourceContent)) {
+			return false
+		}
+		superPresetLookOptions(looker, options)
+		looker.add(sourceContent)
+		return true
+	} satisfies LookMethod)
+})
 //#endregion
 
 //#region presets
-export const Presets: Record<PresetName, Preset> = {
+export const GetPresets: () => Record<PresetName, Preset> = () => ({
 	// git ls-tree -r main --name-only
 	git: {
-		method: readIgnGit,
 		allowRelativePaths: false,
-		ignore: [gitConfigString("core.excludesFile")],
-		pattern: ["**/.gitignore"]
+		hidePattern: patternsExclude.concat([gitConfigString("core.excludesFile")]),
+		sources: [
+			["**/.gitignore", lookGit()]
+		]
 	},
 	// npm pack --dry-run
 	npm: {
-		method: readIgnNpm,
-		pattern: ["**/package.json", "**/.npmignore", "**/.gitignore"]
+		hidePattern: patternsExclude.concat(npmPatternExclude),
+		addPattern: npmPatternInclude,
+		sources: [
+			["**/package.json", lookProperty({ prop: "files", negate: true })],
+			["**/.npmignore", lookGit()],
+			["**/.gitignore", lookGit()]
+		]
 	},
 	yarn: {
-		method: readIgnNpm,
-		pattern: ["**/package.json", "**/.yarnignore", "**/.npmignore", "**/.gitignore"]
+		hidePattern: patternsExclude.concat(npmPatternExclude),
+		addPattern: npmPatternInclude,
+		sources: [
+			["**/package.json", lookProperty({ prop: "files", negate: true })],
+			["**/.yarnignore", lookGit()],
+			["**/.npmignore", lookGit()],
+			["**/.gitignore", lookGit()]
+		]
 	},
 	vscodeExtension: {
-		method: readIgnGit,
-		pattern: ["**/.vscodeignore", "**/.gitignore"]
+		hidePattern: patternsExclude,
+		sources: [
+			["**/.vscodeignore", lookGit()],
+			["**/.gitignore", lookGit()]
+		]
 	},
-}
+})
 //#endregion
