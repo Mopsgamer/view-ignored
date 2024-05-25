@@ -8,15 +8,15 @@
 		"view-ignored": "./bin/viewig"
 	},
 	"scripts": {
-		"prerelease": "npm run lint & npm run test",
-		"pretest": "npm run build",
-		"test": "npx mocha --require tsx ./test/**/*.test.ts",
-		"build": "npx tsc",
-		"lint": "npx eslint .",
-		"lint:fix": "npx eslint . --fix",
-		"release:major": "npx release-it --increment=major",
-		"release:minor": "npx release-it --increment=minor",
-		"release:patch": "npx release-it --increment=patch"
+		"prerelease": "pnpm lint & pnpm test",
+		"pretest": "pnpm build",
+		"test": "pnpm mocha --require tsx ./test/**/*.test.ts",
+		"build": "pnpm tsc",
+		"lint": "pnpm eslint .",
+		"lint:fix": "pnpm eslint . --fix",
+		"release:major": "pnpm release-it --increment=major",
+		"release:minor": "pnpm release-it --increment=minor",
+		"release:patch": "pnpm release-it --increment=patch"
 	},
 	"author": "Mopsgamer",
 	"license": "ISC",
