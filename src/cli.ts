@@ -28,9 +28,9 @@ export function safetyHelpCreate(target: PresetName, filter: FilterName): string
 }
 
 program
-	.addOption(new Option("-t, --target [ignorer]").default("git" satisfies PresetName).choices(presetNameList))
-	.addOption(new Option("-fl, --filter [filter]").default("included" satisfies FilterName).choices(filterNameList))
-	.addOption(new Option("-sr, --sort [sorter]").default("firstFolders" satisfies SortName).choices(sortNameList))
+	.addOption(new Option("-t, --target <ignorer>").default("git" satisfies PresetName).choices(presetNameList))
+	.addOption(new Option("-fl, --filter <filter>").default("included" satisfies FilterName).choices(filterNameList))
+	.addOption(new Option("-sr, --sort <sorter>").default("firstFolders" satisfies SortName).choices(sortNameList))
 	.addOption(new Option("--paths"))
 	.addOption(new Option("--sources"))
 	.action(({ target, filter, sort, paths: showPaths, sources: showSources }) => {
