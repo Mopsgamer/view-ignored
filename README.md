@@ -1,5 +1,7 @@
 # view-ignored
 
+[![npm version](https://badge.fury.io/js/view-ignored.svg)](https://www.npmjs.com/package/view-ignored)
+
 Get a list of ignored files by targets: git, npm, yarn, docker, ... .
 
 ## Features
