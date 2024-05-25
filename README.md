@@ -1,31 +1,44 @@
 # view-ignored
 
-Get a list of ignored files by targets: git, npm, yaml, docker, ... .
+Get a list of ignored files by targets: git, npm, yarn, docker, ... .
 
 ## Features
 
 - View a list of ignored and included files.
 - Sorting a list.
 
-### Targets
-
-- Git (.gitignore, git config get `core.excludesFile`)
-- NPM (package.json, .npmignore, .gitignore)
-- Yarn (package.json, .yarnignore, .npmignore, .gitignore)
-- VSC Extension (.vscodeignore, .gitignore)
-
-Planned:
-
-- PNPM
-
-###
-
-## Planned
-
 ## Install
 
 ```bash
-npm i ...
+npm i view-ignored
 ```
 
-> Don't forget to configure the keywords and files in 'package.json', reinitialize the package using 'npm init', and specify the paths in 'tsconfig.json' and 'eslint.config.mjs'.
+### Targets
+
+- `git`
+    - Check: `git ls-tree -r <branch name: main/master/...> --name-only`
+    - Always using git config `core.excludesFile`. Only for this target.
+    - Sources walkthrough: '.gitignore'.
+- `npm`
+    - Check: `npm pack --dry-run`
+    - Sources walkthrough: 'package.json', '.npmignore', '.gitignore'.
+- `yarn`
+    - Sources walkthrough: 'package.json', '.yarnignore', '.npmignore', '.gitignore'.
+- `vscodeExtension`
+    - Check: `vsce ls`
+    - Sources walkthrough: '.vscodeignore', '.gitignore'.
+
+Planned:
+
+- `docker`
+    - Sources walkthrough: '.dockerignore', '.gitignore'?
+- `eslint`
+    - Sources walkthrough: ?
+- `prettier`
+    - Sources walkthrough: ?
+- `stylelint`
+    - Sources walkthrough: ?
+- `esbuild`
+    - Sources walkthrough: ?
+- `webpack`
+    - Sources walkthrough: ?
