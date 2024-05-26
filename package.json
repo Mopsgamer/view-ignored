@@ -26,7 +26,7 @@
 	],
 	"release-it": {
 		"hooks": {
-			"before:init": "npm run prerelease"
+			"before:init": "pnpm prerelease"
 		},
 		"plugins": {
 			"@release-it/keep-a-changelog": {
