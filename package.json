@@ -45,20 +45,8 @@
 	"publishConfig": {
 		"access": "public"
 	},
-	"devDependencies": {
-		"@eslint/js": "^9.2.0",
-		"@release-it/keep-a-changelog": "^5.0.0",
-		"@types/get-value": "^3.0.5",
-		"@types/mocha": "^10.0.6",
-		"@types/node": "^20.12.11",
-		"@types/treeify": "^1.0.3",
-		"eslint": "^8.57.0",
-		"globals": "^15.2.0",
-		"mocha": "^10.4.0",
-		"release-it": "^17.2.1",
-		"tsx": "^4.10.2",
-		"typescript": "^5.4.5",
-		"typescript-eslint": "^7.9.0"
+	"directories": {
+		"test": "test"
 	},
 	"dependencies": {
 		"commander": "^12.0.0",
@@ -69,8 +57,21 @@
 		"treeify": "^1.1.0",
 		"tslib": "^2.6.2"
 	},
-	"directories": {
-		"test": "test"
+	"devDependencies": {
+		"@eslint/js": "^9.2.0",
+		"@release-it/keep-a-changelog": "^5.0.0",
+		"@types/get-value": "^3.0.5",
+		"@types/mocha": "^10.0.6",
+		"@types/node": "^20.12.11",
+		"@types/treeify": "^1.0.3",
+		"eslint": "^8.57.0",
+		"eslint-plugin-only-warn": "^1.1.0",
+		"globals": "^15.2.0",
+		"mocha": "^10.4.0",
+		"release-it": "^17.2.1",
+		"tsx": "^4.10.2",
+		"typescript": "^5.4.5",
+		"typescript-eslint": "^7.9.0"
 	},
 	"keywords": [
 		"tree",
