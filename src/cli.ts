@@ -2,7 +2,7 @@ import { Option, program } from "commander";
 import { FilterName, filterNameList, Sorters, sortNameList, SortName, lookProjectSync, PresetName, StyleName, GetPresets, Styles, presetNameList, styleNameList, LookFileResult } from "./index.js";
 import { stdout } from "process";
 import { Chalk } from "chalk";
-import type { ColorSupportLevel } from "chalk";
+import type { ChalkInstance, ColorSupportLevel } from "chalk";
 import fs from "fs";
 
 export { program }
@@ -13,12 +13,12 @@ export const checkCommandHelp: Partial<Record<PresetName, string>> = {
 	vscodeExtension: 'vsce ls',
 }
 
-export function safetyHelpCreate(target: PresetName): string {
+export function safetyHelpCreate(target: PresetName, oc: ChalkInstance): string {
 	const command = checkCommandHelp[target] ?? ""
 	if (command === "") {
 		return ""
 	}
-	return `\n\nYou can use the \`${command}\` command to check if the list is valid.`
+	return '\n\n' + oc.cyan(`You can use the \`${oc.white(command)}\` command to check if the list is valid.`)
 }
 
 export function print(options: {
@@ -61,7 +61,7 @@ export function print(options: {
 	stdout.write(`${isEmoji ? '✔️ ' : isNerd ? oc.green('\uf00c ') : ''}Done in ${isNerd && time < 400 ? oc.yellow('\udb85\udc0c') : ''}${time}ms.`)
 	stdout.write(`\n\n`)
 	stdout.write(`${looked.length} files listed for ${preset.name} (${options.filter}).`)
-	stdout.write(safetyHelpCreate(options.target))
+	stdout.write(safetyHelpCreate(options.target, oc))
 	stdout.write(`\n`)
 }
 

@@ -465,14 +465,12 @@ var checkCommandHelp = {
   npm: "npm pack --dry-run",
   vscodeExtension: "vsce ls"
 };
-function safetyHelpCreate(target) {
+function safetyHelpCreate(target, oc) {
   const command = checkCommandHelp[target] ?? "";
   if (command === "") {
     return "";
   }
-  return `
-
-You can use the \`${command}\` command to check if the list is valid.`;
+  return "\n\n" + oc.cyan(`You can use the \`${oc.white(command)}\` command to check if the list is valid.`);
 }
 function print(options) {
   const start = Date.now();
@@ -510,7 +508,7 @@ function print(options) {
 
 `);
   stdout2.write(`${looked.length} files listed for ${preset.name} (${options.filter}).`);
-  stdout2.write(safetyHelpCreate(options.target));
+  stdout2.write(safetyHelpCreate(options.target, oc));
   stdout2.write(`
 `);
 }
