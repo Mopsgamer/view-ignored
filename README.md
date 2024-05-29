@@ -10,14 +10,12 @@ Get a list of ignored files by targets: git, npm, yarn, docker, ... .
 npm i view-ignored
 ```
 
-## Features
+## Highlights
 
-- View a list of ignored and included files.
-- Output
-    - Sorting.
-    - Styling: paths, tree, treeEmoji, treeNerd (using [nerd fonts](https://github.com/ryanoasis/nerd-fonts)).
-    - No colors.
-    - Visible current working directory.
+- Output sorting.
+- Output styling: paths, tree, treeEmoji, treeNerd (using [nerd fonts](https://github.com/ryanoasis/nerd-fonts)).
+- No colors option: `--no-colors`.
+- Visible current working directory.
 
 
 ### Targets
@@ -39,12 +37,6 @@ Planned:
 
 - `docker`
     - Sources walkthrough: '.dockerignore', '.gitignore'?
-- `eslint`
-    - Sources walkthrough: ?
-- `prettier`
-    - Sources walkthrough: ?
-- `stylelint`
-    - Sources walkthrough: ?
 - `esbuild`
     - Sources walkthrough: ?
 - `webpack`

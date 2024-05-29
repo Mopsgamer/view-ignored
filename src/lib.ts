@@ -97,7 +97,7 @@ export interface LookFileOptions {
 
 export interface LookFileResult {
 	ignored: boolean,
-	target: string
+	path: string
 	source: string
 	toString(): string
 }
@@ -183,10 +183,10 @@ function processPath(somePath: string, matches: string[], resultList: LookFileRe
 	if (filterIgnore || filterInclude || filterAll) {
 		resultList.push({
 			ignored: isIgnored,
-			target: somePath,
+			path: somePath,
 			source: sourcePath,
 			toString() {
-				return `${this.target}`
+				return `${this.path}`
 			},
 		} satisfies LookFileResult)
 	}

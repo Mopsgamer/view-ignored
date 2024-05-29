@@ -112,10 +112,10 @@ function processPath(somePath, matches, resultList, options, cache, cwd, ignore2
   if (filterIgnore || filterInclude || filterAll) {
     resultList.push({
       ignored: isIgnored,
-      target: somePath,
+      path: somePath,
       source: sourcePath,
       toString() {
-        return `${this.target}`;
+        return `${this.path}`;
       }
     });
   }
@@ -159,7 +159,7 @@ import jsonifyPaths from "jsonify-paths";
 var styleNameList = ["tree", "paths", "treeEmoji", "treeNerd"];
 var Styles = {
   paths(files) {
-    stdout.write(files.map((f) => f.toString()).join("\n") + "\n");
+    stdout.write(files.map((f) => `>${f.toString()}`).join("\n") + "\n");
   },
   tree(files) {
     const pathsAsObject = jsonifyPaths.from(files.map((f) => f.toString()), { delimiter: "/" });
@@ -329,22 +329,121 @@ function GetPresets(style) {
 
 // src/sorting.ts
 import path2 from "path";
-var sortNameList = ["firstFolders", "firstFiles", "type", "mixed"];
-function pathDepth(path3) {
-  return (path3.match(/\//g) || []).length;
+var sortNameList = ["firstFolders", "firstFiles", "type", "mixed", "modified"];
+function slicePath(p) {
+  const slashIndex = p.indexOf("/");
+  const next = p.substring(0, slashIndex);
+  const other = p.substring(slashIndex + 1);
+  const isLast = next === "" && p.lastIndexOf("/") === slashIndex;
+  return [slashIndex < 0 ? other : next, other, isLast];
 }
 var Sorters = {
+  /**
+   * Files and folders are sorted by their names.
+   * Folders are displayed before files.
+   */
   firstFolders(a, b) {
-    const diff = pathDepth(b) - pathDepth(a);
-    return diff || Sorters.mixed(a, b);
+    let comp = 0;
+    let next1, others1, next2, others2, last1, last2;
+    for (; comp === 0; ) {
+      [next1, others1, last1] = slicePath(a);
+      a = others1;
+      [next2, others2, last2] = slicePath(b);
+      b = others2;
+      comp = Sorters.mixed(next1, next2);
+      if (last1 || last2) {
+        if (last1 === last2) {
+          break;
+        }
+        if (last1 === false) {
+          return -1;
+        }
+        return 1;
+      }
+    }
+    return comp;
   },
+  /**
+   * Files and folders are sorted by their names.
+   * Files are displayed before folders.
+   */
   firstFiles(a, b) {
-    const diff = pathDepth(a) - pathDepth(b);
-    return diff || Sorters.mixed(a, b);
+    let comp = 0;
+    let next1, others1, next2, others2, last1, last2;
+    for (; comp === 0; ) {
+      [next1, others1, last1] = slicePath(a);
+      a = others1;
+      [next2, others2, last2] = slicePath(b);
+      b = others2;
+      comp = Sorters.mixed(next1, next2);
+      if (last1 || last2) {
+        if (last1 === last2) {
+          break;
+        }
+        if (last1 === true) {
+          return -1;
+        }
+        return 1;
+      }
+    }
+    return comp;
   },
+  /**
+   * Files and folders are sorted by last modified date in descending order.
+   * Folders are displayed before files.
+   */
+  modified(a, b, aDate, bDate) {
+    let comp = 0;
+    let others1, others2, last1, last2;
+    for (; comp === 0; ) {
+      [, others1, last1] = slicePath(a);
+      a = others1;
+      [, others2, last2] = slicePath(b);
+      b = others2;
+      comp = aDate.getTime() - bDate.getTime();
+      if (last1 || last2) {
+        if (last1 === last2) {
+          break;
+        }
+        if (last1 === false) {
+          return -1;
+        }
+        return 1;
+      }
+    }
+    return comp;
+  },
+  /**
+   * Files and folders are grouped by extension type then sorted by thir names.
+   * Folders are displayed before files.
+   */
   type(a, b) {
-    return Sorters.mixed(path2.parse(a).ext, path2.parse(b).ext);
+    let comp = 0;
+    let next1, others1, next2, others2, last1, last2;
+    for (; comp === 0; ) {
+      [next1, others1, last1] = slicePath(a);
+      a = others1;
+      [next2, others2, last2] = slicePath(b);
+      b = others2;
+      const ppa = path2.parse(next1);
+      const ppb = path2.parse(next2);
+      comp = Sorters.mixed(ppa.ext, ppb.ext) || Sorters.mixed(ppa.name, ppb.name);
+      if (last1 || last2) {
+        if (last1 === last2) {
+          break;
+        }
+        if (last1 === false) {
+          return -1;
+        }
+        return 1;
+      }
+    }
+    return comp;
   },
+  /**
+   * Files and folders are sorted by their names.
+   * Files are interwoven with folders.
+   */
   mixed(a, b) {
     return a.localeCompare(b, void 0, { ignorePunctuation: false });
   }
@@ -352,12 +451,13 @@ var Sorters = {
 
 // src/cli.ts
 import { stdout as stdout2 } from "process";
+import fs from "fs";
 var checkCommandHelp = {
   git: "git ls-tree -r <branch name: main/master/...> --name-only",
   npm: "npm pack --dry-run",
   vscodeExtension: "vsce ls"
 };
-function safetyHelpCreate(target, filter) {
+function safetyHelpCreate(target) {
   const command = checkCommandHelp[target] ?? "";
   if (command === "") {
     return "";
@@ -380,7 +480,16 @@ function print(options) {
     filter: options.filter
   });
   const sorter = Sorters[options.sort];
-  const lookedSorted = looked.sort((a, b) => sorter(a.toString(), b.toString()));
+  const cacheEditDates = /* @__PURE__ */ new Map();
+  for (const look of looked) {
+    cacheEditDates.set(look, fs.statSync(look.path).mtime);
+  }
+  const lookedSorted = looked.sort((a, b) => sorter(
+    a.toString(),
+    b.toString(),
+    cacheEditDates.get(a),
+    cacheEditDates.get(b)
+  ));
   stdout2.write((isNerd ? "\uF115 " : "") + process.cwd() + "\n");
   Styles[options.style](lookedSorted, options.style);
   const time = Date.now() - start;
@@ -391,7 +500,7 @@ function print(options) {
 
 `);
   stdout2.write(`${looked.length} files listed for ${preset.name} (${options.filter}).`);
-  stdout2.write(safetyHelpCreate(options.target, options.filter));
+  stdout2.write(safetyHelpCreate(options.target));
   stdout2.write(`
 `);
 }

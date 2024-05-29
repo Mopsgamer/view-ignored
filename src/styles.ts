@@ -9,7 +9,7 @@ export type Style = (files: LookFileResult[], style: StyleName) => void
 
 export const Styles: Record<StyleName, Style> = {
 	paths(files) {
-		stdout.write(files.map(f => f.toString()).join('\n') + "\n")
+		stdout.write(files.map(f => `>${f.toString()}`).join('\n') + "\n")
 	},
 	tree(files) {
 		const pathsAsObject = jsonifyPaths.from(files.map(f => f.toString()), { delimiter: "/" })

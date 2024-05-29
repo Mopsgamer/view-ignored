@@ -12,6 +12,7 @@
 		"pretest": "pnpm build",
 		"test": "pnpm mocha --require tsx ./test/**/*.test.ts",
 		"build": "pnpm tsc && pnpm build:bin",
+		"build:nobin": "pnpm tsc",
 		"build:bin": "npx esbuild ./src/bin.ts --bundle --packages=external --platform=node --target=node18 --format=esm --outfile=./bin/viewig",
 		"lint": "pnpm eslint .",
 		"lint:fix": "pnpm eslint . --fix",

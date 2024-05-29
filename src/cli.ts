@@ -1,6 +1,7 @@
 import { Option, program } from "commander";
-import { FilterName, filterNameList, Sorters, sortNameList, SortName, lookProjectSync, PresetName, StyleName, GetPresets, Styles, presetNameList, styleNameList } from "./index.js";
+import { FilterName, filterNameList, Sorters, sortNameList, SortName, lookProjectSync, PresetName, StyleName, GetPresets, Styles, presetNameList, styleNameList, LookFileResult } from "./index.js";
 import { stdout } from "process";
+import fs from "fs";
 
 export { program }
 
@@ -39,7 +40,14 @@ export function print(options: {
 	})
 
 	const sorter = Sorters[options.sort]
-	const lookedSorted = looked.sort((a, b) => sorter(a.toString(), b.toString()))
+	const cacheEditDates = new Map<LookFileResult, Date>()
+	for (const look of looked) {
+		cacheEditDates.set(look, fs.statSync(look.path).mtime)
+	}
+	const lookedSorted = looked.sort((a, b) => sorter(
+		a.toString(), b.toString(),
+		cacheEditDates.get(a)!, cacheEditDates.get(b)!
+	))
 	stdout.write((isNerd ? '\uf115 ' : '') + process.cwd() + "\n")
 	Styles[options.style](lookedSorted, options.style)
 	const time = Date.now() - start

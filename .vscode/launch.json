@@ -17,7 +17,7 @@
 				"-sr",
 				"firstFolders"
 			],
-			"internalConsoleOptions": "openOnSessionStart",
+			"internalConsoleOptions": "neverOpen",
 			"program": "${workspaceFolder}\\lib\\bin.js",
 			"cwd": "${workspaceFolder}",
 			"outFiles": [
