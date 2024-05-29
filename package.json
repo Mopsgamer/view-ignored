@@ -8,10 +8,10 @@
 		"view-ignored": "./bin/viewig"
 	},
 	"scripts": {
-		"prerelease": "pnpm lint & pnpm test",
+		"prerelease": "pnpm lint && pnpm test",
 		"pretest": "pnpm build",
 		"test": "pnpm mocha --require tsx ./test/**/*.test.ts",
-		"build": "pnpm tsc",
+		"build": "pnpm tsc && npx esbuild ./src/bin.ts --bundle --packages=external --platform=node --target=node18 --format=esm --outfile=./bin/viewig",
 		"lint": "pnpm eslint .",
 		"lint:fix": "pnpm eslint . --fix",
 		"release:major": "pnpm release-it --increment=major",
@@ -64,6 +64,7 @@
 		"@types/mocha": "^10.0.6",
 		"@types/node": "^20.12.11",
 		"@types/treeify": "^1.0.3",
+		"esbuild": "^0.21.4",
 		"eslint": "^8.57.0",
 		"eslint-plugin-only-warn": "^1.1.0",
 		"globals": "^15.2.0",

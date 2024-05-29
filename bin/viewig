@@ -1,3 +1,348 @@
-#!/usr/bin/env node
-import {program} from "../lib/cli.js"
-program.parse()
+#! /usr/bin/env node
+
+// src/cli.ts
+import { Option, program } from "commander";
+
+// src/lib.ts
+import path from "path";
+import FastGlob from "fast-glob";
+import { readFileSync } from "fs";
+import ignore from "ignore";
+import { execSync } from "child_process";
+var Looker = class {
+  constructor(options) {
+    this.negated = options?.negated ?? false;
+    this.ignoreInstance = ignore.default(options);
+  }
+  negate() {
+    this.negated = !this.negated;
+    return this;
+  }
+  add(pattern) {
+    this.ignoreInstance.add(pattern);
+  }
+  ignores(path3) {
+    const normalPath = typeof path3 === "string" ? path3 : path3.join("\n");
+    const ignores = this.ignoreInstance.ignores(normalPath);
+    return this.negated ? !ignores : ignores;
+  }
+  isValidPattern(pattern) {
+    return ignore.default.isPathValid(pattern);
+  }
+};
+function findFiles(pattern, cwd, ignore2) {
+  const paths = FastGlob.sync(pattern, { cwd, ignore: ignore2, onlyFiles: true, dot: true });
+  return paths;
+}
+function closestFilePath(filePath, paths) {
+  const filePathDir = path.dirname(filePath);
+  const result = paths.reverse().find((p) => {
+    const pd = path.dirname(p);
+    const result2 = filePathDir.startsWith(pd) || pd === ".";
+    return result2;
+  });
+  return result;
+}
+function gitConfigString(prop, cwd) {
+  try {
+    return execSync(`git config ${prop}`, { cwd }).toString();
+  } catch (error) {
+    return String(error);
+  }
+}
+function gitConfigBool(prop, cwd) {
+  const str = gitConfigString(prop, cwd);
+  if (str === "true\n") {
+    return true;
+  }
+  if (str === "false\n") {
+    return false;
+  }
+  throw new TypeError(`Invalid git config property: '${prop}'`);
+}
+function lookFile(filePath, options) {
+  const {
+    cwd = process.cwd(),
+    hidePattern = [],
+    addPattern = [],
+    sources,
+    allowRelativePaths = true
+  } = options;
+  const ignoreCase = gitConfigBool("core.ignoreCase");
+  const ignorecase = gitConfigBool("core.ignorecase");
+  const looker = new Looker({
+    allowRelativePaths,
+    ignoreCase,
+    ignorecase
+  });
+  for (const [pattern, method] of sources) {
+    const possibleSourcePaths = findFiles(pattern, cwd, hidePattern);
+    const sourcePath = closestFilePath(filePath, possibleSourcePaths);
+    if (sourcePath === void 0) {
+      continue;
+    }
+    const sourceContent = readFileSync(path.join(cwd, sourcePath)).toString();
+    const isGoodSource = method({
+      source: sourcePath,
+      sourceContent,
+      target: filePath,
+      looker
+    });
+    if (isGoodSource) {
+      looker.add(addPattern);
+      return looker;
+    }
+  }
+}
+var filterNameList = ["ignored", "included", "all"];
+function processPath(somePath, matches, resultList, options, cache, cwd, ignore2, filter) {
+  const sourcePath = closestFilePath(somePath, matches);
+  if (sourcePath === void 0) {
+    return false;
+  }
+  let looker = cache.get(sourcePath);
+  if (looker === void 0) {
+    looker = lookFile(somePath, options);
+    if (looker === void 0) {
+      return false;
+    }
+    cache.set(sourcePath, looker);
+  }
+  const isIgnored = looker.ignores(somePath);
+  const filterIgnore = filter === "ignored" && isIgnored;
+  const filterInclude = filter === "included" && !isIgnored;
+  const filterAll = filter === "all";
+  if (filterIgnore || filterInclude || filterAll) {
+    resultList.push({
+      target: somePath,
+      source: sourcePath,
+      toString(withSource) {
+        let r = `${this.target}`;
+        if (withSource) {
+          r = `${r} : ${this.source}`;
+        }
+        return r;
+      }
+    });
+  }
+  return true;
+}
+function lookProjectSync(options) {
+  const { sources, cwd = process.cwd(), hidePattern = [], filter = "included" } = options;
+  const cache = /* @__PURE__ */ new Map();
+  const resultList = [];
+  const allPaths = FastGlob.sync(
+    "**",
+    {
+      cwd: options.cwd,
+      dot: true,
+      ignore: hidePattern,
+      onlyFiles: true
+    }
+  );
+  for (const [pattern] of sources) {
+    const matches = findFiles(pattern, cwd, hidePattern);
+    let isGoodSource = false;
+    for (const somePath of allPaths) {
+      isGoodSource = processPath(somePath, matches, resultList, options, cache, cwd, hidePattern, filter);
+    }
+    if (isGoodSource) {
+      break;
+    }
+  }
+  return resultList;
+}
+
+// src/presets.ts
+import getValue from "get-value";
+var presetNameList = ["git", "npm", "yarn", "vscodeExtension"];
+var patternsExclude = [
+  ".git/**",
+  "node_modules/**",
+  ".DS_Store/**"
+];
+var npmPatternExclude = [
+  ".*.swp",
+  "._*",
+  ".DS_Store",
+  ".git",
+  ".gitignore",
+  ".hg",
+  ".npmignore",
+  ".npmrc",
+  ".lock-wscript",
+  ".svn",
+  ".wafpickle-*",
+  "config.gypi",
+  "CVS",
+  "npm-debug.log"
+];
+var npmPatternInclude = [
+  "bin/",
+  "package.json",
+  "README",
+  "README.*",
+  "LICENSE",
+  "LICENSE.*",
+  "LICENCE",
+  "LICENCE.*"
+];
+var parserJSONDict = (text) => {
+  try {
+    const result = JSON.parse(text);
+    const isDict = typeof result === "object" && result !== null && !Array.isArray(result);
+    if (!isDict) throw new Error(`JSON is not dictionary`);
+    return result;
+  } catch (error) {
+    return;
+  }
+};
+function superPresetLookOptions(looker, options) {
+  const { negate = false } = options ?? {};
+  looker.negated = negate;
+}
+var lookProperty = (options) => {
+  const { parserFunc = parserJSONDict, prop } = options;
+  return function(data) {
+    const { looker, sourceContent } = data;
+    const parsed = parserFunc(sourceContent);
+    if (!parsed) {
+      return false;
+    }
+    const propVal = getValue(parsed, prop);
+    if (!Array.isArray(propVal)) {
+      return false;
+    }
+    superPresetLookOptions(looker, options);
+    looker.add(propVal);
+    return true;
+  };
+};
+var lookGit = (options) => {
+  return function(data) {
+    const { looker, sourceContent } = data;
+    if (!looker.isValidPattern(sourceContent)) {
+      return false;
+    }
+    superPresetLookOptions(looker, options);
+    looker.add(sourceContent);
+    return true;
+  };
+};
+var GetPresets = () => ({
+  // git ls-tree -r main --name-only
+  git: {
+    allowRelativePaths: false,
+    hidePattern: patternsExclude.concat([gitConfigString("core.excludesFile")]),
+    sources: [
+      ["**/.gitignore", lookGit()]
+    ]
+  },
+  // npm pack --dry-run
+  npm: {
+    hidePattern: patternsExclude.concat(npmPatternExclude),
+    addPattern: npmPatternInclude,
+    sources: [
+      ["**/package.json", lookProperty({ prop: "files", negate: true })],
+      ["**/.npmignore", lookGit()],
+      ["**/.gitignore", lookGit()]
+    ]
+  },
+  yarn: {
+    hidePattern: patternsExclude.concat(npmPatternExclude),
+    addPattern: npmPatternInclude,
+    sources: [
+      ["**/package.json", lookProperty({ prop: "files", negate: true })],
+      ["**/.yarnignore", lookGit()],
+      ["**/.npmignore", lookGit()],
+      ["**/.gitignore", lookGit()]
+    ]
+  },
+  vscodeExtension: {
+    hidePattern: patternsExclude,
+    sources: [
+      ["**/.vscodeignore", lookGit()],
+      ["**/.gitignore", lookGit()]
+    ]
+  }
+});
+
+// src/sorting.ts
+import path2 from "path";
+var sortNameList = ["firstFolders", "firstFiles", "type", "mixed"];
+function pathDepth(path3) {
+  return (path3.match(/\//g) || []).length;
+}
+var Sorters = {
+  firstFolders(a, b) {
+    const diff = pathDepth(b) - pathDepth(a);
+    return diff || Sorters.mixed(a, b);
+  },
+  firstFiles(a, b) {
+    const diff = pathDepth(a) - pathDepth(b);
+    return diff || Sorters.mixed(a, b);
+  },
+  type(a, b) {
+    return Sorters.mixed(path2.parse(a).ext, path2.parse(b).ext);
+  },
+  mixed(a, b) {
+    return a.localeCompare(b, void 0, { ignorePunctuation: false });
+  }
+};
+
+// src/cli.ts
+import { stdout } from "process";
+import { default as tree } from "treeify";
+import jsonifyPaths from "jsonify-paths";
+var checkCommandHelp = {
+  git: {
+    included: "git ls-tree -r <branch name: main/master/...> --name-only"
+  },
+  npm: {
+    included: "npm pack --dry-run"
+  },
+  vscodeExtension: {
+    included: "vsce ls"
+  }
+};
+function safetyHelpCreate(target, filter) {
+  const command = checkCommandHelp[target]?.[filter] ?? "";
+  if (command === "") {
+    return "";
+  }
+  return `
+
+You can use the \`${command}\` command to check if the list is valid.`;
+}
+program.addOption(new Option("-t, --target <ignorer>").default("git").choices(presetNameList)).addOption(new Option("-fl, --filter <filter>").default("included").choices(filterNameList)).addOption(new Option("-sr, --sort <sorter>").default("firstFolders").choices(sortNameList)).addOption(new Option("--paths")).addOption(new Option("--sources")).action(({ target, filter, sort, paths: showPaths, sources: showSources }) => {
+  const start = Date.now();
+  const looked = lookProjectSync({
+    ...GetPresets()[target ?? "git"],
+    filter
+  });
+  const pathList = looked.map((el) => el.toString(showSources));
+  const sorter = Sorters[sort ?? "firstFolders"];
+  const pathListSorted = pathList.sort(sorter);
+  stdout.write(process.cwd() + "\n");
+  if (showPaths) {
+    stdout.write(pathListSorted.join("\n") + "\n");
+    return;
+  } else {
+    const pathsAsObject = jsonifyPaths.from(pathListSorted, { delimiter: "/" });
+    const pathsAsTree = tree.asTree(pathsAsObject, true, true);
+    stdout.write(pathsAsTree);
+  }
+  stdout.write(`
+`);
+  stdout.write(`done in ${Date.now() - start}ms`);
+  stdout.write(`
+
+`);
+  stdout.write(`${looked.length} files listed (${filter}) for ${target}`);
+  stdout.write(safetyHelpCreate(target, filter));
+  stdout.write(`
+`);
+});
+
+// src/bin.ts
+program.parse();

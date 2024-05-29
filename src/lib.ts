@@ -60,6 +60,7 @@ export function closestFilePath(filePath: string, paths: string[]): string | und
 //#endregion
 
 //#region git config reading
+//todo: use gitconfig lib
 export function gitConfigString(prop: string, cwd?: string): string {
 	try {
 		return execSync(`git config ${prop}`, { cwd: cwd, }).toString();
