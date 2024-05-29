@@ -47,7 +47,7 @@ function gitConfigString(prop, cwd) {
   try {
     return execSync(`git config ${prop}`, { cwd }).toString();
   } catch (error) {
-    return String(error);
+    return;
   }
 }
 function gitConfigBool(prop, cwd) {
@@ -58,7 +58,6 @@ function gitConfigBool(prop, cwd) {
   if (str === "false\n") {
     return false;
   }
-  throw new TypeError(`Invalid git config property: '${prop}'`);
 }
 function lookFile(filePath, options) {
   const {
@@ -68,12 +67,10 @@ function lookFile(filePath, options) {
     sources,
     allowRelativePaths = true
   } = options;
-  const ignoreCase = gitConfigBool("core.ignoreCase");
-  const ignorecase = gitConfigBool("core.ignorecase");
+  const ignoreCase = gitConfigBool("core.ignoreCase") ?? false;
   const looker = new Looker({
     allowRelativePaths,
-    ignoreCase,
-    ignorecase
+    ignoreCase
   });
   for (const [pattern, method] of sources) {
     const possibleSourcePaths = findFiles(pattern, cwd, hidePattern);
@@ -191,7 +188,8 @@ var parserJSONDict = (text) => {
   try {
     const result = JSON.parse(text);
     const isDict = typeof result === "object" && result !== null && !Array.isArray(result);
-    if (!isDict) throw new Error(`JSON is not dictionary`);
+    if (!isDict)
+      throw new Error(`JSON is not dictionary`);
     return result;
   } catch (error) {
     return;
@@ -233,7 +231,7 @@ var GetPresets = () => ({
   // git ls-tree -r main --name-only
   git: {
     allowRelativePaths: false,
-    hidePattern: patternsExclude.concat([gitConfigString("core.excludesFile")]),
+    hidePattern: patternsExclude.concat([gitConfigString("core.excludesFile") ?? ""]),
     sources: [
       ["**/.gitignore", lookGit()]
     ]

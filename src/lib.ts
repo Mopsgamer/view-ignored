@@ -60,15 +60,14 @@ export function closestFilePath(filePath: string, paths: string[]): string | und
 //#endregion
 
 //#region git config reading
-//todo: use gitconfig lib
-export function gitConfigString(prop: string, cwd?: string): string {
+export function gitConfigString(prop: string, cwd?: string): string | undefined {
 	try {
 		return execSync(`git config ${prop}`, { cwd: cwd, }).toString();
 	} catch (error) {
-		return String(error)
+		return;
 	}
 }
-export function gitConfigBool(prop: string, cwd?: string): boolean {
+export function gitConfigBool(prop: string, cwd?: string): boolean | undefined {
 	const str = gitConfigString(prop, cwd)
 	if (str === "true\n") {
 		return true
@@ -76,7 +75,6 @@ export function gitConfigBool(prop: string, cwd?: string): boolean {
 	if (str === "false\n") {
 		return false
 	}
-	throw new TypeError(`Invalid git config property: '${prop}'`)
 }
 //#endregion
 
@@ -115,13 +113,11 @@ export function lookFile(filePath: string, options: LookFileOptions): Looker | u
 		allowRelativePaths = true,
 	} = options
 
-	const ignoreCase = gitConfigBool('core.ignoreCase')
-	const ignorecase = gitConfigBool('core.ignorecase')
+	const ignoreCase = gitConfigBool('core.ignoreCase') ?? false
 
 	const looker = new Looker({
 		allowRelativePaths: allowRelativePaths,
 		ignoreCase: ignoreCase,
-		ignorecase: ignorecase,
 	})
 
 	for (const [pattern, method] of sources) {

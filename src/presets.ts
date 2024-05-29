@@ -105,7 +105,7 @@ export const GetPresets: () => Record<PresetName, Preset> = () => ({
 	// git ls-tree -r main --name-only
 	git: {
 		allowRelativePaths: false,
-		hidePattern: patternsExclude.concat([gitConfigString("core.excludesFile")]),
+		hidePattern: patternsExclude.concat([gitConfigString("core.excludesFile") ?? '']),
 		sources: [
 			["**/.gitignore", lookGit()]
 		]
