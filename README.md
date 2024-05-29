@@ -4,16 +4,21 @@
 
 Get a list of ignored files by targets: git, npm, yarn, docker, ... .
 
-## Features
-
-- View a list of ignored and included files.
-- Sorting a list.
-
 ## Install
 
 ```bash
 npm i view-ignored
 ```
+
+## Features
+
+- View a list of ignored and included files.
+- Output
+    - Sorting.
+    - Styling: paths, tree, treeEmoji, treeNerd (using [nerd fonts](https://github.com/ryanoasis/nerd-fonts)).
+    - No colors.
+    - Visible current working directory.
+
 
 ### Targets
 

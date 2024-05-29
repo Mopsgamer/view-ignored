@@ -96,9 +96,10 @@ export interface LookFileOptions {
 }
 
 export interface LookFileResult {
+	ignored: boolean,
 	target: string
 	source: string
-	toString(withSource?: boolean): string
+	toString(): string
 }
 
 /**
@@ -143,11 +144,24 @@ export function lookFile(filePath: string, options: LookFileOptions): Looker | u
 export const filterNameList = ["ignored", "included", "all"] as const
 export type FilterName = typeof filterNameList[number]
 interface LookFolderOptions extends LookFileOptions {
+	/**
+	* Specifies the maximum depth of a read directory relative to the start
+	* directory.
+	*
+	* @default Infinity
+	*/
+	deep?: FastGlob.Options["deep"]
+	/**
+	 * Mark the directory path with the final slash.
+	 *
+	 * @default false
+	 */
+	markDirectories?: FastGlob.Options["markDirectories"]
 	filter?: FilterName
 }
 
 /**
- * If `false` - should break.
+ * If `false` - bad source.
  */
 function processPath(somePath: string, matches: string[], resultList: LookFileResult[], options: LookFileOptions, cache: Map<string, Looker>, cwd: string, ignore: string[], filter: FilterName): boolean {
 	const sourcePath = closestFilePath(somePath, matches)
@@ -168,14 +182,11 @@ function processPath(somePath: string, matches: string[], resultList: LookFileRe
 	const filterAll = filter === "all"
 	if (filterIgnore || filterInclude || filterAll) {
 		resultList.push({
+			ignored: isIgnored,
 			target: somePath,
 			source: sourcePath,
-			toString(withSource) {
-				let r = `${this.target}`
-				if (withSource) {
-					r = `${r} : ${this.source}`
-				}
-				return r
+			toString() {
+				return `${this.target}`
 			},
 		} satisfies LookFileResult)
 	}
@@ -183,7 +194,7 @@ function processPath(somePath: string, matches: string[], resultList: LookFileRe
 }
 
 export function lookProjectSync(options: LookFolderOptions): LookFileResult[] {
-	const { sources, cwd = process.cwd(), hidePattern = [], filter = "included" } = options;
+	const { sources, cwd = process.cwd(), hidePattern = [], filter = "included", deep, markDirectories } = options;
 	// caching Ignore instances so as not to parse everything again.
 	const cache = new Map<string, Looker>()
 	const resultList: LookFileResult[] = []
@@ -193,7 +204,9 @@ export function lookProjectSync(options: LookFolderOptions): LookFileResult[] {
 			cwd: options.cwd,
 			dot: true,
 			ignore: hidePattern,
-			onlyFiles: true
+			onlyFiles: true,
+			deep,
+			markDirectories,
 		}
 	)
 	for (const [pattern] of sources) {

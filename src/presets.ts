@@ -1,9 +1,10 @@
 import { LookFileOptions, LookMethod, LookMethodData, Looker, gitConfigString } from "./lib.js"
 import getValue from "get-value"
+import { StyleName } from "./styles.js"
 
 export const presetNameList = ['git', 'npm', 'yarn', 'vscodeExtension'] as const
 export type PresetName = typeof presetNameList[number]
-export type Preset = LookFileOptions
+export interface Preset extends LookFileOptions { name: string }
 
 //#region native patterns
 export const patternsExclude: string[] = [
@@ -101,41 +102,50 @@ export const lookGit = ((options?: PresetLookOptions) => {
 //#endregion
 
 //#region presets
-export const GetPresets: () => Record<PresetName, Preset> = () => ({
-	// git ls-tree -r main --name-only
-	git: {
-		allowRelativePaths: false,
-		hidePattern: patternsExclude.concat([gitConfigString("core.excludesFile") ?? '']),
-		sources: [
-			["**/.gitignore", lookGit()]
-		]
-	},
-	// npm pack --dry-run
-	npm: {
-		hidePattern: patternsExclude.concat(npmPatternExclude),
-		addPattern: npmPatternInclude,
-		sources: [
-			["**/package.json", lookProperty({ prop: "files", negate: true })],
-			["**/.npmignore", lookGit()],
-			["**/.gitignore", lookGit()]
-		]
-	},
-	yarn: {
-		hidePattern: patternsExclude.concat(npmPatternExclude),
-		addPattern: npmPatternInclude,
-		sources: [
-			["**/package.json", lookProperty({ prop: "files", negate: true })],
-			["**/.yarnignore", lookGit()],
-			["**/.npmignore", lookGit()],
-			["**/.gitignore", lookGit()]
-		]
-	},
-	vscodeExtension: {
-		hidePattern: patternsExclude,
-		sources: [
-			["**/.vscodeignore", lookGit()],
-			["**/.gitignore", lookGit()]
-		]
-	},
-})
+export function GetPresets(style: StyleName): Record<PresetName, Preset> {
+	const IsNerd = style.toLowerCase().includes('nerd')
+	return ({
+		// git ls-tree -r main --name-only
+		git: {
+			name: `${IsNerd ? '\ue65d ' : ''}Git`,
+			allowRelativePaths: false,
+			hidePattern: patternsExclude.concat([gitConfigString("core.excludesFile") ?? '']),
+			sources: [
+				["**/.gitignore", lookGit()]
+			]
+		},
+		// npm pack --dry-run
+		npm: {
+			name: `${IsNerd ? '\ue616 ' : ''}NPM`,
+			hidePattern: patternsExclude.concat(npmPatternExclude),
+			addPattern: npmPatternInclude,
+			sources: [
+				["**/package.json", lookProperty({ prop: "files", negate: true })],
+				["**/.npmignore", lookGit()],
+				["**/.gitignore", lookGit()]
+			]
+		},
+		yarn: {
+			name: `${IsNerd ? '\ue6a7 ' : ''}Yarn`,
+			hidePattern: patternsExclude.concat(npmPatternExclude),
+			addPattern: npmPatternInclude,
+			sources: [
+				["**/package.json", lookProperty({ prop: "files", negate: true })],
+				["**/.yarnignore", lookGit()],
+				["**/.npmignore", lookGit()],
+				["**/.gitignore", lookGit()]
+			]
+		},
+		vscodeExtension: {
+			name: `${IsNerd ? '\udb82\ude1e ' : ''}Visual Studio: Code - Extension`,
+			hidePattern: patternsExclude,
+			sources: [
+				["**/.vscodeignore", lookGit()],
+				["**/.gitignore", lookGit()]
+			]
+		},
+	})
+}
+
+export { StyleName }
 //#endregion
