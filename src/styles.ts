@@ -1,22 +1,33 @@
 import { stdout } from "process"
-import { LookFileResult } from "./lib.js"
+import { FilterName, LookFileResult } from "./lib.js"
 import { default as tree } from "treeify";
 import jsonifyPaths from "jsonify-paths";
+import { ChalkInstance } from "chalk";
 
 export const styleNameList = ['tree', 'paths', 'treeEmoji', 'treeNerd'] as const
 export type StyleName = typeof styleNameList[number]
-export type Style = (files: LookFileResult[], style: StyleName) => void
+export type Style = (oc: ChalkInstance, files: LookFileResult[], style: StyleName, filter: FilterName) => void
+
+export function prefixIgn(f: LookFileResult) {
+	return (f.ignored ? '!' : '+') + f.toString()
+}
+
+export function chalkIgn(f: LookFileResult, oc: ChalkInstance) {
+	return (f.ignored ? oc.red : oc.green)(prefixIgn(f))
+}
 
 export const Styles: Record<StyleName, Style> = {
-	paths(files) {
-		stdout.write(files.map(f => `>${f.toString()}`).join('\n') + "\n")
+	paths(oc, files) {
+		stdout.write(files.map(
+			f => `${chalkIgn(f, oc)}`)
+			.join('\n') + "\n")
 	},
-	tree(files) {
+	tree(oc, files) {
 		const pathsAsObject = jsonifyPaths.from(files.map(f => f.toString()), { delimiter: "/" })
 		const pathsAsTree = tree.asTree(pathsAsObject, true, true)
 		stdout.write(pathsAsTree)
 	},
-	treeEmoji(files) {
+	treeEmoji(oc, files) {
 		const pathsAsObject = jsonifyPaths.from(files.map(f => f.toString()), { delimiter: "/" });
 		(function walk(tree: jsonifyPaths.Tree): void {
 			for (const [key, value] of Object.entries(tree)) {
@@ -32,7 +43,7 @@ export const Styles: Record<StyleName, Style> = {
 		const pathsAsTree = tree.asTree(pathsAsObject, true, true);
 		stdout.write(pathsAsTree)
 	},
-	treeNerd(files) {
+	treeNerd(oc, files) {
 		const pathsAsObject = jsonifyPaths.from(files.map(f => f.toString()), { delimiter: "/" });
 		(function walk(tree: jsonifyPaths.Tree): void {
 			for (const [key, value] of Object.entries(tree)) {

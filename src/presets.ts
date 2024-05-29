@@ -1,6 +1,7 @@
 import { LookFileOptions, LookMethod, LookMethodData, Looker, gitConfigString } from "./lib.js"
 import getValue from "get-value"
 import { StyleName } from "./styles.js"
+import { ChalkInstance } from "chalk"
 
 export const presetNameList = ['git', 'npm', 'yarn', 'vscodeExtension'] as const
 export type PresetName = typeof presetNameList[number]
@@ -102,12 +103,12 @@ export const lookGit = ((options?: PresetLookOptions) => {
 //#endregion
 
 //#region presets
-export function GetPresets(style: StyleName): Record<PresetName, Preset> {
+export function GetPresets(style: StyleName, oc: ChalkInstance): Record<PresetName, Preset> {
 	const IsNerd = style.toLowerCase().includes('nerd')
 	return ({
 		// git ls-tree -r main --name-only
 		git: {
-			name: `${IsNerd ? '\ue65d ' : ''}Git`,
+			name: `${IsNerd ? oc.redBright('\ue65d')+' ' : ''}Git`,
 			allowRelativePaths: false,
 			hidePattern: patternsExclude.concat([gitConfigString("core.excludesFile") ?? '']),
 			sources: [
@@ -116,7 +117,7 @@ export function GetPresets(style: StyleName): Record<PresetName, Preset> {
 		},
 		// npm pack --dry-run
 		npm: {
-			name: `${IsNerd ? '\ue616 ' : ''}NPM`,
+			name: `${IsNerd ? oc.red('\ue616')+' ' : ''}NPM`,
 			hidePattern: patternsExclude.concat(npmPatternExclude),
 			addPattern: npmPatternInclude,
 			sources: [
@@ -126,7 +127,7 @@ export function GetPresets(style: StyleName): Record<PresetName, Preset> {
 			]
 		},
 		yarn: {
-			name: `${IsNerd ? '\ue6a7 ' : ''}Yarn`,
+			name: `${IsNerd ? oc.magenta('\ue6a7')+' ' : ''}Yarn`,
 			hidePattern: patternsExclude.concat(npmPatternExclude),
 			addPattern: npmPatternInclude,
 			sources: [
@@ -137,7 +138,7 @@ export function GetPresets(style: StyleName): Record<PresetName, Preset> {
 			]
 		},
 		vscodeExtension: {
-			name: `${IsNerd ? '\udb82\ude1e ' : ''}Visual Studio: Code - Extension`,
+			name: `${IsNerd ? oc.red('\udb82\ude1e')+' ' : ''}Visual Studio: Code - Extension`,
 			hidePattern: patternsExclude,
 			sources: [
 				["**/.vscodeignore", lookGit()],

@@ -14,7 +14,7 @@ npm i view-ignored
 
 - Output sorting.
 - Output styling: paths, tree, treeEmoji, treeNerd (using [nerd fonts](https://github.com/ryanoasis/nerd-fonts)).
-- No colors option: `--no-colors`.
+- No colors option: `--color 0`.
 - Visible current working directory.
 
 

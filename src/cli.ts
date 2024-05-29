@@ -1,6 +1,8 @@
 import { Option, program } from "commander";
 import { FilterName, filterNameList, Sorters, sortNameList, SortName, lookProjectSync, PresetName, StyleName, GetPresets, Styles, presetNameList, styleNameList, LookFileResult } from "./index.js";
 import { stdout } from "process";
+import { Chalk } from "chalk";
+import type { ColorSupportLevel } from "chalk";
 import fs from "fs";
 
 export { program }
@@ -20,6 +22,7 @@ export function safetyHelpCreate(target: PresetName): string {
 }
 
 export function print(options: {
+	color?: string,
 	target?: PresetName,
 	filter?: FilterName,
 	sort?: SortName,
@@ -30,10 +33,13 @@ export function print(options: {
 	options.filter ??= "included"
 	options.sort ??= "firstFolders"
 	options.style ||= "tree"
+	const colorLevel = Math.max(0, Math.min(Number(options.color ?? 3), 3)) as ColorSupportLevel
+	/** Chalk, but configured by cli. **O**ur **C**halk. */
+	const oc = new Chalk({ level: colorLevel })
 	const isNerd = options.style.toLowerCase().includes('nerd')
 	const isEmoji = options.style.toLowerCase().includes('emoji')
 
-	const preset = GetPresets(options.style)[options.target]
+	const preset = GetPresets(options.style, oc)[options.target]
 	const looked = lookProjectSync({
 		...preset,
 		filter: options.filter
@@ -49,10 +55,10 @@ export function print(options: {
 		cacheEditDates.get(a)!, cacheEditDates.get(b)!
 	))
 	stdout.write((isNerd ? '\uf115 ' : '') + process.cwd() + "\n")
-	Styles[options.style](lookedSorted, options.style)
+	Styles[options.style](oc, lookedSorted, options.style, options.filter)
 	const time = Date.now() - start
 	stdout.write(`\n`)
-	stdout.write(`${isEmoji ? '✔️ ' : isNerd ? '\uf00c ' : ''}Done in ${isNerd && time < 400 ? '\udb85\udc0c' : ''}${time}ms.`)
+	stdout.write(`${isEmoji ? '✔️ ' : isNerd ? oc.green('\uf00c ') : ''}Done in ${isNerd && time < 400 ? oc.yellow('\udb85\udc0c') : ''}${time}ms.`)
 	stdout.write(`\n\n`)
 	stdout.write(`${looked.length} files listed for ${preset.name} (${options.filter}).`)
 	stdout.write(safetyHelpCreate(options.target))
@@ -60,8 +66,11 @@ export function print(options: {
 }
 
 program
+	.addOption(new Option("-clr, --color <level>").default(3 satisfies ColorSupportLevel).choices(["1", "2", "3", "4"]))
 	.addOption(new Option("-t, --target <ignorer>").default("git" satisfies PresetName).choices(presetNameList))
 	.addOption(new Option("-fl, --filter <filter>").default("included" satisfies FilterName).choices(filterNameList))
 	.addOption(new Option("-sr, --sort <sorter>").default("firstFolders" satisfies SortName).choices(sortNameList))
 	.addOption(new Option("-st, --style <style>").default("tree").choices(styleNameList))
 	.action(print)
+
+export const cfgProgram = program.command("cfg")

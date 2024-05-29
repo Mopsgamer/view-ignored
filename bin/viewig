@@ -157,16 +157,24 @@ import { stdout } from "process";
 import { default as tree } from "treeify";
 import jsonifyPaths from "jsonify-paths";
 var styleNameList = ["tree", "paths", "treeEmoji", "treeNerd"];
+function prefixIgn(f) {
+  return (f.ignored ? "!" : "+") + f.toString();
+}
+function chalkIgn(f, oc) {
+  return (f.ignored ? oc.red : oc.green)(prefixIgn(f));
+}
 var Styles = {
-  paths(files) {
-    stdout.write(files.map((f) => `>${f.toString()}`).join("\n") + "\n");
+  paths(oc, files) {
+    stdout.write(files.map(
+      (f) => `${chalkIgn(f, oc)}`
+    ).join("\n") + "\n");
   },
-  tree(files) {
+  tree(oc, files) {
     const pathsAsObject = jsonifyPaths.from(files.map((f) => f.toString()), { delimiter: "/" });
     const pathsAsTree = tree.asTree(pathsAsObject, true, true);
     stdout.write(pathsAsTree);
   },
-  treeEmoji(files) {
+  treeEmoji(oc, files) {
     const pathsAsObject = jsonifyPaths.from(files.map((f) => f.toString()), { delimiter: "/" });
     (function walk(tree2) {
       for (const [key, value] of Object.entries(tree2)) {
@@ -185,7 +193,7 @@ var Styles = {
     const pathsAsTree = tree.asTree(pathsAsObject, true, true);
     stdout.write(pathsAsTree);
   },
-  treeNerd(files) {
+  treeNerd(oc, files) {
     const pathsAsObject = jsonifyPaths.from(files.map((f) => f.toString()), { delimiter: "/" });
     (function walk(tree2) {
       for (const [key, value] of Object.entries(tree2)) {
@@ -243,8 +251,7 @@ var parserJSONDict = (text) => {
   try {
     const result = JSON.parse(text);
     const isDict = typeof result === "object" && result !== null && !Array.isArray(result);
-    if (!isDict)
-      throw new Error(`JSON is not dictionary`);
+    if (!isDict) throw new Error(`JSON is not dictionary`);
     return result;
   } catch (error) {
     return;
@@ -282,12 +289,12 @@ var lookGit = (options) => {
     return true;
   };
 };
-function GetPresets(style) {
+function GetPresets(style, oc) {
   const IsNerd = style.toLowerCase().includes("nerd");
   return {
     // git ls-tree -r main --name-only
     git: {
-      name: `${IsNerd ? "\uE65D " : ""}Git`,
+      name: `${IsNerd ? oc.redBright("\uE65D") + " " : ""}Git`,
       allowRelativePaths: false,
       hidePattern: patternsExclude.concat([gitConfigString("core.excludesFile") ?? ""]),
       sources: [
@@ -296,7 +303,7 @@ function GetPresets(style) {
     },
     // npm pack --dry-run
     npm: {
-      name: `${IsNerd ? "\uE616 " : ""}NPM`,
+      name: `${IsNerd ? oc.red("\uE616") + " " : ""}NPM`,
       hidePattern: patternsExclude.concat(npmPatternExclude),
       addPattern: npmPatternInclude,
       sources: [
@@ -306,7 +313,7 @@ function GetPresets(style) {
       ]
     },
     yarn: {
-      name: `${IsNerd ? "\uE6A7 " : ""}Yarn`,
+      name: `${IsNerd ? oc.magenta("\uE6A7") + " " : ""}Yarn`,
       hidePattern: patternsExclude.concat(npmPatternExclude),
       addPattern: npmPatternInclude,
       sources: [
@@ -317,7 +324,7 @@ function GetPresets(style) {
       ]
     },
     vscodeExtension: {
-      name: `${IsNerd ? "\u{F0A1E} " : ""}Visual Studio: Code - Extension`,
+      name: `${IsNerd ? oc.red("\u{F0A1E}") + " " : ""}Visual Studio: Code - Extension`,
       hidePattern: patternsExclude,
       sources: [
         ["**/.vscodeignore", lookGit()],
@@ -451,6 +458,7 @@ var Sorters = {
 
 // src/cli.ts
 import { stdout as stdout2 } from "process";
+import { Chalk } from "chalk";
 import fs from "fs";
 var checkCommandHelp = {
   git: "git ls-tree -r <branch name: main/master/...> --name-only",
@@ -472,9 +480,11 @@ function print(options) {
   options.filter ??= "included";
   options.sort ??= "firstFolders";
   options.style ||= "tree";
+  const colorLevel = Math.max(0, Math.min(Number(options.color ?? 3), 3));
+  const oc = new Chalk({ level: colorLevel });
   const isNerd = options.style.toLowerCase().includes("nerd");
   const isEmoji = options.style.toLowerCase().includes("emoji");
-  const preset = GetPresets(options.style)[options.target];
+  const preset = GetPresets(options.style, oc)[options.target];
   const looked = lookProjectSync({
     ...preset,
     filter: options.filter
@@ -491,11 +501,11 @@ function print(options) {
     cacheEditDates.get(b)
   ));
   stdout2.write((isNerd ? "\uF115 " : "") + process.cwd() + "\n");
-  Styles[options.style](lookedSorted, options.style);
+  Styles[options.style](oc, lookedSorted, options.style, options.filter);
   const time = Date.now() - start;
   stdout2.write(`
 `);
-  stdout2.write(`${isEmoji ? "\u2714\uFE0F " : isNerd ? "\uF00C " : ""}Done in ${isNerd && time < 400 ? "\u{F140C}" : ""}${time}ms.`);
+  stdout2.write(`${isEmoji ? "\u2714\uFE0F " : isNerd ? oc.green("\uF00C ") : ""}Done in ${isNerd && time < 400 ? oc.yellow("\u{F140C}") : ""}${time}ms.`);
   stdout2.write(`
 
 `);
@@ -504,7 +514,8 @@ function print(options) {
   stdout2.write(`
 `);
 }
-program.addOption(new Option("-t, --target <ignorer>").default("git").choices(presetNameList)).addOption(new Option("-fl, --filter <filter>").default("included").choices(filterNameList)).addOption(new Option("-sr, --sort <sorter>").default("firstFolders").choices(sortNameList)).addOption(new Option("-st, --style <style>").default("tree").choices(styleNameList)).action(print);
+program.addOption(new Option("-clr, --color <level>").default(3).choices(["1", "2", "3", "4"])).addOption(new Option("-t, --target <ignorer>").default("git").choices(presetNameList)).addOption(new Option("-fl, --filter <filter>").default("included").choices(filterNameList)).addOption(new Option("-sr, --sort <sorter>").default("firstFolders").choices(sortNameList)).addOption(new Option("-st, --style <style>").default("tree").choices(styleNameList)).action(print);
+var cfgProgram = program.command("cfg");
 
 // src/bin.ts
 program.parse();
