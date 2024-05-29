@@ -43,7 +43,18 @@
 			"script": "build",
 			"problemMatcher": [],
 			"label": "Build",
-			"detail": "npx tsc"
+			"detail": "npx tsc & npm run build:bin"
+		},
+		{
+			"icon": {
+				"id": "package",
+				"color": "terminal.ansiWhite"
+			},
+			"type": "npm",
+			"script": "build:nobin",
+			"problemMatcher": [],
+			"label": "Build nobin",
+			"detail": "tsc"
 		},
 		{
 			"icon": {

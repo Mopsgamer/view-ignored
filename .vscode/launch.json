@@ -7,19 +7,23 @@
 		{
 			"type": "node",
 			"request": "launch",
-			"name": "Launch command line - npm",
+			"name": "Launch command line: -st treeNerd -sr firstFolders",
 			"skipFiles": [
 				"<node_internals>/**"
 			],
 			"args": [
-				"-t","npm"
+				"-st",
+				"treeNerd",
+				"-sr",
+				"firstFolders"
 			],
-			"program": "${workspaceFolder}\\bin\\viewig",
+			"internalConsoleOptions": "openOnSessionStart",
+			"program": "${workspaceFolder}\\lib\\bin.js",
 			"cwd": "${workspaceFolder}",
 			"outFiles": [
 				"${workspaceFolder}/lib/*.js"
 			],
-			"preLaunchTask": "Build",
+			"preLaunchTask": "Build nobin",
 		}
 	]
 }
