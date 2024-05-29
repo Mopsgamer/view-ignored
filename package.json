@@ -20,6 +20,9 @@
 		"release:minor": "pnpm release-it --increment=minor",
 		"release:patch": "pnpm release-it --increment=patch"
 	},
+	"pre-push": [
+		"prerelease"
+	],
 	"author": "Mopsgamer",
 	"license": "ISC",
 	"main": "./lib/index.js",
@@ -72,6 +75,7 @@
 		"eslint-plugin-only-warn": "^1.1.0",
 		"globals": "^15.2.0",
 		"mocha": "^10.4.0",
+		"pre-push": "^0.1.4",
 		"release-it": "^17.2.1",
 		"tsx": "^4.10.2",
 		"typescript": "^5.4.5",
