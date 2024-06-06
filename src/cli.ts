@@ -147,7 +147,7 @@ export function actionCfgUnset(key: ConfigKey | undefined): void {
 	stdout.write('\n')
 }
 
-export function actionCfgGet(key: ConfigKey | undefined, options: { withDefault?: boolean }): void {
-	stdout.write(configEditor.getPairString(key, options.withDefault ?? false))
+export function actionCfgGet(key: ConfigKey | undefined, options: { safe?: boolean }): void {
+	stdout.write(configEditor.getPairString(key, options.safe ?? false))
 	stdout.write('\n')
 }
