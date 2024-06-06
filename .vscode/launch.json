@@ -7,15 +7,9 @@
 		{
 			"type": "node",
 			"request": "launch",
-			"name": "Launch command line: -st treeNerd -sr firstFolders",
+			"name": "Launch command line",
 			"skipFiles": [
 				"<node_internals>/**"
-			],
-			"args": [
-				"-st",
-				"treeNerd",
-				"-sr",
-				"firstFolders"
 			],
 			"internalConsoleOptions": "neverOpen",
 			"program": "${workspaceFolder}\\lib\\bin.js",
