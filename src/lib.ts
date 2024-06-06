@@ -8,35 +8,57 @@ import { patternsExclude, lookGit, lookProperty } from "./presets.js";
 
 //#region Looker
 export interface LookerOptions extends ignore.Options {
+	/**
+	 * @see {@link Looker.isNegated}
+	 */
 	negated?: boolean
 }
 export type LookerPattern = string | readonly string[]
 export class Looker {
-	public negated: boolean
+	/**
+	 * If `true`, when calling {@link Looker.ignores}, method will return `true` for ignored path.
+	 */
+	public isNegated: boolean
 	private ignoreInstance: Ignore
 
 	constructor(options?: LookerOptions) {
-		this.negated = options?.negated ?? false
+		this.isNegated = options?.negated ?? false
 		this.ignoreInstance = ignore.default(options)
 	}
 
 	negate(): this {
-		this.negated = !this.negated
+		this.isNegated = !this.isNegated
 		return this
 	}
 
-	add(pattern: LookerPattern): void {
+	/**
+	 * Adds new ignore rule.
+	 * @param pattern .gitignore file specification pattern.
+	 */
+	add(pattern: LookerPattern): this {
 		this.ignoreInstance.add(pattern)
+		return this
 	}
 
-	ignores(path: LookerPattern): boolean {
-		const normalPath = typeof path === "string" ? path : path.join("\n");
-		const ignores = this.ignoreInstance.ignores(normalPath)
-		return this.negated ? !ignores : ignores;
+	/**
+	 * Checks if the Looker should ignore dir entry path.
+	 * @see {@link Looker.isNegated} can change the return value.
+	 * @param path Dir entry path.
+	 */
+	ignores(path: string): boolean {
+		const ignores = this.ignoreInstance.ignores(path)
+		return this.isNegated ? !ignores : ignores;
 	}
 
-	isValidPattern(pattern: string) {
-		return ignore.default.isPathValid(pattern)
+	/**
+	 * Checks if given pattern is valid.
+	 * @param pattern Dir entry path.
+	 */
+	isValidPattern(pattern: LookerPattern) {
+		if (typeof pattern === "string") {
+			return ignore.default.isPathValid(pattern)
+		}
+		return pattern.every(p => ignore.default.isPathValid(p))
 	}
 }
 //#endregion
@@ -48,13 +70,13 @@ export class Looker {
  * @param cwd Current working directory.
  * @param ignore Ignore patterns.
  */
-export function globFiles(pattern: string | string[], cwd: string, ignore: string[]): string[] {
-	const paths: string[] = FastGlob.sync(pattern, { cwd, ignore, onlyFiles: true, dot: true })
-	return paths
+export function globFiles(pattern: string | string[], cwd: string, ignore?: string[]): string[] {
+	return FastGlob.sync(pattern, { cwd, ignore, onlyFiles: true, dot: true })
 }
 
 /**
- * If `undefined` - No reliable sources that contain patterns to ignore.
+ * Returns closest dir entry path for another one using the given list.
+ * If `undefined`, no reliable sources that contain patterns to ignore.
  */
 export function closestFilePath(filePath: string, paths: string[]): string | undefined {
 	const filePathDir = path.dirname(filePath)
@@ -68,6 +90,9 @@ export function closestFilePath(filePath: string, paths: string[]): string | und
 //#endregion
 
 //#region git config reading
+/**
+ * Read git config value as string.
+ */
 export function gitConfigString(key: string, cwd?: string): string | undefined {
 	try {
 		return execSync(`git config ${key}`, { cwd: cwd, }).toString();
@@ -75,6 +100,9 @@ export function gitConfigString(key: string, cwd?: string): string | undefined {
 		return;
 	}
 }
+/**
+ * Read git config value as boolean.
+ */
 export function gitConfigBool(key: string, cwd?: string): boolean | undefined {
 	const str = gitConfigString(key, cwd)
 	if (str === "true\n") {
@@ -87,12 +115,18 @@ export function gitConfigBool(key: string, cwd?: string): boolean | undefined {
 //#endregion
 
 //#region looking
+/**
+ * @see {@link LookMethod}
+ */
 export interface LookMethodData {
 	looker: Looker,
 	filePath: string,
 	source: string,
 	sourceContent: string,
 }
+/**
+ * Returns `true` if given source is valid, writes rules to the looker.
+ */
 export type LookMethod = (data: LookMethodData) => boolean
 
 export interface LookFileOptions {
@@ -124,6 +158,9 @@ export interface LookFileOptions {
 	allowRelativePaths?: boolean
 }
 
+/**
+ * Result of the file path scan.
+ */
 export class LookFileResult {
 	constructor(
 		public ignored: boolean,
@@ -176,7 +213,7 @@ export function lookFilePathTry(filePath: string, options: LookFileOptions): Loo
 	} = options
 
 	for (const [pattern, method] of sources) {
-		const possibleSourcePaths = globFiles(pattern, cwd, hidePattern)
+		const possibleSourcePaths = globFiles(pattern, cwd)
 		const sourcePath = closestFilePath(filePath, possibleSourcePaths)
 		if (sourcePath === undefined) {
 			continue
@@ -204,6 +241,9 @@ interface LookFolderOptions extends LookFileOptions {
 	filter?: FilterName
 }
 
+/**
+ * Scan project directory with results for each file path.
+ */
 export function lookProjectDirSync(options: LookFolderOptions): LookFileResult[] {
 	const { sources, cwd = process.cwd(), hidePattern = [], filter = "included", deep, markDirectories } = options;
 	const cache = new Map<string, Looker>()
@@ -220,7 +260,7 @@ export function lookProjectDirSync(options: LookFolderOptions): LookFileResult[]
 		}
 	)
 	FindGoodSource: for (const [pattern, method] of sources) {
-		const matches = globFiles(pattern, cwd, hidePattern)
+		const matches = globFiles(pattern, cwd)
 		for (const filePath of allPaths) {
 			const sourcePath = closestFilePath(filePath, matches)
 			if (sourcePath === undefined) {

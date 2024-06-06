@@ -62,7 +62,7 @@ export const parserJSONDict: ParserFunction = (text) => {
 //#region look methods
 export function superPresetLookOptions(looker: Looker, options?: PresetLookOptions) {
 	const { negate = false } = options ?? {};
-	looker.negated = negate
+	looker.isNegated = negate
 }
 
 export interface PresetLookOptions {
