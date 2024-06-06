@@ -3,50 +3,80 @@ import FastGlob from "fast-glob";
 import { readFileSync } from "fs";
 import ignore, { Ignore } from "ignore";
 import { execSync } from "child_process";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { patternsExclude, lookGit, lookProperty } from "./presets.js";
 
 //#region Looker
 export interface LookerOptions extends ignore.Options {
+	/**
+	 * @see {@link Looker.isNegated}
+	 */
 	negated?: boolean
 }
 export type LookerPattern = string | readonly string[]
 export class Looker {
-	public negated: boolean
+	/**
+	 * If `true`, when calling {@link Looker.ignores}, method will return `true` for ignored path.
+	 */
+	public isNegated: boolean
 	private ignoreInstance: Ignore
 
 	constructor(options?: LookerOptions) {
-		this.negated = options?.negated ?? false
+		this.isNegated = options?.negated ?? false
 		this.ignoreInstance = ignore.default(options)
 	}
 
 	negate(): this {
-		this.negated = !this.negated
+		this.isNegated = !this.isNegated
 		return this
 	}
 
-	add(pattern: LookerPattern): void {
+	/**
+	 * Adds new ignore rule.
+	 * @param pattern .gitignore file specification pattern.
+	 */
+	add(pattern: LookerPattern): this {
 		this.ignoreInstance.add(pattern)
+		return this
 	}
 
-	ignores(path: LookerPattern): boolean {
-		const normalPath = typeof path === "string" ? path : path.join("\n");
-		const ignores = this.ignoreInstance.ignores(normalPath)
-		return this.negated ? !ignores : ignores;
+	/**
+	 * Checks if the Looker should ignore dir entry path.
+	 * @see {@link Looker.isNegated} can change the return value.
+	 * @param path Dir entry path.
+	 */
+	ignores(path: string): boolean {
+		const ignores = this.ignoreInstance.ignores(path)
+		return this.isNegated ? !ignores : ignores;
 	}
 
-	isValidPattern(pattern: string) {
-		return ignore.default.isPathValid(pattern)
+	/**
+	 * Checks if given pattern is valid.
+	 * @param pattern Dir entry path.
+	 */
+	isValidPattern(pattern: LookerPattern) {
+		if (typeof pattern === "string") {
+			return ignore.default.isPathValid(pattern)
+		}
+		return pattern.every(p => ignore.default.isPathValid(p))
 	}
 }
 //#endregion
 
 //#region path methods
-export function findFiles(pattern: string | string[], cwd: string, ignore: string[]): string[] {
-	const paths: string[] = FastGlob.sync(pattern, { cwd, ignore, onlyFiles: true, dot: true })
-	return paths
+/**
+ * Get file paths using pattern.
+ * @param pattern The pattern.
+ * @param cwd Current working directory.
+ * @param ignore Ignore patterns.
+ */
+export function globFiles(pattern: string | string[], cwd: string, ignore?: string[]): string[] {
+	return FastGlob.sync(pattern, { cwd, ignore, onlyFiles: true, dot: true })
 }
 
 /**
- * If `undefined` - No reliable sources that contain patterns to ignore.
+ * Returns closest dir entry path for another one using the given list.
+ * If `undefined`, no reliable sources that contain patterns to ignore.
  */
 export function closestFilePath(filePath: string, paths: string[]): string | undefined {
 	const filePathDir = path.dirname(filePath)
@@ -60,6 +90,9 @@ export function closestFilePath(filePath: string, paths: string[]): string | und
 //#endregion
 
 //#region git config reading
+/**
+ * Read git config value as string.
+ */
 export function gitConfigString(key: string, cwd?: string): string | undefined {
 	try {
 		return execSync(`git config ${key}`, { cwd: cwd, }).toString();
@@ -67,6 +100,9 @@ export function gitConfigString(key: string, cwd?: string): string | undefined {
 		return;
 	}
 }
+/**
+ * Read git config value as boolean.
+ */
 export function gitConfigBool(key: string, cwd?: string): boolean | undefined {
 	const str = gitConfigString(key, cwd)
 	if (str === "true\n") {
@@ -79,38 +115,70 @@ export function gitConfigBool(key: string, cwd?: string): boolean | undefined {
 //#endregion
 
 //#region looking
+/**
+ * @see {@link LookMethod}
+ */
 export interface LookMethodData {
 	looker: Looker,
-	target: string,
+	filePath: string,
 	source: string,
 	sourceContent: string,
 }
+/**
+ * Returns `true` if given source is valid, writes rules to the looker.
+ */
 export type LookMethod = (data: LookMethodData) => boolean
 
 export interface LookFileOptions {
+	/**
+	 * Current working directory.
+	 * Recommended to set this value yourself.
+	 * 
+	 * @default process.cwd()
+	 */
 	cwd?: string,
+	/**
+	 * Additional patterns, which will be used as
+	 * other patterns in the `.gitignore` file, or `package.json` "files" property.
+	 */
 	addPattern?: string[],
+	/**
+	 * Force exclude patterns from file path list.
+	 * 
+	 * @see {@link patternsExclude} can be used.
+	 */
 	hidePattern?: string[],
+	/**
+	 * Sources like `.gitignore` or `package.json` "files" property. It breaks on first valid source.
+	 * @example [["**\/.gitignore", lookGit()]]
+	 * @see {@link lookGit}, {@link lookProperty}
+	 * @see {@link lookGit}, {@link lookProperty}
+	 */
 	sources: [string | string[], LookMethod][],
 	allowRelativePaths?: boolean
 }
 
-export interface LookFileResult {
-	ignored: boolean,
-	path: string
-	source: string
-	toString(): string
+/**
+ * Result of the file path scan.
+ */
+export class LookFileResult {
+	constructor(
+		public ignored: boolean,
+		public filePath: string,
+		public source: string,
+	) { }
+	toString(): string {
+		return `${this.filePath}`
+	}
 }
 
 /**
- * Undefined if any source is bad.
+ * Returns `undefined`, if any source is bad.
  */
-export function lookFile(filePath: string, options: LookFileOptions): Looker | undefined {
+export function lookFilePath(filePath: string, sourcePath: string, method: LookMethod, options: Omit<LookFileOptions, "sources" | "hidePattern">): Looker | undefined {
 	const {
 		cwd = process.cwd(),
-		hidePattern = [],
 		addPattern = [],
-		sources,
 		allowRelativePaths = true,
 	} = options
 
@@ -121,23 +189,36 @@ export function lookFile(filePath: string, options: LookFileOptions): Looker | u
 		ignoreCase: ignoreCase,
 	})
 
+	const sourceContent = readFileSync(path.join(cwd, sourcePath)).toString()
+	const isGoodSource = method({
+		source: sourcePath,
+		sourceContent: sourceContent,
+		filePath: filePath,
+		looker: looker
+	})
+	if (isGoodSource) {
+		looker.add(addPattern)
+		return looker
+	}
+}
+
+/**
+ * Returns `undefined`, if any source is bad.
+ */
+export function lookFilePathTry(filePath: string, options: LookFileOptions): Looker | undefined {
+	const {
+		cwd = process.cwd(),
+		hidePattern = [],
+		sources,
+	} = options
+
 	for (const [pattern, method] of sources) {
-		const possibleSourcePaths = findFiles(pattern, cwd, hidePattern)
+		const possibleSourcePaths = globFiles(pattern, cwd)
 		const sourcePath = closestFilePath(filePath, possibleSourcePaths)
 		if (sourcePath === undefined) {
 			continue
 		}
-		const sourceContent = readFileSync(path.join(cwd, sourcePath)).toString()
-		const isGoodSource = method({
-			source: sourcePath,
-			sourceContent: sourceContent,
-			target: filePath,
-			looker: looker
-		})
-		if (isGoodSource) {
-			looker.add(addPattern)
-			return looker
-		}
+		return lookFilePath(filePath, sourcePath, method, options)
 	}
 }
 
@@ -161,41 +242,10 @@ interface LookFolderOptions extends LookFileOptions {
 }
 
 /**
- * If `false` - bad source.
+ * Scan project directory with results for each file path.
  */
-function processPath(somePath: string, matches: string[], resultList: LookFileResult[], options: LookFileOptions, cache: Map<string, Looker>, cwd: string, ignore: string[], filter: FilterName): boolean {
-	const sourcePath = closestFilePath(somePath, matches)
-	if (sourcePath === undefined) {
-		return false
-	}
-	let looker = cache.get(sourcePath)
-	if (looker === undefined) {
-		looker = lookFile(somePath, options)
-		if (looker === undefined) {
-			return false
-		}
-		cache.set(sourcePath, looker)
-	}
-	const isIgnored = looker.ignores(somePath)
-	const filterIgnore = (filter === "ignored") && isIgnored
-	const filterInclude = (filter === "included") && !isIgnored
-	const filterAll = filter === "all"
-	if (filterIgnore || filterInclude || filterAll) {
-		resultList.push({
-			ignored: isIgnored,
-			path: somePath,
-			source: sourcePath,
-			toString() {
-				return `${this.path}`
-			},
-		} satisfies LookFileResult)
-	}
-	return true
-}
-
-export function lookProjectSync(options: LookFolderOptions): LookFileResult[] {
+export function lookProjectDirSync(options: LookFolderOptions): LookFileResult[] {
 	const { sources, cwd = process.cwd(), hidePattern = [], filter = "included", deep, markDirectories } = options;
-	// caching Ignore instances so as not to parse everything again.
 	const cache = new Map<string, Looker>()
 	const resultList: LookFileResult[] = []
 	const allPaths = FastGlob.sync(
@@ -209,14 +259,29 @@ export function lookProjectSync(options: LookFolderOptions): LookFileResult[] {
 			markDirectories,
 		}
 	)
-	for (const [pattern] of sources) {
-		const matches = findFiles(pattern, cwd, hidePattern)
-		let isGoodSource = false
-		for (const somePath of allPaths) {
-			isGoodSource = processPath(somePath, matches, resultList, options, cache, cwd, hidePattern, filter)
-		}
-		if (isGoodSource) {
-			break
+	FindGoodSource: for (const [pattern, method] of sources) {
+		const matches = globFiles(pattern, cwd)
+		for (const filePath of allPaths) {
+			const sourcePath = closestFilePath(filePath, matches)
+			if (sourcePath === undefined) {
+				break FindGoodSource
+			}
+			let looker = cache.get(sourcePath)
+			if (looker === undefined) {
+				looker = lookFilePath(filePath, sourcePath, method, options)
+				if (looker === undefined) {
+					break FindGoodSource
+				}
+				cache.set(sourcePath, looker)
+			}
+			const isIgnored = looker.ignores(filePath)
+			const filterIgnore = (filter === "ignored") && isIgnored
+			const filterInclude = (filter === "included") && !isIgnored
+			const filterAll = filter === "all"
+			if (filterIgnore || filterInclude || filterAll) {
+				const lookResult = new LookFileResult(isIgnored, filePath, sourcePath)
+				resultList.push(lookResult)
+			}
 		}
 	}
 	return resultList
