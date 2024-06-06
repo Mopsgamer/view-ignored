@@ -259,9 +259,9 @@ export function lookProjectDirSync(options: LookFolderOptions): LookFileResult[]
 			markDirectories,
 		}
 	)
+	let goodFound = false
 	FindGoodSource: for (const [pattern, method] of sources) {
 		const matches = globFiles(pattern, cwd)
-		let goodFound = false
 		for (const filePath of allPaths) {
 			const sourcePath = closestFilePath(filePath, matches)
 			if (sourcePath === undefined) {
@@ -289,6 +289,9 @@ export function lookProjectDirSync(options: LookFolderOptions): LookFileResult[]
 			break
 		}
 	}
+  if (!goodFound) {
+    return allPaths.map(p => new LookFileResult(false, p, "<no-source>"))
+  }
 	return resultList
 }
 //#endregion
