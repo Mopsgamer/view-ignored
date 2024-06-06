@@ -261,16 +261,17 @@ export function lookProjectDirSync(options: LookFolderOptions): LookFileResult[]
 	)
 	FindGoodSource: for (const [pattern, method] of sources) {
 		const matches = globFiles(pattern, cwd)
+		let goodFound = false
 		for (const filePath of allPaths) {
 			const sourcePath = closestFilePath(filePath, matches)
 			if (sourcePath === undefined) {
-				break FindGoodSource
+				break
 			}
 			let looker = cache.get(sourcePath)
 			if (looker === undefined) {
 				looker = lookFilePath(filePath, sourcePath, method, options)
 				if (looker === undefined) {
-					break FindGoodSource
+					break
 				}
 				cache.set(sourcePath, looker)
 			}
@@ -282,6 +283,10 @@ export function lookProjectDirSync(options: LookFolderOptions): LookFileResult[]
 				const lookResult = new LookFileResult(isIgnored, filePath, sourcePath)
 				resultList.push(lookResult)
 			}
+			goodFound = true
+		}
+		if (goodFound) {
+			break
 		}
 	}
 	return resultList
