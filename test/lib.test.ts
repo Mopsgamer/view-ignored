@@ -2,104 +2,102 @@ import mockfs from "mock-fs"
 import * as viewig from "../src/index.js"
 import assert from "assert"
 import type FileSystem from "mock-fs/lib/filesystem.js"
+import { npmPatternExclude, npmPatternInclude } from "../src/index.js"
 
-interface TargetTest {
-    target: viewig.TargetName
-    tests: {
-        name: string
-        expect: string[]
-        content: FileSystem.DirectoryItem
-    }[]
+interface Case {
+    expect: string[]
+    content: FileSystem.DirectoryItem
 }
+type DirCase = Record<string, Case>
+type Plan = Record<viewig.TargetName, DirCase>
 
-const targetTestList: TargetTest[] = [
-    {
-        target: 'git',
-        tests: [
-            {
-                name: 'empty project',
-                expect: [],
-                content: {},
+const targetTestList = {
+    git: {
+        'empty project': {
+            expect: [],
+            content: {},
+        },
+        'single file, no .gitignore': {
+            expect: ['file.txt'],
+            content: {
+                'file.txt': ''
             },
-            {
-                name: 'single file, no .gitignore',
-                expect: ['file.txt'],
-                content: {
-                    'file.txt': ''
+        },
+        'minimal project: .gitignore': {
+            expect: ['file.txt', '.gitignore'],
+            content: {
+                'file.txt': '',
+                'node_modules': {
+                    'tempdep': {
+                        'indexOf.js': ''
+                    }
                 },
+                '.gitignore': 'node_modules'
             },
-            {
-                name: 'minimal project with .gitignore',
-                expect: ['file.txt', '.gitignore'],
-                content: {
-                    'file.txt': '',
-                    'node_modules': {
-                        'tempdep': {
-                            'indexOf.js': ''
-                        }
-                    },
-                    '.gitignore': 'node_modules'
+        },
+    },
+    /**
+     * @see {@link npmPatternExclude} {@link npmPatternInclude}
+     */
+    npm: {
+        'empty project': {
+            expect: [],
+            content: {},
+        },
+        'single file, no ignore sources': {
+            expect: ['file.txt'],
+            content: {
+                'file.txt': ''
+            },
+        },
+        'minimal project: .gitignore': {
+            expect: ['file.txt'],
+            content: {
+                'file.txt': '',
+                'node_modules': {
+                    'tempdep': {
+                        'indexOf.js': ''
+                    }
                 },
+                '.gitignore': 'node_modules'
             },
-        ],
-    },
-    {
-        target: 'npm',
-        tests: [
-            {
-                name: 'empty project',
-                expect: [],
-                content: {},
-            },
-            {
-                name: 'single file, no ignore sources',
-                expect: ['file.txt'],
-                content: {
-                    'file.txt': ''
+        },
+        'minimal project: .npmignore, .gitignore': {
+            expect: ['file2.txt'],
+            content: {
+                'file.txt': '',
+                'file2.txt': '',
+                'node_modules': {
+                    'tempdep': {
+                        'indexOf.js': ''
+                    }
                 },
+                '.npmignore': 'file.txt',
+                '.gitignore': 'file2.txt'
             },
-            {
-                name: 'minimal project with .gitignore',
-                expect: ['file.txt', '.gitignore'],
-                content: {
-                    'file.txt': '',
-                    'node_modules': {
-                        'tempdep': {
-                            'indexOf.js': ''
-                        }
-                    },
-                    '.gitignore': 'node_modules'
-                },
-            },
-        ],
+        },
     },
-    {
-        target: 'yarn',
-        tests: [
-            {
-                name: 'empty project',
-                expect: [],
-                content: {},
-            },
-        ],
+    yarn: {
+        'empty project': {
+            expect: [],
+            content: {},
+        },
     },
-    {
-        target: 'vscodeExtension',
-        tests: [
-            {
-                name: 'empty project',
-                expect: [],
-                content: {},
-            },
-        ],
+    vscodeExtension: {
+        'empty project': {
+            expect: [],
+            content: {},
+        },
     },
-]
+} as const satisfies Plan
 
 describe("Targets", function () {
-    for (const { target, tests } of targetTestList) {
+    for (const target in targetTestList) {
         describe(target, function () {
-            for (const test of tests) {
-                it(test.name, function () {
+            const tests = targetTestList[target] as DirCase
+            for (const testName in tests) {
+                it(testName, function () {
+                    const test = tests[testName] as Case
                     const testPath = './test/simulation'
                     mockfs({ [testPath]: test.content })
                     const lookList = viewig.lookProjectDirSync({ cwd: testPath, ...viewig.Presets[target] })
