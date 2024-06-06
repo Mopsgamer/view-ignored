@@ -1,19 +1,20 @@
-import { Option, program } from "commander";
-import { FilterName, filterNameList, Sorters, sortNameList, SortName, lookProjectSync, PresetName, StyleName, GetPresets, Styles, presetNameList, styleNameList, LookFileResult } from "./index.js";
+import { Argument, InvalidArgumentError, Option, program } from "commander";
+import { FilterName, Sorters, SortName, lookProjectSync, TargetName as TargetName, StyleName, GetPresets, Styles, LookFileResult } from "./index.js";
 import { stdout } from "process";
 import { Chalk } from "chalk";
 import type { ChalkInstance, ColorSupportLevel } from "chalk";
 import fs from "fs";
+import { configValues, configEditor, ConfigKey, Config, configKeyList, configFilePath } from "./config.js";
 
 export { program }
 
-export const checkCommandHelp: Partial<Record<PresetName, string>> = {
+export const checkCommandHelp: Partial<Record<TargetName, string>> = {
 	git: 'git ls-tree -r <branch name: main/master/...> --name-only',
 	npm: 'npm pack --dry-run',
 	vscodeExtension: 'vsce ls',
 }
 
-export function safetyHelpCreate(target: PresetName, oc: ChalkInstance): string {
+export function safetyHelpCreate(target: TargetName, oc: ChalkInstance): string {
 	const command = checkCommandHelp[target] ?? ""
 	if (command === "") {
 		return ""
@@ -21,31 +22,86 @@ export function safetyHelpCreate(target: PresetName, oc: ChalkInstance): string 
 	return '\n\n' + oc.cyan(`You can use the \`${oc.white(command)}\` command to check if the list is valid.`)
 }
 
-export function print(options: {
+export interface Flags {
 	color?: string,
-	target?: PresetName,
+	target?: TargetName,
 	filter?: FilterName,
 	sort?: SortName,
 	style?: StyleName
-}) {
-	const start = Date.now()
-	options.target ??= "git"
-	options.filter ??= "included"
-	options.sort ??= "firstFolders"
-	options.style ||= "tree"
-	const colorLevel = Math.max(0, Math.min(Number(options.color ?? 3), 3)) as ColorSupportLevel
-	/** Chalk, but configured by cli. **O**ur **C**halk. */
-	const oc = new Chalk({ level: colorLevel })
-	const isNerd = options.style.toLowerCase().includes('nerd')
-	const isEmoji = options.style.toLowerCase().includes('emoji')
+}
 
-	const preset = GetPresets(options.style, oc)[options.target]
+program
+	.addOption(new Option("-clr, --color <level>").default(configEditor.get("color")).choices(configValues.color))
+	.addOption(new Option("-t, --target <ignorer>").default(configEditor.get("target")).choices(configValues.target))
+	.addOption(new Option("-fl, --filter <filter>").default(configEditor.get("filter")).choices(configValues.filter))
+	.addOption(new Option("-sr, --sort <sorter>").default(configEditor.get("sort")).choices(configValues.sort))
+	.addOption(new Option("-st, --style <style>").default(configEditor.get("style")).choices(configValues.style))
+	.action(actionPrint)
+
+export const cfgProgram = program
+	.command("config")
+	.alias('cfg')
+
+export const argConfigKeyVal = new Argument('<pair>', 'pair "key=value"').argParser(parseArgKeyVal)
+export const argConfigKey = new Argument('[key]', 'setting').choices(configKeyList)
+
+cfgProgram
+	.command('path').description('print the config file path')
+	.action(actionCfgPath)
+cfgProgram
+	.command('reset').description('reset config by deleting the file. alias for no-prop unset')
+	.action(actionCfgReset)
+cfgProgram
+	.command('set').description('set config property using syntax "key=value"')
+	.addArgument(argConfigKeyVal)
+	.action(actionCfgSet)
+cfgProgram
+	.command('unset').description("unset all configuration values or a specific one")
+	.addArgument(argConfigKey)
+	.action(actionCfgUnset)
+cfgProgram
+	.command('get').description('print a list of all configuration values or a specific one')
+	.option('--safe', 'use default value(s) as fallback for printing')
+	.addArgument(argConfigKey)
+	.action(actionCfgGet)
+
+export function parseArgKey(key: string): void {
+	if (!configKeyList.includes(key as ConfigKey)) {
+		throw new InvalidArgumentError(`Allowed config properties are ${configKeyList.join(', ')}. Got ${key}.`)
+	}
+}
+
+export function parseArgKeyVal(pair: string): void {
+	const str = pair.split('=')
+	if (str.length !== 2) {
+		throw new InvalidArgumentError(`Ivalid syntax. Expected 'setting=value'. Got ${pair}.`)
+	}
+	const [key, val] = str as [ConfigKey, Config[ConfigKey]]
+	parseArgKey(key)
+	if (!configValues[key].includes(val as Config[ConfigKey] as never)) {
+		throw new InvalidArgumentError(`Allowed config properties are ${configValues[key].join(', ')}. Got ${val}.`)
+	}
+}
+
+export function actionPrint(flags: Flags): void {
+	const start = Date.now()
+	flags.target ??= "git"
+	flags.filter ??= "included"
+	flags.sort ??= "firstFolders"
+	flags.style ||= "tree"
+	const colorLevel = Math.max(0, Math.min(Number(flags.color ?? 3), 3)) as ColorSupportLevel
+	/** Chalk, but configured by view-ignored cli. */
+	const oc = new Chalk({ level: colorLevel })
+	const isNerd = flags.style.toLowerCase().includes('nerd')
+	const isEmoji = flags.style.toLowerCase().includes('emoji')
+
+	const preset = GetPresets(flags.style, oc)[flags.target]
 	const looked = lookProjectSync({
 		...preset,
-		filter: options.filter
+		filter: flags.filter
 	})
 
-	const sorter = Sorters[options.sort]
+	const sorter = Sorters[flags.sort]
 	const cacheEditDates = new Map<LookFileResult, Date>()
 	for (const look of looked) {
 		cacheEditDates.set(look, fs.statSync(look.path).mtime)
@@ -55,22 +111,43 @@ export function print(options: {
 		cacheEditDates.get(a)!, cacheEditDates.get(b)!
 	))
 	stdout.write((isNerd ? '\uf115 ' : '') + process.cwd() + "\n")
-	Styles[options.style](oc, lookedSorted, options.style, options.filter)
+	Styles[flags.style](oc, lookedSorted, flags.style, flags.filter)
 	const time = Date.now() - start
 	stdout.write(`\n`)
 	stdout.write(`${isEmoji ? '✔️ ' : isNerd ? oc.green('\uf00c ') : ''}Done in ${isNerd && time < 400 ? oc.yellow('\udb85\udc0c') : ''}${time}ms.`)
 	stdout.write(`\n\n`)
-	stdout.write(`${looked.length} files listed for ${preset.name} (${options.filter}).`)
-	stdout.write(safetyHelpCreate(options.target, oc))
-	stdout.write(`\n`)
+	stdout.write(`${looked.length} files listed for ${preset.name} (${flags.filter}).`)
+	stdout.write(safetyHelpCreate(flags.target, oc))
+	stdout.write('\n')
 }
 
-program
-	.addOption(new Option("-clr, --color <level>").default(3 satisfies ColorSupportLevel).choices(["1", "2", "3", "4"]))
-	.addOption(new Option("-t, --target <ignorer>").default("git" satisfies PresetName).choices(presetNameList))
-	.addOption(new Option("-fl, --filter <filter>").default("included" satisfies FilterName).choices(filterNameList))
-	.addOption(new Option("-sr, --sort <sorter>").default("firstFolders" satisfies SortName).choices(sortNameList))
-	.addOption(new Option("-st, --style <style>").default("tree").choices(styleNameList))
-	.action(print)
+export function actionCfgPath(): void {
+	stdout.write(configFilePath)
+	stdout.write('\n')
+}
 
-export const cfgProgram = program.command("cfg")
+export function actionCfgReset(): void {
+	configEditor.unset().save()
+	stdout.write(configEditor.getPairString())
+	stdout.write('\n')
+}
+
+export function actionCfgSet(pair: string): void {
+	const [key, val] = pair.split('=') as [ConfigKey, Config[ConfigKey]]
+	configEditor.set(key, val).save()
+	stdout.write(configEditor.getPairString(key))
+	stdout.write('\n')
+}
+
+export function actionCfgUnset(key: ConfigKey | undefined): void {
+	if (key !== undefined) {
+		configEditor.unset(key).save()
+	}
+	stdout.write(configEditor.getPairString(key))
+	stdout.write('\n')
+}
+
+export function actionCfgGet(key: ConfigKey | undefined, options: { withDefault?: boolean }): void {
+	stdout.write(configEditor.getPairString(key, options.withDefault ?? false))
+	stdout.write('\n')
+}

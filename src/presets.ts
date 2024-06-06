@@ -3,9 +3,9 @@ import getValue from "get-value"
 import { StyleName } from "./styles.js"
 import { ChalkInstance } from "chalk"
 
-export const presetNameList = ['git', 'npm', 'yarn', 'vscodeExtension'] as const
-export type PresetName = typeof presetNameList[number]
-export interface Preset extends LookFileOptions { name: string }
+export const targetNameList = ['git', 'npm', 'yarn', 'vscodeExtension'] as const
+export type TargetName = typeof targetNameList[number]
+export interface Target extends LookFileOptions { name: string }
 
 //#region native patterns
 export const patternsExclude: string[] = [
@@ -103,7 +103,7 @@ export const lookGit = ((options?: PresetLookOptions) => {
 //#endregion
 
 //#region presets
-export function GetPresets(style: StyleName, oc: ChalkInstance): Record<PresetName, Preset> {
+export function GetPresets(style: StyleName, oc: ChalkInstance): Record<TargetName, Target> {
 	const IsNerd = style.toLowerCase().includes('nerd')
 	return ({
 		// git ls-tree -r main --name-only
@@ -147,6 +147,4 @@ export function GetPresets(style: StyleName, oc: ChalkInstance): Record<PresetNa
 		},
 	})
 }
-
-export { StyleName }
 //#endregion

@@ -10,7 +10,7 @@
 			"script": "release:major",
 			"problemMatcher": [],
 			"label": "Release major - any backward incompatible changes",
-			"detail": "npx release-it --increment=major"
+			"detail": "pnpm release-it --increment=major"
 		},
 		{
 			"icon": {
@@ -21,7 +21,7 @@
 			"script": "release:minor",
 			"problemMatcher": [],
 			"label": "Release minor - any new public functionality or deprecation",
-			"detail": "npx release-it --increment=minor"
+			"detail": "pnpm release-it --increment=minor"
 		},
 		{
 			"icon": {
@@ -32,7 +32,7 @@
 			"script": "release:patch",
 			"problemMatcher": [],
 			"label": "Release patch - any backward compatible bug fixes",
-			"detail": "npx release-it --increment=patch"
+			"detail": "pnpm release-it --increment=patch"
 		},
 		{
 			"icon": {
@@ -43,18 +43,7 @@
 			"script": "build",
 			"problemMatcher": [],
 			"label": "Build",
-			"detail": "npx tsc & npm run build:bin"
-		},
-		{
-			"icon": {
-				"id": "package",
-				"color": "terminal.ansiWhite"
-			},
-			"type": "npm",
-			"script": "build:nobin",
-			"problemMatcher": [],
-			"label": "Build nobin",
-			"detail": "tsc"
+			"detail": "pnpm tsc"
 		},
 		{
 			"icon": {
@@ -65,7 +54,7 @@
 			"script": "lint",
 			"problemMatcher": [],
 			"label": "Lint",
-			"detail": "npx eslint . --fix"
+			"detail": "pnpm eslint . --fix"
 		},
 	]
 }

@@ -23,7 +23,7 @@
 			"outFiles": [
 				"${workspaceFolder}/lib/*.js"
 			],
-			"preLaunchTask": "Build nobin",
+			"preLaunchTask": "Build",
 		}
 	]
 }

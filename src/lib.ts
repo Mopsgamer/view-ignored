@@ -60,15 +60,15 @@ export function closestFilePath(filePath: string, paths: string[]): string | und
 //#endregion
 
 //#region git config reading
-export function gitConfigString(prop: string, cwd?: string): string | undefined {
+export function gitConfigString(key: string, cwd?: string): string | undefined {
 	try {
-		return execSync(`git config ${prop}`, { cwd: cwd, }).toString();
+		return execSync(`git config ${key}`, { cwd: cwd, }).toString();
 	} catch (error) {
 		return;
 	}
 }
-export function gitConfigBool(prop: string, cwd?: string): boolean | undefined {
-	const str = gitConfigString(prop, cwd)
+export function gitConfigBool(key: string, cwd?: string): boolean | undefined {
+	const str = gitConfigString(key, cwd)
 	if (str === "true\n") {
 		return true
 	}
@@ -221,5 +221,4 @@ export function lookProjectSync(options: LookFolderOptions): LookFileResult[] {
 	}
 	return resultList
 }
-
 //#endregion
