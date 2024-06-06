@@ -42,7 +42,13 @@ export class Looker {
 //#endregion
 
 //#region path methods
-export function findFiles(pattern: string | string[], cwd: string, ignore: string[]): string[] {
+/**
+ * Get file paths using pattern.
+ * @param pattern The pattern.
+ * @param cwd Current working directory.
+ * @param ignore Ignore patterns.
+ */
+export function globFiles(pattern: string | string[], cwd: string, ignore: string[]): string[] {
 	const paths: string[] = FastGlob.sync(pattern, { cwd, ignore, onlyFiles: true, dot: true })
 	return paths
 }
@@ -170,7 +176,7 @@ export function lookFilePathTry(filePath: string, options: LookFileOptions): Loo
 	} = options
 
 	for (const [pattern, method] of sources) {
-		const possibleSourcePaths = findFiles(pattern, cwd, hidePattern)
+		const possibleSourcePaths = globFiles(pattern, cwd, hidePattern)
 		const sourcePath = closestFilePath(filePath, possibleSourcePaths)
 		if (sourcePath === undefined) {
 			continue
@@ -200,7 +206,6 @@ interface LookFolderOptions extends LookFileOptions {
 
 export function lookProjectDirSync(options: LookFolderOptions): LookFileResult[] {
 	const { sources, cwd = process.cwd(), hidePattern = [], filter = "included", deep, markDirectories } = options;
-	// caching Ignore instances so as not to parse everything again.
 	const cache = new Map<string, Looker>()
 	const resultList: LookFileResult[] = []
 	const allPaths = FastGlob.sync(
@@ -215,17 +220,17 @@ export function lookProjectDirSync(options: LookFolderOptions): LookFileResult[]
 		}
 	)
 	FindGoodSource: for (const [pattern, method] of sources) {
-		const matches = findFiles(pattern, cwd, hidePattern)
-		ProcessFilePath: for (const filePath of allPaths) {
+		const matches = globFiles(pattern, cwd, hidePattern)
+		for (const filePath of allPaths) {
 			const sourcePath = closestFilePath(filePath, matches)
 			if (sourcePath === undefined) {
-				break ProcessFilePath
+				break FindGoodSource
 			}
 			let looker = cache.get(sourcePath)
 			if (looker === undefined) {
 				looker = lookFilePath(filePath, sourcePath, method, options)
 				if (looker === undefined) {
-					break ProcessFilePath
+					break FindGoodSource
 				}
 				cache.set(sourcePath, looker)
 			}
@@ -237,7 +242,6 @@ export function lookProjectDirSync(options: LookFolderOptions): LookFileResult[]
 				const lookResult = new LookFileResult(isIgnored, filePath, sourcePath)
 				resultList.push(lookResult)
 			}
-			break FindGoodSource
 		}
 	}
 	return resultList
