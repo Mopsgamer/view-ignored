@@ -3,6 +3,8 @@ import FastGlob from "fast-glob";
 import { readFileSync } from "fs";
 import ignore, { Ignore } from "ignore";
 import { execSync } from "child_process";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { patternsExclude, lookGit, lookProperty } from "./presets.js";
 
 //#region Looker
 export interface LookerOptions extends ignore.Options {
@@ -81,36 +83,59 @@ export function gitConfigBool(key: string, cwd?: string): boolean | undefined {
 //#region looking
 export interface LookMethodData {
 	looker: Looker,
-	target: string,
+	filePath: string,
 	source: string,
 	sourceContent: string,
 }
 export type LookMethod = (data: LookMethodData) => boolean
 
 export interface LookFileOptions {
+	/**
+	 * Current working directory.
+	 * Recommended to set this value yourself.
+	 * 
+	 * @default process.cwd()
+	 */
 	cwd?: string,
+	/**
+	 * Additional patterns, which will be used as
+	 * other patterns in the `.gitignore` file, or `package.json` "files" property.
+	 */
 	addPattern?: string[],
+	/**
+	 * Force exclude patterns from file path list.
+	 * 
+	 * @see {@link patternsExclude} can be used.
+	 */
 	hidePattern?: string[],
+	/**
+	 * Sources like `.gitignore` or `package.json` "files" property. It breaks on first valid source.
+	 * @example [["**\/.gitignore", lookGit()]]
+	 * @see {@link lookGit}, {@link lookProperty}
+	 * @see {@link lookGit}, {@link lookProperty}
+	 */
 	sources: [string | string[], LookMethod][],
 	allowRelativePaths?: boolean
 }
 
-export interface LookFileResult {
-	ignored: boolean,
-	path: string
-	source: string
-	toString(): string
+export class LookFileResult {
+	constructor(
+		public ignored: boolean,
+		public filePath: string,
+		public source: string,
+	) { }
+	toString(): string {
+		return `${this.filePath}`
+	}
 }
 
 /**
- * Undefined if any source is bad.
+ * Returns `undefined`, if any source is bad.
  */
-export function lookFile(filePath: string, options: LookFileOptions): Looker | undefined {
+export function lookFilePath(filePath: string, sourcePath: string, method: LookMethod, options: Omit<LookFileOptions, "sources" | "hidePattern">): Looker | undefined {
 	const {
 		cwd = process.cwd(),
-		hidePattern = [],
 		addPattern = [],
-		sources,
 		allowRelativePaths = true,
 	} = options
 
@@ -121,23 +146,36 @@ export function lookFile(filePath: string, options: LookFileOptions): Looker | u
 		ignoreCase: ignoreCase,
 	})
 
+	const sourceContent = readFileSync(path.join(cwd, sourcePath)).toString()
+	const isGoodSource = method({
+		source: sourcePath,
+		sourceContent: sourceContent,
+		filePath: filePath,
+		looker: looker
+	})
+	if (isGoodSource) {
+		looker.add(addPattern)
+		return looker
+	}
+}
+
+/**
+ * Returns `undefined`, if any source is bad.
+ */
+export function lookFilePathTry(filePath: string, options: LookFileOptions): Looker | undefined {
+	const {
+		cwd = process.cwd(),
+		hidePattern = [],
+		sources,
+	} = options
+
 	for (const [pattern, method] of sources) {
 		const possibleSourcePaths = findFiles(pattern, cwd, hidePattern)
 		const sourcePath = closestFilePath(filePath, possibleSourcePaths)
 		if (sourcePath === undefined) {
 			continue
 		}
-		const sourceContent = readFileSync(path.join(cwd, sourcePath)).toString()
-		const isGoodSource = method({
-			source: sourcePath,
-			sourceContent: sourceContent,
-			target: filePath,
-			looker: looker
-		})
-		if (isGoodSource) {
-			looker.add(addPattern)
-			return looker
-		}
+		return lookFilePath(filePath, sourcePath, method, options)
 	}
 }
 
@@ -160,40 +198,7 @@ interface LookFolderOptions extends LookFileOptions {
 	filter?: FilterName
 }
 
-/**
- * If `false` - bad source.
- */
-function processPath(somePath: string, matches: string[], resultList: LookFileResult[], options: LookFileOptions, cache: Map<string, Looker>, cwd: string, ignore: string[], filter: FilterName): boolean {
-	const sourcePath = closestFilePath(somePath, matches)
-	if (sourcePath === undefined) {
-		return false
-	}
-	let looker = cache.get(sourcePath)
-	if (looker === undefined) {
-		looker = lookFile(somePath, options)
-		if (looker === undefined) {
-			return false
-		}
-		cache.set(sourcePath, looker)
-	}
-	const isIgnored = looker.ignores(somePath)
-	const filterIgnore = (filter === "ignored") && isIgnored
-	const filterInclude = (filter === "included") && !isIgnored
-	const filterAll = filter === "all"
-	if (filterIgnore || filterInclude || filterAll) {
-		resultList.push({
-			ignored: isIgnored,
-			path: somePath,
-			source: sourcePath,
-			toString() {
-				return `${this.path}`
-			},
-		} satisfies LookFileResult)
-	}
-	return true
-}
-
-export function lookProjectSync(options: LookFolderOptions): LookFileResult[] {
+export function lookProjectDirSync(options: LookFolderOptions): LookFileResult[] {
 	const { sources, cwd = process.cwd(), hidePattern = [], filter = "included", deep, markDirectories } = options;
 	// caching Ignore instances so as not to parse everything again.
 	const cache = new Map<string, Looker>()
@@ -209,14 +214,30 @@ export function lookProjectSync(options: LookFolderOptions): LookFileResult[] {
 			markDirectories,
 		}
 	)
-	for (const [pattern] of sources) {
+	FindGoodSource: for (const [pattern, method] of sources) {
 		const matches = findFiles(pattern, cwd, hidePattern)
-		let isGoodSource = false
-		for (const somePath of allPaths) {
-			isGoodSource = processPath(somePath, matches, resultList, options, cache, cwd, hidePattern, filter)
-		}
-		if (isGoodSource) {
-			break
+		ProcessFilePath: for (const filePath of allPaths) {
+			const sourcePath = closestFilePath(filePath, matches)
+			if (sourcePath === undefined) {
+				break ProcessFilePath
+			}
+			let looker = cache.get(sourcePath)
+			if (looker === undefined) {
+				looker = lookFilePath(filePath, sourcePath, method, options)
+				if (looker === undefined) {
+					break ProcessFilePath
+				}
+				cache.set(sourcePath, looker)
+			}
+			const isIgnored = looker.ignores(filePath)
+			const filterIgnore = (filter === "ignored") && isIgnored
+			const filterInclude = (filter === "included") && !isIgnored
+			const filterAll = filter === "all"
+			if (filterIgnore || filterInclude || filterAll) {
+				const lookResult = new LookFileResult(isIgnored, filePath, sourcePath)
+				resultList.push(lookResult)
+			}
+			break FindGoodSource
 		}
 	}
 	return resultList

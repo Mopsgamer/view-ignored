@@ -1,5 +1,5 @@
 import { Argument, InvalidArgumentError, Option, program } from "commander";
-import { FilterName, Sorters, SortName, lookProjectSync, TargetName as TargetName, StyleName, GetPresets, Styles, LookFileResult } from "./index.js";
+import { FilterName, Sorters, SortName, lookProjectDirSync, TargetName as TargetName, StyleName, GetFormattedPreset, Styles, LookFileResult, Preset } from "./index.js";
 import { stdout } from "process";
 import { Chalk } from "chalk";
 import type { ChalkInstance, ColorSupportLevel } from "chalk";
@@ -8,14 +8,8 @@ import { configValues, configEditor, ConfigKey, Config, configKeyList, configFil
 
 export { program }
 
-export const checkCommandHelp: Partial<Record<TargetName, string>> = {
-	git: 'git ls-tree -r <branch name: main/master/...> --name-only',
-	npm: 'npm pack --dry-run',
-	vscodeExtension: 'vsce ls',
-}
-
-export function safetyHelpCreate(target: TargetName, oc: ChalkInstance): string {
-	const command = checkCommandHelp[target] ?? ""
+export function safetyHelpCreate(preset: Preset, oc: ChalkInstance): string {
+	const command = preset.checkCommand ?? ""
 	if (command === "") {
 		return ""
 	}
@@ -41,6 +35,7 @@ program
 export const cfgProgram = program
 	.command("config")
 	.alias('cfg')
+	.description('cli config manipulation.')
 
 export const argConfigKeyVal = new Argument('<pair>', 'pair "key=value"').argParser(parseArgKeyVal)
 export const argConfigKey = new Argument('[key]', 'setting').choices(configKeyList)
@@ -95,16 +90,16 @@ export function actionPrint(flags: Flags): void {
 	const isNerd = flags.style.toLowerCase().includes('nerd')
 	const isEmoji = flags.style.toLowerCase().includes('emoji')
 
-	const preset = GetPresets(flags.style, oc)[flags.target]
-	const looked = lookProjectSync({
-		...preset,
+	const formattedPreset = GetFormattedPreset(flags.target, flags.style, oc)
+	const looked = lookProjectDirSync({
+		...formattedPreset,
 		filter: flags.filter
 	})
 
 	const sorter = Sorters[flags.sort]
 	const cacheEditDates = new Map<LookFileResult, Date>()
 	for (const look of looked) {
-		cacheEditDates.set(look, fs.statSync(look.path).mtime)
+		cacheEditDates.set(look, fs.statSync(look.filePath).mtime)
 	}
 	const lookedSorted = looked.sort((a, b) => sorter(
 		a.toString(), b.toString(),
@@ -116,8 +111,8 @@ export function actionPrint(flags: Flags): void {
 	stdout.write(`\n`)
 	stdout.write(`${isEmoji ? '✔️ ' : isNerd ? oc.green('\uf00c ') : ''}Done in ${isNerd && time < 400 ? oc.yellow('\udb85\udc0c') : ''}${time}ms.`)
 	stdout.write(`\n\n`)
-	stdout.write(`${looked.length} files listed for ${preset.name} (${flags.filter}).`)
-	stdout.write(safetyHelpCreate(flags.target, oc))
+	stdout.write(`${looked.length} files listed for ${formattedPreset.name} (${flags.filter}).`)
+	stdout.write(safetyHelpCreate(formattedPreset, oc))
 	stdout.write('\n')
 }
 
