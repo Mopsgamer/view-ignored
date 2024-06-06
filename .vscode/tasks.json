@@ -54,7 +54,29 @@
 			"script": "lint",
 			"problemMatcher": [],
 			"label": "Lint",
+			"detail": "pnpm eslint"
+		},
+		{
+			"icon": {
+				"id": "sparkle",
+				"color": "terminal.ansiWhite"
+			},
+			"type": "npm",
+			"script": "lint:fix",
+			"problemMatcher": [],
+			"label": "Lint and fix",
 			"detail": "pnpm eslint . --fix"
+		},
+		{
+			"icon": {
+				"id": "check-all",
+				"color": "terminal.ansiWhite"
+			},
+			"type": "npm",
+			"script": "test",
+			"problemMatcher": [],
+			"label": "Test",
+			"detail": "pnpm mocha --require tsx ./test/**/*.test.ts"
 		},
 	]
 }
