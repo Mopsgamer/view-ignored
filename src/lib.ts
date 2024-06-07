@@ -102,7 +102,7 @@ export class Looker {
 }
 //#endregion
 
-export const targetNameList = ['git', 'npm', 'yarn', 'vscodeExtension'] as const
+export const targetNameList = ['git', 'npm', 'yarn', 'vsce'] as const
 export type TargetName = typeof targetNameList[number]
 
 //#region path methods

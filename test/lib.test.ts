@@ -136,7 +136,7 @@ const targetTestList = {
             content: {},
         },
     },
-    vscodeExtension: {
+    vsce: {
         'empty project': {
             shouldInclude: [],
             content: {},

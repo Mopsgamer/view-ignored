@@ -131,7 +131,7 @@ export const Presets = {
 			["**/.gitignore", ".*ignore", getLookMethodGit()]
 		]
 	},
-	vscodeExtension: {
+	vsce: {
 		hidePattern: patternsExclude,
 		sources: [
 			["**/.vscodeignore", "minimatch", getLookMethodGit()],
@@ -156,9 +156,9 @@ export function GetFormattedPreset<T extends TargetName>(target: T, style: Style
 			name: `${IsNerd ? oc.magenta('\ue6a7') + ' ' : ''}Yarn`,
 			checkCommand: undefined,
 		},
-		vscodeExtension: {
-			...Presets.vscodeExtension,
-			name: `${IsNerd ? oc.red('\udb82\ude1e') + ' ' : ''}Visual Studio: Code - Extension`,
+		vsce: {
+			...Presets.vsce,
+			name: `${IsNerd ? oc.red('\udb82\ude1e') + ' ' : ''}VSC Extension`,
 			checkCommand: 'vsce ls',
 		},
 	};

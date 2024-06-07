@@ -29,7 +29,7 @@ npm i view-ignored
     - Sources walkthrough: 'package.json', '.npmignore', '.gitignore'.
 - `yarn`
     - Sources walkthrough: 'package.json', '.yarnignore', '.npmignore', '.gitignore'.
-- `vscodeExtension`
+- `vsce`
     - Check: `vsce ls`
     - Sources walkthrough: '.vscodeignore', '.gitignore'.
 
