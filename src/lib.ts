@@ -7,6 +7,12 @@ import { execSync } from "child_process";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { patternsExclude, getLookMethodGit, getLookMethodPropJSON } from "./util/presets.js";
 
+export type PatternType = ".*ignore" | "minimatch"
+export const targetNameList = ['git', 'npm', 'yarn', 'vsce'] as const
+export type TargetName = typeof targetNameList[number]
+export const filterNameList = ["ignored", "included", "all"] as const
+export type FilterName = typeof filterNameList[number]
+
 //#region Looker
 export interface LookerOptions extends ignore.Options {
 	/**
@@ -17,7 +23,6 @@ export interface LookerOptions extends ignore.Options {
 	addPatterns?: LookerPattern
 }
 export type LookerPattern = string | string[]
-export type PatternType = ".*ignore" | "minimatch"
 export class Looker {
 	/**
 	 * If `true`, when calling {@link Looker.ignores}, method will return `true` for ignored path.
@@ -101,9 +106,6 @@ export class Looker {
 	}
 }
 //#endregion
-
-export const targetNameList = ['git', 'npm', 'yarn', 'vsce'] as const
-export type TargetName = typeof targetNameList[number]
 
 //#region path methods
 /**
@@ -198,7 +200,9 @@ export interface LookFileOptions {
 	 */
 	allowRelativePaths?: boolean
 }
+//#endregion
 
+//#region methods
 /**
  * Result of the file path scan.
  */
@@ -271,8 +275,6 @@ export function lookFilePathTry(filePath: string, options: LookFileOptions): Loo
 	}
 }
 
-export const filterNameList = ["ignored", "included", "all"] as const
-export type FilterName = typeof filterNameList[number]
 export interface LookFolderOptions extends LookFileOptions {
 	/**
 	 * Force exclude patterns from file path list.
