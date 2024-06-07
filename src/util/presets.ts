@@ -1,10 +1,8 @@
-import { LookFileOptions, LookMethod, LookMethodData, Looker, gitConfigString } from "./lib.js"
+import { LookFileOptions, LookMethod, LookMethodData, Looker, TargetName, gitConfigString } from "../lib.js"
 import getValue from "get-value"
 import { StyleName } from "./styles.js"
 import { ChalkInstance } from "chalk"
 
-export const targetNameList = ['git', 'npm', 'yarn', 'vscodeExtension'] as const
-export type TargetName = typeof targetNameList[number]
 export interface Preset extends LookFileOptions {
 	name: string,
 	checkCommand: string | undefined,
@@ -69,12 +67,12 @@ export interface PresetLookOptions {
 	negate?: boolean
 }
 
-export interface PresetLookPropertyOptions extends PresetLookOptions {
+export interface PresetgetLookMethodPropJSONOptions extends PresetLookOptions {
 	parserFunc?: ParserFunction,
 	prop: string,
 }
 
-export function lookProperty(options: PresetLookPropertyOptions) {
+export function getLookMethodPropJSON(options: PresetgetLookMethodPropJSONOptions) {
 	const { parserFunc = parserJSONDict, prop } = options
 	return (function (data: LookMethodData) {
 		const { looker, sourceContent } = data
@@ -92,7 +90,7 @@ export function lookProperty(options: PresetLookPropertyOptions) {
 	} satisfies LookMethod)
 }
 
-export function lookGit(options?: PresetLookOptions) {
+export function getLookMethodGit(options?: PresetLookOptions) {
 	return (function (data: LookMethodData) {
 		const { looker, sourceContent } = data
 		if (!looker.isValidPattern(sourceContent)) {
@@ -111,33 +109,33 @@ export const Presets = {
 		allowRelativePaths: false,
 		hidePattern: patternsExclude.concat([gitConfigString("core.excludesFile") ?? '']),
 		sources: [
-			["**/.gitignore", lookGit()]
+			["**/.gitignore", getLookMethodGit()]
 		]
 	},
 	npm: {
 		hidePattern: patternsExclude.concat(npmPatternExclude),
 		addPattern: npmPatternInclude,
 		sources: [
-			["**/package.json", lookProperty({ prop: "files", negate: true })],
-			["**/.npmignore", lookGit()],
-			["**/.gitignore", lookGit()]
+			["**/package.json", getLookMethodPropJSON({ prop: "files", negate: true })],
+			["**/.npmignore", getLookMethodGit()],
+			["**/.gitignore", getLookMethodGit()]
 		]
 	},
 	yarn: {
 		hidePattern: patternsExclude.concat(npmPatternExclude),
 		addPattern: npmPatternInclude,
 		sources: [
-			["**/package.json", lookProperty({ prop: "files", negate: true })],
-			["**/.yarnignore", lookGit()],
-			["**/.npmignore", lookGit()],
-			["**/.gitignore", lookGit()]
+			["**/package.json", getLookMethodPropJSON({ prop: "files", negate: true })],
+			["**/.yarnignore", getLookMethodGit()],
+			["**/.npmignore", getLookMethodGit()],
+			["**/.gitignore", getLookMethodGit()]
 		]
 	},
 	vscodeExtension: {
 		hidePattern: patternsExclude,
 		sources: [
-			["**/.vscodeignore", lookGit()],
-			["**/.gitignore", lookGit()]
+			["**/.vscodeignore", getLookMethodGit()],
+			["**/.gitignore", getLookMethodGit()]
 		]
 	},
 } satisfies Record<TargetName, LookFileOptions> as Record<TargetName, LookFileOptions>

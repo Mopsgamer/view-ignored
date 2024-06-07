@@ -4,7 +4,7 @@ import { readFileSync } from "fs";
 import ignore, { Ignore } from "ignore";
 import { execSync } from "child_process";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { patternsExclude, lookGit, lookProperty } from "./presets.js";
+import { patternsExclude, getLookMethodGit, getLookMethodPropJSON } from "./util/presets.js";
 
 //#region Looker
 export interface LookerOptions extends ignore.Options {
@@ -62,6 +62,9 @@ export class Looker {
 	}
 }
 //#endregion
+
+export const targetNameList = ['git', 'npm', 'yarn', 'vscodeExtension'] as const
+export type TargetName = typeof targetNameList[number]
 
 //#region path methods
 /**
@@ -150,11 +153,16 @@ export interface LookFileOptions {
 	hidePattern?: string[],
 	/**
 	 * Sources like `.gitignore` or `package.json` "files" property. It breaks on first valid source.
-	 * @example [["**\/.gitignore", lookGit()]]
-	 * @see {@link lookGit}, {@link lookProperty}
-	 * @see {@link lookGit}, {@link lookProperty}
+	 * @example [["**\/.gitignore", Util.lookGit()]]
+	 * @see {@link getLookMethodGit}, {@link getLookMethodPropJSON}
+	 * @see {@link getLookMethodGit}, {@link getLookMethodPropJSON}
 	 */
 	sources: [string | string[], LookMethod][],
+	/**
+	 * If `true`, paths starting with `./` will be allowed.
+	 * 
+	 * @default true
+	 */
 	allowRelativePaths?: boolean
 }
 
