@@ -185,12 +185,6 @@ export interface LookFileOptions {
 	 */
 	addPattern?: string[],
 	/**
-	 * Force exclude patterns from file path list.
-	 * 
-	 * @see {@link patternsExclude} can be used.
-	 */
-	hidePattern?: string[],
-	/**
 	 * Sources like `.gitignore` or `package.json` "files" property. It breaks on first valid source.
 	 * @example [["**\/.gitignore", Util.lookGit()]]
 	 * @see {@link getLookMethodGit}, {@link getLookMethodPropJSON}
@@ -263,7 +257,6 @@ export function lookFilePath(filePath: string, sourcePath: string, method: LookM
 export function lookFilePathTry(filePath: string, options: LookFileOptions): Looker | undefined {
 	const {
 		cwd = process.cwd(),
-		hidePattern = [],
 		sources,
 	} = options
 
@@ -279,7 +272,13 @@ export function lookFilePathTry(filePath: string, options: LookFileOptions): Loo
 
 export const filterNameList = ["ignored", "included", "all"] as const
 export type FilterName = typeof filterNameList[number]
-interface LookFolderOptions extends LookFileOptions {
+export interface LookFolderOptions extends LookFileOptions {
+	/**
+	 * Force exclude patterns from file path list.
+	 * 
+	 * @see {@link patternsExclude} can be used.
+	 */
+	hidePattern?: string[],
 	/**
 	* Specifies the maximum depth of a read directory relative to the start
 	* directory.

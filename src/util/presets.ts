@@ -1,9 +1,9 @@
-import { LookFileOptions, LookMethod, LookMethodData, Looker, TargetName, gitConfigString } from "../lib.js"
+import { LookFileOptions, LookFolderOptions, LookMethod, LookMethodData, Looker, TargetName, gitConfigString } from "../lib.js"
 import getValue from "get-value"
 import { StyleName } from "./styles.js"
 import { ChalkInstance } from "chalk"
 
-export interface Preset extends LookFileOptions {
+export interface Preset extends LookFolderOptions {
 	name: string,
 	checkCommand: string | undefined,
 }
@@ -138,7 +138,7 @@ export const Presets = {
 			["**/.gitignore", getLookMethodGit()]
 		]
 	},
-} satisfies Record<TargetName, LookFileOptions> as Record<TargetName, LookFileOptions>
+} satisfies Record<TargetName, LookFolderOptions> as Record<TargetName, LookFolderOptions>
 export function GetFormattedPreset<T extends TargetName>(target: T, style: StyleName, oc: ChalkInstance): Preset {
 	const IsNerd = style.toLowerCase().includes('nerd')
 	const result: Record<TargetName, Preset> = {
