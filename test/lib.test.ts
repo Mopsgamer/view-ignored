@@ -44,6 +44,12 @@ const targetTestList = {
             shouldInclude: [],
             content: {},
         },
+        'empty project node_modules only': {
+            shouldInclude: [],
+            content: {
+                'node_modules': {}
+            },
+        },
         'single file, no ignore sources': {
             shouldInclude: ['file.txt'],
             content: {

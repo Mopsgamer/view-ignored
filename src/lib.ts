@@ -1,5 +1,6 @@
 import path from "path";
 import FastGlob from "fast-glob";
+import { minimatch } from "minimatch";
 import { readFileSync } from "fs";
 import ignore, { Ignore } from "ignore";
 import { execSync } from "child_process";
@@ -12,18 +13,32 @@ export interface LookerOptions extends ignore.Options {
 	 * @see {@link Looker.isNegated}
 	 */
 	negated?: boolean
+	patternType?: LookerPatternType
+	addPatterns?: LookerPattern
 }
-export type LookerPattern = string | readonly string[]
+export type LookerPattern = string | string[]
+export type LookerPatternType = ".*ignore" | "minimatch"
 export class Looker {
 	/**
 	 * If `true`, when calling {@link Looker.ignores}, method will return `true` for ignored path.
+	 * 
+	 * @default false
 	 */
 	public isNegated: boolean
+	/**
+	 * Defines way to check paths.
+	 * 
+	 * @default ".*ignore"
+	 */
+	public readonly patternType: LookerPatternType
+	private patternList: string[] = []
 	private ignoreInstance: Ignore
 
 	constructor(options?: LookerOptions) {
 		this.isNegated = options?.negated ?? false
+		this.patternType = options?.patternType ?? ".*ignore"
 		this.ignoreInstance = ignore.default(options)
+		this.add(options?.addPatterns ?? [])
 	}
 
 	negate(): this {
@@ -36,7 +51,15 @@ export class Looker {
 	 * @param pattern .gitignore file specification pattern.
 	 */
 	add(pattern: LookerPattern): this {
-		this.ignoreInstance.add(pattern)
+		if (typeof pattern === "string") {
+			this.patternList.push(pattern)
+			this.ignoreInstance.add(pattern)
+		} else {
+			for (const pat of pattern) {
+				this.patternList.push(pat)
+				this.ignoreInstance.add(pat)
+			}
+		}
 		return this
 	}
 
@@ -46,7 +69,12 @@ export class Looker {
 	 * @param path Dir entry path.
 	 */
 	ignores(path: string): boolean {
-		const ignores = this.ignoreInstance.ignores(path)
+		let ignores: boolean
+		if (this.patternType === ".*ignore") {
+			ignores = this.ignoreInstance.ignores(path)
+		} else { // minimatch
+			ignores = !this.patternList.some(pattern => minimatch(path, pattern))
+		}
 		return this.isNegated ? !ignores : ignores;
 	}
 
@@ -54,11 +82,22 @@ export class Looker {
 	 * Checks if given pattern is valid.
 	 * @param pattern Dir entry path.
 	 */
-	isValidPattern(pattern: LookerPattern) {
-		if (typeof pattern === "string") {
+	isValidPattern(pattern: LookerPattern): boolean {
+		if (Array.isArray(pattern)) {
+			return pattern.every(p => ignore.default.isPathValid(p))
+		}
+		if (this.patternType === ".*ignore") {
 			return ignore.default.isPathValid(pattern)
 		}
-		return pattern.every(p => ignore.default.isPathValid(p))
+		if (this.patternType === "minimatch") {
+			try {
+				minimatch.makeRe(pattern)
+				return true
+			} catch (error) {
+				return false
+			}
+		}
+		throw new TypeError(`Unknown pattern type '${this.patternType}'.`)
 	}
 }
 //#endregion
