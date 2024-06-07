@@ -13,11 +13,11 @@ export interface LookerOptions extends ignore.Options {
 	 * @see {@link Looker.isNegated}
 	 */
 	negated?: boolean
-	patternType?: LookerPatternType
+	patternType?: PatternType
 	addPatterns?: LookerPattern
 }
 export type LookerPattern = string | string[]
-export type LookerPatternType = ".*ignore" | "minimatch"
+export type PatternType = ".*ignore" | "minimatch"
 export class Looker {
 	/**
 	 * If `true`, when calling {@link Looker.ignores}, method will return `true` for ignored path.
@@ -30,7 +30,7 @@ export class Looker {
 	 * 
 	 * @default ".*ignore"
 	 */
-	public readonly patternType: LookerPatternType
+	public readonly patternType: PatternType
 	private patternList: string[] = []
 	private ignoreInstance: Ignore
 
@@ -170,7 +170,7 @@ export interface LookMethodData {
  * Returns `true` if given source is valid, writes rules to the looker.
  */
 export type LookMethod = (data: LookMethodData) => boolean
-
+export type PossibleSource = [string | string[], PatternType, LookMethod]
 export interface LookFileOptions {
 	/**
 	 * Current working directory.
@@ -186,11 +186,11 @@ export interface LookFileOptions {
 	addPattern?: string[],
 	/**
 	 * Sources like `.gitignore` or `package.json` "files" property. It breaks on first valid source.
-	 * @example [["**\/.gitignore", Util.lookGit()]]
+	 * @example [["**\/.gitignore", ".*ignore", Util.lookGit()]]
 	 * @see {@link getLookMethodGit}, {@link getLookMethodPropJSON}
 	 * @see {@link getLookMethodGit}, {@link getLookMethodPropJSON}
 	 */
-	sources: [string | string[], LookMethod][],
+	sources: PossibleSource[],
 	/**
 	 * If `true`, paths starting with `./` will be allowed.
 	 * 
@@ -224,7 +224,7 @@ export class LookFileResult {
 /**
  * Returns `undefined`, if any source is bad.
  */
-export function lookFilePath(filePath: string, sourcePath: string, method: LookMethod, options: Omit<LookFileOptions, "sources" | "hidePattern">): Looker | undefined {
+export function lookFilePath(filePath: string, sourcePath: string, patternType: PatternType, method: LookMethod, options: Omit<LookFileOptions, "sources" | "hidePattern">): Looker | undefined {
 	const {
 		cwd = process.cwd(),
 		addPattern = [],
@@ -236,6 +236,7 @@ export function lookFilePath(filePath: string, sourcePath: string, method: LookM
 	const looker = new Looker({
 		allowRelativePaths: allowRelativePaths,
 		ignoreCase: ignoreCase,
+		patternType: patternType,
 	})
 
 	const sourceContent = readFileSync(path.join(cwd, sourcePath)).toString()
@@ -260,13 +261,13 @@ export function lookFilePathTry(filePath: string, options: LookFileOptions): Loo
 		sources,
 	} = options
 
-	for (const [pattern, method] of sources) {
+	for (const [pattern, patternType, method] of sources) {
 		const possibleSourcePaths = globFiles(pattern, cwd)
 		const sourcePath = closestFilePath(filePath, possibleSourcePaths)
 		if (sourcePath === undefined) {
 			continue
 		}
-		return lookFilePath(filePath, sourcePath, method, options)
+		return lookFilePath(filePath, sourcePath, patternType, method, options)
 	}
 }
 
@@ -315,7 +316,7 @@ export function lookProjectDirSync(options: LookFolderOptions): LookFileResult[]
 	)
 	let goodFound = false
 	// Find good source
-	for (const [pattern, method] of sources) {
+	for (const [pattern, patternType, method] of sources) {
 		const matches = globFiles(pattern, cwd)
 		for (const filePath of allPaths) {
 			const sourcePath = closestFilePath(filePath, matches)
@@ -324,7 +325,7 @@ export function lookProjectDirSync(options: LookFolderOptions): LookFileResult[]
 			}
 			let looker = cache.get(sourcePath)
 			if (looker === undefined) {
-				looker = lookFilePath(filePath, sourcePath, method, options)
+				looker = lookFilePath(filePath, sourcePath, patternType, method, options)
 				if (looker === undefined) {
 					break
 				}
