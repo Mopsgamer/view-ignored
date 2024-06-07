@@ -1,0 +1,158 @@
+import FastGlob from "fast-glob";
+import { execSync } from "child_process";
+import { LookFolderOptions, LookFileOptions, lookProject, SourceFile, FileInfo, Source, TargetName } from "./lib.js";
+import { getLookMethodGit, getLookMethodPropJSON, npmPatternExclude, npmPatternInclude, patternsExclude } from "./tools/methods.js";
+import { readFileSync } from "fs";
+import { StyleName } from "./tools/styles.js";
+import { ChalkInstance } from "chalk";
+
+//#region git config reading
+/**
+ * Read git config value as string.
+ */
+export function gitConfigString(key: string, cwd?: string): string | undefined {
+	try {
+		return execSync(`git config ${key}`, { cwd: cwd, }).toString();
+	} catch (error) {
+		return;
+	}
+}
+/**
+ * Read git config value as boolean.
+ */
+export function gitConfigBool(key: string, cwd?: string): boolean | undefined {
+	const str = gitConfigString(key, cwd)
+	if (str === "true\n") {
+		return true
+	}
+	if (str === "false\n") {
+		return false
+	}
+}
+//#endregion
+
+//#region method options
+export interface ScanFolderOptions extends LookFolderOptions {
+	/**
+	* Specifies the maximum depth of a read directory relative to the start
+	* directory.
+	*
+	* @default Infinity
+	*/
+	deep?: FastGlob.Options["deep"]
+	/**
+	 * Mark the directory path with the final slash.
+	 *
+	 * @default false
+	 */
+	markDirectories?: FastGlob.Options["markDirectories"]
+}
+//#endregion
+
+
+//#region methods
+export function scanProject(dirPath: string, sources: Source<string>[], options: ScanFolderOptions): FileInfo[] | undefined {
+	const paths = FastGlob.sync(
+		"**",
+		{
+			cwd: dirPath,
+			ignore: options.hidePattern,
+			markDirectories: options.markDirectories,
+			deep: options.deep,
+		}
+	)
+	const sourcesPostRead = sources.map(source => ({
+		...source,
+		fallbacks: readSourcePattern(source.fallbacks, dirPath)
+	} as Source))
+	return lookProject(paths, sourcesPostRead, options)
+}
+
+export function readSourcePattern(pattern: string | string[], cwd?: string): SourceFile[] {
+	const sourceFile = FastGlob.sync(pattern, { cwd })
+		.map(path => ({
+			path,
+			content: readFileSync(path).toString()
+		} as SourceFile))
+	return sourceFile
+}
+
+/**
+ * Get file paths using pattern.
+ * @param pattern The pattern.
+ * @param cwd Current working directory.
+ * @param ignore Ignore patterns.
+ */
+export function globFiles(pattern: string | string[], cwd: string, ignore?: string[]): string[] {
+	return FastGlob.sync(pattern, { cwd, ignore, onlyFiles: true, dot: true })
+}
+//#endregion
+
+//#region presets
+export interface PresetHumanized extends LookFolderOptions {
+	name: string,
+	checkCommand: string | undefined,
+}
+export type Preset = Record<TargetName, LookFolderOptions & { sources: Source<string>[] }>
+
+export const Presets: Preset = {
+	git: {
+		allowRelativePaths: false,
+		hidePattern: patternsExclude.concat([gitConfigString("core.excludesFile") ?? '']),
+		sources: [
+			{ fallbacks: ["**/.gitignore"], patternType: ".*ignore", method: getLookMethodGit() },
+		]
+	},
+	npm: {
+		hidePattern: patternsExclude.concat(npmPatternExclude),
+		addPattern: npmPatternInclude,
+		sources: [
+			{ fallbacks: ["**/package.json"], patternType: "minimatch", method: getLookMethodPropJSON({ prop: "files", negate: true }) },
+			{ fallbacks: ["**/.npmignore"], patternType: ".*ignore", method: getLookMethodGit() },
+			{ fallbacks: ["**/.gitignore"], patternType: ".*ignore", method: getLookMethodGit() },
+		]
+	},
+	yarn: {
+		hidePattern: patternsExclude.concat(npmPatternExclude),
+		addPattern: npmPatternInclude,
+		sources: [
+			{ fallbacks: ["**/package.json"], patternType: "minimatch", method: getLookMethodPropJSON({ prop: "files", negate: true }) },
+			{ fallbacks: ["**/.yarnignore"], patternType: ".*ignore", method: getLookMethodGit() },
+			{ fallbacks: ["**/.npmignore"], patternType: ".*ignore", method: getLookMethodGit() },
+			{ fallbacks: ["**/.gitignore"], patternType: ".*ignore", method: getLookMethodGit() },
+		]
+	},
+	vsce: {
+		hidePattern: patternsExclude,
+		sources: [
+			{ fallbacks: ["**/.vscodeignore"], patternType: "minimatch", method: getLookMethodGit() },
+		]
+	},
+}
+export function GetFormattedPreset<T extends TargetName>(target: T, style: StyleName, oc: ChalkInstance): PresetHumanized {
+	const IsNerd = style.toLowerCase().includes('nerd')
+	const result: Record<TargetName, PresetHumanized> = {
+		git: {
+			...Presets.git,
+			name: `${IsNerd ? oc.redBright('\ue65d') + ' ' : ''}Git`,
+			checkCommand: 'git ls-tree -r <branch name: main/master/...> --name-only',
+		},
+		npm: {
+			...Presets.npm,
+			name: `${IsNerd ? oc.red('\ue616') + ' ' : ''}NPM`,
+			checkCommand: 'npm pack --dry-run',
+		},
+		yarn: {
+			...Presets.yarn,
+			name: `${IsNerd ? oc.magenta('\ue6a7') + ' ' : ''}Yarn`,
+			checkCommand: undefined,
+		},
+		vsce: {
+			...Presets.vsce,
+			name: `${IsNerd ? oc.red('\udb82\ude1e') + ' ' : ''}VSC Extension`,
+			checkCommand: 'vsce ls',
+		},
+	};
+	return result[target]
+}
+//#endregion

@@ -2,7 +2,7 @@ import mockfs from "mock-fs"
 import * as viewig from "../src/index.js"
 import assert from "assert"
 import type FileSystem from "mock-fs/lib/filesystem.js"
-import { Util } from "../src/index.js"
+import { Tools } from "../src/index.js"
 
 interface Case {
     shouldInclude: string[]
@@ -153,7 +153,7 @@ describe("Targets", function () {
                 const test = tests[testName] as Case
                 it(testName, function () {
                     mockfs({ [testPath]: test.content })
-                    const lookList = viewig.lookProjectDirSync({ cwd: testPath, filter: 'included', ...viewig.Util.Presets[target] })
+                    const lookList = viewig.lookProjectDirSync({ cwd: testPath, filter: 'included', ...viewig.Tools.Presets[target] })
                     assert.deepEqual(lookList.map(l => l.filePath).sort(), test.shouldInclude.sort())
                 })
             }

@@ -1,18 +1,18 @@
 import { stdout } from "process"
-import { FilterName, LookFileResult } from "../lib.js"
+import { FilterName, FileInfo } from "../lib.js"
 import { default as tree } from "treeify";
 import jsonifyPaths from "jsonify-paths";
 import { ChalkInstance } from "chalk";
 
 export const styleNameList = ['tree', 'paths', 'treeEmoji', 'treeNerd'] as const
 export type StyleName = typeof styleNameList[number]
-export type Style = (oc: ChalkInstance, files: LookFileResult[], style: StyleName, filter: FilterName) => void
+export type Style = (oc: ChalkInstance, files: FileInfo[], style: StyleName, filter: FilterName) => void
 
-export function prefixIgn(f: LookFileResult) {
+export function prefixIgn(f: FileInfo) {
 	return (f.ignored ? '!' : '+') + f.toString()
 }
 
-export function chalkIgn(f: LookFileResult, oc: ChalkInstance) {
+export function chalkIgn(f: FileInfo, oc: ChalkInstance) {
 	return (f.ignored ? oc.red : oc.green)(prefixIgn(f))
 }
 

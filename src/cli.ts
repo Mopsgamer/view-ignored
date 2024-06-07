@@ -1,5 +1,5 @@
 import { Argument, InvalidArgumentError, Option, program } from "commander";
-import { FilterName, Util, lookProjectDirSync, TargetName as TargetName, LookFileResult } from "./index.js";
+import { FilterName, Tools, lookProject, TargetName, FileInfo, PresetHumanized, scanProject } from "./index.js";
 import { stdout } from "process";
 import { Chalk } from "chalk";
 import type { ChalkInstance, ColorSupportLevel } from "chalk";
@@ -8,7 +8,7 @@ import { configValues, configEditor, ConfigKey, Config, configKeyList, configFil
 
 export { program }
 
-export function safetyHelpCreate(preset: Util.Preset, oc: ChalkInstance): string {
+export function safetyHelpCreate(preset: PresetHumanized, oc: ChalkInstance): string {
 	const command = preset.checkCommand ?? ""
 	if (command === "") {
 		return ""
@@ -20,8 +20,8 @@ export interface Flags {
 	color?: string,
 	target?: TargetName,
 	filter?: FilterName,
-	sort?: Util.SortName,
-	style?: Util.StyleName
+	sort?: Tools.SortName,
+	style?: Tools.StyleName
 }
 
 program
@@ -90,14 +90,14 @@ export function actionPrint(flags: Flags): void {
 	const isNerd = flags.style.toLowerCase().includes('nerd')
 	const isEmoji = flags.style.toLowerCase().includes('emoji')
 
-	const formattedPreset = Util.GetFormattedPreset(flags.target, flags.style, oc)
-	const looked = lookProjectDirSync({
+	const formattedPreset = Tools.GetFormattedPreset(flags.target, flags.style, oc)
+	const looked = scanProject(process.cwd(), Presets, {
 		...formattedPreset,
 		filter: flags.filter
 	})
 
-	const sorter = Util.Sorters[flags.sort]
-	const cacheEditDates = new Map<LookFileResult, Date>()
+	const sorter = Tools.Sorters[flags.sort]
+	const cacheEditDates = new Map<FileInfo, Date>()
 	for (const look of looked) {
 		cacheEditDates.set(look, fs.statSync(look.filePath).mtime)
 	}
@@ -106,7 +106,7 @@ export function actionPrint(flags: Flags): void {
 		cacheEditDates.get(a)!, cacheEditDates.get(b)!
 	))
 	stdout.write((isNerd ? '\uf115 ' : '') + process.cwd() + "\n")
-	Util.Styles[flags.style](oc, lookedSorted, flags.style, flags.filter)
+	Tools.Styles[flags.style](oc, lookedSorted, flags.style, flags.filter)
 	const time = Date.now() - start
 	stdout.write(`\n`)
 	stdout.write(`${isEmoji ? '✔️ ' : isNerd ? oc.green('\uf00c ') : ''}Done in ${isNerd && time < 400 ? oc.yellow('\udb85\udc0c') : ''}${time}ms.`)
