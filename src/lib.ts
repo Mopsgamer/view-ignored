@@ -51,8 +51,17 @@ export interface SourceFile {
 	content: string,
 }
 export interface Source<FallbackT = SourceFile> {
+	/**
+	 * First valid source will be used as {@link Looker}.
+	 */
 	fallbacks: FallbackT[],
+	/**
+	 * Pattern parser name.
+	 */
 	patternType: PatternType,
+	/**
+	 * {@link Looker} maker.
+	 */
 	method: LookMethod
 }
 
@@ -78,12 +87,6 @@ export interface LookFileOptions {
 }
 
 export interface LookFolderOptions extends LookFileOptions {
-	/**
-	 * Force exclude patterns from file path list.
-	 * 
-	 * @see {@link patternsExclude} can be used.
-	 */
-	hidePattern?: string[],
 	/**
 	* Specifies the maximum depth of a read directory relative to the start
 	* directory.
@@ -135,46 +138,44 @@ export function lookFile(filePath: string, sources: Source[], options: LookFileO
  * Scan project directory with results for each file path.
  */
 export function lookProject(allFilePaths: string[], sources: Source[], options: LookFolderOptions): FileInfo[] | undefined {
-	const { hidePattern = [], filter = "included", deep, markDirectories } = options;
-	const cache = new Map<SourceFile, FileInfo>()
-	const resultList: FileInfo[] = []
-	const paths = allFilePaths.filter(
-		p => !hidePattern.some(
-			pat => minimatch(pat, p)
-		)
-	)
+	const { filter = "included" } = options;
+	const cache = new Map<string, Looker>()
+
 	// Find good source
-	let goodFound = false
 	for (const source of sources) {
-		for (const filePath of paths) {
+		let goodFound = false
+		const resultList: FileInfo[] = []
+		for (const filePath of allFilePaths) {
 			const possibleSource = closest(filePath, source.fallbacks)
 			if (possibleSource === undefined) {
 				break
 			}
-			let info = cache.get(possibleSource)
-			if (info === undefined) {
-				info = lookFile(filePath, [source], options)
-				if (info === undefined) {
+			let looker = cache.get(possibleSource.path)
+			let info: FileInfo
+			if (looker === undefined) {
+				const newInfo = lookFile(filePath, [source], options)
+				if (newInfo === undefined) {
 					break
 				}
-				cache.set(possibleSource, info)
+				info = newInfo
+				cache.set(possibleSource.path, info.looker)
+			} else {
+				info = FileInfo.from(filePath, looker, possibleSource)
 			}
 			const filterIgnore = (filter === "ignored") && info.ignored
 			const filterInclude = (filter === "included") && !info.ignored
 			const filterAll = filter === "all"
-			if (filterIgnore || filterInclude || filterAll) {
+			const shouldPush = filterIgnore || filterInclude || filterAll
+			if (shouldPush) {
 				resultList.push(info)
 			}
-			goodFound = true
+			goodFound ||= true
 		}
 		if (goodFound) {
-			break
+			return resultList
 		}
 	}
-	if (!goodFound) {
-		return
-	}
-	return resultList
+	return undefined
 }
 //#endregion
 

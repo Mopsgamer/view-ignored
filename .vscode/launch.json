@@ -7,9 +7,28 @@
 		{
 			"type": "node",
 			"request": "launch",
-			"name": "Launch command line",
+			"name": "viewig self - git",
 			"skipFiles": [
 				"<node_internals>/**"
+			],
+			"internalConsoleOptions": "neverOpen",
+			"program": "${workspaceFolder}\\lib\\bin.js",
+			"cwd": "${workspaceFolder}",
+			"outFiles": [
+				"${workspaceFolder}/lib/*.js"
+			],
+			"preLaunchTask": "Build",
+		},
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "viewig self - npm",
+			"skipFiles": [
+				"<node_internals>/**"
+			],
+			"args": [
+				"-t",
+				"npm"
 			],
 			"internalConsoleOptions": "neverOpen",
 			"program": "${workspaceFolder}\\lib\\bin.js",

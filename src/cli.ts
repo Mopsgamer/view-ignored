@@ -1,5 +1,5 @@
 import { Argument, InvalidArgumentError, Option, program } from "commander";
-import { FilterName, Tools, lookProject, TargetName, FileInfo, PresetHumanized, scanProject } from "./index.js";
+import { FilterName, Tools, lookProject, TargetName, FileInfo, PresetHumanized, scanProject, GetFormattedPreset } from "./index.js";
 import { stdout } from "process";
 import { Chalk } from "chalk";
 import type { ChalkInstance, ColorSupportLevel } from "chalk";
@@ -13,7 +13,7 @@ export function safetyHelpCreate(preset: PresetHumanized, oc: ChalkInstance): st
 	if (command === "") {
 		return ""
 	}
-	return '\n\n' + oc.cyan(`You can use the \`${oc.white(command)}\` command to check if the list is valid.`)
+	return '\n\n' + oc.cyan(`You can use ${oc.red(`\`${oc.white(command)}\``)} to check if the list is valid.`)
 }
 
 export interface Flags {
@@ -69,7 +69,7 @@ export function parseArgKey(key: string): void {
 export function parseArgKeyVal(pair: string): void {
 	const str = pair.split('=')
 	if (str.length !== 2) {
-		throw new InvalidArgumentError(`Ivalid syntax. Expected 'setting=value'. Got ${pair}.`)
+		throw new InvalidArgumentError(`Invalid syntax. Expected 'setting=value'. Got ${pair}.`)
 	}
 	const [key, val] = str as [ConfigKey, Config[ConfigKey]]
 	parseArgKey(key)
@@ -83,18 +83,21 @@ export function actionPrint(flags: Flags): void {
 	flags.target ??= "git"
 	flags.filter ??= "included"
 	flags.sort ??= "firstFolders"
-	flags.style ||= "tree"
+	flags.style ??= "tree"
 	const colorLevel = Math.max(0, Math.min(Number(flags.color ?? 3), 3)) as ColorSupportLevel
 	/** Chalk, but configured by view-ignored cli. */
 	const oc = new Chalk({ level: colorLevel })
 	const isNerd = flags.style.toLowerCase().includes('nerd')
 	const isEmoji = flags.style.toLowerCase().includes('emoji')
 
-	const formattedPreset = Tools.GetFormattedPreset(flags.target, flags.style, oc)
-	const looked = scanProject(process.cwd(), Presets, {
-		...formattedPreset,
-		filter: flags.filter
-	})
+	const formattedPreset = GetFormattedPreset(flags.target, flags.style, oc)
+	const looked = scanProject(process.cwd(), flags.target)
+
+	if (!looked) {
+		stdout.write(`Bad source for ${flags.target}.`)
+		stdout.write('\n')
+		return
+	}
 
 	const sorter = Tools.Sorters[flags.sort]
 	const cacheEditDates = new Map<FileInfo, Date>()
@@ -109,7 +112,7 @@ export function actionPrint(flags: Flags): void {
 	Tools.Styles[flags.style](oc, lookedSorted, flags.style, flags.filter)
 	const time = Date.now() - start
 	stdout.write(`\n`)
-	stdout.write(`${isEmoji ? '✔️ ' : isNerd ? oc.green('\uf00c ') : ''}Done in ${isNerd && time < 400 ? oc.yellow('\udb85\udc0c') : ''}${time}ms.`)
+	stdout.write(`${isEmoji ? '✅ ' : isNerd ? oc.green('\uf00c ') : ''}Done in ${time < 400 ? isNerd ? oc.yellow('\udb85\udc0c') : isEmoji ? '⚡' : '' : ''}${time}ms.`)
 	stdout.write(`\n\n`)
 	stdout.write(`${looked.length} files listed for ${formattedPreset.name} (${flags.filter}).`)
 	stdout.write(safetyHelpCreate(formattedPreset, oc))

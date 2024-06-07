@@ -153,8 +153,17 @@ describe("Targets", function () {
                 const test = tests[testName] as Case
                 it(testName, function () {
                     mockfs({ [testPath]: test.content })
-                    const lookList = viewig.lookProjectDirSync({ cwd: testPath, filter: 'included', ...viewig.Tools.Presets[target] })
-                    assert.deepEqual(lookList.map(l => l.filePath).sort(), test.shouldInclude.sort())
+                    const lookList = viewig.scanProject(testPath, target as viewig.TargetName, { filter: 'included' })
+
+                    if (!lookList) return;
+
+                    const sourcesView = JSON.stringify(test.content, null, ' '.repeat(2))
+
+                    assert.deepEqual(
+                        lookList.map(l => l.filePath).sort(),
+                        test.shouldInclude.sort(),
+                        `Bad paths results for ${testName}.\n\n${sourcesView}`
+                    )
                 })
             }
         })

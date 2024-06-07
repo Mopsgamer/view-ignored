@@ -1,6 +1,6 @@
 import { ColorSupportLevel } from "chalk"
 import { FilterName, filterNameList, TargetName, targetNameList } from "./lib.js"
-import * as Tools from "./tools/index.js"
+import {Tools} from "./tools/index.js"
 import * as os from "os";
 import propertiesFile from "properties";
 import path from "path"
@@ -16,7 +16,7 @@ export type Config = {
     target: TargetName,
     filter: FilterName,
     sort: Tools.SortName,
-    style: Tools.StyleName
+    style: Tools.StyleName,
 }
 
 export const configDefault: Config = {
@@ -24,7 +24,7 @@ export const configDefault: Config = {
     target: "git",
     filter: "included",
     sort: "firstFolders",
-    style: "tree",
+    style: "treeEmoji",
 }
 export const configValues = {
     color: ["1", "2", "3", "4"],
