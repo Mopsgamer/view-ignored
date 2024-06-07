@@ -163,10 +163,18 @@ export interface LookFileOptions {
  */
 export class LookFileResult {
 	constructor(
-		public ignored: boolean,
 		public filePath: string,
+		public ignored: boolean,
 		public source: string,
 	) { }
+	static from(paths: string[], isIgnored: boolean, source?: string): LookFileResult[]
+	static from(path: string, isIgnored: boolean, source?: string): LookFileResult
+	static from(arg: string | string[], isIgnored: boolean, source?: string): LookFileResult | LookFileResult[] {
+		if (typeof arg === "string") {
+			return new LookFileResult(arg, isIgnored, source || '<no-source>')
+		}
+		return arg.map(path => LookFileResult.from(path, isIgnored, source))
+	}
 	toString(): string {
 		return `${this.filePath}`
 	}
@@ -260,7 +268,8 @@ export function lookProjectDirSync(options: LookFolderOptions): LookFileResult[]
 		}
 	)
 	let goodFound = false
-	FindGoodSource: for (const [pattern, method] of sources) {
+	// Find good source
+	for (const [pattern, method] of sources) {
 		const matches = globFiles(pattern, cwd)
 		for (const filePath of allPaths) {
 			const sourcePath = closestFilePath(filePath, matches)
@@ -280,7 +289,7 @@ export function lookProjectDirSync(options: LookFolderOptions): LookFileResult[]
 			const filterInclude = (filter === "included") && !isIgnored
 			const filterAll = filter === "all"
 			if (filterIgnore || filterInclude || filterAll) {
-				const lookResult = new LookFileResult(isIgnored, filePath, sourcePath)
+				const lookResult = LookFileResult.from(filePath, isIgnored, sourcePath)
 				resultList.push(lookResult)
 			}
 			goodFound = true
@@ -289,9 +298,9 @@ export function lookProjectDirSync(options: LookFolderOptions): LookFileResult[]
 			break
 		}
 	}
-  if (!goodFound) {
-    return allPaths.map(p => new LookFileResult(false, p, "<no-source>"))
-  }
+	if (!goodFound) {
+		return LookFileResult.from(allPaths, false)
+	}
 	return resultList
 }
 //#endregion
