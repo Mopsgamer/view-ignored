@@ -2,7 +2,7 @@
 
 [![npm version](https://badge.fury.io/js/view-ignored.svg)](https://www.npmjs.com/package/view-ignored)
 
-Get a list of ignored files by targets: git, npm, yarn, docker, ... .
+Retrieve lists of files ignored by Git, npm, Yarn, Docker, and more with ease.
 
 ## Install
 
@@ -12,11 +12,9 @@ npm i view-ignored
 
 ## Highlights
 
-- Output sorting.
-- Output styling: paths, tree, treeEmoji, treeNerd (using [nerd fonts](https://github.com/ryanoasis/nerd-fonts)).
-- No colors option: `--color 0`.
-- Visible current working directory.
-
+- **Multi-target.** Get list of included files, using configuration files. view-ignored provides viewing for multiple [targets](#targets).
+- **Use in browser.** view-ignored supports emulated file structures. (It doesn't)
+- **Command line.** Supports no-color and multiple output styles, including tree with [nerd fonts](https://github.com/ryanoasis/nerd-fonts).
 
 ### Targets
 

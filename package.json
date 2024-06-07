@@ -1,7 +1,7 @@
 {
 	"name": "view-ignored",
 	"version": "0.0.0",
-	"description": "Get a list of ignored files by targets: git, npm, yaml, docker, ... .",
+	"description": "Retrieve lists of files ignored by Git, npm, Yarn, Docker, and more with ease.",
 	"type": "module",
 	"bin": {
 		"viewig": "./bin/viewig",
