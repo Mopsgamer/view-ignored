@@ -1,4 +1,4 @@
-import { LookMethod, LookMethodData, LookFileOptions, TargetName } from "../lib.js"
+import { LookMethod, LookMethodData } from "../lib.js"
 import getValue from "get-value"
 import { Looker } from "../looker.js"
 

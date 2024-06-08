@@ -1,10 +1,11 @@
 import { Argument, InvalidArgumentError, Option, program } from "commander";
-import { FilterName, Tools, lookProject, TargetName, FileInfo, PresetHumanized, scanProject, GetFormattedPreset } from "./index.js";
+import { FilterName, Tools, TargetName, FileInfo, PresetHumanized, scanProject, GetFormattedPreset } from "./index.js";
 import { stdout } from "process";
 import { Chalk } from "chalk";
 import type { ChalkInstance, ColorSupportLevel } from "chalk";
 import fs from "fs";
 import { configValues, configEditor, ConfigKey, Config, configKeyList, configFilePath } from "./config.js";
+import { styleCondition } from "./tools/styles.js";
 
 export { program }
 
@@ -13,7 +14,7 @@ export function safetyHelpCreate(preset: PresetHumanized, oc: ChalkInstance): st
 	if (command === "") {
 		return ""
 	}
-	return '\n\n' + oc.cyan(`You can use ${oc.red(`\`${oc.white(command)}\``)} to check if the list is valid.`)
+	return '\n\n' + `You can use '${oc.magenta(command)}' to check if the list is valid.`
 }
 
 export interface Flags {
@@ -24,7 +25,12 @@ export interface Flags {
 	style?: Tools.StyleName
 }
 
-program
+export const lsProgram = program
+	.command("scan")
+	.aliases(['sc'])
+	.description('get ignored paths.')
+
+lsProgram
 	.addOption(new Option("-clr, --color <level>").default(configEditor.get("color")).choices(configValues.color))
 	.addOption(new Option("-t, --target <ignorer>").default(configEditor.get("target")).choices(configValues.target))
 	.addOption(new Option("-fl, --filter <filter>").default(configEditor.get("filter")).choices(configValues.filter))
@@ -60,22 +66,24 @@ cfgProgram
 	.addArgument(argConfigKey)
 	.action(actionCfgGet)
 
-export function parseArgKey(key: string): void {
+export function parseArgKey(key: string): string {
 	if (!configKeyList.includes(key as ConfigKey)) {
 		throw new InvalidArgumentError(`Allowed config properties are ${configKeyList.join(', ')}. Got ${key}.`)
 	}
+	return key;
 }
 
-export function parseArgKeyVal(pair: string): void {
-	const str = pair.split('=')
-	if (str.length !== 2) {
-		throw new InvalidArgumentError(`Invalid syntax. Expected 'setting=value'. Got ${pair}.`)
+export function parseArgKeyVal(pair: string): [ConfigKey, Config[ConfigKey]] {
+	const result = pair.split('=') as [ConfigKey, Config[ConfigKey]]
+	if (result.length !== 2) {
+		throw new InvalidArgumentError(`Invalid syntax. Expected 'setting=value'. Got '${pair}'.`)
 	}
-	const [key, val] = str as [ConfigKey, Config[ConfigKey]]
+	const [key, val] = result
 	parseArgKey(key)
 	if (!configValues[key].includes(val as Config[ConfigKey] as never)) {
-		throw new InvalidArgumentError(`Allowed config properties are ${configValues[key].join(', ')}. Got ${val}.`)
+		throw new InvalidArgumentError(`Allowed config properties are ${configValues[key].join(', ')}. Got '${val}'.`)
 	}
+	return result
 }
 
 export function actionPrint(flags: Flags): void {
@@ -87,8 +95,6 @@ export function actionPrint(flags: Flags): void {
 	const colorLevel = Math.max(0, Math.min(Number(flags.color ?? 3), 3)) as ColorSupportLevel
 	/** Chalk, but configured by view-ignored cli. */
 	const oc = new Chalk({ level: colorLevel })
-	const isNerd = flags.style.toLowerCase().includes('nerd')
-	const isEmoji = flags.style.toLowerCase().includes('emoji')
 
 	const formattedPreset = GetFormattedPreset(flags.target, flags.style, oc)
 	const looked = scanProject(process.cwd(), flags.target)
@@ -108,11 +114,13 @@ export function actionPrint(flags: Flags): void {
 		a.toString(), b.toString(),
 		cacheEditDates.get(a)!, cacheEditDates.get(b)!
 	))
-	stdout.write((isNerd ? '\uf115 ' : '') + process.cwd() + "\n")
+	stdout.write(process.cwd() + "\n")
 	Tools.Styles[flags.style](oc, lookedSorted, flags.style, flags.filter)
 	const time = Date.now() - start
 	stdout.write(`\n`)
-	stdout.write(`${isEmoji ? '✅ ' : isNerd ? oc.green('\uf00c ') : ''}Done in ${time < 400 ? isNerd ? oc.yellow('\udb85\udc0c') : isEmoji ? '⚡' : '' : ''}${time}ms.`)
+	const checkSymbol = styleCondition(flags.style, { ifEmoji: '✅', ifNerd: oc.green('\uf00c'), postfix: ' ' })
+	const fastSymbol = styleCondition(flags.style, { ifEmoji: '⚡', ifNerd: oc.yellow('\udb85\udc0c') })
+	stdout.write(`${checkSymbol}Done in ${time < 400 ? fastSymbol : ''}${time}ms.`)
 	stdout.write(`\n\n`)
 	stdout.write(`${looked.length} files listed for ${formattedPreset.name} (${flags.filter}).`)
 	stdout.write(safetyHelpCreate(formattedPreset, oc))
@@ -130,8 +138,8 @@ export function actionCfgReset(): void {
 	stdout.write('\n')
 }
 
-export function actionCfgSet(pair: string): void {
-	const [key, val] = pair.split('=') as [ConfigKey, Config[ConfigKey]]
+export function actionCfgSet(pair: [ConfigKey, Config[ConfigKey]]): void {
+	const [key, val] = pair
 	configEditor.set(key, val).save()
 	stdout.write(configEditor.getPairString(key))
 	stdout.write('\n')

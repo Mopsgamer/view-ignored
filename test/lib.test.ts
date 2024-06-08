@@ -2,7 +2,6 @@ import mockfs from "mock-fs"
 import * as viewig from "../src/index.js"
 import assert from "assert"
 import type FileSystem from "mock-fs/lib/filesystem.js"
-import { Tools } from "../src/index.js"
 
 interface Case {
     shouldInclude: string[]

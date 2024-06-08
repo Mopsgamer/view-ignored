@@ -1,9 +1,9 @@
 import path from "path";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { patternsExclude, getLookMethodGit, getLookMethodPropJSON } from "./tools/methods.js";
 import { Looker } from "./looker.js";
-import { minimatch } from "minimatch";
 import type FastGlob from "fast-glob";
+import { ChalkInstance } from "chalk";
+import { styleConditionFile, StyleName } from "./tools/styles.js";
 
 export type PatternType = ".*ignore" | "minimatch"
 export const targetNameList = ['git', 'npm', 'yarn', 'vsce'] as const
@@ -150,7 +150,7 @@ export function lookProject(allFilePaths: string[], sources: Source[], options: 
 			if (possibleSource === undefined) {
 				break
 			}
-			let looker = cache.get(possibleSource.path)
+			const looker = cache.get(possibleSource.path)
 			let info: FileInfo
 			if (looker === undefined) {
 				const newInfo = lookFile(filePath, [source], options)
@@ -180,6 +180,11 @@ export function lookProject(allFilePaths: string[], sources: Source[], options: 
 //#endregion
 
 //#region methods
+export interface FileInfoToStringOptions {
+	styleName?: StyleName
+	usePrefix?: boolean
+	chalk?: ChalkInstance
+}
 /**
  * Result of the file path scan.
  */
@@ -201,8 +206,29 @@ export class FileInfo {
 		}
 		return arg.map(path => FileInfo.from(path, looker, source))
 	}
-	toString(): string {
-		return `${this.filePath}`
+	/**
+	 * @param options Styling options.
+	 * @param options.styleName Determines if file icon should be used. Default `undefined`.
+	 * @param options.usePrefix Default `false`.
+	 * @param options.chalk Default `undefined`.
+	 * @param formatEntire Determines if path base or entire file path should be formatted. Default `true`.
+	 */
+	toString(options?: FileInfoToStringOptions, formatEntire = true): string {
+		const { styleName, usePrefix = false, chalk } = options ?? {};
+		const parsed = path.parse(this.filePath)
+		const fileIcon = styleConditionFile(styleName, this.filePath)
+		const prefix = usePrefix ? (this.ignored ? '!' : '+') : ''
+		if (chalk) {
+			const clr = chalk[this.ignored ? "red" : "green"]
+			if (formatEntire) {
+				return fileIcon + clr(prefix + this.filePath)
+			}
+			return parsed.dir + '/' + fileIcon + clr(prefix + parsed.base)
+		}
+		if (formatEntire) {
+			return prefix + this.filePath
+		}
+		return parsed.dir + '/' + fileIcon + prefix + parsed.base
 	}
 }
 
