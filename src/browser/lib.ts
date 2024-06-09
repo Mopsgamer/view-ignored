@@ -100,6 +100,9 @@ export interface LookFolderOptions extends LookFileOptions {
 	 * @default false
 	 */
 	markDirectories?: FastGlob.Options["markDirectories"]
+	/**
+	 * Filter output.
+	 */
 	filter?: FilterName
 }
 

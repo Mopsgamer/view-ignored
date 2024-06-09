@@ -16,18 +16,18 @@ export interface Flags {
 	style: StyleName
 }
 
-export const lsProgram = program
+export const scanProgram = program
 	.command("scan")
 	.aliases(['sc'])
 	.description('get ignored paths.')
 
-lsProgram
+scanProgram
 	.addOption(new Option("-clr, --color <level>").default(configManager.get("color")).choices(configValues.color))
 	.addOption(new Option("-t, --target <ignorer>").default(configManager.get("target")).choices(configValues.target))
 	.addOption(new Option("-fl, --filter <filter>").default(configManager.get("filter")).choices(configValues.filter))
 	.addOption(new Option("-sr, --sort <sorter>").default(configManager.get("sort")).choices(configValues.sort))
 	.addOption(new Option("-st, --style <style>").default(configManager.get("style")).choices(configValues.style))
-	.action(actionPrint)
+	.action(actionScan)
 
 export const cfgProgram = program
 	.command("config")
@@ -77,14 +77,14 @@ export function parseArgKeyVal(pair: string): [ConfigKey, Config[ConfigKey]] {
 	return result
 }
 
-export function actionPrint(flags: Flags): void {
+export function actionScan(flags: Flags): void {
 	const start = Date.now()
 	const colorLevel = Math.max(0, Math.min(Number(flags.color ?? 3), 3)) as ColorSupportLevel
 	/** Chalk, but configured by view-ignored cli. */
 	const chalk = new Chalk({ level: colorLevel })
 
 	const formattedPreset = GetFormattedPreset(flags.target, flags.style, chalk)
-	const looked = scanProject(process.cwd(), flags.target)
+	const looked = scanProject(process.cwd(), flags.target, {filter: flags.filter})
 
 	if (!looked) {
 		stdout.write(`Bad source for ${flags.target}.`)
