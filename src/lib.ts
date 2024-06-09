@@ -1,6 +1,6 @@
 import FastGlob from "fast-glob";
 import { execSync } from "child_process";
-import { LookFolderOptions, lookProject, SourceFile, FileInfo, Source, TargetName } from ".//browser/index.js";
+import { LookFolderOptions, lookProject, SourceFile, FileInfo, Source, TargetName } from "./browser/index.js";
 import { getLookMethodGit, getLookMethodPropJSON, npmPatternExclude, npmPatternInclude, patternsExclude } from "./tools/index.js";
 import { readFileSync } from "fs";
 import { StyleName } from "./tools/styles.js";
