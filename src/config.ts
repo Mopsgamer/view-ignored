@@ -46,7 +46,7 @@ export function configPartialGood(cfg: unknown): cfg is Partial<Config> {
     )
 }
 
-export const configEditor = {
+export const configManager = {
     /**
      * Contains custom settings.
      */
@@ -98,9 +98,10 @@ export const configEditor = {
      * @param key Config property name.
      * @param fallbackDefault If `true`, default config value will be used when property from config file is `undefined`. Default `true`.
      */
-    get<T extends ConfigKey>(key: T, fallbackDefault: boolean = true): Config[T] | undefined {
+    get<T extends ConfigKey, UseDefault extends boolean>(key: T, fallbackDefault?: UseDefault) {
+        const useDefault = fallbackDefault ?? true
         const value: Config[T] | undefined = this.data[key]
-        if (fallbackDefault && value === undefined) {
+        if (useDefault && value === undefined) {
             return configDefault[key]
         }
         return value

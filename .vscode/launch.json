@@ -7,12 +7,15 @@
 		{
 			"type": "node",
 			"request": "launch",
-			"name": "viewig self",
+			"name": "viewig scan",
 			"skipFiles": [
 				"<node_internals>/**"
 			],
+			"args": [
+				"scan"
+			],
 			"internalConsoleOptions": "neverOpen",
-			"program": "${workspaceFolder}\\lib\\bin.js",
+			"program": "${workspaceFolder}/lib/bin.js",
 			"cwd": "${workspaceFolder}",
 			"outFiles": [
 				"${workspaceFolder}/lib/*.js"
@@ -22,16 +25,17 @@
 		{
 			"type": "node",
 			"request": "launch",
-			"name": "viewig self - npm all",
+			"name": "viewig scan - npm all",
 			"skipFiles": [
 				"<node_internals>/**"
 			],
 			"args": [
+				"scan",
 				"--target=npm",
 				"--filter=all",
 			],
 			"internalConsoleOptions": "neverOpen",
-			"program": "${workspaceFolder}\\lib\\bin.js",
+			"program": "${workspaceFolder}/lib/bin.js",
 			"cwd": "${workspaceFolder}",
 			"outFiles": [
 				"${workspaceFolder}/lib/*.js"
