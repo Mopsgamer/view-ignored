@@ -7,7 +7,7 @@
 		{
 			"type": "node",
 			"request": "launch",
-			"name": "viewig self - git",
+			"name": "viewig self",
 			"skipFiles": [
 				"<node_internals>/**"
 			],
@@ -22,13 +22,13 @@
 		{
 			"type": "node",
 			"request": "launch",
-			"name": "viewig self - npm",
+			"name": "viewig self - npm all",
 			"skipFiles": [
 				"<node_internals>/**"
 			],
 			"args": [
-				"-t",
-				"npm"
+				"--target=npm",
+				"--filter=all",
 			],
 			"internalConsoleOptions": "neverOpen",
 			"program": "${workspaceFolder}\\lib\\bin.js",

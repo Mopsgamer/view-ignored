@@ -1,11 +1,9 @@
-import { Argument, InvalidArgumentError, Option, program } from "commander";
-import { FilterName, Tools, TargetName, FileInfo, PresetHumanized, scanProject, GetFormattedPreset } from "./index.js";
-import { stdout } from "process";
-import { Chalk } from "chalk";
-import type { ChalkInstance, ColorSupportLevel } from "chalk";
 import fs from "fs";
+import { stdout } from "process";
+import { Chalk, ChalkInstance, ColorSupportLevel } from "chalk";
+import { Argument, InvalidArgumentError, Option, program } from "commander";
+import { FilterName, TargetName, FileInfo, PresetHumanized, scanProject, GetFormattedPreset, SortName, StyleName, Sorters, Styles, styleCondition } from "./index.js";
 import { configValues, configEditor, ConfigKey, Config, configKeyList, configFilePath } from "./config.js";
-import { styleCondition } from "./tools/styles.js";
 
 export { program }
 
@@ -21,8 +19,8 @@ export interface Flags {
 	color?: string,
 	target?: TargetName,
 	filter?: FilterName,
-	sort?: Tools.SortName,
-	style?: Tools.StyleName
+	sort?: SortName,
+	style?: StyleName
 }
 
 export const lsProgram = program
@@ -105,7 +103,7 @@ export function actionPrint(flags: Flags): void {
 		return
 	}
 
-	const sorter = Tools.Sorters[flags.sort]
+	const sorter = Sorters[flags.sort]
 	const cacheEditDates = new Map<FileInfo, Date>()
 	for (const look of looked) {
 		cacheEditDates.set(look, fs.statSync(look.filePath).mtime)
@@ -115,7 +113,7 @@ export function actionPrint(flags: Flags): void {
 		cacheEditDates.get(a)!, cacheEditDates.get(b)!
 	))
 	stdout.write(process.cwd() + "\n")
-	Tools.Styles[flags.style](oc, lookedSorted, flags.style, flags.filter)
+	Styles[flags.style](oc, lookedSorted, flags.style, flags.filter)
 	const time = Date.now() - start
 	stdout.write(`\n`)
 	const checkSymbol = styleCondition(flags.style, { ifEmoji: '✅', ifNerd: oc.green('\uf00c'), postfix: ' ' })

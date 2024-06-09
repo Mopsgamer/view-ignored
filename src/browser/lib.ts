@@ -3,7 +3,7 @@ import path from "path";
 import { Looker } from "./looker.js";
 import type FastGlob from "fast-glob";
 import { ChalkInstance } from "chalk";
-import { styleConditionFile, StyleName } from "./tools/styles.js";
+import { styleConditionFile, StyleName } from "../tools/index.js";
 
 export type PatternType = ".*ignore" | "minimatch"
 export const targetNameList = ['git', 'npm', 'yarn', 'vsce'] as const

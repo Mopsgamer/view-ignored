@@ -1,6 +1,5 @@
-import { LookMethod, LookMethodData } from "../lib.js"
+import { LookMethod, LookMethodData, Looker } from "../browser/index.js"
 import getValue from "get-value"
-import { Looker } from "../looker.js"
 
 //#region predefined patterns
 export const patternsExclude: string[] = [

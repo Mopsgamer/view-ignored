@@ -1,5 +1,5 @@
 import { stdout } from "process"
-import { FilterName, FileInfo } from "../lib.js"
+import { FilterName, FileInfo } from "../browser/index.js"
 import { default as tree } from "treeify";
 import jsonifyPaths from "jsonify-paths";
 import { ChalkInstance } from "chalk";
