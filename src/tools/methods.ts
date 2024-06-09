@@ -42,8 +42,9 @@ export type ParserFunction = (text: string) => object | undefined
 export const parserJSONDict: ParserFunction = (text) => {
 	try {
 		const result = JSON.parse(text)
-		const isDict = typeof result === 'object' && result !== null && !Array.isArray(result)
-		if (!isDict) throw new Error(`JSON is not dictionary`)
+		if (result?.constructor !== Object) {
+			throw new Error(`JSON is not dictionary`)
+		}
 		return result
 	} catch (error) {
 		return

@@ -1,6 +1,6 @@
 import { ColorSupportLevel } from "chalk"
 import { FilterName, filterNameList, TargetName, targetNameList } from "./lib.js"
-import {Tools} from "./tools/index.js"
+import { Tools } from "./tools/index.js"
 import * as os from "os";
 import propertiesFile from "properties";
 import path from "path"
@@ -35,10 +35,12 @@ export const configValues = {
 } as const
 
 export function configPartialGood(cfg: unknown): cfg is Partial<Config> {
-    const isDict = typeof cfg === 'object' && cfg !== null && !Array.isArray(cfg)
+    if (cfg?.constructor !== Object) {
+        return false
+    }
     const jsonobj = cfg as Record<string, string>
-    return isDict && Object.entries(configValues).every(
-        ([key, possible]) => key in cfg
+    return Object.entries(configValues).every(
+        ([key, possible]) => key in jsonobj
             ? (possible.includes(String(jsonobj[key]) as never))
             : true
     )

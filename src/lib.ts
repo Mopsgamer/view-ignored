@@ -200,11 +200,11 @@ export class FileInfo {
 	static from(paths: string[], looker: Looker, source?: SourceFile | string): FileInfo[]
 	static from(path: string, looker: Looker, source?: SourceFile | string): FileInfo
 	static from(arg: string | string[], looker: Looker, source?: SourceFile | string): FileInfo | FileInfo[] {
-		if (typeof arg === "string") {
-			const src = typeof source === "object" ? source : { path: '<no-source>', content: source ?? '' }
-			return new FileInfo(arg, looker, src)
+		if (Array.isArray(arg)) {
+			return arg.map(path => FileInfo.from(path, looker, source))
 		}
-		return arg.map(path => FileInfo.from(path, looker, source))
+		const src = typeof source === "object" ? source : { path: '<no-source>', content: source ?? '' }
+		return new FileInfo(arg, looker, src)
 	}
 	/**
 	 * @param options Styling options.
