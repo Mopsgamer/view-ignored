@@ -1,4 +1,4 @@
-import mockfs from "mock-fs"
+import mock from "mock-fs"
 import * as viewig from "../src/index.js"
 import assert from "assert"
 import type FileSystem from "mock-fs/lib/filesystem.js"
@@ -151,7 +151,7 @@ describe("Targets", function () {
             for (const testName in tests) {
                 const test = tests[testName] as Case
                 it(testName, function () {
-                    mockfs({ [testPath]: test.content })
+                    mock({ [testPath]: test.content })
                     const lookList = viewig.scanProject(testPath, target as viewig.TargetName, { filter: 'included' })
 
                     if (!lookList) return;
@@ -161,11 +161,11 @@ describe("Targets", function () {
                     assert.deepEqual(
                         lookList.map(l => l.filePath).sort(),
                         test.shouldInclude.sort(),
-                        `Bad paths results for ${testName}.\n\n${sourcesView}`
+                        `Bad paths results.\n\n${sourcesView}`
                     )
                 })
             }
         })
     }
 })
-mockfs.restore()
+mock.restore()
