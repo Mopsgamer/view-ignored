@@ -73,7 +73,8 @@ export function scanProject(dirPath: string, sources: Source<string>[], options:
 export function scanProject(dirPath: string, target: Source<string>[] | TargetName, options: undefined | ScanFolderOptions): FileInfo[] | undefined {
 	if (typeof target === "string") {
 		const preset = Presets[target]
-		return scanProject(dirPath, preset.sources, { ...preset, ...options ?? {} })
+		const scan = scanProject(dirPath, preset.sources, { ...preset, ...options ?? {} })
+		return scan
 	}
 	else if (Array.isArray(target) && options !== undefined) {
 		const paths = FastGlob.sync(
@@ -83,6 +84,8 @@ export function scanProject(dirPath: string, target: Source<string>[] | TargetNa
 				ignore: options.ignore,
 				markDirectories: options.markDirectories,
 				deep: options.deep,
+				dot: true,
+				onlyFiles: true
 			}
 		)
 		const sourcesPostRead = target.map(source => ({
@@ -102,16 +105,6 @@ export function readSourcePattern(pattern: string | string[], options?: FastGlob
 		} as SourceFile))
 	return sourceFile
 }
-
-/**
- * Get file paths using pattern.
- * @param pattern The pattern.
- * @param cwd Current working directory.
- * @param ignore Ignore patterns.
- */
-export function globFiles(pattern: string | string[], cwd: string, ignore?: string[]): string[] {
-	return FastGlob.sync(pattern, { cwd, ignore, onlyFiles: true, dot: true })
-}
 //#endregion
 
 //#region presets
@@ -124,7 +117,7 @@ export type Preset = Record<TargetName, ScanFolderOptions & { sources: Source<st
 export const Presets: Preset = {
 	git: {
 		allowRelativePaths: false,
-		ignore: patternsExclude.concat([gitConfigString("core.excludesFile") ?? '']),
+		ignore: patternsExclude.concat(gitConfigString("core.excludesFile") ?? []),
 		sources: [
 			{ fallbacks: ["**/.gitignore"], patternType: ".*ignore", method: getLookMethodGit() },
 		]

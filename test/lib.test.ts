@@ -149,8 +149,8 @@ describe("Targets", function () {
         describe(target, function () {
             const tests = targetTestList[target] as DirCase
             for (const testName in tests) {
-                const test = tests[testName] as Case
                 it(testName, function () {
+                    const test = tests[testName] as Case
                     mock({ [testPath]: test.content })
                     const lookList = viewig.scanProject(testPath, target as viewig.TargetName, { filter: 'included' })
 
