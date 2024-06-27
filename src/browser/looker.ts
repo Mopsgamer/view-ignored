@@ -66,7 +66,7 @@ export class Looker {
 		if (this.patternType === ".*ignore") {
 			ignores = this.ignoreInstance.ignores(path)
 		} else { // minimatch
-			ignores = !this.patternList.some(pattern => minimatch(path, pattern))
+			ignores = this.patternList.some(pattern => minimatch(path, pattern))
 		}
 		return this.isNegated ? !ignores : ignores;
 	}
