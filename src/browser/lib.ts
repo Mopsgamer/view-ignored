@@ -76,6 +76,8 @@ export interface LookFileOptions {
 	/**
 	 * Additional patterns, which will be used as
 	 * other patterns in the `.gitignore` file, or `package.json` "files" property.
+	 * 
+	 * @default []
 	 */
 	addPattern?: string[],
 	/**
@@ -102,6 +104,8 @@ export interface LookFolderOptions extends LookFileOptions {
 	markDirectories?: FastGlob.Options["markDirectories"]
 	/**
 	 * Filter output.
+	 * 
+	 * @default "included"
 	 */
 	filter?: FilterName
 }

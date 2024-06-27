@@ -7,6 +7,20 @@
 		{
 			"type": "node",
 			"request": "launch",
+			"name": "mocha",
+			"skipFiles": [
+				"<node_internals>/**"
+			],
+			"args": [
+				"--require",
+				"tsx",
+				"./test/**/*.test.ts"
+			],
+			"program": "${workspaceFolder}/node_modules/mocha/bin/_mocha"
+		},
+		{
+			"type": "node",
+			"request": "launch",
 			"name": "viewig scan",
 			"skipFiles": [
 				"<node_internals>/**"
@@ -41,6 +55,6 @@
 				"${workspaceFolder}/lib/*.js"
 			],
 			"preLaunchTask": "Build",
-		}
+		},
 	]
 }
