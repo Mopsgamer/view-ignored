@@ -36,9 +36,9 @@ export const npmPatternInclude = [
 //#endregion
 
 //#region parsers
-export type ParserFunction = (text: string) => object | undefined
+export type ParserFunction<T> = (text: string) => T
 
-export const parserJSONDict: ParserFunction = (text) => {
+export const parserJSONDict: ParserFunction<object> = (text) => {
 	const result = JSON.parse(text)
 	if (result?.constructor !== Object) {
 		throw new TypeError(`JSON is not dictionary`)
@@ -57,22 +57,19 @@ export interface GetLookMethodGitOptions {
 	negate?: boolean
 }
 
-export interface GetLookMethodPropJSONOptions extends GetLookMethodGitOptions {
-	parserFunc?: ParserFunction,
+export interface GetLookMethodPropJSONOptions<T> extends GetLookMethodGitOptions {
+	parserFunc?: ParserFunction<T>,
 	prop: string,
 }
 
-export function getLookMethodPropJSON(options: GetLookMethodPropJSONOptions) {
+export function getLookMethodPropJSON(options: GetLookMethodPropJSONOptions<object>) {
 	const { parserFunc = parserJSONDict, prop } = options
 	return (function (data: LookMethodData) {
 		const { looker, sourceFile: source } = data
+		let parsed: object
 		try {
-			parserFunc(source.content)
-		} catch (error) {
-			return false
-		}
-		const parsed = parserFunc(source.content)
-		if (!parsed) {
+			parsed = parserFunc(source.content)
+		} catch {
 			return false
 		}
 		const propVal = getValue(parsed, prop)
