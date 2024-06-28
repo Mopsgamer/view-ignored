@@ -1,5 +1,5 @@
 import { stdout } from "process"
-import { FilterName, FileInfo } from "../browser/index.js"
+import { FilterName, FileInfo } from "../index.js"
 import { default as tree } from "treeify";
 import jsonifyPaths from "jsonify-paths";
 import { ChalkInstance } from "chalk";
@@ -9,27 +9,21 @@ export const styleNameList = ['tree', 'paths', 'treeEmoji', 'treeNerd'] as const
 export type StyleName = typeof styleNameList[number]
 export type Style = (oc: ChalkInstance, files: FileInfo[], style: StyleName, filter: FilterName) => void
 
+const printTree: Style = function (oc, files, styleName) {
+	const pathsAsObject = jsonifyPaths.from(files.map(f => f.toString({ styleName, usePrefix: true, chalk: oc }, false)), { delimiter: "/" })
+	const pathsAsTree = tree.asTree(pathsAsObject, true, true)
+	stdout.write(pathsAsTree)
+}
+
 export const Styles: Record<StyleName, Style> = {
 	paths(oc, files, styleName) {
 		stdout.write(files.map(
 			f => `${f.toString({ styleName, usePrefix: true, chalk: oc })}`)
 			.join('\n') + "\n")
 	},
-	tree(oc, files, styleName) {
-		const pathsAsObject = jsonifyPaths.from(files.map(f => f.toString({ styleName, usePrefix: true, chalk: oc }, false)), { delimiter: "/" })
-		const pathsAsTree = tree.asTree(pathsAsObject, true, true)
-		stdout.write(pathsAsTree)
-	},
-	treeEmoji(oc, files, styleName) {
-		const pathsAsObject = jsonifyPaths.from(files.map(f => f.toString({ styleName, usePrefix: true, chalk: oc }, false)), { delimiter: "/" });
-		const pathsAsTree = tree.asTree(pathsAsObject, true, true);
-		stdout.write(pathsAsTree)
-	},
-	treeNerd(oc, files, styleName) {
-		const pathsAsObject = jsonifyPaths.from(files.map(f => f.toString({ styleName, usePrefix: true, chalk: oc }, false)), { delimiter: "/" });
-		const pathsAsTree = tree.asTree(pathsAsObject, true, true);
-		stdout.write(pathsAsTree)
-	}
+	tree: printTree,
+	treeEmoji: printTree,
+	treeNerd: printTree
 }
 
 export interface StyleCondition {

@@ -1,6 +1,6 @@
 import { ColorSupportLevel } from "chalk"
-import { FilterName, filterNameList, TargetName, targetNameList } from "./browser/index.js"
-import { SortName, StyleName, sortNameList, styleNameList } from "./tools/index.js"
+import { FilterName, filterNameList, targetBindMap } from "./browser/index.js"
+import { SortName, StyleName, sortNameList, styleNameList } from "./browser/tools/index.js"
 import * as os from "os";
 import propertiesFile from "properties";
 import path from "path"
@@ -13,7 +13,7 @@ export const configKeyList = ["color", "target", "filter", "sort", "style"] as c
 export type ConfigKey = typeof configKeyList[number] & keyof Config
 export type Config = {
     color: `${ColorSupportLevel}`,
-    target: TargetName,
+    target: string,
     filter: FilterName,
     sort: SortName,
     style: StyleName,
@@ -28,7 +28,7 @@ export const configDefault: Config = {
 }
 export const configValues = {
     color: ["1", "2", "3", "4"],
-    target: targetNameList,
+    target: Array.from(targetBindMap.keys()),
     filter: filterNameList,
     sort: sortNameList,
     style: styleNameList

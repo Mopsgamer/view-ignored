@@ -1,15 +1,25 @@
-import path from "path";
+import * as path from "path";
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Looker } from "./looker.js";
-import type FastGlob from "fast-glob";
-import { ChalkInstance } from "chalk";
-import { styleConditionFile, StyleName } from "../tools/index.js";
+import FastGlob from "fast-glob";
+
+//#region default binds
+import "../plugins/git.js"
+import "../plugins/npm.js"
+import "../plugins/vsce.js"
+import "../plugins/yarn.js"
+import { targetBindMap } from "./binds.js";
+import { FileInfo } from "./fileinfo.js";
+import { SourcePattern } from "./sourcepattern.js";
+//#endregion
 
 export type PatternType = ".*ignore" | "minimatch"
-export const targetNameList = ['git', 'npm', 'yarn', 'vsce'] as const
-export type TargetName = typeof targetNameList[number]
 export const filterNameList = ["ignored", "included", "all"] as const
 export type FilterName = typeof filterNameList[number]
+
+export interface FileSystemAdapter extends FastGlob.FileSystemAdapter {
+	readFileSync: (path: string) => Buffer
+}
 
 //#region path methods
 /**
@@ -50,11 +60,11 @@ export interface SourceFile {
 	 */
 	content: string,
 }
-export interface Source<FallbackT = SourceFile> {
+export interface Source {
 	/**
 	 * First valid source will be used as {@link Looker}.
 	 */
-	fallbacks: FallbackT[],
+	sources: SourceFile[] | SourcePattern,
 	/**
 	 * Pattern parser name.
 	 */
@@ -66,6 +76,7 @@ export interface Source<FallbackT = SourceFile> {
 }
 
 export interface LookFileOptions {
+	fs?: FileSystemAdapter,
 	/**
 	 * Git configuration property.
 	 * 
@@ -79,7 +90,7 @@ export interface LookFileOptions {
 	 * 
 	 * @default []
 	 */
-	addPattern?: string[],
+	addPatterns?: string[],
 	/**
 	 * If `true`, paths starting with `./` will be allowed.
 	 * 
@@ -88,20 +99,8 @@ export interface LookFileOptions {
 	allowRelativePaths?: boolean
 }
 
-export interface LookFolderOptions extends LookFileOptions {
-	/**
-	* Specifies the maximum depth of a read directory relative to the start
-	* directory.
-	*
-	* @default Infinity
-	*/
-	deep?: FastGlob.Options["deep"]
-	/**
-	 * Mark the directory path with the final slash.
-	 *
-	 * @default false
-	 */
-	markDirectories?: FastGlob.Options["markDirectories"]
+export interface LookFolderOptions extends LookFileOptions, FastGlob.Options {
+	fs?: FileSystemAdapter,
 	/**
 	 * Filter output.
 	 * 
@@ -113,54 +112,67 @@ export interface LookFolderOptions extends LookFileOptions {
 /**
  * Returns `undefined`, if the source is bad.
  */
-export function lookFile(filePath: string, sources: Source[], options: LookFileOptions): FileInfo | undefined {
+export function scanFile(filePath: string, sources: Source[], options: LookFileOptions): FileInfo | undefined {
 	const {
-		addPattern = [],
+		addPatterns = [],
 		allowRelativePaths = true,
 		ignoreCase = false,
 	} = options
 
 	for (const source of sources) {
 		const looker = new Looker({
+			addPatterns: addPatterns,
 			allowRelativePaths: allowRelativePaths,
 			ignoreCase: ignoreCase,
 			patternType: source.patternType,
 		})
 
-		for (const file of source.fallbacks) {
+		const sources = source.sources instanceof SourcePattern ? source.sources.read(options) : source.sources
+		for (const file of sources) {
+			const l = looker.clone()
 			const isGoodSource = source.method({
 				sourceFile: file,
 				filePath: filePath,
-				looker: looker
+				looker: l
 			})
 			if (isGoodSource) {
-				looker.add(addPattern)
-				return FileInfo.from(filePath, looker, file)
+				return FileInfo.from(filePath, l, file)
 			}
 		}
 	}
 }
 
 /**
- * Scan project directory with results for each file path.
+ * Scan project directory paths with results for each file path.
  */
-export function lookProject(allFilePaths: string[], sources: Source[], options: LookFolderOptions): FileInfo[] | undefined {
+export function scanPaths(allFilePaths: string[], sources: Source[], options: LookFolderOptions): FileInfo[] | undefined
+export function scanPaths(allFilePaths: string[], target: string, options: LookFolderOptions): FileInfo[] | undefined
+export function scanPaths(allFilePaths: string[], arg2: Source[] | string, options: LookFolderOptions): FileInfo[] | undefined {
 	const { filter = "included" } = options;
 	const cache = new Map<string, Looker>()
 
+	if (typeof arg2 === "string") {
+		const bind = targetBindMap.get(arg2)
+		if (bind === undefined) {
+			throw TypeError(`view-ignored can not find target '${arg2}'`)
+		}
+		return scanPaths(allFilePaths, bind.sources, bind.scanOptions)
+	}
+
 	// Find good source
-	for (const source of sources) {
+	for (const source of arg2) {
 		let goodFound = false
 		const resultList: FileInfo[] = []
 		for (const filePath of allFilePaths) {
-			const possibleSource = closest(filePath, source.fallbacks)
+			const s = source.sources instanceof SourcePattern ? source.sources.read() : source.sources
+			const possibleSource = closest(filePath, s)
 			if (possibleSource === undefined) {
 				break
 			}
 			const looker = cache.get(possibleSource.path)
 			let info: FileInfo
 			if (looker === undefined) {
-				const newInfo = lookFile(filePath, [source], options)
+				const newInfo = scanFile(filePath, [source], options)
 				if (newInfo === undefined) {
 					break
 				}
@@ -184,60 +196,19 @@ export function lookProject(allFilePaths: string[], sources: Source[], options: 
 	}
 	return undefined
 }
-//#endregion
-
-//#region methods
-export interface FileInfoToStringOptions {
-	styleName?: StyleName
-	usePrefix?: boolean
-	chalk?: ChalkInstance
-}
 /**
- * Result of the file path scan.
+ * Scan project directory with results for each file path.
+ * 
+ * @param path Project folder path.
  */
-export class FileInfo {
-	public readonly ignored: boolean
-	constructor(
-		public readonly filePath: string,
-		public readonly looker: Looker,
-		public readonly source: SourceFile,
-	) {
-		this.ignored = looker.ignores(filePath)
+export function scanProject(path: string, sources: Source[], options: LookFolderOptions): FileInfo[] | undefined
+export function scanProject(path: string, target: string, options: LookFolderOptions): FileInfo[] | undefined
+export function scanProject(path: string, arg2: Source[] | string, options: LookFolderOptions): FileInfo[] | undefined {
+	const paths = new SourcePattern(path).scan(options)
+	if (typeof arg2 === "string") {
+		return scanPaths(paths, arg2, options)
 	}
-	static from(paths: string[], looker: Looker, source?: SourceFile | string): FileInfo[]
-	static from(path: string, looker: Looker, source?: SourceFile | string): FileInfo
-	static from(arg: string | string[], looker: Looker, source?: SourceFile | string): FileInfo | FileInfo[] {
-		if (Array.isArray(arg)) {
-			return arg.map(path => FileInfo.from(path, looker, source))
-		}
-		const src = typeof source === "object" ? source : { path: '<no-source>', content: source ?? '' }
-		return new FileInfo(arg, looker, src)
-	}
-	/**
-	 * @param options Styling options.
-	 * @param options.styleName Determines if file icon should be used. Default `undefined`.
-	 * @param options.usePrefix Default `false`.
-	 * @param options.chalk Default `undefined`.
-	 * @param formatEntire Determines if path base or entire file path should be formatted. Default `true`.
-	 */
-	toString(options?: FileInfoToStringOptions, formatEntire = true): string {
-		const { styleName, usePrefix = false, chalk } = options ?? {};
-		const parsed = path.parse(this.filePath)
-		const fileIcon = styleConditionFile(styleName, this.filePath)
-		const prefix = usePrefix ? (this.ignored ? '!' : '+') : ''
-		if (chalk) {
-			const clr = chalk[this.ignored ? "red" : "green"]
-			if (formatEntire) {
-				return fileIcon + clr(prefix + this.filePath)
-			}
-			return parsed.dir + '/' + fileIcon + clr(prefix + parsed.base)
-		}
-		if (formatEntire) {
-			return prefix + this.filePath
-		}
-		return parsed.dir + '/' + fileIcon + prefix + parsed.base
-	}
+	// pov: typescript
+	return scanPaths(paths, arg2, options)
 }
-
-
 //#endregion

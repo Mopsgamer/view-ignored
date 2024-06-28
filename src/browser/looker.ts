@@ -23,7 +23,7 @@ export class Looker {
 	 * 
 	 * @default ".*ignore"
 	 */
-	public readonly patternType: PatternType
+	public patternType: PatternType
 	private patternList: string[] = []
 	private ignoreInstance: Ignore
 
@@ -32,6 +32,15 @@ export class Looker {
 		this.patternType = options?.patternType ?? ".*ignore"
 		this.ignoreInstance = ignore.default(options)
 		this.add(options?.addPatterns ?? [])
+	}
+
+	clone(): Looker {
+		const cloned = new Looker({
+			addPatterns: this.patternList,
+			negated: this.isNegated,
+			patternType: this.patternType,
+		})
+		return cloned;
 	}
 
 	negate(): this {

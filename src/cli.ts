@@ -2,7 +2,7 @@ import fs from "fs";
 import { stdout } from "process";
 import { Chalk, ColorSupportLevel } from "chalk";
 import { Argument, InvalidArgumentError, Option, program } from "commander";
-import { FilterName, TargetName, FileInfo, scanProject, GetFormattedPreset, SortName, StyleName, Sorters, Styles, styleCondition } from "./index.js";
+import { FilterName, FileInfo, SortName, StyleName, Sorters, Styles, styleCondition, scanProject, targetBindMap } from "./index.js";
 import { configValues, configManager, ConfigKey, Config, configKeyList, configFilePath } from "./config.js";
 
 configManager.load()
@@ -10,7 +10,7 @@ export { program }
 
 export interface Flags {
 	color: string,
-	target: TargetName,
+	target: string,
 	filter: FilterName,
 	sort: SortName,
 	style: StyleName
@@ -19,7 +19,7 @@ export interface Flags {
 export const scanProgram = program
 	.command("scan")
 	.aliases(['sc'])
-	.description('get ignored paths.')
+	.description('get ignored paths')
 
 scanProgram
 	.addOption(new Option("-clr, --color <level>").default(configManager.get("color")).choices(configValues.color))
@@ -32,7 +32,7 @@ scanProgram
 export const cfgProgram = program
 	.command("config")
 	.alias('cfg')
-	.description('cli config manipulation.')
+	.description('cli config manipulation')
 
 export const argConfigKeyVal = new Argument('<pair>', 'pair "key=value"').argParser(parseArgKeyVal)
 export const argConfigKey = new Argument('[key]', 'setting').choices(configKeyList)
@@ -83,7 +83,6 @@ export function actionScan(flags: Flags): void {
 	/** Chalk, but configured by view-ignored cli. */
 	const chalk = new Chalk({ level: colorLevel })
 
-	const formattedPreset = GetFormattedPreset(flags.target, flags.style, chalk)
 	const looked = scanProject(process.cwd(), flags.target, {filter: flags.filter})
 
 	if (!looked) {
@@ -97,6 +96,7 @@ export function actionScan(flags: Flags): void {
 	for (const look of looked) {
 		cacheEditDates.set(look, fs.statSync(look.filePath).mtime)
 	}
+	const bind = targetBindMap.get(flags.target)!
 	const lookedSorted = looked.sort((a, b) => sorter(
 		a.toString(), b.toString(),
 		cacheEditDates.get(a)!, cacheEditDates.get(b)!
@@ -109,10 +109,10 @@ export function actionScan(flags: Flags): void {
 	const fastSymbol = styleCondition(flags.style, { ifEmoji: '⚡', ifNerd: '\udb85\udc0c' })
 	stdout.write(`${chalk.green(checkSymbol)}Done in ${time < 400 ? chalk.yellow(fastSymbol) : ''}${time}ms.`)
 	stdout.write(`\n\n`)
-	stdout.write(`${looked.length} files listed for ${formattedPreset.name} (${flags.filter}).`)
+	stdout.write(`${looked.length} files listed for ${bind.name} (${flags.filter}).`)
 	stdout.write('\n\n')
 	const infoSymbol = styleCondition(flags.style, { ifEmoji: 'ℹ️', ifNerd: '\ue66a', postfix: ' ' })
-	stdout.write(`${chalk.blue(infoSymbol)}You can use '${chalk.magenta(formattedPreset.checkCommand ?? "")}' to check if the list is valid.`)
+	stdout.write(`${chalk.blue(infoSymbol)}You can use '${chalk.magenta(bind.check ?? "")}' to check if the list is valid.`)
 	stdout.write('\n')
 }
 
