@@ -1,6 +1,6 @@
 import { ColorSupportLevel } from "chalk"
-import { FilterName, filterNameList, TargetName, targetNameList } from "./lib.js"
-import * as Util from "./util/index.js"
+import { FilterName, filterNameList, TargetName, targetNameList } from "./browser/index.js"
+import { SortName, StyleName, sortNameList, styleNameList } from "./tools/index.js"
 import * as os from "os";
 import propertiesFile from "properties";
 import path from "path"
@@ -15,8 +15,8 @@ export type Config = {
     color: `${ColorSupportLevel}`,
     target: TargetName,
     filter: FilterName,
-    sort: Util.SortName,
-    style: Util.StyleName
+    sort: SortName,
+    style: StyleName,
 }
 
 export const configDefault: Config = {
@@ -24,27 +24,29 @@ export const configDefault: Config = {
     target: "git",
     filter: "included",
     sort: "firstFolders",
-    style: "tree",
+    style: "treeEmoji",
 }
 export const configValues = {
     color: ["1", "2", "3", "4"],
     target: targetNameList,
     filter: filterNameList,
-    sort: Util.sortNameList,
-    style: Util.styleNameList
+    sort: sortNameList,
+    style: styleNameList
 } as const
 
 export function configPartialGood(cfg: unknown): cfg is Partial<Config> {
-    const isDict = typeof cfg === 'object' && cfg !== null && !Array.isArray(cfg)
+    if (cfg?.constructor !== Object) {
+        return false
+    }
     const jsonobj = cfg as Record<string, string>
-    return isDict && Object.entries(configValues).every(
-        ([key, possible]) => key in cfg
+    return Object.entries(configValues).every(
+        ([key, possible]) => key in jsonobj
             ? (possible.includes(String(jsonobj[key]) as never))
             : true
     )
 }
 
-export const configEditor = {
+export const configManager = {
     /**
      * Contains custom settings.
      */
@@ -96,9 +98,10 @@ export const configEditor = {
      * @param key Config property name.
      * @param fallbackDefault If `true`, default config value will be used when property from config file is `undefined`. Default `true`.
      */
-    get<T extends ConfigKey>(key: T, fallbackDefault: boolean = true): Config[T] | undefined {
+    get<T extends ConfigKey, UseDefault extends boolean>(key: T, fallbackDefault?: UseDefault) {
+        const useDefault = fallbackDefault ?? true
         const value: Config[T] | undefined = this.data[key]
-        if (fallbackDefault && value === undefined) {
+        if (useDefault && value === undefined) {
             return configDefault[key]
         }
         return value

@@ -1,139 +1,23 @@
-import path from "path";
 import FastGlob from "fast-glob";
-import { minimatch } from "minimatch";
-import { readFileSync } from "fs";
-import ignore, { Ignore } from "ignore";
 import { execSync } from "child_process";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { patternsExclude, getLookMethodGit, getLookMethodPropJSON } from "./util/presets.js";
-
-export type PatternType = ".*ignore" | "minimatch"
-export const targetNameList = ['git', 'npm', 'yarn', 'vsce'] as const
-export type TargetName = typeof targetNameList[number]
-export const filterNameList = ["ignored", "included", "all"] as const
-export type FilterName = typeof filterNameList[number]
-
-//#region Looker
-export interface LookerOptions extends ignore.Options {
-	/**
-	 * @see {@link Looker.isNegated}
-	 */
-	negated?: boolean
-	patternType?: PatternType
-	addPatterns?: LookerPattern
-}
-export type LookerPattern = string | string[]
-export class Looker {
-	/**
-	 * If `true`, when calling {@link Looker.ignores}, method will return `true` for ignored path.
-	 * 
-	 * @default false
-	 */
-	public isNegated: boolean
-	/**
-	 * Defines way to check paths.
-	 * 
-	 * @default ".*ignore"
-	 */
-	public readonly patternType: PatternType
-	private patternList: string[] = []
-	private ignoreInstance: Ignore
-
-	constructor(options?: LookerOptions) {
-		this.isNegated = options?.negated ?? false
-		this.patternType = options?.patternType ?? ".*ignore"
-		this.ignoreInstance = ignore.default(options)
-		this.add(options?.addPatterns ?? [])
-	}
-
-	negate(): this {
-		this.isNegated = !this.isNegated
-		return this
-	}
-
-	/**
-	 * Adds new ignore rule.
-	 * @param pattern .gitignore file specification pattern.
-	 */
-	add(pattern: LookerPattern): this {
-		if (typeof pattern === "string") {
-			this.patternList.push(pattern)
-			this.ignoreInstance.add(pattern)
-		} else {
-			for (const pat of pattern) {
-				this.patternList.push(pat)
-				this.ignoreInstance.add(pat)
-			}
-		}
-		return this
-	}
-
-	/**
-	 * Checks if the Looker should ignore dir entry path.
-	 * @see {@link Looker.isNegated} can change the return value.
-	 * @param path Dir entry path.
-	 */
-	ignores(path: string): boolean {
-		let ignores: boolean
-		if (this.patternType === ".*ignore") {
-			ignores = this.ignoreInstance.ignores(path)
-		} else { // minimatch
-			ignores = !this.patternList.some(pattern => minimatch(path, pattern))
-		}
-		return this.isNegated ? !ignores : ignores;
-	}
-
-	/**
-	 * Checks if given pattern is valid.
-	 * @param pattern Dir entry path.
-	 */
-	isValidPattern(pattern: LookerPattern): boolean {
-		if (Array.isArray(pattern)) {
-			return pattern.every(p => ignore.default.isPathValid(p))
-		}
-		if (this.patternType === ".*ignore") {
-			return ignore.default.isPathValid(pattern)
-		}
-		if (this.patternType === "minimatch") {
-			try {
-				minimatch.makeRe(pattern)
-				return true
-			} catch (error) {
-				return false
-			}
-		}
-		throw new TypeError(`Unknown pattern type '${this.patternType}'.`)
-	}
-}
-//#endregion
-
-//#region path methods
-/**
- * Get file paths using pattern.
- * @param pattern The pattern.
- * @param cwd Current working directory.
- * @param ignore Ignore patterns.
- */
-export function globFiles(pattern: string | string[], cwd: string, ignore?: string[]): string[] {
-	return FastGlob.sync(pattern, { cwd, ignore, onlyFiles: true, dot: true })
-}
-
-/**
- * Returns closest dir entry path for another one using the given list.
- * If `undefined`, no reliable sources that contain patterns to ignore.
- */
-export function closestFilePath(filePath: string, paths: string[]): string | undefined {
-	const filePathDir = path.dirname(filePath)
-	const result = paths.reverse().find(p => {
-		const pd = path.dirname(p)
-		const result = filePathDir.startsWith(pd) || pd === '.'
-		return result
-	})
-	return result
-}
-//#endregion
+import { LookFolderOptions, lookProject, SourceFile, FileInfo, Source, TargetName } from "./browser/index.js";
+import { getLookMethodGit, getLookMethodPropJSON, npmPatternExclude, npmPatternInclude, patternsExclude } from "./tools/index.js";
+import { readFileSync } from "fs";
+import { StyleName } from "./tools/styles.js";
+import { ChalkInstance } from "chalk";
+import path from "path";
 
 //#region git config reading
+/**
+ * Read git config value as string.
+ */
+export function gitCurrentBranch(cwd?: string): string | undefined {
+	try {
+		return execSync(`git rev-parse --abbrev-ref HEAD`, { cwd: cwd, }).toString().trim();
+	} catch (error) {
+		return;
+	}
+}
 /**
  * Read git config value as string.
  */
@@ -158,130 +42,14 @@ export function gitConfigBool(key: string, cwd?: string): boolean | undefined {
 }
 //#endregion
 
-//#region looking
-/**
- * @see {@link LookMethod}
- */
-export interface LookMethodData {
-	looker: Looker,
-	filePath: string,
-	source: string,
-	sourceContent: string,
-}
-/**
- * Returns `true` if given source is valid, writes rules to the looker.
- */
-export type LookMethod = (data: LookMethodData) => boolean
-export type PossibleSource = [string | string[], PatternType, LookMethod]
-export interface LookFileOptions {
-	/**
-	 * Current working directory.
-	 * Recommended to set this value yourself.
-	 * 
-	 * @default process.cwd()
-	 */
-	cwd?: string,
-	/**
-	 * Additional patterns, which will be used as
-	 * other patterns in the `.gitignore` file, or `package.json` "files" property.
-	 */
-	addPattern?: string[],
-	/**
-	 * Sources like `.gitignore` or `package.json` "files" property. It breaks on first valid source.
-	 * @example [["**\/.gitignore", ".*ignore", Util.lookGit()]]
-	 * @see {@link getLookMethodGit}, {@link getLookMethodPropJSON}
-	 * @see {@link getLookMethodGit}, {@link getLookMethodPropJSON}
-	 */
-	sources: PossibleSource[],
-	/**
-	 * If `true`, paths starting with `./` will be allowed.
-	 * 
-	 * @default true
-	 */
-	allowRelativePaths?: boolean
-}
-//#endregion
-
-//#region methods
-/**
- * Result of the file path scan.
- */
-export class LookFileResult {
-	constructor(
-		public filePath: string,
-		public ignored: boolean,
-		public source: string,
-	) { }
-	static from(paths: string[], isIgnored: boolean, source?: string): LookFileResult[]
-	static from(path: string, isIgnored: boolean, source?: string): LookFileResult
-	static from(arg: string | string[], isIgnored: boolean, source?: string): LookFileResult | LookFileResult[] {
-		if (typeof arg === "string") {
-			return new LookFileResult(arg, isIgnored, source || '<no-source>')
-		}
-		return arg.map(path => LookFileResult.from(path, isIgnored, source))
-	}
-	toString(): string {
-		return `${this.filePath}`
-	}
-}
-
-/**
- * Returns `undefined`, if any source is bad.
- */
-export function lookFilePath(filePath: string, sourcePath: string, patternType: PatternType, method: LookMethod, options: Omit<LookFileOptions, "sources" | "hidePattern">): Looker | undefined {
-	const {
-		cwd = process.cwd(),
-		addPattern = [],
-		allowRelativePaths = true,
-	} = options
-
-	const ignoreCase = gitConfigBool('core.ignoreCase') ?? false
-
-	const looker = new Looker({
-		allowRelativePaths: allowRelativePaths,
-		ignoreCase: ignoreCase,
-		patternType: patternType,
-	})
-
-	const sourceContent = readFileSync(path.join(cwd, sourcePath)).toString()
-	const isGoodSource = method({
-		source: sourcePath,
-		sourceContent: sourceContent,
-		filePath: filePath,
-		looker: looker
-	})
-	if (isGoodSource) {
-		looker.add(addPattern)
-		return looker
-	}
-}
-
-/**
- * Returns `undefined`, if any source is bad.
- */
-export function lookFilePathTry(filePath: string, options: LookFileOptions): Looker | undefined {
-	const {
-		cwd = process.cwd(),
-		sources,
-	} = options
-
-	for (const [pattern, patternType, method] of sources) {
-		const possibleSourcePaths = globFiles(pattern, cwd)
-		const sourcePath = closestFilePath(filePath, possibleSourcePaths)
-		if (sourcePath === undefined) {
-			continue
-		}
-		return lookFilePath(filePath, sourcePath, patternType, method, options)
-	}
-}
-
-export interface LookFolderOptions extends LookFileOptions {
+//#region method options
+export interface ScanFolderOptions extends LookFolderOptions {
 	/**
 	 * Force exclude patterns from file path list.
 	 * 
 	 * @see {@link patternsExclude} can be used.
 	 */
-	hidePattern?: string[],
+	ignore?: string[],
 	/**
 	* Specifies the maximum depth of a read directory relative to the start
 	* directory.
@@ -295,61 +63,115 @@ export interface LookFolderOptions extends LookFileOptions {
 	 * @default false
 	 */
 	markDirectories?: FastGlob.Options["markDirectories"]
-	filter?: FilterName
+}
+//#endregion
+
+
+//#region methods
+export function scanProject(dirPath: string, target: TargetName, options?: ScanFolderOptions): FileInfo[] | undefined
+export function scanProject(dirPath: string, sources: Source<string>[], options: ScanFolderOptions): FileInfo[] | undefined
+export function scanProject(dirPath: string, target: Source<string>[] | TargetName, options: undefined | ScanFolderOptions): FileInfo[] | undefined {
+	if (typeof target === "string") {
+		const preset = Presets[target]
+		const scan = scanProject(dirPath, preset.sources, { ...preset, ...options ?? {} })
+		return scan
+	}
+	else if (Array.isArray(target) && options !== undefined) {
+		const paths = FastGlob.sync(
+			"**",
+			{
+				cwd: dirPath,
+				ignore: options.ignore,
+				markDirectories: options.markDirectories,
+				deep: options.deep,
+				dot: true,
+				onlyFiles: true
+			}
+		)
+		const sourcesPostRead = target.map(source => ({
+			...source,
+			fallbacks: readSourcePattern(source.fallbacks, {cwd: dirPath, ignore: options.ignore})
+		} as Source))
+		return lookProject(paths, sourcesPostRead, options)
+	}
+	throw new TypeError(`Bad scanProject params. Target param: ${target} (expected TargetName or Source[]). Options: ${options} (expected object or undefined).`)
 }
 
-/**
- * Scan project directory with results for each file path.
- */
-export function lookProjectDirSync(options: LookFolderOptions): LookFileResult[] {
-	const { sources, cwd = process.cwd(), hidePattern = [], filter = "included", deep, markDirectories } = options;
-	const cache = new Map<string, Looker>()
-	const resultList: LookFileResult[] = []
-	const allPaths = FastGlob.sync(
-		"**",
-		{
-			cwd: options.cwd,
-			dot: true,
-			ignore: hidePattern,
-			onlyFiles: true,
-			deep,
-			markDirectories,
-		}
-	)
-	let goodFound = false
-	// Find good source
-	for (const [pattern, patternType, method] of sources) {
-		const matches = globFiles(pattern, cwd)
-		for (const filePath of allPaths) {
-			const sourcePath = closestFilePath(filePath, matches)
-			if (sourcePath === undefined) {
-				break
-			}
-			let looker = cache.get(sourcePath)
-			if (looker === undefined) {
-				looker = lookFilePath(filePath, sourcePath, patternType, method, options)
-				if (looker === undefined) {
-					break
-				}
-				cache.set(sourcePath, looker)
-			}
-			const isIgnored = looker.ignores(filePath)
-			const filterIgnore = (filter === "ignored") && isIgnored
-			const filterInclude = (filter === "included") && !isIgnored
-			const filterAll = filter === "all"
-			if (filterIgnore || filterInclude || filterAll) {
-				const lookResult = LookFileResult.from(filePath, isIgnored, sourcePath)
-				resultList.push(lookResult)
-			}
-			goodFound = true
-		}
-		if (goodFound) {
-			break
-		}
-	}
-	if (!goodFound) {
-		return LookFileResult.from(allPaths, false)
-	}
-	return resultList
+export function readSourcePattern(pattern: string | string[], options?: FastGlob.Options): SourceFile[] {
+	const sourceFile = FastGlob.sync(pattern, options)
+		.map(pth => ({
+			path: pth,
+			content: readFileSync(path.join(options?.cwd ?? process.cwd(), pth)).toString()
+		} as SourceFile))
+	return sourceFile
+}
+//#endregion
+
+//#region presets
+export interface PresetHumanized extends LookFolderOptions {
+	name: string,
+	checkCommand: string | undefined,
+}
+export type Preset = Record<TargetName, ScanFolderOptions & { sources: Source<string>[] }>
+
+export const Presets: Preset = {
+	git: {
+		allowRelativePaths: false,
+		ignore: patternsExclude.concat(gitConfigString("core.excludesFile") ?? []),
+		sources: [
+			{ fallbacks: ["**/.gitignore"], patternType: ".*ignore", method: getLookMethodGit() },
+		]
+	},
+	npm: {
+		ignore: patternsExclude.concat(npmPatternExclude),
+		addPattern: npmPatternInclude,
+		sources: [
+			{ fallbacks: ["**/package.json"], patternType: "minimatch", method: getLookMethodPropJSON({ prop: "files", negate: true }) },
+			{ fallbacks: ["**/.npmignore"], patternType: ".*ignore", method: getLookMethodGit() },
+			{ fallbacks: ["**/.gitignore"], patternType: ".*ignore", method: getLookMethodGit() },
+		]
+	},
+	yarn: {
+		ignore: patternsExclude.concat(npmPatternExclude),
+		addPattern: npmPatternInclude,
+		sources: [
+			{ fallbacks: ["**/package.json"], patternType: "minimatch", method: getLookMethodPropJSON({ prop: "files", negate: true }) },
+			{ fallbacks: ["**/.yarnignore"], patternType: ".*ignore", method: getLookMethodGit() },
+			{ fallbacks: ["**/.npmignore"], patternType: ".*ignore", method: getLookMethodGit() },
+			{ fallbacks: ["**/.gitignore"], patternType: ".*ignore", method: getLookMethodGit() },
+		]
+	},
+	vsce: {
+		ignore: patternsExclude,
+		sources: [
+			{ fallbacks: ["**/.vscodeignore"], patternType: "minimatch", method: getLookMethodGit() },
+		]
+	},
+}
+export function GetFormattedPreset<T extends TargetName>(target: T, style: StyleName, oc: ChalkInstance): PresetHumanized {
+	const IsNerd = style.toLowerCase().includes('nerd')
+	const result: Record<TargetName, PresetHumanized> = {
+		git: {
+			...Presets.git,
+			name: `${IsNerd ? oc.redBright('\ue65d') + ' ' : ''}Git`,
+			checkCommand: `git ls-tree -r ${gitCurrentBranch()} --name-only`,
+		},
+		npm: {
+			...Presets.npm,
+			name: `${IsNerd ? oc.red('\ue616') + ' ' : ''}NPM`,
+			checkCommand: 'npm pack --dry-run',
+		},
+		yarn: {
+			...Presets.yarn,
+			name: `${IsNerd ? oc.magenta('\ue6a7') + ' ' : ''}Yarn`,
+			checkCommand: undefined,
+		},
+		vsce: {
+			...Presets.vsce,
+			name: `${IsNerd ? oc.red('\udb82\ude1e') + ' ' : ''}VSC Extension`,
+			checkCommand: 'vsce ls',
+		},
+	};
+	return result[target]
 }
 //#endregion

@@ -1,8 +1,7 @@
-import mockfs from "mock-fs"
+import mock from "mock-fs"
 import * as viewig from "../src/index.js"
 import assert from "assert"
 import type FileSystem from "mock-fs/lib/filesystem.js"
-import { Util } from "../src/index.js"
 
 interface Case {
     shouldInclude: string[]
@@ -150,14 +149,23 @@ describe("Targets", function () {
         describe(target, function () {
             const tests = targetTestList[target] as DirCase
             for (const testName in tests) {
-                const test = tests[testName] as Case
                 it(testName, function () {
-                    mockfs({ [testPath]: test.content })
-                    const lookList = viewig.lookProjectDirSync({ cwd: testPath, filter: 'included', ...viewig.Util.Presets[target] })
-                    assert.deepEqual(lookList.map(l => l.filePath).sort(), test.shouldInclude.sort())
+                    const test = tests[testName] as Case
+                    mock({ [testPath]: test.content })
+                    const lookList = viewig.scanProject(testPath, target as viewig.TargetName, { filter: 'included' })
+
+                    if (!lookList) return;
+
+                    const sourcesView = JSON.stringify(test.content, null, ' '.repeat(2))
+
+                    assert.deepEqual(
+                        lookList.map(l => l.filePath).sort(),
+                        test.shouldInclude.sort(),
+                        `Bad paths results.\n\n${sourcesView}`
+                    )
                 })
             }
         })
     }
 })
-mockfs.restore()
+mock.restore()

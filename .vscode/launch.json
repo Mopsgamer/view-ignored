@@ -7,17 +7,54 @@
 		{
 			"type": "node",
 			"request": "launch",
-			"name": "Launch command line",
+			"name": "mocha",
 			"skipFiles": [
 				"<node_internals>/**"
 			],
+			"args": [
+				"--require",
+				"tsx",
+				"./test/**/*.test.ts"
+			],
+			"program": "${workspaceFolder}/node_modules/mocha/bin/_mocha"
+		},
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "viewig scan",
+			"skipFiles": [
+				"<node_internals>/**"
+			],
+			"args": [
+				"scan"
+			],
 			"internalConsoleOptions": "neverOpen",
-			"program": "${workspaceFolder}\\lib\\bin.js",
+			"program": "${workspaceFolder}/lib/bin.js",
 			"cwd": "${workspaceFolder}",
 			"outFiles": [
 				"${workspaceFolder}/lib/*.js"
 			],
 			"preLaunchTask": "Build",
-		}
+		},
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "viewig scan - npm all",
+			"skipFiles": [
+				"<node_internals>/**"
+			],
+			"args": [
+				"scan",
+				"--target=npm",
+				"--filter=all",
+			],
+			"internalConsoleOptions": "neverOpen",
+			"program": "${workspaceFolder}/lib/bin.js",
+			"cwd": "${workspaceFolder}",
+			"outFiles": [
+				"${workspaceFolder}/lib/*.js"
+			],
+			"preLaunchTask": "Build",
+		},
 	]
 }

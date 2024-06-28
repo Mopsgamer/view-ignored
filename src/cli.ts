@@ -1,36 +1,33 @@
-import { Argument, InvalidArgumentError, Option, program } from "commander";
-import { FilterName, Util, lookProjectDirSync, TargetName as TargetName, LookFileResult } from "./index.js";
-import { stdout } from "process";
-import { Chalk } from "chalk";
-import type { ChalkInstance, ColorSupportLevel } from "chalk";
 import fs from "fs";
-import { configValues, configEditor, ConfigKey, Config, configKeyList, configFilePath } from "./config.js";
+import { stdout } from "process";
+import { Chalk, ColorSupportLevel } from "chalk";
+import { Argument, InvalidArgumentError, Option, program } from "commander";
+import { FilterName, TargetName, FileInfo, scanProject, GetFormattedPreset, SortName, StyleName, Sorters, Styles, styleCondition } from "./index.js";
+import { configValues, configManager, ConfigKey, Config, configKeyList, configFilePath } from "./config.js";
 
+configManager.load()
 export { program }
 
-export function safetyHelpCreate(preset: Util.Preset, oc: ChalkInstance): string {
-	const command = preset.checkCommand ?? ""
-	if (command === "") {
-		return ""
-	}
-	return '\n\n' + oc.cyan(`You can use the \`${oc.white(command)}\` command to check if the list is valid.`)
-}
-
 export interface Flags {
-	color?: string,
-	target?: TargetName,
-	filter?: FilterName,
-	sort?: Util.SortName,
-	style?: Util.StyleName
+	color: string,
+	target: TargetName,
+	filter: FilterName,
+	sort: SortName,
+	style: StyleName
 }
 
-program
-	.addOption(new Option("-clr, --color <level>").default(configEditor.get("color")).choices(configValues.color))
-	.addOption(new Option("-t, --target <ignorer>").default(configEditor.get("target")).choices(configValues.target))
-	.addOption(new Option("-fl, --filter <filter>").default(configEditor.get("filter")).choices(configValues.filter))
-	.addOption(new Option("-sr, --sort <sorter>").default(configEditor.get("sort")).choices(configValues.sort))
-	.addOption(new Option("-st, --style <style>").default(configEditor.get("style")).choices(configValues.style))
-	.action(actionPrint)
+export const scanProgram = program
+	.command("scan")
+	.aliases(['sc'])
+	.description('get ignored paths.')
+
+scanProgram
+	.addOption(new Option("-clr, --color <level>").default(configManager.get("color")).choices(configValues.color))
+	.addOption(new Option("-t, --target <ignorer>").default(configManager.get("target")).choices(configValues.target))
+	.addOption(new Option("-fl, --filter <filter>").default(configManager.get("filter")).choices(configValues.filter))
+	.addOption(new Option("-sr, --sort <sorter>").default(configManager.get("sort")).choices(configValues.sort))
+	.addOption(new Option("-st, --style <style>").default(configManager.get("style")).choices(configValues.style))
+	.action(actionScan)
 
 export const cfgProgram = program
 	.command("config")
@@ -60,44 +57,43 @@ cfgProgram
 	.addArgument(argConfigKey)
 	.action(actionCfgGet)
 
-export function parseArgKey(key: string): void {
+export function parseArgKey(key: string): string {
 	if (!configKeyList.includes(key as ConfigKey)) {
 		throw new InvalidArgumentError(`Allowed config properties are ${configKeyList.join(', ')}. Got ${key}.`)
 	}
+	return key;
 }
 
-export function parseArgKeyVal(pair: string): void {
-	const str = pair.split('=')
-	if (str.length !== 2) {
-		throw new InvalidArgumentError(`Ivalid syntax. Expected 'setting=value'. Got ${pair}.`)
+export function parseArgKeyVal(pair: string): [ConfigKey, Config[ConfigKey]] {
+	const result = pair.split('=') as [ConfigKey, Config[ConfigKey]]
+	if (result.length !== 2) {
+		throw new InvalidArgumentError(`Invalid syntax. Expected 'setting=value'. Got '${pair}'.`)
 	}
-	const [key, val] = str as [ConfigKey, Config[ConfigKey]]
+	const [key, val] = result
 	parseArgKey(key)
 	if (!configValues[key].includes(val as Config[ConfigKey] as never)) {
-		throw new InvalidArgumentError(`Allowed config properties are ${configValues[key].join(', ')}. Got ${val}.`)
+		throw new InvalidArgumentError(`Allowed config properties are ${configValues[key].join(', ')}. Got '${val}'.`)
 	}
+	return result
 }
 
-export function actionPrint(flags: Flags): void {
+export function actionScan(flags: Flags): void {
 	const start = Date.now()
-	flags.target ??= "git"
-	flags.filter ??= "included"
-	flags.sort ??= "firstFolders"
-	flags.style ||= "tree"
 	const colorLevel = Math.max(0, Math.min(Number(flags.color ?? 3), 3)) as ColorSupportLevel
 	/** Chalk, but configured by view-ignored cli. */
-	const oc = new Chalk({ level: colorLevel })
-	const isNerd = flags.style.toLowerCase().includes('nerd')
-	const isEmoji = flags.style.toLowerCase().includes('emoji')
+	const chalk = new Chalk({ level: colorLevel })
 
-	const formattedPreset = Util.GetFormattedPreset(flags.target, flags.style, oc)
-	const looked = lookProjectDirSync({
-		...formattedPreset,
-		filter: flags.filter
-	})
+	const formattedPreset = GetFormattedPreset(flags.target, flags.style, chalk)
+	const looked = scanProject(process.cwd(), flags.target, {filter: flags.filter})
 
-	const sorter = Util.Sorters[flags.sort]
-	const cacheEditDates = new Map<LookFileResult, Date>()
+	if (!looked) {
+		stdout.write(`Bad source for ${flags.target}.`)
+		stdout.write('\n')
+		return
+	}
+
+	const sorter = Sorters[flags.sort]
+	const cacheEditDates = new Map<FileInfo, Date>()
 	for (const look of looked) {
 		cacheEditDates.set(look, fs.statSync(look.filePath).mtime)
 	}
@@ -105,14 +101,18 @@ export function actionPrint(flags: Flags): void {
 		a.toString(), b.toString(),
 		cacheEditDates.get(a)!, cacheEditDates.get(b)!
 	))
-	stdout.write((isNerd ? '\uf115 ' : '') + process.cwd() + "\n")
-	Util.Styles[flags.style](oc, lookedSorted, flags.style, flags.filter)
+	stdout.write(process.cwd() + "\n")
+	Styles[flags.style](chalk, lookedSorted, flags.style, flags.filter)
 	const time = Date.now() - start
 	stdout.write(`\n`)
-	stdout.write(`${isEmoji ? '✔️ ' : isNerd ? oc.green('\uf00c ') : ''}Done in ${isNerd && time < 400 ? oc.yellow('\udb85\udc0c') : ''}${time}ms.`)
+	const checkSymbol = styleCondition(flags.style, { ifEmoji: '✅', ifNerd: '\uf00c', postfix: ' ' })
+	const fastSymbol = styleCondition(flags.style, { ifEmoji: '⚡', ifNerd: '\udb85\udc0c' })
+	stdout.write(`${chalk.green(checkSymbol)}Done in ${time < 400 ? chalk.yellow(fastSymbol) : ''}${time}ms.`)
 	stdout.write(`\n\n`)
 	stdout.write(`${looked.length} files listed for ${formattedPreset.name} (${flags.filter}).`)
-	stdout.write(safetyHelpCreate(formattedPreset, oc))
+	stdout.write('\n\n')
+	const infoSymbol = styleCondition(flags.style, { ifEmoji: 'ℹ️', ifNerd: '\ue66a', postfix: ' ' })
+	stdout.write(`${chalk.blue(infoSymbol)}You can use '${chalk.magenta(formattedPreset.checkCommand ?? "")}' to check if the list is valid.`)
 	stdout.write('\n')
 }
 
@@ -122,27 +122,27 @@ export function actionCfgPath(): void {
 }
 
 export function actionCfgReset(): void {
-	configEditor.unset().save()
-	stdout.write(configEditor.getPairString())
+	configManager.unset().save()
+	stdout.write(configManager.getPairString())
 	stdout.write('\n')
 }
 
-export function actionCfgSet(pair: string): void {
-	const [key, val] = pair.split('=') as [ConfigKey, Config[ConfigKey]]
-	configEditor.set(key, val).save()
-	stdout.write(configEditor.getPairString(key))
+export function actionCfgSet(pair: [ConfigKey, Config[ConfigKey]]): void {
+	const [key, val] = pair
+	configManager.set(key, val).save()
+	stdout.write(configManager.getPairString(key))
 	stdout.write('\n')
 }
 
 export function actionCfgUnset(key: ConfigKey | undefined): void {
 	if (key !== undefined) {
-		configEditor.unset(key).save()
+		configManager.unset(key).save()
 	}
-	stdout.write(configEditor.getPairString(key))
+	stdout.write(configManager.getPairString(key))
 	stdout.write('\n')
 }
 
 export function actionCfgGet(key: ConfigKey | undefined, options: { safe?: boolean }): void {
-	stdout.write(configEditor.getPairString(key, options.safe ?? false))
+	stdout.write(configManager.getPairString(key, options.safe ?? false))
 	stdout.write('\n')
 }
