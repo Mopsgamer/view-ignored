@@ -4,10 +4,10 @@ import { Looker } from "./looker.js";
 import FastGlob from "fast-glob";
 
 //#region default binds
-import "../plugins/git.js"
-import "../plugins/npm.js"
-import "../plugins/vsce.js"
-import "../plugins/yarn.js"
+import "./plugins/git.js"
+import "./plugins/npm.js"
+import "./plugins/vsce.js"
+import "./plugins/yarn.js"
 import { targetBindMap } from "./binds.js";
 import { FileInfo } from "./fileinfo.js";
 import { SourcePattern } from "./sourcepattern.js";

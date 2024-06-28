@@ -1,8 +1,8 @@
-import { LookMethod, LookFolderOptions, Source, SourcePattern, TargetBind, targetBind } from "../index.js"
+import { LookMethod, Source, SourcePattern, LookFolderOptions, TargetBind, targetBind } from "../../index.js"
 
-export const id = "git"
-export const name = "Git"
-export const check = `git ls-tree -r <git-branch-name> --name-only`
+export const id = "vsce"
+export const name = "VSC Extension"
+export const check = "vsce ls"
 
 export const method: LookMethod = function (data) {
     const { looker, sourceFile: source } = data

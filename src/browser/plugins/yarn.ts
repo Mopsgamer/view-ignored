@@ -1,4 +1,4 @@
-import { Source, SourcePattern, LookFolderOptions, TargetBind, targetBind } from "../index.js"
+import { Source, SourcePattern, LookFolderOptions, TargetBind, targetBind } from "../../index.js"
 import * as pluginNpm from "./npm.js"
 
 export const id = "yarn"

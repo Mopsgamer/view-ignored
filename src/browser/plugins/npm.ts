@@ -1,4 +1,4 @@
-import { LookMethod, LookFolderOptions, Source, SourcePattern, TargetBind, targetBind } from "../index.js"
+import { LookMethod, LookFolderOptions, Source, SourcePattern, TargetBind, targetBind } from "../../index.js"
 import getValue from "get-value";
 
 export const id = "npm"
