@@ -39,15 +39,11 @@ export const npmPatternInclude = [
 export type ParserFunction = (text: string) => object | undefined
 
 export const parserJSONDict: ParserFunction = (text) => {
-	try {
-		const result = JSON.parse(text)
-		if (result?.constructor !== Object) {
-			throw new Error(`JSON is not dictionary`)
-		}
-		return result
-	} catch (error) {
-		return
+	const result = JSON.parse(text)
+	if (result?.constructor !== Object) {
+		throw new TypeError(`JSON is not dictionary`)
 	}
+	return result
 }
 //#endregion
 
@@ -70,6 +66,11 @@ export function getLookMethodPropJSON(options: GetLookMethodPropJSONOptions) {
 	const { parserFunc = parserJSONDict, prop } = options
 	return (function (data: LookMethodData) {
 		const { looker, sourceFile: source } = data
+		try {
+			parserFunc(source.content)
+		} catch (error) {
+			return false
+		}
 		const parsed = parserFunc(source.content)
 		if (!parsed) {
 			return false
