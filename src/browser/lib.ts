@@ -1,16 +1,14 @@
-import * as path from "path";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Looker } from "./looker.js";
 import FastGlob from "fast-glob";
+import { targetBindMap } from "./binds.js";
+import { FileInfo } from "./fileinfo.js";
+import { closest, SourcePattern } from "./sourcepattern.js";
 
 //#region default binds
 import "./plugins/git.js"
 import "./plugins/npm.js"
 import "./plugins/vsce.js"
 import "./plugins/yarn.js"
-import { targetBindMap } from "./binds.js";
-import { FileInfo } from "./fileinfo.js";
-import { closest, SourcePattern } from "./sourcepattern.js";
 //#endregion
 
 export type PatternType = ".*ignore" | "minimatch"
