@@ -4,7 +4,7 @@ export interface TargetBind {
 	id: string
 	name: string
     sources: Source[]
-    scanOptions: LookFolderOptions
+    scanOptions?: LookFolderOptions
     /**
      * Check command hint.
      * 

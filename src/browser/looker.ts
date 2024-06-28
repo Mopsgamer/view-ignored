@@ -2,13 +2,26 @@ import ignore, { Ignore } from "ignore"
 import { minimatch } from "minimatch"
 import { PatternType } from "./lib.js"
 
-export interface LookerOptions extends ignore.Options {
+export interface LookerOptions {
 	/**
 	 * @see {@link Looker.isNegated}
 	 */
 	negated?: boolean
 	patternType?: PatternType
-	addPatterns?: LookerPattern
+	/**
+	 * Git configuration property.
+	 * 
+	 * @link [git-config ignorecase](https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase).
+	 * @default false
+	 */
+	ignoreCase?: boolean,
+	/**
+	 * Additional patterns, which will be used as
+	 * other patterns in the `.gitignore` file, or `package.json` "files" property.
+	 * 
+	 * @default []
+	 */
+	addPatterns?: string[],
 }
 export type LookerPattern = string | string[]
 export class Looker {
@@ -24,12 +37,14 @@ export class Looker {
 	 * @default ".*ignore"
 	 */
 	public patternType: PatternType
+	public readonly ignoreCase: boolean
 	private patternList: string[] = []
 	private ignoreInstance: Ignore
 
 	constructor(options?: LookerOptions) {
 		this.isNegated = options?.negated ?? false
 		this.patternType = options?.patternType ?? ".*ignore"
+		this.ignoreCase = options?.ignoreCase ?? false
 		this.ignoreInstance = ignore.default(options)
 		this.add(options?.addPatterns ?? [])
 	}

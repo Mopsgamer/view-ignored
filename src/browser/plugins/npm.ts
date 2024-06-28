@@ -1,11 +1,11 @@
-import { LookMethod, LookFolderOptions, Source, SourcePattern, TargetBind, targetBind } from "../../index.js"
+import { ScanMethod, Source, SourcePattern, TargetBind, targetBind } from "../../index.js"
 import getValue from "get-value";
 
 export const id = "npm"
 export const name = "NPM"
 export const check = "npm pack --dry-run"
 
-export const npmPatternExclude = [
+export const addPatternsExclude = [
     '.*.swp',
     '._*',
     '.DS_Store',
@@ -21,7 +21,7 @@ export const npmPatternExclude = [
     'CVS',
     'npm-debug.log',
 ];
-export const npmPatternInclude = [
+export const addPatternsInclude = [
     'bin/',
     'package.json',
     'README',
@@ -32,7 +32,7 @@ export const npmPatternInclude = [
     'LICENCE.*',
 ];
 
-export const methodGit: LookMethod = function (data) {
+export const methodGit: ScanMethod = function (data) {
     const { looker, sourceFile: source } = data
     looker.patternType = "minimatch"
     if (!looker.isValidPattern(source.content)) {
@@ -42,7 +42,7 @@ export const methodGit: LookMethod = function (data) {
     return true
 }
 
-export const methodPackageJsonFiles: LookMethod = function (data) {
+export const methodPackageJsonFiles: ScanMethod = function (data) {
     const { looker, sourceFile: source } = data
     looker.isNegated = true
     let parsed: object
@@ -64,16 +64,12 @@ export const methodPackageJsonFiles: LookMethod = function (data) {
 }
 
 export const sources: Source[] = [
-    { sources: new SourcePattern("**/package.json"), patternType: "minimatch", method: methodPackageJsonFiles },
-    { sources: new SourcePattern("**/.npmignore"), patternType: ".*ignore", method: methodGit },
-    { sources: new SourcePattern("**/.gitignore"), patternType: ".*ignore", method: methodGit },
+    { sources: new SourcePattern("**/package.json"), patternType: "minimatch", method: methodPackageJsonFiles, addPatterns: addPatternsInclude },
+    { sources: new SourcePattern("**/.npmignore"), patternType: ".*ignore", method: methodGit, addPatterns: addPatternsExclude },
+    { sources: new SourcePattern("**/.gitignore"), patternType: ".*ignore", method: methodGit, addPatterns: addPatternsExclude },
 ]
 
-export const scanOptions: LookFolderOptions = {
-    addPatterns: npmPatternInclude,
-    ignore: npmPatternExclude,
-}
 
-const bind: TargetBind = {id, name, sources, scanOptions, check}
+const bind: TargetBind = {id, name, sources, check}
 targetBind(bind)
 export default bind

@@ -10,41 +10,20 @@ import "./plugins/vsce.js"
 import "./plugins/yarn.js"
 import { targetBindMap } from "./binds.js";
 import { FileInfo } from "./fileinfo.js";
-import { SourcePattern } from "./sourcepattern.js";
+import { closest, SourcePattern } from "./sourcepattern.js";
 //#endregion
 
 export type PatternType = ".*ignore" | "minimatch"
 export const filterNameList = ["ignored", "included", "all"] as const
 export type FilterName = typeof filterNameList[number]
 
-export const defaultIgnorePatterns: string[] = [
-	"**/.git/**",
-	"**/.DS_Store/**"
-]
-
 export interface FileSystemAdapter extends FastGlob.FileSystemAdapter {
 	readFileSync: (path: string) => Buffer
 }
 
-//#region path methods
-/**
- * Returns closest dir entry path for another one using the given list.
- * If `undefined`, no reliable sources that contain patterns to ignore.
- */
-export function closest<T extends { path: string }>(filePath: string, paths: T[]): T | undefined {
-	const filePathDir = path.dirname(filePath)
-	const result = paths.reverse().find(p => {
-		const pd = path.dirname(p.path)
-		const result = filePathDir.startsWith(pd) || pd === '.'
-		return result
-	})
-	return result
-}
-//#endregion
-
 //#region looking
 /**
- * @see {@link LookMethod}
+ * @see {@link ScanMethod}
  */
 export interface LookMethodData {
 	looker: Looker,
@@ -54,7 +33,7 @@ export interface LookMethodData {
 /**
  * Returns `true` if given source is valid, writes rules to the looker.
  */
-export type LookMethod = (data: LookMethodData) => boolean
+export type ScanMethod = (data: LookMethodData) => boolean
 export interface SourceFile {
 	/**
 	 * Source file path
@@ -67,6 +46,20 @@ export interface SourceFile {
 }
 export interface Source {
 	/**
+	 * Git configuration property.
+	 * 
+	 * @link [git-config ignorecase](https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase).
+	 * @default false
+	 */
+	ignoreCase?: boolean,
+	/**
+	 * Additional patterns, which will be used as
+	 * other patterns in the `.gitignore` file, or `package.json` "files" property.
+	 * 
+	 * @default []
+	 */
+	addPatterns?: string[],
+	/**
 	 * First valid source will be used as {@link Looker}.
 	 */
 	sources: SourceFile[] | SourcePattern,
@@ -77,10 +70,10 @@ export interface Source {
 	/**
 	 * {@link Looker} maker.
 	 */
-	method: LookMethod
+	method: ScanMethod
 }
 
-export interface LookFileOptions {
+export interface ScanFileOptions {
 	/**
 	 * Custom implementation of methods for working with the file system.
 	 *
@@ -107,36 +100,9 @@ export interface LookFileOptions {
 	 * @default Infinity
 	 */
 	deep?: number,
-	/**
-	 * An array of glob patterns to exclude matches.
-	 * This is an alternative way to use negative patterns.
-	 *
-	 * @default []
-	 */
-	ignore?: string[],
-	/**
-	 * Git configuration property.
-	 * 
-	 * @link [git-config ignorecase](https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase).
-	 * @default false
-	 */
-	ignoreCase?: boolean,
-	/**
-	 * Additional patterns, which will be used as
-	 * other patterns in the `.gitignore` file, or `package.json` "files" property.
-	 * 
-	 * @default []
-	 */
-	addPatterns?: string[],
-	/**
-	 * If `true`, paths starting with `./` will be allowed.
-	 * 
-	 * @default true
-	 */
-	allowRelativePaths?: boolean
 }
 
-export interface LookFolderOptions extends LookFileOptions {
+export interface LookFolderOptions extends ScanFileOptions {
 	/**
 	 * Filter output.
 	 * 
@@ -148,23 +114,16 @@ export interface LookFolderOptions extends LookFileOptions {
 /**
  * Returns `undefined`, if the source is bad.
  */
-export function scanFile(filePath: string, sources: Source[], options: LookFileOptions): FileInfo | undefined {
-	const {
-		addPatterns = [],
-		allowRelativePaths = true,
-		ignoreCase = false,
-	} = options
-
+export async function scanFile(filePath: string, sources: Source[], options: ScanFileOptions): Promise<FileInfo | undefined> {
 	for (const source of sources) {
 		const looker = new Looker({
-			addPatterns: addPatterns,
-			allowRelativePaths: allowRelativePaths,
-			ignoreCase: ignoreCase,
+			addPatterns: source.addPatterns,
+			ignoreCase: source.ignoreCase,
 			patternType: source.patternType,
 		})
 
 		const sources = source.sources instanceof SourcePattern
-			? source.sources.read(options)
+			? await source.sources.read(options)
 			: source.sources
 		for (const file of sources) {
 			const l = looker.clone()
@@ -183,35 +142,33 @@ export function scanFile(filePath: string, sources: Source[], options: LookFileO
 /**
  * Scan project directory paths with results for each file path.
  */
-export function scanPaths(allFilePaths: string[], sources: Source[], options: LookFolderOptions): FileInfo[] | undefined
-export function scanPaths(allFilePaths: string[], target: string, options: LookFolderOptions): FileInfo[] | undefined
-export function scanPaths(allFilePaths: string[], arg2: Source[] | string, options: LookFolderOptions): FileInfo[] | undefined {
-	
+export async function scanPaths(allFilePaths: string[], sources: Source[], options: LookFolderOptions): Promise<FileInfo[] | undefined>
+export async function scanPaths(allFilePaths: string[], target: string, options: LookFolderOptions): Promise<FileInfo[] | undefined>
+export async function scanPaths(allFilePaths: string[], arg2: Source[] | string, options: LookFolderOptions): Promise<FileInfo[] | undefined> {
 	if (typeof arg2 === "string") {
 		const bind = targetBindMap.get(arg2)
 		if (bind === undefined) {
 			throw TypeError(`view-ignored can not find target '${arg2}'`)
 		}
-		return scanPaths(allFilePaths, bind.sources, bind.scanOptions)
+		return scanPaths(allFilePaths, bind.sources, bind.scanOptions ?? {})
 	}
-	
+
 	// Find good source
-	const { filter = "included", ignore = [] } = options;
-	ignore.concat(defaultIgnorePatterns)
+	const { filter = "included" } = options;
 	const cache = new Map<string, Looker>()
 	for (const source of arg2) {
 		let goodFound = false
 		const resultList: FileInfo[] = []
+		const sourceList = source.sources instanceof SourcePattern ? await source.sources.read(options) : source.sources
 		for (const filePath of allFilePaths) {
-			const s = source.sources instanceof SourcePattern ? source.sources.read(options) : source.sources
-			const possibleSource = closest(filePath, s)
+			const possibleSource = closest(filePath, sourceList)
 			if (possibleSource === undefined) {
 				break
 			}
 			const looker = cache.get(possibleSource.path)
 			let info: FileInfo
 			if (looker === undefined) {
-				const newInfo = scanFile(filePath, [source], options)
+				const newInfo = await scanFile(filePath, [source], options)
 				if (newInfo === undefined) {
 					break
 				}
@@ -240,14 +197,14 @@ export function scanPaths(allFilePaths: string[], arg2: Source[] | string, optio
  * 
  * @param path Project folder path.
  */
-export function scanProject(sources: Source[], options: LookFolderOptions): FileInfo[] | undefined
-export function scanProject(target: string, options: LookFolderOptions): FileInfo[] | undefined
-export function scanProject(arg: Source[] | string, options: LookFolderOptions): FileInfo[] | undefined {
-	const paths = new SourcePattern("**").scan(options)
-	if (typeof arg === "string") {
+export function scanProject(sources: Source[], options: LookFolderOptions): Promise<FileInfo[] | undefined>
+export function scanProject(target: string, options: LookFolderOptions): Promise<FileInfo[] | undefined>
+export function scanProject(arg: Source[] | string, options: LookFolderOptions): Promise<FileInfo[] | undefined> {
+	return new SourcePattern("**").scan(options).then(paths => {
+		if (typeof arg === "string") {
+			return scanPaths(paths, arg, options)
+		}
 		return scanPaths(paths, arg, options)
-	}
-	// pov: typescript
-	return scanPaths(paths, arg, options)
+	})
 }
 //#endregion

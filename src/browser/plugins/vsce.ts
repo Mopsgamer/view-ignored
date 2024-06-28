@@ -1,10 +1,16 @@
-import { LookMethod, Source, SourcePattern, LookFolderOptions, TargetBind, targetBind } from "../../index.js"
+import { ScanMethod, Source, SourcePattern, TargetBind, targetBind } from "../../index.js"
 
 export const id = "vsce"
 export const name = "VSC Extension"
 export const check = "vsce ls"
 
-export const method: LookMethod = function (data) {
+
+export const addPatternsExclude: string[] = [
+	"**/.git/**",
+	"**/.DS_Store/**"
+]
+
+export const method: ScanMethod = function (data) {
     const { looker, sourceFile: source } = data
     if (!looker.isValidPattern(source.content)) {
         return false
@@ -14,13 +20,9 @@ export const method: LookMethod = function (data) {
 }
 
 export const sources: Source[] = [
-    { sources: new SourcePattern("**/.gitignore"), patternType: ".*ignore", method },
+    { sources: new SourcePattern("**/.vscodeignore"), patternType: "minimatch", method, addPatterns: addPatternsExclude },
 ]
 
-export const scanOptions: LookFolderOptions = {
-    allowRelativePaths: false,
-}
-
-const bind: TargetBind = {id, name, sources, scanOptions, check}
+const bind: TargetBind = {id, name, sources, check}
 targetBind(bind)
 export default bind

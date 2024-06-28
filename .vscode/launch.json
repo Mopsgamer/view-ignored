@@ -16,7 +16,7 @@
 				"tsx",
 				"./test/**/*.test.ts"
 			],
-			"program": "${workspaceFolder}/node_modules/mocha/bin/_mocha"
+			"program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
 		},
 		{
 			"type": "node",
@@ -29,12 +29,13 @@
 				"scan"
 			],
 			"internalConsoleOptions": "neverOpen",
-			"program": "${workspaceFolder}/lib/bin.js",
+			"program": "${workspaceFolder}/src/bin.ts",
 			"cwd": "${workspaceFolder}",
 			"outFiles": [
-				"${workspaceFolder}/lib/*.js"
+				"${workspaceFolder}/lib/**/*.js"
 			],
 			"preLaunchTask": "Build",
+			"sourceMaps": true
 		},
 		{
 			"type": "node",
@@ -49,12 +50,13 @@
 				"--filter=all",
 			],
 			"internalConsoleOptions": "neverOpen",
-			"program": "${workspaceFolder}/lib/bin.js",
+			"program": "${workspaceFolder}/src/bin.ts",
 			"cwd": "${workspaceFolder}",
 			"outFiles": [
-				"${workspaceFolder}/lib/*.js"
+				"${workspaceFolder}/lib/**/*.js"
 			],
 			"preLaunchTask": "Build",
+			"sourceMaps": true
 		},
 	]
 }

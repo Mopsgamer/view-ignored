@@ -1,4 +1,4 @@
-import { Source, SourcePattern, LookFolderOptions, TargetBind, targetBind } from "../../index.js"
+import { Source, SourcePattern, TargetBind, targetBind } from "../../index.js"
 import * as pluginNpm from "./npm.js"
 
 export const id = "yarn"
@@ -7,7 +7,7 @@ export const name = "Yarn"
 /**
  * [!WARNING] All patterns copied from npm plugin, so they should be verified with yarn docs.
  */
-export const yarnPatternExclude = [
+export const addPatternsExclude = [
     '.*.swp',
     '._*',
     '.DS_Store',
@@ -26,7 +26,7 @@ export const yarnPatternExclude = [
 /**
  * [!WARNING] All patterns copied from npm plugin, so they should be verified with yarn docs.
  */
-export const yarnPatternInclude = [
+export const addPatternsInclude = [
     'bin/',
     'package.json',
     'README',
@@ -38,17 +38,12 @@ export const yarnPatternInclude = [
 ];
 
 export const sources: Source[] = [
-    { sources: new SourcePattern("**/package.json"), patternType: "minimatch", method: pluginNpm.methodPackageJsonFiles },
-    { sources: new SourcePattern("**/.yarnignore"), patternType: ".*ignore", method: pluginNpm.methodGit },
-    { sources: new SourcePattern("**/.npmignore"), patternType: ".*ignore", method: pluginNpm.methodGit },
-    { sources: new SourcePattern("**/.gitignore"), patternType: ".*ignore", method: pluginNpm.methodGit },
+    { sources: new SourcePattern("**/package.json"), patternType: "minimatch", method: pluginNpm.methodPackageJsonFiles, addPatterns: addPatternsInclude },
+    { sources: new SourcePattern("**/.yarnignore"), patternType: ".*ignore", method: pluginNpm.methodGit, addPatterns: addPatternsExclude },
+    { sources: new SourcePattern("**/.npmignore"), patternType: ".*ignore", method: pluginNpm.methodGit, addPatterns: addPatternsExclude },
+    { sources: new SourcePattern("**/.gitignore"), patternType: ".*ignore", method: pluginNpm.methodGit, addPatterns: addPatternsExclude },
 ]
 
-export const scanOptions: LookFolderOptions = {
-    ignore: yarnPatternExclude,
-    addPatterns: yarnPatternInclude,
-}
-
-const bind: TargetBind = {id, name, sources, scanOptions}
+const bind: TargetBind = {id, name, sources}
 targetBind(bind)
 export default bind

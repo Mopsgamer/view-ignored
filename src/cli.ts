@@ -77,13 +77,13 @@ export function parseArgKeyVal(pair: string): [ConfigKey, Config[ConfigKey]] {
 	return result
 }
 
-export function actionScan(flags: Flags): void {
+export async function actionScan(flags: Flags): Promise<void> {
 	const start = Date.now()
 	const colorLevel = Math.max(0, Math.min(Number(flags.color ?? 3), 3)) as ColorSupportLevel
 	/** Chalk, but configured by view-ignored cli. */
 	const chalk = new Chalk({ level: colorLevel })
 
-	const looked = scanProject(flags.target, {filter: flags.filter})
+	const looked = await scanProject(flags.target, {filter: flags.filter})
 
 	if (!looked) {
 		stdout.write(`Bad source for ${flags.target}.`)

@@ -1,6 +1,6 @@
 import * as fs from "fs"
+import { join, dirname } from "path"
 import FastGlob from "fast-glob"
-import path from "path"
 import { FileSystemAdapter, SourceFile } from "./lib.js"
 
 export interface SourcePatternReadOptions extends FastGlob.Options {
@@ -11,23 +11,52 @@ export interface SourcePatternReadOptions extends FastGlob.Options {
 	 */
 	fs?: FileSystemAdapter
 }
-export function readSourcePath(pth: string, options?: SourcePatternReadOptions): Buffer {
-	return (options?.fs?.readFileSync || fs.readFileSync)(path.join(options?.cwd ?? process.cwd(), pth))
+export function readSourcePath(path: string, options?: SourcePatternReadOptions): Buffer {
+	return (options?.fs?.readFileSync || fs.readFileSync)(join(options?.cwd ?? process.cwd(), path))
+}
+export function pathToSourceFile(path: string, options?: SourcePatternReadOptions): SourceFile {
+	return {
+		path: path,
+		content: readSourcePath(path, options).toString()
+	}
+}
+/**
+ * Returns closest dir entry path for another one using the given list.
+ * If `undefined`, no reliable sources that contain patterns to ignore.
+ */
+export function closest<T extends { path: string }>(filePath: string, paths: T[]): T | undefined {
+	const filePathDir = dirname(filePath)
+	const result = paths.reverse().find(p => {
+		const pd = dirname(p.path)
+		const result = filePathDir.startsWith(pd) || pd === '.'
+		return result
+	})
+	return result
 }
 export class SourcePattern extends String {
-	scan(options?: SourcePatternReadOptions): string[] {
+	scan(options?: SourcePatternReadOptions): Promise<string[]> {
 		const o: FastGlob.Options = {
 			...options,
 			onlyFiles: true,
 			dot: true,
 			followSymbolicLinks: false,
 		}
-		const paths: string[] = FastGlob.sync(String(this), o)
-		return paths
+		const stream = FastGlob.stream(String(this), o)
+		const data: string[] = []
+		stream.on('data', function (chunk: string) {
+			data.push(chunk)
+		})
+		return new Promise(function (resolve) {
+			stream.once('end', function () { resolve(data) })
+		})
 	}
-	read(options?: SourcePatternReadOptions): SourceFile[] {
-		const sourceFile: SourceFile[] = this.scan(options)
-			.map(pth => ({ path: pth, content: readSourcePath(pth, options).toString() }))
+	read(options?: SourcePatternReadOptions): Promise<SourceFile[]> {
+		const sourceFile = this.scan(options)
+			.then(pathList =>
+				pathList.map(path =>
+					pathToSourceFile(path, options)
+				)
+			)
 		return sourceFile
 	}
 }
