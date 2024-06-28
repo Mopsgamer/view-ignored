@@ -3,9 +3,13 @@ import FastGlob from "fast-glob"
 import path from "path"
 import { FileSystemAdapter, SourceFile } from "./lib.js"
 
-export interface SourcePatternReadOptions {
-	fs?: FileSystemAdapter,
-	cwd?: string,
+export interface SourcePatternReadOptions extends FastGlob.Options {
+	/**
+	 * Custom implementation of methods for working with the file system.
+	 *
+	 * @default fs.*
+	 */
+	fs?: FileSystemAdapter
 }
 export function readSourcePath(pth: string, options?: SourcePatternReadOptions): Buffer {
 	return (options?.fs?.readFileSync || fs.readFileSync)(path.join(options?.cwd ?? process.cwd(), pth))
@@ -16,7 +20,7 @@ export class SourcePattern extends String {
 			...options,
 			onlyFiles: true,
 			dot: true,
-			followSymbolicLinks: true,
+			followSymbolicLinks: false,
 		}
 		const paths: string[] = FastGlob.sync(String(this), o)
 		return paths

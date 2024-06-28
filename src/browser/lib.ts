@@ -17,6 +17,11 @@ export type PatternType = ".*ignore" | "minimatch"
 export const filterNameList = ["ignored", "included", "all"] as const
 export type FilterName = typeof filterNameList[number]
 
+export const defaultIgnorePatterns: string[] = [
+	"**/.git/**",
+	"**/.DS_Store/**"
+]
+
 export interface FileSystemAdapter extends FastGlob.FileSystemAdapter {
 	readFileSync: (path: string) => Buffer
 }
@@ -77,10 +82,10 @@ export interface Source {
 
 export interface LookFileOptions {
 	/**
-     * Custom implementation of methods for working with the file system.
-     *
-     * @default fs.*
-     */
+	 * Custom implementation of methods for working with the file system.
+	 *
+	 * @default fs.*
+	 */
 	fs?: FileSystemAdapter,
 	/**
 	 * The current working directory in which to search.
@@ -103,12 +108,12 @@ export interface LookFileOptions {
 	 */
 	deep?: number,
 	/**
-     * An array of glob patterns to exclude matches.
-     * This is an alternative way to use negative patterns.
-     *
-     * @default []
-     */
-    ignore?: string[],
+	 * An array of glob patterns to exclude matches.
+	 * This is an alternative way to use negative patterns.
+	 *
+	 * @default []
+	 */
+	ignore?: string[],
 	/**
 	 * Git configuration property.
 	 * 
@@ -158,7 +163,9 @@ export function scanFile(filePath: string, sources: Source[], options: LookFileO
 			patternType: source.patternType,
 		})
 
-		const sources = source.sources instanceof SourcePattern ? source.sources.read(options) : source.sources
+		const sources = source.sources instanceof SourcePattern
+			? source.sources.read(options)
+			: source.sources
 		for (const file of sources) {
 			const l = looker.clone()
 			const isGoodSource = source.method({
@@ -179,9 +186,7 @@ export function scanFile(filePath: string, sources: Source[], options: LookFileO
 export function scanPaths(allFilePaths: string[], sources: Source[], options: LookFolderOptions): FileInfo[] | undefined
 export function scanPaths(allFilePaths: string[], target: string, options: LookFolderOptions): FileInfo[] | undefined
 export function scanPaths(allFilePaths: string[], arg2: Source[] | string, options: LookFolderOptions): FileInfo[] | undefined {
-	const { filter = "included" } = options;
-	const cache = new Map<string, Looker>()
-
+	
 	if (typeof arg2 === "string") {
 		const bind = targetBindMap.get(arg2)
 		if (bind === undefined) {
@@ -189,13 +194,16 @@ export function scanPaths(allFilePaths: string[], arg2: Source[] | string, optio
 		}
 		return scanPaths(allFilePaths, bind.sources, bind.scanOptions)
 	}
-
+	
 	// Find good source
+	const { filter = "included", ignore = [] } = options;
+	ignore.concat(defaultIgnorePatterns)
+	const cache = new Map<string, Looker>()
 	for (const source of arg2) {
 		let goodFound = false
 		const resultList: FileInfo[] = []
 		for (const filePath of allFilePaths) {
-			const s = source.sources instanceof SourcePattern ? source.sources.read() : source.sources
+			const s = source.sources instanceof SourcePattern ? source.sources.read(options) : source.sources
 			const possibleSource = closest(filePath, s)
 			if (possibleSource === undefined) {
 				break
