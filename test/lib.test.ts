@@ -8,7 +8,7 @@ interface Case {
     content: FileSystem.DirectoryItem
 }
 type DirCase = Record<string, Case>
-type Plan = Record<viewig.TargetName, DirCase>
+type Plan = Record<string, DirCase>
 
 const targetTestList = {
     git: {
@@ -152,7 +152,7 @@ describe("Targets", function () {
                 it(testName, function () {
                     const test = tests[testName] as Case
                     mock({ [testPath]: test.content })
-                    const lookList = viewig.scanProject(testPath, target as viewig.TargetName, { filter: 'included' })
+                    const lookList = viewig.scanProject(target, { cwd: testPath, filter: 'included' })
 
                     if (!lookList) return;
 

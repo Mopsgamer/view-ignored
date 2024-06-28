@@ -76,7 +76,39 @@ export interface Source {
 }
 
 export interface LookFileOptions {
+	/**
+     * Custom implementation of methods for working with the file system.
+     *
+     * @default fs.*
+     */
 	fs?: FileSystemAdapter,
+	/**
+	 * The current working directory in which to search.
+	 *
+	 * @default process.cwd()
+	 */
+	cwd?: string;
+	/**
+	 * Specifies the maximum number of concurrent requests from a reader to read
+	 * directories.
+	 *
+	 * @default os.cpus().length
+	 */
+	concurrency?: number;
+	/**
+	 * Specifies the maximum depth of a read directory relative to the start
+	 * directory.
+	 *
+	 * @default Infinity
+	 */
+	deep?: number,
+	/**
+     * An array of glob patterns to exclude matches.
+     * This is an alternative way to use negative patterns.
+     *
+     * @default []
+     */
+    ignore?: string[],
 	/**
 	 * Git configuration property.
 	 * 
@@ -99,8 +131,7 @@ export interface LookFileOptions {
 	allowRelativePaths?: boolean
 }
 
-export interface LookFolderOptions extends LookFileOptions, FastGlob.Options {
-	fs?: FileSystemAdapter,
+export interface LookFolderOptions extends LookFileOptions {
 	/**
 	 * Filter output.
 	 * 
@@ -201,14 +232,14 @@ export function scanPaths(allFilePaths: string[], arg2: Source[] | string, optio
  * 
  * @param path Project folder path.
  */
-export function scanProject(path: string, sources: Source[], options: LookFolderOptions): FileInfo[] | undefined
-export function scanProject(path: string, target: string, options: LookFolderOptions): FileInfo[] | undefined
-export function scanProject(path: string, arg2: Source[] | string, options: LookFolderOptions): FileInfo[] | undefined {
-	const paths = new SourcePattern(path).scan(options)
-	if (typeof arg2 === "string") {
-		return scanPaths(paths, arg2, options)
+export function scanProject(sources: Source[], options: LookFolderOptions): FileInfo[] | undefined
+export function scanProject(target: string, options: LookFolderOptions): FileInfo[] | undefined
+export function scanProject(arg: Source[] | string, options: LookFolderOptions): FileInfo[] | undefined {
+	const paths = new SourcePattern("**").scan(options)
+	if (typeof arg === "string") {
+		return scanPaths(paths, arg, options)
 	}
 	// pov: typescript
-	return scanPaths(paths, arg2, options)
+	return scanPaths(paths, arg, options)
 }
 //#endregion

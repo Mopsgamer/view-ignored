@@ -83,7 +83,7 @@ export function actionScan(flags: Flags): void {
 	/** Chalk, but configured by view-ignored cli. */
 	const chalk = new Chalk({ level: colorLevel })
 
-	const looked = scanProject(process.cwd(), flags.target, {filter: flags.filter})
+	const looked = scanProject(flags.target, {filter: flags.filter})
 
 	if (!looked) {
 		stdout.write(`Bad source for ${flags.target}.`)
