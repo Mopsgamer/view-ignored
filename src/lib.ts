@@ -25,11 +25,11 @@ export function gitConfigString(key: string, cwd?: string): string | undefined {
  * Read git config value as boolean.
  */
 export function gitConfigBool(key: string, cwd?: string): boolean | undefined {
-	const str = gitConfigString(key, cwd)
-	if (str === "true\n") {
+	const str = gitConfigString(key, cwd)?.trim()
+	if (str === "true") {
 		return true
 	}
-	if (str === "false\n") {
+	if (str === "false") {
 		return false
 	}
 }
