@@ -11,7 +11,7 @@ export interface LookerOptions {
 	/**
 	 * Git configuration property.
 	 * 
-	 * @link [git-config ignorecase](https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase).
+	 * @see {@link https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase|git-config ignorecase}.
 	 * @default false
 	 */
 	ignoreCase?: boolean,

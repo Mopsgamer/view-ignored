@@ -5,9 +5,14 @@ import { SourceFile } from "./lib.js"
 import { Looker } from "./looker.js"
 
 export interface FileInfoToStringOptions {
+	/**
+	 * Determines if file icon should be used.
+	 * @default
+	 * undefined
+	 */
 	styleName?: StyleName
 	/**
-	 * `true` if should add prefix `+` or `!`.
+	 * `true` if should add prefix: `+` or `!`.
 	 */
 	usePrefix?: boolean
 	chalk?: ChalkInstance
@@ -35,9 +40,6 @@ export class FileInfo {
 	}
 	/**
 	 * @param options Styling options.
-	 * @param options.styleName Determines if file icon should be used. Default `undefined`.
-	 * @param options.usePrefix Default `false`.
-	 * @param options.chalk Default `undefined`.
 	 * @param formatEntire Determines if path base or entire file path should be formatted. Default `true`.
 	 */
 	toString(options?: FileInfoToStringOptions, formatEntire = true): string {

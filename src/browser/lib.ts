@@ -46,7 +46,7 @@ export interface Source {
 	/**
 	 * Git configuration property.
 	 * 
-	 * @link [git-config ignorecase](https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase).
+	 * @see {@link https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase|git-config ignorecase}.
 	 * @default false
 	 */
 	ignoreCase?: boolean,
@@ -192,8 +192,6 @@ export async function scanPaths(allFilePaths: string[], arg2: Source[] | string,
 }
 /**
  * Scan project directory with results for each file path.
- * 
- * @param path Project folder path.
  */
 export function scanProject(sources: Source[], options: LookFolderOptions): Promise<FileInfo[] | undefined>
 export function scanProject(target: string, options: LookFolderOptions): Promise<FileInfo[] | undefined>
