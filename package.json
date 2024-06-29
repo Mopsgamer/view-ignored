@@ -8,7 +8,7 @@
 		"view-ignored": "./bin/viewig"
 	},
 	"scripts": {
-		"docs": "npx typedoc --entryPoints src/index.ts --plugin typedoc-plugin-markdown",
+		"docs": "npx typedoc --entryPoints src/index.ts --plugin typedoc-plugin-markdown --readme none --cleanOutputDir true --hideBreadcrumbs true --hidePageHeader true --hideGroupHeadings true",
 		"prerelease": "pnpm lint && pnpm test && pnpm build",
 		"test": "pnpm mocha --require tsx ./test/**/*.test.ts",
 		"build": "pnpm tsc",
