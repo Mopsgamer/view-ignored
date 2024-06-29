@@ -20,11 +20,12 @@ export function pathToSourceFile(path: string, options?: SourcePatternReadOption
 		content: readSourcePath(path, options).toString()
 	}
 }
+
 /**
  * Returns closest dir entry path for another one using the given list.
  * If `undefined`, no reliable sources that contain patterns to ignore.
  */
-export function closest<T extends { path: string }>(filePath: string, paths: T[]): T | undefined {
+export function findDomination<T extends { path: string }>(filePath: string, paths: T[]): T | undefined {
 	const filePathDir = dirname(filePath)
 	const result = paths.reverse().find(p => {
 		const pd = dirname(p.path)

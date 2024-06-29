@@ -2,7 +2,7 @@ import { Looker } from "./looker.js";
 import FastGlob from "fast-glob";
 import { targetBindMap } from "./binds.js";
 import { FileInfo } from "./fileinfo.js";
-import { closest, SourcePattern } from "./sourcepattern.js";
+import { findDomination, SourcePattern } from "./sourcepattern.js";
 
 //#region default binds
 import "./plugins/git.js"
@@ -159,7 +159,7 @@ export async function scanPaths(allFilePaths: string[], arg2: Source[] | string,
 		const resultList: FileInfo[] = []
 		const sourceList = source.sources instanceof SourcePattern ? await source.sources.read(options) : source.sources
 		for (const filePath of allFilePaths) {
-			const possibleSource = closest(filePath, sourceList)
+			const possibleSource = findDomination(filePath, sourceList)
 			if (possibleSource === undefined) {
 				break
 			}
