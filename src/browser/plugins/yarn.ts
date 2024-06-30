@@ -1,4 +1,4 @@
-import { Source, SourcePattern, TargetBind, targetBind } from "../../index.js"
+import { Binding, Source, SourcePattern } from "../../index.js"
 import * as pluginNpm from "./npm.js"
 
 export const id = "yarn"
@@ -44,6 +44,6 @@ export const sources: Source[] = [
     { sources: new SourcePattern("**/.gitignore"), patternType: ".*ignore", method: pluginNpm.methodGit, addPatterns: addPatternsExclude },
 ]
 
-const bind: TargetBind = {id, name, sources}
-targetBind(bind)
+const bind: Binding.TargetBind = { id, name, sources }
+Binding.targetBind(bind)
 export default bind

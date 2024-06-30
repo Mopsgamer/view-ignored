@@ -1,5 +1,5 @@
 import { ChalkInstance } from "chalk"
-import { styleConditionFile, StyleName } from "./tools/index.js"
+import { styleConditionFile, StyleName } from "./styling.js"
 import path from "path"
 import { SourceFile } from "./lib.js"
 import { Looker } from "./looker.js"

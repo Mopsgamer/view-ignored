@@ -1,6 +1,5 @@
 import { ColorSupportLevel } from "chalk"
-import { FilterName, filterNameList, targetBindMap } from "./browser/index.js"
-import { SortName, StyleName, sortNameList, styleNameList } from "./browser/tools/index.js"
+import { FilterName, filterNameList, Binding, Sorting, Styling } from "./browser/index.js"
 import * as os from "os";
 import propertiesFile from "properties";
 import path from "path"
@@ -15,8 +14,8 @@ export type Config = {
     color: `${ColorSupportLevel}`,
     target: string,
     filter: FilterName,
-    sort: SortName,
-    style: StyleName,
+    sort: Sorting.SortName,
+    style: Styling.StyleName,
 }
 
 export const configDefault: Config = {
@@ -28,10 +27,10 @@ export const configDefault: Config = {
 }
 export const configValues = {
     color: ["1", "2", "3", "4"],
-    target: Array.from(targetBindMap.keys()),
+    target: Array.from(Binding.targetBindMap.keys()),
     filter: filterNameList,
-    sort: sortNameList,
-    style: styleNameList
+    sort: Sorting.sortNameList,
+    style: Styling.styleNameList
 } as const
 
 export function configPartialGood(cfg: unknown): cfg is Partial<Config> {

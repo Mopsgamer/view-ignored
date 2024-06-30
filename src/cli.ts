@@ -2,7 +2,7 @@ import fs from "fs";
 import { stdout } from "process";
 import { Chalk, ColorSupportLevel } from "chalk";
 import { Argument, InvalidArgumentError, Option, program } from "commander";
-import { FilterName, FileInfo, SortName, StyleName, Sorters, Styles, styleCondition, scanProject, targetBindMap } from "./index.js";
+import { FileInfo, FilterName, scanProject, Sorting, Styling, Binding } from "./index.js";
 import { configValues, configManager, ConfigKey, Config, configKeyList, configFilePath } from "./config.js";
 
 configManager.load()
@@ -12,8 +12,8 @@ export interface Flags {
 	color: string,
 	target: string,
 	filter: FilterName,
-	sort: SortName,
-	style: StyleName
+	sort: Sorting.SortName,
+	style: Styling.StyleName
 }
 
 export const scanProgram = program
@@ -91,27 +91,27 @@ export async function actionScan(flags: Flags): Promise<void> {
 		return
 	}
 
-	const sorter = Sorters[flags.sort]
+	const sorter = Sorting.Sorters[flags.sort]
 	const cacheEditDates = new Map<FileInfo, Date>()
 	for (const look of looked) {
 		cacheEditDates.set(look, fs.statSync(look.filePath).mtime)
 	}
-	const bind = targetBindMap.get(flags.target)!
+	const bind = Binding.targetBindMap.get(flags.target)!
 	const lookedSorted = looked.sort((a, b) => sorter(
 		a.toString(), b.toString(),
 		cacheEditDates.get(a)!, cacheEditDates.get(b)!
 	))
 	stdout.write(process.cwd() + "\n")
-	Styles[flags.style](chalk, lookedSorted, flags.style, flags.filter)
+	Styling.Styles[flags.style](chalk, lookedSorted, flags.style, flags.filter)
 	const time = Date.now() - start
 	stdout.write(`\n`)
-	const checkSymbol = styleCondition(flags.style, { ifEmoji: '✅', ifNerd: '\uf00c', postfix: ' ' })
-	const fastSymbol = styleCondition(flags.style, { ifEmoji: '⚡', ifNerd: '\udb85\udc0c' })
+	const checkSymbol = Styling.styleCondition(flags.style, { ifEmoji: '✅', ifNerd: '\uf00c', postfix: ' ' })
+	const fastSymbol = Styling.styleCondition(flags.style, { ifEmoji: '⚡', ifNerd: '\udb85\udc0c' })
 	stdout.write(`${chalk.green(checkSymbol)}Done in ${time < 400 ? chalk.yellow(fastSymbol) : ''}${time}ms.`)
 	stdout.write(`\n\n`)
 	stdout.write(`${looked.length} files listed for ${bind.name} (${flags.filter}).`)
 	stdout.write('\n\n')
-	const infoSymbol = styleCondition(flags.style, { ifEmoji: 'ℹ️', ifNerd: '\ue66a', postfix: ' ' })
+	const infoSymbol = Styling.styleCondition(flags.style, { ifEmoji: 'ℹ️', ifNerd: '\ue66a', postfix: ' ' })
 	stdout.write(`${chalk.blue(infoSymbol)}You can use '${chalk.magenta(bind.check ?? "")}' to check if the list is valid.`)
 	stdout.write('\n')
 }

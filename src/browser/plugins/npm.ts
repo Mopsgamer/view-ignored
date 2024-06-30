@@ -1,4 +1,4 @@
-import { ScanMethod, Source, SourcePattern, TargetBind, targetBind } from "../../index.js"
+import { Binding, ScanMethod, Source, SourcePattern } from "../../index.js"
 import getValue from "get-value";
 
 export const id = "npm"
@@ -70,6 +70,6 @@ export const sources: Source[] = [
 ]
 
 
-const bind: TargetBind = {id, name, sources, check}
-targetBind(bind)
+const bind: Binding.TargetBind = { id, name, sources, check }
+Binding.targetBind(bind)
 export default bind
