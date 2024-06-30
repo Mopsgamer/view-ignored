@@ -4,6 +4,13 @@ import { targetBindMap } from "./binds.js";
 import { FileInfo } from "./fileinfo.js";
 import { findDomination, SourcePattern } from "./sourcepattern.js";
 
+export * from "./looker.js"
+export * from "./fileinfo.js"
+export * from "./sourcepattern.js"
+export * as Styling from "./styling.js"
+export * as Sorting from "./sorting.js"
+export * as Binding from "./binds.js"
+
 //#region default binds
 import "./plugins/git.js"
 import "./plugins/npm.js"

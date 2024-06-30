@@ -1,4 +1,4 @@
-import { Binding, ScanMethod, Source, SourcePattern } from "../../index.js"
+import { Binding, ScanMethod, Source, SourcePattern } from "../index.js"
 
 export const id = "git"
 export const name = "Git"

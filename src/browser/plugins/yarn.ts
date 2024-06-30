@@ -1,4 +1,4 @@
-import { Binding, Source, SourcePattern } from "../../index.js"
+import { Binding, Source, SourcePattern } from "../index.js"
 import * as pluginNpm from "./npm.js"
 
 export const id = "yarn"

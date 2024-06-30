@@ -1,4 +1,4 @@
-import { Binding, ScanMethod, Source, SourcePattern } from "../../index.js"
+import { Binding, ScanMethod, Source, SourcePattern } from "../index.js"
 import getValue from "get-value";
 
 export const id = "npm"
