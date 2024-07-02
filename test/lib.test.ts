@@ -149,10 +149,10 @@ describe("Targets", function () {
         describe(target, function () {
             const tests = targetTestList[target] as DirCase
             for (const testName in tests) {
-                it(testName, function () {
+                it(testName, async function () {
                     const test = tests[testName] as Case
                     mock({ [testPath]: test.content })
-                    const lookList = viewig.scanProject(target, { cwd: testPath, filter: 'included' })
+                    const lookList = await viewig.scanProject(target, { cwd: testPath, filter: 'included' })
 
                     if (!lookList) return;
 
