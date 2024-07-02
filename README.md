@@ -1,14 +1,9 @@
 # view-ignored
 
 [![npm version](https://badge.fury.io/js/view-ignored.svg)](https://www.npmjs.com/package/view-ignored)
+[![Downloads](https://img.shields.io/npm/dm/view-ignored.svg)](https://www.npmjs.com/package/view-ignored)
 
-Retrieve list of files ignored/included by Git, npm, Yarn and VSC Extension.
-
-## Install
-
-```bash
-npm i -g view-ignored
-```
+Retrieve list of files ignored/included by Git, NPM, Yarn and VSC Extension.
 
 ## Highlights
 
@@ -17,21 +12,35 @@ npm i -g view-ignored
 - **Command line.** Supports no-color and multiple output styles, including [nerd fonts](https://github.com/ryanoasis/nerd-fonts).
 - **Plugins.** API allows to add new [targets](#targets) programmatically. Command line interface does NOT support plugins.
 
-### Targets
+## Install
 
-- `git`
-  - Check: `git ls-tree -r <git-branch-name> --name-only`
-  - Sources walkthrough: '.gitignore' and git config `core.excludesFile`.
-- `npm` (btw usable for PNPM and Bun)
-  - Check: `npm pack --dry-run`
-  - Sources walkthrough: 'package.json' otherwise '.npmignore' otherwise '.gitignore'.
-- `yarn`
-  - Sources walkthrough: 'package.json' otherwise '.yarnignore' otherwise '.npmignore' otherwise '.gitignore'.
-- `vsce`
-  - Check: `vsce ls`
-  - Sources walkthrough: '.vscodeignore' otherwise '.gitignore'.
+```bash
+npm i view-ignored
+```
 
-### Usage
+## Usage
+
+### Command line
+
+```bash
+# get started
+npm i -g view-ignored
+viewig --help
+view-ignored --help
+
+# scan for git and npm
+viewig scan .
+viewig scan . --target=npm
+
+# always scan npm by default
+viewig config set target=npm
+viewig scan .
+
+# always use nerd font
+viewig config set style=treeNerd
+```
+
+### Programmatically
 
 ```js
 import * as vign from "view-ignored";
@@ -40,7 +49,7 @@ import * as vign from "view-ignored/lib/browser"; // for web environment apps
 const looked = vign.scanProject("git");
 ```
 
-Sorting:
+#### Sorting:
 
 ```js
 const looked = vign.scanProject("npm");
@@ -61,12 +70,16 @@ const lookedSorted = looked.sort((a, b) => sorter(
 ))
 ```
 
-#### Command line.
+### Targets
 
-```bash
-npm i -g view-ignored
-viewig --help
-view-ignored --help
-
-viewig scan . --target=npm
-```
+- `git`
+  - Check: `git ls-tree -r <git-branch-name> --name-only`
+  - Sources walkthrough: '.gitignore' and git config `core.excludesFile`.
+- `npm` (btw usable for PNPM and Bun)
+  - Check: `npm pack --dry-run`
+  - Sources walkthrough: 'package.json' otherwise '.npmignore' otherwise '.gitignore'.
+- `yarn`
+  - Sources walkthrough: 'package.json' otherwise '.yarnignore' otherwise '.npmignore' otherwise '.gitignore'.
+- `vsce`
+  - Check: `vsce ls`
+  - Sources walkthrough: '.vscodeignore' otherwise '.gitignore'.
