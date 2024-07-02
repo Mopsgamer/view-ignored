@@ -1,7 +1,7 @@
 {
 	"name": "view-ignored",
 	"version": "0.0.0",
-	"description": "Retrieve lists of files ignored by Git, npm, Yarn and VSC Extension.",
+	"description": "Retrieve list of files ignored/included by Git, npm, Yarn and VSC Extension.",
 	"type": "module",
 	"bin": {
 		"viewig": "./bin/viewig",
