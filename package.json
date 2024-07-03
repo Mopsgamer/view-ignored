@@ -23,6 +23,14 @@
 	"files": [
 		"lib"
 	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Mopsgamer/view-ignored.git"
+	},
+	"bugs": {
+		"url": "https://github.com/Mopsgamer/view-ignored/issues"
+	},
+	"homepage": "https://github.com/Mopsgamer/view-ignored",
 	"release-it": {
 		"hooks": {
 			"before:init": "pnpm prerelease"
