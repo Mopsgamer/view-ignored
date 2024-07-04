@@ -23,6 +23,6 @@ export const sources: Source[] = [
     { sources: new SourcePattern("**/.vscodeignore"), patternType: "minimatch", method, addPatterns: addPatternsExclude },
 ]
 
-const bind: Binding.TargetBind = { id, name, sources, check }
+const bind: Binding.TargetBind = { id, name, sources, testCommad: check }
 Binding.targetSet(bind)
 export default bind

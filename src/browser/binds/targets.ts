@@ -6,13 +6,13 @@ export interface TargetBind {
     sources: Source[]
     scanOptions?: LookFolderOptions
     /**
-     * Check command hint.
+     * Test command.
      * 
      * @example
      * "npm pack --dry run"
      * "vsce ls"
      */
-    check?: string
+    testCommad?: string
 }
 
 export function isValidId(id: unknown) {

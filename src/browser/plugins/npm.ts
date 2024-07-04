@@ -70,6 +70,6 @@ export const sources: Source[] = [
 ]
 
 
-const bind: Binding.TargetBind = { id, name, sources, check }
+const bind: Binding.TargetBind = { id, name, sources, testCommad: check }
 Binding.targetSet(bind)
 export default bind

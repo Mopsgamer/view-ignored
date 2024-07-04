@@ -112,7 +112,7 @@ export async function actionScan(flags: Flags): Promise<void> {
 	stdout.write(`${looked.length} files listed for ${bind.name} (${flags.filter}).`)
 	stdout.write('\n\n')
 	const infoSymbol = Styling.styleCondition(flags.style, { ifEmoji: 'ℹ️', ifNerd: '\ue66a', postfix: ' ' })
-	stdout.write(`${chalk.blue(infoSymbol)}You can use '${chalk.magenta(bind.check ?? "")}' to check if the list is valid.`)
+	stdout.write(`${chalk.blue(infoSymbol)}You can use '${chalk.magenta(bind.testCommad ?? "")}' to check if the list is valid.`)
 	stdout.write('\n')
 }
 

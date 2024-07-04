@@ -22,6 +22,6 @@ export const sources: Source[] = [
     { sources: new SourcePattern("**/.gitignore"), patternType: ".*ignore", method, addPatterns: addPatternsExclude },
 ]
 
-const bind: Binding.TargetBind = { id, name, sources, check }
+const bind: Binding.TargetBind = { id, name, sources, testCommad: check }
 Binding.targetSet(bind)
 export default bind
