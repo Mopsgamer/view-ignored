@@ -6,19 +6,24 @@ import { Looker } from "./looker.js"
 
 export interface FileInfoToStringOptions {
 	/**
-	 * Determines if file icon should be used.
-	 * @default
-	 * undefined
+	 * The appearance behavior of the file icon.
+	 * @default undefined
 	 */
 	styleName?: StyleName
 	/**
-	 * `true` if should add prefix: `+` or `!`.
+	 * The appearance behavior of the prefix.
+	 * `"+"` for included, `"!"` for excluded.
+	 * @default false
 	 */
 	usePrefix?: boolean
+	/**
+	 * The behavior of colors.
+	 * @default undefined
+	 */
 	chalk?: ChalkInstance
 }
 /**
- * Result of the file path scan.
+ * The result of the file path scan.
  */
 export class FileInfo {
 	public readonly ignored: boolean
@@ -39,11 +44,12 @@ export class FileInfo {
 		return new FileInfo(arg, looker, src)
 	}
 	/**
-	 * @param options Styling options.
-	 * @param formatEntire Determines if path base or entire file path should be formatted. Default `true`.
+	 * @param options Styling options. Default `{}`.
+	 * @param formatEntire Determines if the path's base or the entire path should be formatted. Default `true`.
+	 * @returns File path. Optionally formatted.
 	 */
-	toString(options?: FileInfoToStringOptions, formatEntire = true): string {
-		const { styleName, usePrefix = false, chalk } = options ?? {};
+	toString(options: FileInfoToStringOptions = {}, formatEntire = true): string {
+		const { styleName, usePrefix = false, chalk } = options;
 		const parsed = path.parse(this.filePath)
 		const fileIcon = styleConditionFile(styleName, this.filePath)
 		const prefix = usePrefix ? (this.ignored ? '!' : '+') : ''
