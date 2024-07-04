@@ -1,15 +1,15 @@
 import { Looker } from "./looker.js";
 import FastGlob from "fast-glob";
-import { targetBindMap } from "./binds.js";
 import { FileInfo } from "./fileinfo.js";
 import { findDomination, SourcePattern } from "./sourcepattern.js";
+import { targetGet } from "./binds/index.js";
 
 export * from "./looker.js"
 export * from "./fileinfo.js"
 export * from "./sourcepattern.js"
 export * as Styling from "./styling.js"
 export * as Sorting from "./sorting.js"
-export * as Binding from "./binds.js"
+export * as Binding from "./binds/index.js"
 
 //#region default binds
 import "./plugins/git.js"
@@ -151,7 +151,7 @@ export async function scanPaths(allFilePaths: string[], sources: Source[], optio
 export async function scanPaths(allFilePaths: string[], target: string, options: LookFolderOptions): Promise<FileInfo[] | undefined>
 export async function scanPaths(allFilePaths: string[], arg2: Source[] | string, options: LookFolderOptions): Promise<FileInfo[] | undefined> {
 	if (typeof arg2 === "string") {
-		const bind = targetBindMap.get(arg2)
+		const bind = targetGet(arg2)
 		if (bind === undefined) {
 			throw TypeError(`view-ignored can not find target '${arg2}'`)
 		}
@@ -202,12 +202,11 @@ export async function scanPaths(allFilePaths: string[], arg2: Source[] | string,
  */
 export function scanProject(sources: Source[], options: LookFolderOptions): Promise<FileInfo[] | undefined>
 export function scanProject(target: string, options: LookFolderOptions): Promise<FileInfo[] | undefined>
-export function scanProject(arg: Source[] | string, options: LookFolderOptions): Promise<FileInfo[] | undefined> {
-	return new SourcePattern("**").scan(options).then(paths => {
-		if (typeof arg === "string") {
-			return scanPaths(paths, arg, options)
-		}
-		return scanPaths(paths, arg, options)
-	})
+export async function scanProject(arg: Source[] | string, options: LookFolderOptions): Promise<FileInfo[] | undefined> {
+	const paths = await new SourcePattern("**").scan(options);
+	if (typeof arg === "string") {
+		return await scanPaths(paths, arg, options);
+	}
+	return await scanPaths(paths, arg, options);
 }
 //#endregion

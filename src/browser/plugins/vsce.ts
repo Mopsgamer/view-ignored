@@ -24,5 +24,5 @@ export const sources: Source[] = [
 ]
 
 const bind: Binding.TargetBind = { id, name, sources, check }
-Binding.targetBind(bind)
+Binding.targetSet(bind)
 export default bind

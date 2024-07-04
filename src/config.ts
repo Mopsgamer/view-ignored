@@ -27,7 +27,7 @@ export const configDefault: Config = {
 }
 export const configValues = {
     color: ["1", "2", "3", "4"],
-    target: Array.from(Binding.targetBindMap.keys()),
+    target: Binding.targetList(),
     filter: filterNameList,
     sort: Sorting.sortNameList,
     style: Styling.styleNameList

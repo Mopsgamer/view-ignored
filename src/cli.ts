@@ -96,7 +96,7 @@ export async function actionScan(flags: Flags): Promise<void> {
 	for (const look of looked) {
 		cacheEditDates.set(look, fs.statSync(look.filePath).mtime)
 	}
-	const bind = Binding.targetBindMap.get(flags.target)!
+	const bind = Binding.targetGet(flags.target)!
 	const lookedSorted = looked.sort((a, b) => sorter(
 		a.toString(), b.toString(),
 		cacheEditDates.get(a)!, cacheEditDates.get(b)!
