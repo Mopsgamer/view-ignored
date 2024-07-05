@@ -26,6 +26,9 @@ export const Styles: Record<StyleName, Style> = {
 	treeNerd: printTree
 }
 
+/**
+ * Formatting options for the {@link styleCondition}.
+ */
 export interface StyleCondition {
 	prefix?: string
 	postfix?: string
@@ -33,6 +36,12 @@ export interface StyleCondition {
 	ifEmoji?: string
 	ifNerd?: string
 }
+
+/**
+ * Formats the string for specific style types.
+ * @param styleName The style name.
+ * @param condition Formatting options.
+ */
 export function styleCondition(styleName: StyleName | undefined, condition: StyleCondition): string {
 	if (styleName === undefined) {
 		return ''
@@ -54,6 +63,11 @@ export function styleCondition(styleName: StyleName | undefined, condition: Styl
 	return result
 }
 
+/**
+ * Adds the file icon prefix to the string.
+ * @param styleName The style name.
+ * @param filePath The full file path.
+ */
 export function styleConditionFile(styleName: StyleName | undefined, filePath: string): string {
 	const parsed = path.parse(filePath)
 	let icon = ''
