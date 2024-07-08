@@ -31,28 +31,37 @@ export interface FileSystemAdapter extends FastGlob.FileSystemAdapter {
  * @see {@link ScanMethod}
  */
 export interface LookMethodData {
+	/**
+	 * The {@link Looker} instance with parsed patterns.
+	 */
 	looker: Looker,
+	/**
+	 * The path to the target file.
+	 */
 	filePath: string,
+	/**
+	 * The information about where the patterns were taken from.
+	 */
 	sourceFile: SourceFile,
 }
 /**
- * Returns `true` if given source is valid, writes rules to the looker.
+ * Also can write rules to the {@link Looker}.
+ * @returns `true` if the given source is valid.
  */
 export type ScanMethod = (data: LookMethodData) => boolean
 export interface SourceFile {
 	/**
-	 * Source file path
+	 * The source file path.
 	 */
 	path: string,
 	/**
-	 * Source file content
+	 * The source file content.
 	 */
 	content: string,
 }
 export interface Source {
 	/**
 	 * Git configuration property.
-	 * 
 	 * @see {@link https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase|git-config ignorecase}.
 	 * @default false
 	 */
@@ -60,7 +69,6 @@ export interface Source {
 	/**
 	 * Additional patterns, which will be used as
 	 * other patterns in the `.gitignore` file, or `package.json` "files" property.
-	 * 
 	 * @default []
 	 */
 	addPatterns?: string[],
@@ -73,7 +81,7 @@ export interface Source {
 	 */
 	patternType: PatternType,
 	/**
-	 * {@link Looker} maker.
+	 * Scanner function. Should return `true` if the given source is valid.
 	 */
 	method: ScanMethod
 }
@@ -81,27 +89,23 @@ export interface Source {
 export interface ScanFileOptions {
 	/**
 	 * Custom implementation of methods for working with the file system.
-	 *
 	 * @default fs.*
 	 */
 	fs?: FileSystemAdapter,
 	/**
 	 * The current working directory in which to search.
-	 *
 	 * @default process.cwd()
 	 */
 	cwd?: string;
 	/**
 	 * Specifies the maximum number of concurrent requests from a reader to read
 	 * directories.
-	 *
 	 * @default os.cpus().length
 	 */
 	concurrency?: number;
 	/**
 	 * Specifies the maximum depth of a read directory relative to the start
 	 * directory.
-	 *
 	 * @default Infinity
 	 */
 	deep?: number,
@@ -110,14 +114,13 @@ export interface ScanFileOptions {
 export interface LookFolderOptions extends ScanFileOptions {
 	/**
 	 * Filter output.
-	 * 
 	 * @default "included"
 	 */
 	filter?: FilterName
 }
 
 /**
- * Returns `undefined`, if the source is bad.
+ * @returns `undefined` if the source is bad.
  */
 export async function scanFile(filePath: string, sources: Source[], options: ScanFileOptions): Promise<FileInfo | undefined> {
 	for (const source of sources) {
