@@ -26,13 +26,26 @@ export interface FileInfoToStringOptions {
  * The result of the file path scan.
  */
 export class FileInfo {
-	public readonly ignored: boolean
 	constructor(
+		/**
+		 * Relative path to the file.
+		*/
 		public readonly filePath: string,
+		/**
+		 * Parser instance. Can be used to determine if the file is ignored.
+		 * @see {@link ignored} can be used instead of it.
+		 */
 		public readonly looker: Looker,
+		/**
+		 * Source of patterns, used by {@link looker}.
+		*/
 		public readonly source: SourceFile,
-	) {
-		this.ignored = looker.ignores(filePath)
+	) { }
+	/**
+	 * Determines if ignored file is ignored or not.
+	 */
+	get ignored(): boolean {
+		return this.looker.ignores(this.filePath)
 	}
 	static from(paths: string[], looker: Looker, source?: SourceFile | string): FileInfo[]
 	static from(path: string, looker: Looker, source?: SourceFile | string): FileInfo
@@ -46,7 +59,7 @@ export class FileInfo {
 	/**
 	 * @param options Styling options. Default `{}`.
 	 * @param formatEntire Determines if the path's base or the entire path should be formatted. Default `true`.
-	 * @returns File path. Optionally formatted.
+	 * @returns Relative file path. Optionally formatted.
 	 */
 	toString(options: FileInfoToStringOptions = {}, formatEntire = true): string {
 		const { styleName, usePrefix = false, chalk } = options;
