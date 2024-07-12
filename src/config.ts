@@ -9,14 +9,26 @@ import { existsSync, readFileSync, rmSync, writeFileSync } from "fs"
  * The full config file name - `".view-ignored"`.
  */
 export const configFileName = ".view-ignored"
+
 /**
  * The user's home directory + the config file name.
  * @see {@link os.homedir}
  */
 export const configFilePath = path.join(os.homedir(), configFileName)
 
+/**
+ * Command-line configuration property list.
+ */
 export const configKeyList = ["color", "target", "filter", "sort", "style"] as const satisfies readonly (keyof Config)[]
+
+/**
+ * Command-line configuration property type.
+ */
 export type ConfigKey = typeof configKeyList[number] & keyof Config
+
+/**
+ * Command-line configuration structure.
+ */
 export type Config = {
     color: `${ColorSupportLevel}`,
     target: string,
@@ -25,6 +37,9 @@ export type Config = {
     style: Styling.StyleName,
 }
 
+/**
+ * Command-line default config values.
+ */
 export const configDefault: Config = {
     color: "3",
     target: "git",
@@ -62,10 +77,12 @@ export function configPartialGood(cfg: unknown): cfg is Partial<Config> {
 
 /**
  * The config manipulator.
+ * @todo Convert to a *class instance* or *just methods* and hide the 'data' property.
  */
 export const configManager = {
     /**
      * Do not change this value directly.
+     * @todo Make private.
      * @see {@link configManager}.
      */
     data: {} as Partial<Config>,
