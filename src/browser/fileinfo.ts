@@ -1,7 +1,7 @@
 import { ChalkInstance } from "chalk"
 import { styleConditionFile, StyleName } from "./styling.js"
 import path from "path"
-import { SourceFile } from "./lib.js"
+import { FilterName, SourceFile } from "./lib.js"
 import { Looker } from "./looker.js"
 
 export interface FileInfoToStringOptions {
@@ -64,5 +64,16 @@ export class FileInfo {
 			return prefix + this.filePath
 		}
 		return parsed.dir + '/' + fileIcon + prefix + parsed.base
+	}
+	/**
+	 * @param filter The group name.
+	 * @returns `true` if the file is contained by the filter.
+	 */
+	isIncludedBy(filter: FilterName): boolean {
+		const filterIgnore = (filter === "ignored") && this.ignored
+		const filterInclude = (filter === "included") && !this.ignored
+		const filterAll = filter === "all"
+		const result = filterIgnore || filterInclude || filterAll
+		return result
 	}
 }

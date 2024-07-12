@@ -161,23 +161,27 @@ export async function scanPaths(allFilePaths: string[], arg2: Source[] | string,
 		return scanPaths(allFilePaths, bind.sources, bind.scanOptions ?? {})
 	}
 
-	// Find good source
 	const { filter = "included" } = options;
+	/** Contains parsed sources: file path = parser instance. */
 	const cache = new Map<string, Looker>()
+
+	// Find good source.
 	for (const source of arg2) {
 		let goodFound = false
 		const resultList: FileInfo[] = []
-		const sourceList = source.sources instanceof SourcePattern ? await source.sources.read(options) : source.sources
+		const sourceList: SourceFile[] = source.sources instanceof SourcePattern
+			? await source.sources.read(options)
+			: source.sources
 		for (const filePath of allFilePaths) {
 			const possibleSource = findDomination(filePath, sourceList)
-			if (possibleSource === undefined) {
+			if (!possibleSource) {
 				break
 			}
 			const looker = cache.get(possibleSource.path)
 			let info: FileInfo
-			if (looker === undefined) {
+			if (!looker) {
 				const newInfo = await scanFile(filePath, [source], options)
-				if (newInfo === undefined) {
+				if (!newInfo) {
 					break
 				}
 				info = newInfo
@@ -185,20 +189,16 @@ export async function scanPaths(allFilePaths: string[], arg2: Source[] | string,
 			} else {
 				info = FileInfo.from(filePath, looker, possibleSource)
 			}
-			const filterIgnore = (filter === "ignored") && info.ignored
-			const filterInclude = (filter === "included") && !info.ignored
-			const filterAll = filter === "all"
-			const shouldPush = filterIgnore || filterInclude || filterAll
+			const shouldPush = info.isIncludedBy(filter)
 			if (shouldPush) {
 				resultList.push(info)
 			}
-			goodFound ||= true
+			goodFound = true
 		}
 		if (goodFound) {
 			return resultList
 		}
 	}
-	return undefined
 }
 /**
  * Scan project directory with results for each file path.
