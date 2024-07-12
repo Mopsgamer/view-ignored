@@ -1,13 +1,25 @@
 import { LookFolderOptions, Source } from "../lib.js"
 
 export interface TargetBind {
+    /**
+     * The target simple name.
+     * @see {@link isValidId}
+     */
     id: string
+    /**
+     * The target readable name.
+     */
     name: string
+    /**
+     * The walkthrough. Files including patterns.
+     */
     sources: Source[]
+    /**
+     * Folder deep scanning options for the target.
+     */
     scanOptions?: LookFolderOptions
     /**
      * Test command.
-     * 
      * @example
      * "npm pack --dry run"
      * "vsce ls"
@@ -15,14 +27,21 @@ export interface TargetBind {
     testCommad?: string
 }
 
-export function isValidId(id: unknown) {
+/**
+ * @param id The target simple name.
+ * @returns `true` if the target id is valid.
+ */
+export function isValidId(id: unknown): boolean {
     return typeof id === "string" && id.match(/^[-a-zA-Z0-9]+$/) != null
 }
+
+/**
+ * The container for binds: id=bind.
+ */
 const targetBindMap = new Map<string, TargetBind>()
 
 /**
  * Allows to create targets for view-ignored scan* functions.
- * 
  * @example
  * scanProject("abc") // error
  * Bindings.targetSet("abc", {...})
@@ -37,7 +56,6 @@ export function targetSet(bind: TargetBind): void {
 
 /**
  * Get all target ids.
- * 
  * @example
  * ["git", "npm", "vsce", ...]
  */
