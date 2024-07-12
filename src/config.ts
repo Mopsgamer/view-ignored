@@ -135,10 +135,10 @@ export const configManager = {
         return value
     },
     /**
-     * @returns The string in the `"key=value"` format, if the property is specified.
-     * Otherwise in format `"key=value\nkey=value\n..."` without new line ending.
      * @param key The config property.
      * @param fallbackDefault If `true`, the default value will be used when the value is `undefined`. Default `true`.
+     * @returns The string in the `"key=value"` format, if the property is specified.
+     * Otherwise in format `"key=value\nkey=value\n..."` without new line ending.
      */
     getPairString<T extends ConfigKey>(key?: T, fallbackDefault: boolean = true): string {
         if (key === undefined) {

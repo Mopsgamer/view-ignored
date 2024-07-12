@@ -8,6 +8,9 @@ import { configValues, configManager, ConfigKey, Config, configKeyList, configFi
 configManager.load()
 export { program }
 
+/**
+ * Command-line 'scan' command flags.
+ */
 export interface Flags {
 	color: string,
 	target: string,
@@ -16,12 +19,13 @@ export interface Flags {
 	style: Styling.StyleName
 }
 
+/**
+ * Command-line 'scan' command.
+ */
 export const scanProgram = program
 	.command("scan")
 	.aliases(['sc'])
 	.description('get ignored paths')
-
-scanProgram
 	.addOption(new Option("-clr, --color <level>").default(configManager.get("color")).choices(configValues.color))
 	.addOption(new Option("-t, --target <ignorer>").default(configManager.get("target")).choices(configValues.target))
 	.addOption(new Option("-fl, --filter <filter>").default(configManager.get("filter")).choices(configValues.filter))
@@ -29,12 +33,23 @@ scanProgram
 	.addOption(new Option("-st, --style <style>").default(configManager.get("style")).choices(configValues.style))
 	.action(actionScan)
 
+/**
+ * Command-line 'config' command.
+ */
 export const cfgProgram = program
 	.command("config")
 	.alias('cfg')
 	.description('cli config manipulation')
 
+/**
+ * Command-line argument: key=value pair.
+ * @see {@link parseArgKeyVal}
+ */
 export const argConfigKeyVal = new Argument('<pair>', 'pair "key=value"').argParser(parseArgKeyVal)
+/**
+ * Command-line argument: config property.
+ * @see {@link configKeyList}
+ */
 export const argConfigKey = new Argument('[key]', 'setting').choices(configKeyList)
 
 cfgProgram
@@ -77,13 +92,16 @@ export function parseArgKeyVal(pair: string): [ConfigKey, Config[ConfigKey]] {
 	return result
 }
 
+/**
+ * Command-line 'scan' command action.
+ */
 export async function actionScan(flags: Flags): Promise<void> {
 	const start = Date.now()
 	const colorLevel = Math.max(0, Math.min(Number(flags.color ?? 3), 3)) as ColorSupportLevel
 	/** Chalk, but configured by view-ignored cli. */
 	const chalk = new Chalk({ level: colorLevel })
 
-	const looked = await scanProject(flags.target, {filter: flags.filter})
+	const looked = await scanProject(flags.target, { filter: flags.filter })
 
 	if (!looked) {
 		stdout.write(`Bad source for ${flags.target}.`)
@@ -116,17 +134,26 @@ export async function actionScan(flags: Flags): Promise<void> {
 	stdout.write('\n')
 }
 
+/**
+ * Command-line 'config path' command action.
+ */
 export function actionCfgPath(): void {
 	stdout.write(configFilePath)
 	stdout.write('\n')
 }
 
+/**
+ * Command-line 'config reset' command action
+ */
 export function actionCfgReset(): void {
 	configManager.unset().save()
 	stdout.write(configManager.getPairString())
 	stdout.write('\n')
 }
 
+/**
+ * Command-line 'config set' command action
+ */
 export function actionCfgSet(pair: [ConfigKey, Config[ConfigKey]]): void {
 	const [key, val] = pair
 	configManager.set(key, val).save()
@@ -134,6 +161,9 @@ export function actionCfgSet(pair: [ConfigKey, Config[ConfigKey]]): void {
 	stdout.write('\n')
 }
 
+/**
+ * Command-line 'config unset' command action
+ */
 export function actionCfgUnset(key: ConfigKey | undefined): void {
 	if (key !== undefined) {
 		configManager.unset(key).save()
@@ -142,6 +172,9 @@ export function actionCfgUnset(key: ConfigKey | undefined): void {
 	stdout.write('\n')
 }
 
+/**
+ * Command-line 'config unset' command action
+ */
 export function actionCfgGet(key: ConfigKey | undefined, options: { safe?: boolean }): void {
 	stdout.write(configManager.getPairString(key, options.safe ?? false))
 	stdout.write('\n')
