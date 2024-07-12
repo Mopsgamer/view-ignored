@@ -1,4 +1,4 @@
-import { Looker } from "./looker.js";
+import { Looker, PatternType } from "./looker.js";
 import FastGlob from "fast-glob";
 import { FileInfo } from "./fileinfo.js";
 import { findDomination, SourcePattern } from "./sourcepattern.js";
@@ -18,7 +18,6 @@ import "./plugins/vsce.js"
 import "./plugins/yarn.js"
 //#endregion
 
-export type PatternType = ".*ignore" | "minimatch"
 export const filterNameList = ["ignored", "included", "all"] as const
 export type FilterName = typeof filterNameList[number]
 
@@ -28,7 +27,7 @@ export interface FileSystemAdapter extends FastGlob.FileSystemAdapter {
 
 //#region looking
 /**
- * @see {@link ScanMethod}
+ * The data passed to {@link ScanMethod}.
  */
 export interface LookMethodData {
 	/**
@@ -49,6 +48,10 @@ export interface LookMethodData {
  * @returns `true` if the given source is valid.
  */
 export type ScanMethod = (data: LookMethodData) => boolean
+
+/**
+ * Contains file path and content.
+ */
 export interface SourceFile {
 	/**
 	 * The source file path.
@@ -59,10 +62,14 @@ export interface SourceFile {
 	 */
 	content: string,
 }
+
+/**
+ * Represents the methodology for reading the target source.
+ */
 export interface Source {
 	/**
 	 * Git configuration property.
-	 * @see {@link https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase|git-config ignorecase}.
+	 * @see Official git documentation: {@link https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase|ignorecase}.
 	 * @default false
 	 */
 	ignoreCase?: boolean,
@@ -86,6 +93,10 @@ export interface Source {
 	method: ScanMethod
 }
 
+/**
+ * File scanning options.
+ * @see {@link LookFolderOptions}
+ */
 export interface ScanFileOptions {
 	/**
 	 * Custom implementation of methods for working with the file system.
@@ -111,6 +122,10 @@ export interface ScanFileOptions {
 	deep?: number,
 }
 
+/**
+ * Folder deep scanning options.
+ * @see {@link ScanFileOptions}
+ */
 export interface LookFolderOptions extends ScanFileOptions {
 	/**
 	 * Filter output.
@@ -120,6 +135,7 @@ export interface LookFolderOptions extends ScanFileOptions {
 }
 
 /**
+ * Gets info about the file: it is ignored or not.
  * @returns `undefined` if the source is bad.
  */
 export async function scanFile(filePath: string, sources: Source[], options: ScanFileOptions): Promise<FileInfo | undefined> {
@@ -148,7 +164,7 @@ export async function scanFile(filePath: string, sources: Source[], options: Sca
 }
 
 /**
- * Scan project directory paths with results for each file path.
+ * Scans project directory paths to determine whether they are being ignored.
  */
 export async function scanPaths(allFilePaths: string[], sources: Source[], options: LookFolderOptions): Promise<FileInfo[] | undefined>
 export async function scanPaths(allFilePaths: string[], target: string, options: LookFolderOptions): Promise<FileInfo[] | undefined>
@@ -201,7 +217,7 @@ export async function scanPaths(allFilePaths: string[], arg2: Source[] | string,
 	}
 }
 /**
- * Scan project directory with results for each file path.
+ * Scans project directory paths to determine whether they are being ignored.
  */
 export function scanProject(sources: Source[], options: LookFolderOptions): Promise<FileInfo[] | undefined>
 export function scanProject(target: string, options: LookFolderOptions): Promise<FileInfo[] | undefined>
