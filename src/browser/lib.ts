@@ -28,6 +28,7 @@ export interface FileSystemAdapter extends FastGlob.FileSystemAdapter {
 //#region looking
 /**
  * The data passed to {@link ScanMethod}.
+ * @todo Rename -> ScanMethodData.
  */
 export interface LookMethodData {
 	/**
@@ -136,6 +137,7 @@ export interface ScanFileOptions {
 /**
  * Folder deep scanning options.
  * @see {@link ScanFileOptions}
+ * @todo Rename -> ScanFolderOptions
  */
 export interface LookFolderOptions extends ScanFileOptions {
 	/**
