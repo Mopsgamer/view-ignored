@@ -1,4 +1,4 @@
-import { Looker } from "./looker.js";
+import { Looker, PatternType } from "./looker.js";
 import FastGlob from "fast-glob";
 import { FileInfo } from "./fileinfo.js";
 import { findDomination, SourcePattern } from "./sourcepattern.js";
@@ -18,7 +18,6 @@ import "./plugins/vsce.js"
 import "./plugins/yarn.js"
 //#endregion
 
-export type PatternType = ".*ignore" | "minimatch"
 export const filterNameList = ["ignored", "included", "all"] as const
 export type FilterName = typeof filterNameList[number]
 
@@ -28,96 +27,129 @@ export interface FileSystemAdapter extends FastGlob.FileSystemAdapter {
 
 //#region looking
 /**
- * @see {@link ScanMethod}
+ * The data passed to {@link ScanMethod}.
+ * @todo Rename -> ScanMethodData.
  */
 export interface LookMethodData {
-	looker: Looker,
-	filePath: string,
-	sourceFile: SourceFile,
+	/**
+	 * The {@link Looker} instance with parsed patterns.
+	 */
+	looker: Looker
+
+	/**
+	 * The path to the target file.
+	 */
+	filePath: string
+
+	/**
+	 * The information about where the patterns were taken from.
+	 */
+	sourceFile: SourceFile
 }
+
 /**
- * Returns `true` if given source is valid, writes rules to the looker.
+ * Also can write rules to the {@link Looker}.
+ * @returns `true` if the given source is valid.
  */
 export type ScanMethod = (data: LookMethodData) => boolean
+
+/**
+ * Contains file path and content.
+ */
 export interface SourceFile {
 	/**
-	 * Source file path
+	 * The source file path.
 	 */
-	path: string,
+	path: string
+
 	/**
-	 * Source file content
+	 * The source file content.
 	 */
-	content: string,
+	content: string
 }
+
+/**
+ * Represents the methodology for reading the target source.
+ */
 export interface Source {
 	/**
 	 * Git configuration property.
-	 * 
-	 * @see {@link https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase|git-config ignorecase}.
+	 * @see Official git documentation: {@link https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase|ignorecase}.
 	 * @default false
 	 */
-	ignoreCase?: boolean,
+	ignoreCase?: boolean
+
 	/**
 	 * Additional patterns, which will be used as
 	 * other patterns in the `.gitignore` file, or `package.json` "files" property.
-	 * 
 	 * @default []
 	 */
-	addPatterns?: string[],
+	addPatterns?: string[]
+
 	/**
 	 * First valid source will be used as {@link Looker}.
 	 */
-	sources: SourceFile[] | SourcePattern,
+	sources: SourceFile[] | SourcePattern
+
 	/**
 	 * Pattern parser name.
 	 */
-	patternType: PatternType,
+	patternType: PatternType
+
 	/**
-	 * {@link Looker} maker.
+	 * Scanner function. Should return `true` if the given source is valid.
 	 */
 	method: ScanMethod
 }
 
+/**
+ * File scanning options.
+ * @see {@link LookFolderOptions}
+ */
 export interface ScanFileOptions {
 	/**
 	 * Custom implementation of methods for working with the file system.
-	 *
 	 * @default fs.*
 	 */
-	fs?: FileSystemAdapter,
+	fs?: FileSystemAdapter
+
 	/**
 	 * The current working directory in which to search.
-	 *
 	 * @default process.cwd()
 	 */
-	cwd?: string;
+	cwd?: string
+
 	/**
 	 * Specifies the maximum number of concurrent requests from a reader to read
 	 * directories.
-	 *
 	 * @default os.cpus().length
 	 */
-	concurrency?: number;
+	concurrency?: number
+
 	/**
 	 * Specifies the maximum depth of a read directory relative to the start
 	 * directory.
-	 *
 	 * @default Infinity
 	 */
-	deep?: number,
+	deep?: number
 }
 
+/**
+ * Folder deep scanning options.
+ * @see {@link ScanFileOptions}
+ * @todo Rename -> ScanFolderOptions
+ */
 export interface LookFolderOptions extends ScanFileOptions {
 	/**
 	 * Filter output.
-	 * 
 	 * @default "included"
 	 */
 	filter?: FilterName
 }
 
 /**
- * Returns `undefined`, if the source is bad.
+ * Gets info about the file: it is ignored or not.
+ * @returns `undefined` if the source is bad.
  */
 export async function scanFile(filePath: string, sources: Source[], options: ScanFileOptions): Promise<FileInfo | undefined> {
 	for (const source of sources) {
@@ -145,7 +177,7 @@ export async function scanFile(filePath: string, sources: Source[], options: Sca
 }
 
 /**
- * Scan project directory paths with results for each file path.
+ * Scans project directory paths to determine whether they are being ignored.
  */
 export async function scanPaths(allFilePaths: string[], sources: Source[], options: LookFolderOptions): Promise<FileInfo[] | undefined>
 export async function scanPaths(allFilePaths: string[], target: string, options: LookFolderOptions): Promise<FileInfo[] | undefined>
@@ -158,23 +190,27 @@ export async function scanPaths(allFilePaths: string[], arg2: Source[] | string,
 		return scanPaths(allFilePaths, bind.sources, bind.scanOptions ?? {})
 	}
 
-	// Find good source
 	const { filter = "included" } = options;
+	/** Contains parsed sources: file path = parser instance. */
 	const cache = new Map<string, Looker>()
+
+	// Find good source.
 	for (const source of arg2) {
 		let goodFound = false
 		const resultList: FileInfo[] = []
-		const sourceList = source.sources instanceof SourcePattern ? await source.sources.read(options) : source.sources
+		const sourceList: SourceFile[] = source.sources instanceof SourcePattern
+			? await source.sources.read(options)
+			: source.sources
 		for (const filePath of allFilePaths) {
 			const possibleSource = findDomination(filePath, sourceList)
-			if (possibleSource === undefined) {
+			if (!possibleSource) {
 				break
 			}
 			const looker = cache.get(possibleSource.path)
 			let info: FileInfo
-			if (looker === undefined) {
+			if (!looker) {
 				const newInfo = await scanFile(filePath, [source], options)
-				if (newInfo === undefined) {
+				if (!newInfo) {
 					break
 				}
 				info = newInfo
@@ -182,23 +218,20 @@ export async function scanPaths(allFilePaths: string[], arg2: Source[] | string,
 			} else {
 				info = FileInfo.from(filePath, looker, possibleSource)
 			}
-			const filterIgnore = (filter === "ignored") && info.ignored
-			const filterInclude = (filter === "included") && !info.ignored
-			const filterAll = filter === "all"
-			const shouldPush = filterIgnore || filterInclude || filterAll
+			const shouldPush = info.isIncludedBy(filter)
 			if (shouldPush) {
 				resultList.push(info)
 			}
-			goodFound ||= true
+			goodFound = true
 		}
 		if (goodFound) {
 			return resultList
 		}
 	}
-	return undefined
 }
+
 /**
- * Scan project directory with results for each file path.
+ * Scans project directory paths to determine whether they are being ignored.
  */
 export function scanProject(sources: Source[], options: LookFolderOptions): Promise<FileInfo[] | undefined>
 export function scanProject(target: string, options: LookFolderOptions): Promise<FileInfo[] | undefined>

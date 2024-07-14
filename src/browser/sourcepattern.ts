@@ -6,14 +6,23 @@ import { FileSystemAdapter, SourceFile } from "./lib.js"
 export interface SourcePatternReadOptions extends FastGlob.Options {
 	/**
 	 * Custom implementation of methods for working with the file system.
-	 *
 	 * @default fs.*
 	 */
 	fs?: FileSystemAdapter
 }
+
+/**
+ * Reads {@link SourceFile.path}. Should put into {@link SourceFile.content}.
+ * @todo Do something: {@link SourceFile}.
+ */
 export function readSourcePath(path: string, options?: SourcePatternReadOptions): Buffer {
 	return (options?.fs?.readFileSync || fs.readFileSync)(join(options?.cwd ?? process.cwd(), path))
 }
+
+/**
+ * Converts file path to {@link SourceFile}.
+ * @todo Do something: {@link SourceFile}.
+ */
 export function pathToSourceFile(path: string, options?: SourcePatternReadOptions): SourceFile {
 	return {
 		path: path,
@@ -22,8 +31,8 @@ export function pathToSourceFile(path: string, options?: SourcePatternReadOption
 }
 
 /**
- * Returns closest dir entry path for another one using the given list.
- * If `undefined`, no reliable sources that contain patterns to ignore.
+ * @returns Closest dir entry path for another one using the given list.
+ * If `undefined`, there are no reliable sources that contain patterns to ignore.
  */
 export function findDomination<T extends { path: string }>(filePath: string, paths: T[]): T | undefined {
 	const filePathDir = dirname(filePath)
@@ -34,6 +43,10 @@ export function findDomination<T extends { path: string }>(filePath: string, pat
 	})
 	return result
 }
+
+/**
+ * @todo Do something: {@link SourceFile}.
+ */
 export class SourcePattern extends String {
 	scan(options?: SourcePatternReadOptions): Promise<string[]> {
 		const o: FastGlob.Options = {

@@ -38,6 +38,7 @@ export const Sorters = {
 		}
 		return comp
 	},
+
 	/**
 	 * Files and folders are sorted by their names.
 	 * Files are displayed before folders.
@@ -63,6 +64,7 @@ export const Sorters = {
 		}
 		return comp
 	},
+
 	/**
 	 * Files and folders are sorted by last modified date in descending order.
 	 * Folders are displayed before files.
@@ -88,6 +90,7 @@ export const Sorters = {
 		}
 		return comp
 	},
+
 	/**
 	 * Files and folders are grouped by extension type then sorted by thir names.
 	 * Folders are displayed before files.
@@ -115,6 +118,7 @@ export const Sorters = {
 		}
 		return comp
 	},
+
 	/**
 	 * Files and folders are sorted by their names.
 	 * Files are interwoven with folders.

@@ -10,6 +10,7 @@ export function CurrentBranch(cwd?: string): string | undefined {
 		return;
 	}
 }
+
 /**
  * Read git config value as string.
  */
@@ -20,6 +21,7 @@ export function String(key: string, cwd?: string): string | undefined {
 		return;
 	}
 }
+
 /**
  * Read git config value as boolean.
  */

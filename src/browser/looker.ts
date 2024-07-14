@@ -1,42 +1,63 @@
 import ignore, { Ignore } from "ignore"
 import { minimatch } from "minimatch"
-import { PatternType } from "./lib.js"
+
+/**
+ * Supported matchers/parsers by {@link Looker}.
+ */
+export type PatternType = ".*ignore" | "minimatch"
 
 export interface LookerOptions {
 	/**
 	 * @see {@link Looker.isNegated}
 	 */
 	negated?: boolean
+
+	/**
+	 * The parser for the patterns.
+	 */
 	patternType?: PatternType
+
 	/**
 	 * Git configuration property.
-	 * 
 	 * @see {@link https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase|git-config ignorecase}.
 	 * @default false
 	 */
-	ignoreCase?: boolean,
+	ignoreCase?: boolean
+
 	/**
 	 * Additional patterns, which will be used as
 	 * other patterns in the `.gitignore` file, or `package.json` "files" property.
-	 * 
 	 * @default []
 	 */
-	addPatterns?: string[],
+	addPatterns?: string[]
 }
+
+/**
+ * The Glob-like pattern of the specific matcher.
+ */
 export type LookerPattern = string | string[]
+
+/**
+ * The pattern parser. Can check if the file path is ignored.
+ */
 export class Looker {
 	/**
 	 * If `true`, when calling {@link Looker.ignores}, method will return `true` for ignored path.
-	 * 
 	 * @default false
 	 */
 	public isNegated: boolean
+
 	/**
 	 * Defines way to check paths.
-	 * 
 	 * @default ".*ignore"
 	 */
 	public patternType: PatternType
+	
+	/**
+	 * Git configuration property.
+	 * @see {@link https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase|git-config ignorecase}.
+	 * @default false
+	 */
 	public readonly ignoreCase: boolean
 	private patternList: string[] = []
 	private ignoreInstance: Ignore
@@ -49,6 +70,9 @@ export class Looker {
 		this.add(options?.addPatterns ?? [])
 	}
 
+	/**
+	 * Clone instance.
+	 */
 	clone(): Looker {
 		const cloned = new Looker({
 			addPatterns: this.patternList,
@@ -58,6 +82,9 @@ export class Looker {
 		return cloned;
 	}
 
+	/**
+	 * Invert checking for the {@link add} method.
+	 */
 	negate(): this {
 		this.isNegated = !this.isNegated
 		return this
