@@ -30,10 +30,32 @@ export const Styles: Record<StyleName, Style> = {
  * Formatting options for the {@link styleCondition}.
  */
 export interface StyleCondition {
+	/**
+	 * @default ""
+	 */
 	prefix?: string
+
+	/**
+	 * @default ""
+	 */
 	postfix?: string
+
+	/**
+	 * If style is not an emoji or nerd use this string.
+	 * @default ""
+	 */
 	ifAny?: string
+
+	/**
+	 * If style name (lowercase) contains `emoji` use this string.
+	 * @default ""
+	 */
 	ifEmoji?: string
+
+	/**
+	 * If style name (lowercase) contains `nerd` use this string.
+	 * @default ""
+	 */
 	ifNerd?: string
 }
 

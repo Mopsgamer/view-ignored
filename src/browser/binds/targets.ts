@@ -6,18 +6,22 @@ export interface TargetBind {
      * @see {@link isValidId}
      */
     id: string
+
     /**
      * The target readable name.
      */
     name: string
+
     /**
      * The walkthrough. Files including patterns.
      */
     sources: Source[]
+
     /**
      * Folder deep scanning options for the target.
      */
     scanOptions?: LookFolderOptions
+
     /**
      * Test command.
      * @example

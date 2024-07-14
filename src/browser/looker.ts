@@ -11,22 +11,25 @@ export interface LookerOptions {
 	 * @see {@link Looker.isNegated}
 	 */
 	negated?: boolean
+
 	/**
 	 * The parser for the patterns.
 	 */
 	patternType?: PatternType
+
 	/**
 	 * Git configuration property.
 	 * @see {@link https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase|git-config ignorecase}.
 	 * @default false
 	 */
-	ignoreCase?: boolean,
+	ignoreCase?: boolean
+
 	/**
 	 * Additional patterns, which will be used as
 	 * other patterns in the `.gitignore` file, or `package.json` "files" property.
 	 * @default []
 	 */
-	addPatterns?: string[],
+	addPatterns?: string[]
 }
 
 /**
@@ -43,11 +46,13 @@ export class Looker {
 	 * @default false
 	 */
 	public isNegated: boolean
+
 	/**
 	 * Defines way to check paths.
 	 * @default ".*ignore"
 	 */
 	public patternType: PatternType
+	
 	/**
 	 * Git configuration property.
 	 * @see {@link https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase|git-config ignorecase}.

@@ -33,16 +33,19 @@ export interface LookMethodData {
 	/**
 	 * The {@link Looker} instance with parsed patterns.
 	 */
-	looker: Looker,
+	looker: Looker
+
 	/**
 	 * The path to the target file.
 	 */
-	filePath: string,
+	filePath: string
+
 	/**
 	 * The information about where the patterns were taken from.
 	 */
-	sourceFile: SourceFile,
+	sourceFile: SourceFile
 }
+
 /**
  * Also can write rules to the {@link Looker}.
  * @returns `true` if the given source is valid.
@@ -56,11 +59,12 @@ export interface SourceFile {
 	/**
 	 * The source file path.
 	 */
-	path: string,
+	path: string
+
 	/**
 	 * The source file content.
 	 */
-	content: string,
+	content: string
 }
 
 /**
@@ -72,21 +76,25 @@ export interface Source {
 	 * @see Official git documentation: {@link https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase|ignorecase}.
 	 * @default false
 	 */
-	ignoreCase?: boolean,
+	ignoreCase?: boolean
+
 	/**
 	 * Additional patterns, which will be used as
 	 * other patterns in the `.gitignore` file, or `package.json` "files" property.
 	 * @default []
 	 */
-	addPatterns?: string[],
+	addPatterns?: string[]
+
 	/**
 	 * First valid source will be used as {@link Looker}.
 	 */
-	sources: SourceFile[] | SourcePattern,
+	sources: SourceFile[] | SourcePattern
+
 	/**
 	 * Pattern parser name.
 	 */
-	patternType: PatternType,
+	patternType: PatternType
+
 	/**
 	 * Scanner function. Should return `true` if the given source is valid.
 	 */
@@ -102,24 +110,27 @@ export interface ScanFileOptions {
 	 * Custom implementation of methods for working with the file system.
 	 * @default fs.*
 	 */
-	fs?: FileSystemAdapter,
+	fs?: FileSystemAdapter
+
 	/**
 	 * The current working directory in which to search.
 	 * @default process.cwd()
 	 */
-	cwd?: string;
+	cwd?: string
+
 	/**
 	 * Specifies the maximum number of concurrent requests from a reader to read
 	 * directories.
 	 * @default os.cpus().length
 	 */
-	concurrency?: number;
+	concurrency?: number
+
 	/**
 	 * Specifies the maximum depth of a read directory relative to the start
 	 * directory.
 	 * @default Infinity
 	 */
-	deep?: number,
+	deep?: number
 }
 
 /**
@@ -216,6 +227,7 @@ export async function scanPaths(allFilePaths: string[], arg2: Source[] | string,
 		}
 	}
 }
+
 /**
  * Scans project directory paths to determine whether they are being ignored.
  */

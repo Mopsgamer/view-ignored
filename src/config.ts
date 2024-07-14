@@ -86,6 +86,7 @@ export const configManager = {
      * @see {@link configManager}.
      */
     data: {} as Partial<Config>,
+
     /**
      * Loads the config from the file to {@link configManager.data}. If the data is not valid, throws an error without loading.
      * @returns `undefined` if the config file does not exist.
@@ -101,6 +102,7 @@ export const configManager = {
         Object.assign(this.data, parsed)
         return this
     },
+
     /**
      * Saves the partial config to the file. If there are no settings, the file will be deleted, if exists.
      */
@@ -114,6 +116,7 @@ export const configManager = {
         writeFileSync(configFilePath, propertiesFile.stringify(this.data)!)
         return this
     },
+
     /**
      * Sets a new value for the specified config property.
      * Expects a valid value.
@@ -124,6 +127,7 @@ export const configManager = {
         this.data[key] = value
         return this
     },
+
     /**
      * Deletes the specified property from the config.
      * If the property is not specified, then all properties will be deleted.
@@ -139,6 +143,7 @@ export const configManager = {
         delete this.data[key]
         return this
     },
+
     /**
      * Returns the value for the specified property.
      * @param key The config property.
@@ -151,6 +156,7 @@ export const configManager = {
         }
         return value
     },
+
     /**
      * @param key The config property.
      * @param fallbackDefault If `true`, the default value will be used when the value is `undefined`. Default `true`.

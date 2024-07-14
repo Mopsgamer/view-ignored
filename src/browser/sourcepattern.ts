@@ -10,6 +10,7 @@ export interface SourcePatternReadOptions extends FastGlob.Options {
 	 */
 	fs?: FileSystemAdapter
 }
+
 /**
  * Reads {@link SourceFile.path}. Should put into {@link SourceFile.content}.
  * @todo Do something: {@link SourceFile}.
@@ -17,6 +18,7 @@ export interface SourcePatternReadOptions extends FastGlob.Options {
 export function readSourcePath(path: string, options?: SourcePatternReadOptions): Buffer {
 	return (options?.fs?.readFileSync || fs.readFileSync)(join(options?.cwd ?? process.cwd(), path))
 }
+
 /**
  * Converts file path to {@link SourceFile}.
  * @todo Do something: {@link SourceFile}.

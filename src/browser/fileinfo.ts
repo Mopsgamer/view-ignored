@@ -10,18 +10,21 @@ export interface FileInfoToStringOptions {
 	 * @default undefined
 	 */
 	styleName?: StyleName
+
 	/**
 	 * The appearance behavior of the prefix.
 	 * `"+"` for included, `"!"` for excluded.
 	 * @default false
 	 */
 	usePrefix?: boolean
+
 	/**
 	 * The behavior of colors.
 	 * @default undefined
 	 */
 	chalk?: ChalkInstance
 }
+
 /**
  * The result of the file path scan.
  */
@@ -31,22 +34,26 @@ export class FileInfo {
 		 * Relative path to the file.
 		*/
 		public readonly filePath: string,
+
 		/**
 		 * Parser instance. Can be used to determine if the file is ignored.
 		 * @see {@link ignored} can be used instead of it.
 		 */
 		public readonly looker: Looker,
+
 		/**
 		 * Source of patterns, used by {@link looker}.
 		*/
 		public readonly source: SourceFile,
 	) { }
+
 	/**
 	 * Determines if ignored file is ignored or not.
 	 */
 	get ignored(): boolean {
 		return this.looker.ignores(this.filePath)
 	}
+
 	static from(paths: string[], looker: Looker, source?: SourceFile | string): FileInfo[]
 	static from(path: string, looker: Looker, source?: SourceFile | string): FileInfo
 	static from(arg: string | string[], looker: Looker, source?: SourceFile | string): FileInfo | FileInfo[] {
@@ -56,6 +63,7 @@ export class FileInfo {
 		const src = typeof source === "object" ? source : { path: '<no-source>', content: source ?? '' }
 		return new FileInfo(arg, looker, src)
 	}
+
 	/**
 	 * @param options Styling options. Default `{}`.
 	 * @param formatEntire Determines if the path's base or the entire path should be formatted. Default `true`.
@@ -78,6 +86,7 @@ export class FileInfo {
 		}
 		return parsed.dir + '/' + fileIcon + prefix + parsed.base
 	}
+
 	/**
 	 * @param filter The group name.
 	 * @returns `true` if the file is contained by the filter.
