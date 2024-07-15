@@ -50,32 +50,33 @@ import * as vign from "view-ignored";
 import * as vign from "view-ignored/lib/browser"; // for web environment apps
 
 const fileInfoList = vign.scanProject("git");
-const fileInfoList = vign.scanPaths(pathList, "git");
-const fileInfo = vign.scanFile(pathToFile, "git");
+const fileInfoList = vign.scanPaths(filePathList, "git");
+const fileInfo = vign.scanFile(filePath, "git");
 
 // options available
 const fileInfoList = vign.scanProject("git", { cwd, ... });
 
 // custom
 /**@type {vign.ScanMethod}*/
-export const method = function (data) {
-  const { matcher, sourceFile: source } = data
-  if (!matcher.isValidPattern(source.content)) {
-      return false
-  }
-  matcher.add(source.content)
-  return true
+export const scan = function (data) {
+    const { matcher, source } = data
+    const pat = source.content?.toString()
+    if (!matcher.isValidPattern(pat)) {
+        return false
+    }
+    matcher.add(pat!)
+    return true
 }
 
-/**@type {vign.Source[]}*/
-export const sources = [
-  { sources: new SourcePattern("**/.gitignore"), patternType: ".*ignore", method, addPatterns: addPatternsExclude },
+/**@type {vign.Methodology[]}*/
+export const methodology = [
+    { pattern: "**/.gitignore", patternType: ".*ignore", scan: scan, addPatterns: addPatternsExclude },
 ]
-vign.scanProject(sources)
+vign.scanProject(methodology)
 
 // use results
 if (fileInfo.ignored) {
-  vscode.explorer.colorFile(fileInfo.filePath, "gray")
+  superCodeEditor.explorer.colorFile(fileInfo.filePath, "gray")
 }
 ```
 
@@ -90,11 +91,12 @@ fileInfoList.map(String).sort(sorter);
 ```js
 const fileInfoList = vign.scanProject("npm")
 const sorter = Sorting.Sorters[flags.sort]
-const cacheEditDates = new Map<FileInfo, Date>()
-for (const look of looked) {
-	cacheEditDates.set(look, fs.statSync(look.filePath).mtime)
+/** @type {Map<FileInfo, Date>} */
+const cacheEditDates = new Map()
+for (const fileInfo of fileInfoList) {
+	cacheEditDates.set(fileInfo, fs.statSync(fileInfo.filePath).mtime)
 }
-const lookedSorted = looked.sort((a, b) => sorter(
+const fileInfoSorted = fileInfoList.sort((a, b) => sorter(
 	a.toString(), b.toString(),
 	cacheEditDates.get(a)!, cacheEditDates.get(b)!
 ))
