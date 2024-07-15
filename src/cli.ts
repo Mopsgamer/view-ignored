@@ -12,6 +12,7 @@ export { program }
  * Command-line 'scan' command flags.
  */
 export interface Flags {
+	noColor: boolean,
 	color: string,
 	target: string,
 	filter: FilterName,
@@ -26,11 +27,12 @@ export const scanProgram = program
 	.command("scan")
 	.aliases(['sc'])
 	.description('get ignored paths')
-	.addOption(new Option("-clr, --color <level>").default(configManager.get("color")).choices(configValues.color))
-	.addOption(new Option("-t, --target <ignorer>").default(configManager.get("target")).choices(configValues.target))
-	.addOption(new Option("-fl, --filter <filter>").default(configManager.get("filter")).choices(configValues.filter))
-	.addOption(new Option("-sr, --sort <sorter>").default(configManager.get("sort")).choices(configValues.sort))
-	.addOption(new Option("-st, --style <style>").default(configManager.get("style")).choices(configValues.style))
+	.addOption(new Option("--no-color"))
+	.addOption(new Option("--color <level>").default(configManager.get("color")).choices(configValues.color))
+	.addOption(new Option("--target <ignorer>").default(configManager.get("target")).choices(configValues.target))
+	.addOption(new Option("--filter <filter>").default(configManager.get("filter")).choices(configValues.filter))
+	.addOption(new Option("--sort <sorter>").default(configManager.get("sort")).choices(configValues.sort))
+	.addOption(new Option("--style <style>").default(configManager.get("style")).choices(configValues.style))
 	.action(actionScan)
 
 /**
@@ -97,7 +99,7 @@ export function parseArgKeyVal(pair: string): [ConfigKey, Config[ConfigKey]] {
  */
 export async function actionScan(flags: Flags): Promise<void> {
 	const start = Date.now()
-	const colorLevel = Math.max(0, Math.min(Number(flags.color ?? 3), 3)) as ColorSupportLevel
+	const colorLevel = (flags.noColor ? 0 : Math.max(0, Math.min(Number(flags.color ?? 3), 3))) as ColorSupportLevel
 	/** Chalk, but configured by view-ignored cli. */
 	const chalk = new Chalk({ level: colorLevel })
 
