@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TargetBind.source
 
 ### Changes
+- Sorting.Sorters[sortername] -> Sorting[sortername]
 - Change `FileInfo.from`.
 - Change `Scanner.isValidPattern`.
 - Add `SourcePattern.scanSync`.

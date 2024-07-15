@@ -109,7 +109,7 @@ export async function actionScan(flags: Flags): Promise<void> {
 		return
 	}
 
-	const sorter = Sorting.Sorters[flags.sort]
+	const sorter = Sorting[flags.sort]
 	const cacheEditDates = new Map<FileInfo, Date>()
 	for (const look of looked) {
 		cacheEditDates.set(look, fs.statSync(look.filePath).mtime)

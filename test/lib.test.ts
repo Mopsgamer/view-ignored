@@ -35,6 +35,7 @@ const targetTestList = {
             },
         },
     },
+
     /**
      * @see {@link npmPatternExclude} {@link npmPatternInclude}
      */
@@ -129,12 +130,20 @@ const targetTestList = {
             },
         },
     },
+
+    /**
+     * @todo Add tests.
+     */
     yarn: {
         'empty project': {
             shouldInclude: [],
             content: {},
         },
     },
+
+    /**
+     * @todo Add tests.
+     */
     vsce: {
         'empty project': {
             shouldInclude: [],
