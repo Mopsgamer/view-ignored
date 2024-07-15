@@ -1,4 +1,4 @@
-import { LookFolderOptions, Source } from "../lib.js"
+import { ScanFolderOptions, Source } from "../lib.js"
 
 export interface TargetBind {
     /**
@@ -20,7 +20,7 @@ export interface TargetBind {
     /**
      * Folder deep scanning options for the target.
      */
-    scanOptions?: LookFolderOptions
+    scanOptions?: ScanFolderOptions
 
     /**
      * Test command.

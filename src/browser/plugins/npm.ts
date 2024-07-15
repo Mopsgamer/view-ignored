@@ -33,18 +33,18 @@ export const addPatternsInclude = [
 ];
 
 export const methodGit: ScanMethod = function (data) {
-    const { looker, sourceFile: source } = data
-    looker.patternType = "minimatch"
-    if (!looker.isValidPattern(source.content)) {
+    const { matcher, sourceFile: source } = data
+    matcher.patternType = "minimatch"
+    if (!matcher.isValidPattern(source.content)) {
         return false
     }
-    looker.add(source.content)
+    matcher.add(source.content)
     return true
 }
 
 export const methodPackageJsonFiles: ScanMethod = function (data) {
-    const { looker, sourceFile: source } = data
-    looker.isNegated = true
+    const { matcher, sourceFile: source } = data
+    matcher.isNegated = true
     let parsed: object
     try {
         const json = JSON.parse(source.content)
@@ -59,7 +59,7 @@ export const methodPackageJsonFiles: ScanMethod = function (data) {
     if (!Array.isArray(propVal)) {
         return false
     }
-    looker.add(propVal)
+    matcher.add(propVal)
     return true
 }
 

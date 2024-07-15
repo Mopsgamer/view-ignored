@@ -2,7 +2,7 @@ import { ChalkInstance } from "chalk"
 import { styleConditionFile, StyleName } from "./styling.js"
 import path from "path"
 import { FilterName, SourceFile } from "./lib.js"
-import { Looker } from "./looker.js"
+import { PatternMatcher } from "./matcher.js"
 
 export interface FileInfoToStringOptions {
 	/**
@@ -39,10 +39,10 @@ export class FileInfo {
 		 * Parser instance. Can be used to determine if the file is ignored.
 		 * @see {@link ignored} can be used instead of it.
 		 */
-		public readonly looker: Looker,
+		public readonly matcher: PatternMatcher,
 
 		/**
-		 * Source of patterns, used by {@link looker}.
+		 * Source of patterns, used by {@link matcher}.
 		*/
 		public readonly source: SourceFile,
 	) { }
@@ -51,17 +51,17 @@ export class FileInfo {
 	 * Determines if ignored file is ignored or not.
 	 */
 	get ignored(): boolean {
-		return this.looker.ignores(this.filePath)
+		return this.matcher.ignores(this.filePath)
 	}
 
-	static from(paths: string[], looker: Looker, source?: SourceFile | string): FileInfo[]
-	static from(path: string, looker: Looker, source?: SourceFile | string): FileInfo
-	static from(arg: string | string[], looker: Looker, source?: SourceFile | string): FileInfo | FileInfo[] {
+	static from(paths: string[], matcher: PatternMatcher, source?: SourceFile | string): FileInfo[]
+	static from(path: string, matcher: PatternMatcher, source?: SourceFile | string): FileInfo
+	static from(arg: string | string[], matcher: PatternMatcher, source?: SourceFile | string): FileInfo | FileInfo[] {
 		if (Array.isArray(arg)) {
-			return arg.map(path => FileInfo.from(path, looker, source))
+			return arg.map(path => FileInfo.from(path, matcher, source))
 		}
 		const src = typeof source === "object" ? source : { path: '<no-source>', content: source ?? '' }
-		return new FileInfo(arg, looker, src)
+		return new FileInfo(arg, matcher, src)
 	}
 
 	/**

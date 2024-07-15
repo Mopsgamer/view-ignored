@@ -59,11 +59,11 @@ const fileInfoList = vign.scanProject("git", { cwd, ... });
 // custom
 /**@type {vign.ScanMethod}*/
 export const method = function (data) {
-  const { looker, sourceFile: source } = data
-  if (!looker.isValidPattern(source.content)) {
+  const { matcher, sourceFile: source } = data
+  if (!matcher.isValidPattern(source.content)) {
       return false
   }
-  looker.add(source.content)
+  matcher.add(source.content)
   return true
 }
 

@@ -11,11 +11,11 @@ export const addPatternsExclude: string[] = [
 ]
 
 export const method: ScanMethod = function (data) {
-    const { looker, sourceFile: source } = data
-    if (!looker.isValidPattern(source.content)) {
+    const { matcher, sourceFile: source } = data
+    if (!matcher.isValidPattern(source.content)) {
         return false
     }
-    looker.add(source.content)
+    matcher.add(source.content)
     return true
 }
 

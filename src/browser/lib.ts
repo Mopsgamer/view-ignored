@@ -1,10 +1,10 @@
-import { Looker, PatternType } from "./looker.js";
+import { PatternMatcher, PatternType } from "./matcher.js";
 import FastGlob from "fast-glob";
 import { FileInfo } from "./fileinfo.js";
 import { findDomination, SourcePattern } from "./sourcepattern.js";
 import { targetGet } from "./binds/index.js";
 
-export * from "./looker.js"
+export * from "./matcher.js"
 export * from "./fileinfo.js"
 export * from "./sourcepattern.js"
 export * as Styling from "./styling.js"
@@ -28,13 +28,12 @@ export interface FileSystemAdapter extends FastGlob.FileSystemAdapter {
 //#region looking
 /**
  * The data passed to {@link ScanMethod}.
- * @todo Rename -> ScanMethodData.
  */
-export interface LookMethodData {
+export interface ScanMethodData {
 	/**
-	 * The {@link Looker} instance with parsed patterns.
+	 * The {@link PatternMatcher} instance with parsed patterns.
 	 */
-	looker: Looker
+	matcher: PatternMatcher
 
 	/**
 	 * The path to the target file.
@@ -48,10 +47,10 @@ export interface LookMethodData {
 }
 
 /**
- * Also can write rules to the {@link Looker}.
+ * Also can write rules to the {@link PatternMatcher}.
  * @returns `true` if the given source is valid.
  */
-export type ScanMethod = (data: LookMethodData) => boolean
+export type ScanMethod = (data: ScanMethodData) => boolean
 
 /**
  * Contains file path and content.
@@ -87,7 +86,7 @@ export interface Source {
 	addPatterns?: string[]
 
 	/**
-	 * First valid source will be used as {@link Looker}.
+	 * First valid source will be used as {@link PatternMatcher}.
 	 */
 	sources: SourceFile[] | SourcePattern
 
@@ -104,7 +103,7 @@ export interface Source {
 
 /**
  * File scanning options.
- * @see {@link LookFolderOptions}
+ * @see {@link ScanFolderOptions}
  */
 export interface ScanFileOptions {
 	/**
@@ -137,9 +136,8 @@ export interface ScanFileOptions {
 /**
  * Folder deep scanning options.
  * @see {@link ScanFileOptions}
- * @todo Rename -> ScanFolderOptions
  */
-export interface LookFolderOptions extends ScanFileOptions {
+export interface ScanFolderOptions extends ScanFileOptions {
 	/**
 	 * Filter output.
 	 * @default "included"
@@ -153,7 +151,7 @@ export interface LookFolderOptions extends ScanFileOptions {
  */
 export async function scanFile(filePath: string, sources: Source[], options: ScanFileOptions): Promise<FileInfo | undefined> {
 	for (const source of sources) {
-		const looker = new Looker({
+		const matcher = new PatternMatcher({
 			addPatterns: source.addPatterns,
 			ignoreCase: source.ignoreCase,
 			patternType: source.patternType,
@@ -163,11 +161,11 @@ export async function scanFile(filePath: string, sources: Source[], options: Sca
 			? await source.sources.read(options)
 			: source.sources
 		for (const file of sources) {
-			const l = looker.clone()
+			const l = matcher.clone()
 			const isGoodSource = source.method({
 				sourceFile: file,
 				filePath: filePath,
-				looker: l
+				matcher: l
 			})
 			if (isGoodSource) {
 				return FileInfo.from(filePath, l, file)
@@ -179,9 +177,9 @@ export async function scanFile(filePath: string, sources: Source[], options: Sca
 /**
  * Scans project directory paths to determine whether they are being ignored.
  */
-export async function scanPaths(allFilePaths: string[], sources: Source[], options: LookFolderOptions): Promise<FileInfo[] | undefined>
-export async function scanPaths(allFilePaths: string[], target: string, options: LookFolderOptions): Promise<FileInfo[] | undefined>
-export async function scanPaths(allFilePaths: string[], arg2: Source[] | string, options: LookFolderOptions): Promise<FileInfo[] | undefined> {
+export async function scanPaths(allFilePaths: string[], sources: Source[], options: ScanFolderOptions): Promise<FileInfo[] | undefined>
+export async function scanPaths(allFilePaths: string[], target: string, options: ScanFolderOptions): Promise<FileInfo[] | undefined>
+export async function scanPaths(allFilePaths: string[], arg2: Source[] | string, options: ScanFolderOptions): Promise<FileInfo[] | undefined> {
 	if (typeof arg2 === "string") {
 		const bind = targetGet(arg2)
 		if (bind === undefined) {
@@ -192,7 +190,7 @@ export async function scanPaths(allFilePaths: string[], arg2: Source[] | string,
 
 	const { filter = "included" } = options;
 	/** Contains parsed sources: file path = parser instance. */
-	const cache = new Map<string, Looker>()
+	const cache = new Map<string, PatternMatcher>()
 
 	// Find good source.
 	for (const source of arg2) {
@@ -206,17 +204,17 @@ export async function scanPaths(allFilePaths: string[], arg2: Source[] | string,
 			if (!possibleSource) {
 				break
 			}
-			const looker = cache.get(possibleSource.path)
+			const matcher = cache.get(possibleSource.path)
 			let info: FileInfo
-			if (!looker) {
+			if (!matcher) {
 				const newInfo = await scanFile(filePath, [source], options)
 				if (!newInfo) {
 					break
 				}
 				info = newInfo
-				cache.set(possibleSource.path, info.looker)
+				cache.set(possibleSource.path, info.matcher)
 			} else {
-				info = FileInfo.from(filePath, looker, possibleSource)
+				info = FileInfo.from(filePath, matcher, possibleSource)
 			}
 			const shouldPush = info.isIncludedBy(filter)
 			if (shouldPush) {
@@ -233,9 +231,9 @@ export async function scanPaths(allFilePaths: string[], arg2: Source[] | string,
 /**
  * Scans project directory paths to determine whether they are being ignored.
  */
-export function scanProject(sources: Source[], options: LookFolderOptions): Promise<FileInfo[] | undefined>
-export function scanProject(target: string, options: LookFolderOptions): Promise<FileInfo[] | undefined>
-export async function scanProject(arg: Source[] | string, options: LookFolderOptions): Promise<FileInfo[] | undefined> {
+export function scanProject(sources: Source[], options: ScanFolderOptions): Promise<FileInfo[] | undefined>
+export function scanProject(target: string, options: ScanFolderOptions): Promise<FileInfo[] | undefined>
+export async function scanProject(arg: Source[] | string, options: ScanFolderOptions): Promise<FileInfo[] | undefined> {
 	const paths = await new SourcePattern("**").scan(options);
 	if (typeof arg === "string") {
 		return await scanPaths(paths, arg, options);

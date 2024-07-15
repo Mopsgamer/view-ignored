@@ -2,13 +2,13 @@ import ignore, { Ignore } from "ignore"
 import { minimatch } from "minimatch"
 
 /**
- * Supported matchers/parsers by {@link Looker}.
+ * Supported matchers/parsers by {@link PatternMatcher}.
  */
 export type PatternType = ".*ignore" | "minimatch"
 
-export interface LookerOptions {
+export interface PatternMatcherOptions {
 	/**
-	 * @see {@link Looker.isNegated}
+	 * @see {@link PatternMatcher.isNegated}
 	 */
 	negated?: boolean
 
@@ -35,14 +35,14 @@ export interface LookerOptions {
 /**
  * The Glob-like pattern of the specific matcher.
  */
-export type LookerPattern = string | string[]
+export type Pattern = string | string[]
 
 /**
  * The pattern parser. Can check if the file path is ignored.
  */
-export class Looker {
+export class PatternMatcher {
 	/**
-	 * If `true`, when calling {@link Looker.ignores}, method will return `true` for ignored path.
+	 * If `true`, when calling {@link PatternMatcher.ignores}, method will return `true` for ignored path.
 	 * @default false
 	 */
 	public isNegated: boolean
@@ -52,7 +52,7 @@ export class Looker {
 	 * @default ".*ignore"
 	 */
 	public patternType: PatternType
-	
+
 	/**
 	 * Git configuration property.
 	 * @see {@link https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase|git-config ignorecase}.
@@ -62,7 +62,7 @@ export class Looker {
 	private patternList: string[] = []
 	private ignoreInstance: Ignore
 
-	constructor(options?: LookerOptions) {
+	constructor(options?: PatternMatcherOptions) {
 		this.isNegated = options?.negated ?? false
 		this.patternType = options?.patternType ?? ".*ignore"
 		this.ignoreCase = options?.ignoreCase ?? false
@@ -73,8 +73,8 @@ export class Looker {
 	/**
 	 * Clone instance.
 	 */
-	clone(): Looker {
-		const cloned = new Looker({
+	clone(): PatternMatcher {
+		const cloned = new PatternMatcher({
 			addPatterns: this.patternList,
 			negated: this.isNegated,
 			patternType: this.patternType,
@@ -94,7 +94,7 @@ export class Looker {
 	 * Adds new ignore rule.
 	 * @param pattern .gitignore file specification pattern.
 	 */
-	add(pattern: LookerPattern): this {
+	add(pattern: Pattern): this {
 		if (typeof pattern === "string") {
 			this.patternList.push(pattern)
 			this.ignoreInstance.add(pattern)
@@ -108,8 +108,8 @@ export class Looker {
 	}
 
 	/**
-	 * Checks if the Looker should ignore dir entry path.
-	 * @see {@link Looker.isNegated} can change the return value.
+	 * Checks if the matcher should ignore dir entry path.
+	 * @see {@link PatternMatcher.isNegated} can change the return value.
 	 * @param path Dir entry path.
 	 */
 	ignores(path: string): boolean {
@@ -126,7 +126,7 @@ export class Looker {
 	 * Checks if given pattern is valid.
 	 * @param pattern Dir entry path.
 	 */
-	isValidPattern(pattern: LookerPattern): boolean {
+	isValidPattern(pattern: Pattern): boolean {
 		if (Array.isArray(pattern)) {
 			return pattern.every(p => ignore.default.isPathValid(p))
 		}
