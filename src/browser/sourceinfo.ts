@@ -60,6 +60,10 @@ export class SourceInfo {
 		return new SourceInfo(arg)
 	}
 
+	toString() {
+		return this.sourcePath
+	}
+
 	/**
 	 * @returns File content.
 	 */
