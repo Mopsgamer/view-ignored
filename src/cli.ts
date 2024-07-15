@@ -101,9 +101,9 @@ export async function actionScan(flags: Flags): Promise<void> {
 	/** Chalk, but configured by view-ignored cli. */
 	const chalk = new Chalk({ level: colorLevel })
 
-	const looked = await scanProject(flags.target, { filter: flags.filter })
+	const fileInfoList = await scanProject(flags.target, { filter: flags.filter })
 
-	if (!looked) {
+	if (!fileInfoList) {
 		stdout.write(`Bad source for ${flags.target}.`)
 		stdout.write('\n')
 		return
@@ -111,11 +111,11 @@ export async function actionScan(flags: Flags): Promise<void> {
 
 	const sorter = Sorting[flags.sort]
 	const cacheEditDates = new Map<FileInfo, Date>()
-	for (const look of looked) {
+	for (const look of fileInfoList) {
 		cacheEditDates.set(look, fs.statSync(look.filePath).mtime)
 	}
 	const bind = Binding.targetGet(flags.target)!
-	const lookedSorted = looked.sort((a, b) => sorter(
+	const lookedSorted = fileInfoList.sort((a, b) => sorter(
 		a.toString(), b.toString(),
 		cacheEditDates.get(a)!, cacheEditDates.get(b)!
 	))
@@ -127,7 +127,7 @@ export async function actionScan(flags: Flags): Promise<void> {
 	const fastSymbol = Styling.styleCondition(flags.style, { ifEmoji: '⚡', ifNerd: '\udb85\udc0c' })
 	stdout.write(`${chalk.green(checkSymbol)}Done in ${time < 400 ? chalk.yellow(fastSymbol) : ''}${time}ms.`)
 	stdout.write(`\n\n`)
-	stdout.write(`${looked.length} files listed for ${bind.name} (${flags.filter}).`)
+	stdout.write(`${fileInfoList.length} files listed for ${bind.name} (${flags.filter}).`)
 	stdout.write('\n\n')
 	const infoSymbol = Styling.styleCondition(flags.style, { ifEmoji: 'ℹ️', ifNerd: '\ue66a', postfix: ' ' })
 	stdout.write(`${chalk.blue(infoSymbol)}You can use '${chalk.magenta(bind.testCommad ?? "")}' to check if the list is valid.`)

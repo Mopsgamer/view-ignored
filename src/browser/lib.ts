@@ -147,6 +147,7 @@ export async function scanFile(filePath: string, sources: Methodology[], options
 		for (const sourceInfo of sourceInfoList) {
 			const l = matcher.clone()
 			const fileInfo = FileInfo.from(filePath, l, sourceInfo)
+			sourceInfo.readSync()
 			const isGoodSource = methodology.scan(fileInfo)
 			if (isGoodSource) {
 				return FileInfo.from(filePath, l, sourceInfo)
@@ -181,25 +182,25 @@ export async function scanPaths(allFilePaths: string[], arg2: Methodology[] | st
 
 		for (const filePath of allFilePaths) {
 			const dominated = findDomination(filePath, sourceInfoList.map(sourceInfo => sourceInfo.sourcePath))
-			if (!dominated) {
+			if (dominated === undefined) {
 				break
 			}
 			const source = SourceInfo.from(dominated)
 			const matcher = cache.get(source.sourcePath)
-			let info: FileInfo
+			let fileInfo: FileInfo
 			if (!matcher) {
 				const newInfo = await scanFile(filePath, [methodology], options)
 				if (!newInfo) {
 					break
 				}
-				info = newInfo
-				cache.set(source.sourcePath, info.matcher)
+				fileInfo = newInfo
+				cache.set(source.sourcePath, fileInfo.matcher)
 			} else {
-				info = FileInfo.from(filePath, matcher, source)
+				fileInfo = FileInfo.from(filePath, matcher, source)
 			}
-			const shouldPush = info.isIncludedBy(filter)
+			const shouldPush = fileInfo.isIncludedBy(filter)
 			if (shouldPush) {
-				resultList.push(info)
+				resultList.push(fileInfo)
 			}
 			goodFound = true
 		}
