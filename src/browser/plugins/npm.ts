@@ -1,4 +1,4 @@
-import { Binding, ScanMethod, Source, SourcePattern } from "../index.js"
+import { Binding, ScanMethod, Methodology } from "../index.js"
 import getValue from "get-value";
 
 export const id = "npm"
@@ -32,22 +32,28 @@ export const addPatternsInclude = [
     'LICENCE.*',
 ];
 
-export const methodGit: ScanMethod = function (data) {
-    const { matcher, sourceFile: source } = data
+export const scanGit: ScanMethod = function (data) {
+    const { matcher, source } = data
     matcher.patternType = "minimatch"
-    if (!matcher.isValidPattern(source.content)) {
+    const pat = source.content?.toString()
+    if (!matcher.isValidPattern(pat)) {
         return false
     }
-    matcher.add(source.content)
+    matcher.add(pat!)
     return true
 }
 
-export const methodPackageJsonFiles: ScanMethod = function (data) {
-    const { matcher, sourceFile: source } = data
+export const scanPackageJsonFiles: ScanMethod = function (data) {
+    const { matcher, source } = data
     matcher.isNegated = true
     let parsed: object
     try {
-        const json = JSON.parse(source.content)
+        const pat = source.content?.toString()
+        if (!pat) {
+            return false
+        }
+
+        const json = JSON.parse(pat)
         if (json?.constructor !== Object) {
             return false
         }
@@ -63,13 +69,13 @@ export const methodPackageJsonFiles: ScanMethod = function (data) {
     return true
 }
 
-export const sources: Source[] = [
-    { sources: new SourcePattern("**/package.json"), patternType: "minimatch", method: methodPackageJsonFiles, addPatterns: addPatternsInclude },
-    { sources: new SourcePattern("**/.npmignore"), patternType: ".*ignore", method: methodGit, addPatterns: addPatternsExclude },
-    { sources: new SourcePattern("**/.gitignore"), patternType: ".*ignore", method: methodGit, addPatterns: addPatternsExclude },
+export const methodology: Methodology[] = [
+    { pattern: "**/package.json", patternType: "minimatch", scan: scanPackageJsonFiles, addPatterns: addPatternsInclude },
+    { pattern: "**/.npmignore", patternType: ".*ignore", scan: scanGit, addPatterns: addPatternsExclude },
+    { pattern: "**/.gitignore", patternType: ".*ignore", scan: scanGit, addPatterns: addPatternsExclude },
 ]
 
 
-const bind: Binding.TargetBind = { id, name, sources, testCommad: check }
+const bind: Binding.TargetBind = { id, name, methodology, testCommad: check }
 Binding.targetSet(bind)
 export default bind

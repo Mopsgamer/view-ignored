@@ -1,4 +1,4 @@
-import { ScanFolderOptions, Source } from "../lib.js"
+import { ScanFolderOptions, Methodology } from "../lib.js"
 
 export interface TargetBind {
     /**
@@ -15,7 +15,7 @@ export interface TargetBind {
     /**
      * The walkthrough. Files including patterns.
      */
-    sources: Source[]
+    methodology: Methodology[]
 
     /**
      * Folder deep scanning options for the target.

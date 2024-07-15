@@ -7,10 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Rename:
-    - LookMethodData -> ScanMethodData
-    - LookFolderOptions -> ScanFolderOptions
-    - Looker -> PatternMatcher
+### Renames
+- LookFolderOptions -> ScanFolderOptions
+- Looker -> Scanner
+- LookerOptions -> ScannerOptions
+- Source -> Methodology
+- Source.sources -> Methodology.pattern
+- Source.method -> Methodology.scan
+- TargetBind.source -> TargetBind.scan
+- SourceFile -> SourceInfo: convert to a class with own methods.
+- TargetBind.source
+
+### Changes
+- Change `FileInfo.from`.
+- Change `Scanner.isValidPattern`.
+- Add `SourcePattern.scanSync`.
+- Add `patchFastGlobOptions`.
+- Add `methodologyToInfoList`.
+- Add `isSource`.
+- Remove `LookMethodData`.
 
 ## [0.1.1] - 2024-07-14
 

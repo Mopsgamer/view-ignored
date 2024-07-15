@@ -2,13 +2,13 @@ import ignore, { Ignore } from "ignore"
 import { minimatch } from "minimatch"
 
 /**
- * Supported matchers/parsers by {@link PatternMatcher}.
+ * Supported matchers/parsers by {@link Scanner}.
  */
 export type PatternType = ".*ignore" | "minimatch"
 
-export interface PatternMatcherOptions {
+export interface ScannerOptions {
 	/**
-	 * @see {@link PatternMatcher.isNegated}
+	 * @see {@link Scanner.isNegated}
 	 */
 	negated?: boolean
 
@@ -35,14 +35,14 @@ export interface PatternMatcherOptions {
 /**
  * The Glob-like pattern of the specific matcher.
  */
-export type Pattern = string | string[]
+export type ScannerPattern = string | string[]
 
 /**
  * The pattern parser. Can check if the file path is ignored.
  */
-export class PatternMatcher {
+export class Scanner {
 	/**
-	 * If `true`, when calling {@link PatternMatcher.ignores}, method will return `true` for ignored path.
+	 * If `true`, when calling {@link Scanner.ignores}, method will return `true` for ignored path.
 	 * @default false
 	 */
 	public isNegated: boolean
@@ -62,7 +62,7 @@ export class PatternMatcher {
 	private patternList: string[] = []
 	private ignoreInstance: Ignore
 
-	constructor(options?: PatternMatcherOptions) {
+	constructor(options?: ScannerOptions) {
 		this.isNegated = options?.negated ?? false
 		this.patternType = options?.patternType ?? ".*ignore"
 		this.ignoreCase = options?.ignoreCase ?? false
@@ -73,8 +73,8 @@ export class PatternMatcher {
 	/**
 	 * Clone instance.
 	 */
-	clone(): PatternMatcher {
-		const cloned = new PatternMatcher({
+	clone(): Scanner {
+		const cloned = new Scanner({
 			addPatterns: this.patternList,
 			negated: this.isNegated,
 			patternType: this.patternType,
@@ -94,7 +94,7 @@ export class PatternMatcher {
 	 * Adds new ignore rule.
 	 * @param pattern .gitignore file specification pattern.
 	 */
-	add(pattern: Pattern): this {
+	add(pattern: ScannerPattern): this {
 		if (typeof pattern === "string") {
 			this.patternList.push(pattern)
 			this.ignoreInstance.add(pattern)
@@ -109,7 +109,7 @@ export class PatternMatcher {
 
 	/**
 	 * Checks if the matcher should ignore dir entry path.
-	 * @see {@link PatternMatcher.isNegated} can change the return value.
+	 * @see {@link Scanner.isNegated} can change the return value.
 	 * @param path Dir entry path.
 	 */
 	ignores(path: string): boolean {
@@ -126,9 +126,12 @@ export class PatternMatcher {
 	 * Checks if given pattern is valid.
 	 * @param pattern Dir entry path.
 	 */
-	isValidPattern(pattern: Pattern): boolean {
+	isValidPattern(pattern: unknown): boolean {
 		if (Array.isArray(pattern)) {
-			return pattern.every(p => ignore.default.isPathValid(p))
+			return pattern.every(this.isValidPattern)
+		}
+		if(typeof pattern !== "string") {
+			return false
 		}
 		if (this.patternType === ".*ignore") {
 			return ignore.default.isPathValid(pattern)

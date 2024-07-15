@@ -1,4 +1,4 @@
-import { Binding, ScanMethod, Source, SourcePattern } from "../index.js"
+import { Binding, ScanMethod, Methodology } from "../index.js"
 
 export const id = "vsce"
 export const name = "VSC Extension"
@@ -10,19 +10,20 @@ export const addPatternsExclude: string[] = [
     "**/.DS_Store/**"
 ]
 
-export const method: ScanMethod = function (data) {
-    const { matcher, sourceFile: source } = data
-    if (!matcher.isValidPattern(source.content)) {
+export const scan: ScanMethod = function (data) {
+    const { matcher, source } = data
+    const pat = source.content?.toString()
+    if (!matcher.isValidPattern(pat)) {
         return false
     }
-    matcher.add(source.content)
+    matcher.add(pat!)
     return true
 }
 
-export const sources: Source[] = [
-    { sources: new SourcePattern("**/.vscodeignore"), patternType: "minimatch", method, addPatterns: addPatternsExclude },
+export const methodology: Methodology[] = [
+    { pattern: "**/.vscodeignore", patternType: "minimatch", scan: scan, addPatterns: addPatternsExclude },
 ]
 
-const bind: Binding.TargetBind = { id, name, sources, testCommad: check }
+const bind: Binding.TargetBind = { id, name, methodology, testCommad: check }
 Binding.targetSet(bind)
 export default bind

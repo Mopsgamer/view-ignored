@@ -1,4 +1,4 @@
-import { Binding, Source, SourcePattern } from "../index.js"
+import { Binding, Methodology } from "../index.js"
 import * as pluginNpm from "./npm.js"
 
 export const id = "yarn"
@@ -37,13 +37,13 @@ export const addPatternsInclude = [
     'LICENCE.*',
 ];
 
-export const sources: Source[] = [
-    { sources: new SourcePattern("**/package.json"), patternType: "minimatch", method: pluginNpm.methodPackageJsonFiles, addPatterns: addPatternsInclude },
-    { sources: new SourcePattern("**/.yarnignore"), patternType: ".*ignore", method: pluginNpm.methodGit, addPatterns: addPatternsExclude },
-    { sources: new SourcePattern("**/.npmignore"), patternType: ".*ignore", method: pluginNpm.methodGit, addPatterns: addPatternsExclude },
-    { sources: new SourcePattern("**/.gitignore"), patternType: ".*ignore", method: pluginNpm.methodGit, addPatterns: addPatternsExclude },
+export const methodology: Methodology[] = [
+    { pattern: "**/package.json", patternType: "minimatch", scan: pluginNpm.scanPackageJsonFiles, addPatterns: addPatternsInclude },
+    { pattern: "**/.yarnignore", patternType: ".*ignore", scan: pluginNpm.scanGit, addPatterns: addPatternsExclude },
+    { pattern: "**/.npmignore", patternType: ".*ignore", scan: pluginNpm.scanGit, addPatterns: addPatternsExclude },
+    { pattern: "**/.gitignore", patternType: ".*ignore", scan: pluginNpm.scanGit, addPatterns: addPatternsExclude },
 ]
 
-const bind: Binding.TargetBind = { id, name, sources }
+const bind: Binding.TargetBind = { id, name, methodology }
 Binding.targetSet(bind)
 export default bind

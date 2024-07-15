@@ -1,12 +1,12 @@
-import { PatternMatcher, PatternType } from "./matcher.js";
+import { Scanner, PatternType } from "./scanner.js";
 import FastGlob from "fast-glob";
 import { FileInfo } from "./fileinfo.js";
-import { findDomination, SourcePattern } from "./sourcepattern.js";
+import { findDomination, SourceInfo } from "./sourceinfo.js";
 import { targetGet } from "./binds/index.js";
 
-export * from "./matcher.js"
+export * from "./scanner.js"
 export * from "./fileinfo.js"
-export * from "./sourcepattern.js"
+export * from "./sourceinfo.js"
 export * as Styling from "./styling.js"
 export * as Sorting from "./sorting.js"
 export * as Binding from "./binds/index.js"
@@ -23,54 +23,30 @@ export type FilterName = typeof filterNameList[number]
 
 export interface FileSystemAdapter extends FastGlob.FileSystemAdapter {
 	readFileSync: (path: string) => Buffer
+	readFile: (path: string) => Promise<Buffer>
+}
+
+function patchFastGlobOptions(options: FastGlob.Options) {
+	const patched: FastGlob.Options = {
+        ...options,
+        onlyFiles: true,
+        dot: true,
+        followSymbolicLinks: false,
+    }
+	return patched;
 }
 
 //#region looking
 /**
- * The data passed to {@link ScanMethod}.
- */
-export interface ScanMethodData {
-	/**
-	 * The {@link PatternMatcher} instance with parsed patterns.
-	 */
-	matcher: PatternMatcher
-
-	/**
-	 * The path to the target file.
-	 */
-	filePath: string
-
-	/**
-	 * The information about where the patterns were taken from.
-	 */
-	sourceFile: SourceFile
-}
-
-/**
- * Also can write rules to the {@link PatternMatcher}.
+ * Also can write rules to the {@link Scanner}.
  * @returns `true` if the given source is valid.
  */
-export type ScanMethod = (data: ScanMethodData) => boolean
-
-/**
- * Contains file path and content.
- */
-export interface SourceFile {
-	/**
-	 * The source file path.
-	 */
-	path: string
-
-	/**
-	 * The source file content.
-	 */
-	content: string
-}
+export type ScanMethod = (fileInfo: FileInfo) => boolean
 
 /**
  * Represents the methodology for reading the target source.
  */
-export interface Source {
+export interface Methodology {
 	/**
 	 * Git configuration property.
 	 * @see Official git documentation: {@link https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase|ignorecase}.
@@ -86,9 +62,9 @@ export interface Source {
 	addPatterns?: string[]
 
 	/**
-	 * First valid source will be used as {@link PatternMatcher}.
+	 * First valid source will be used as {@link Scanner}.
 	 */
-	sources: SourceFile[] | SourcePattern
+	pattern: SourceInfo[] | FastGlob.Pattern
 
 	/**
 	 * Pattern parser name.
@@ -98,7 +74,11 @@ export interface Source {
 	/**
 	 * Scanner function. Should return `true` if the given source is valid.
 	 */
-	method: ScanMethod
+	scan: ScanMethod
+}
+
+export function isSource(source: unknown): source is Methodology {
+	return typeof source === "object"
 }
 
 /**
@@ -145,30 +125,31 @@ export interface ScanFolderOptions extends ScanFileOptions {
 	filter?: FilterName
 }
 
+export function methodologyToInfoList(methodology: Methodology, options: ScanFileOptions): SourceInfo[] {
+	return Array.isArray(methodology.pattern)
+		? methodology.pattern
+		: FastGlob.sync(methodology.pattern, patchFastGlobOptions(options)).map(path => SourceInfo.from(path))
+}
+
 /**
  * Gets info about the file: it is ignored or not.
  * @returns `undefined` if the source is bad.
  */
-export async function scanFile(filePath: string, sources: Source[], options: ScanFileOptions): Promise<FileInfo | undefined> {
-	for (const source of sources) {
-		const matcher = new PatternMatcher({
-			addPatterns: source.addPatterns,
-			ignoreCase: source.ignoreCase,
-			patternType: source.patternType,
+export async function scanFile(filePath: string, sources: Methodology[], options: ScanFileOptions): Promise<FileInfo | undefined> {
+	for (const methodology of sources) {
+		const sourceInfoList: SourceInfo[] = methodologyToInfoList(methodology, options)
+		const matcher = new Scanner({
+			addPatterns: methodology.addPatterns,
+			ignoreCase: methodology.ignoreCase,
+			patternType: methodology.patternType,
 		})
 
-		const sources = source.sources instanceof SourcePattern
-			? await source.sources.read(options)
-			: source.sources
-		for (const file of sources) {
+		for (const sourceInfo of sourceInfoList) {
 			const l = matcher.clone()
-			const isGoodSource = source.method({
-				sourceFile: file,
-				filePath: filePath,
-				matcher: l
-			})
+			const fileInfo = FileInfo.from(filePath, l, sourceInfo)
+			const isGoodSource = methodology.scan(fileInfo)
 			if (isGoodSource) {
-				return FileInfo.from(filePath, l, file)
+				return FileInfo.from(filePath, l, sourceInfo)
 			}
 		}
 	}
@@ -177,44 +158,44 @@ export async function scanFile(filePath: string, sources: Source[], options: Sca
 /**
  * Scans project directory paths to determine whether they are being ignored.
  */
-export async function scanPaths(allFilePaths: string[], sources: Source[], options: ScanFolderOptions): Promise<FileInfo[] | undefined>
+export async function scanPaths(allFilePaths: string[], sources: Methodology[], options: ScanFolderOptions): Promise<FileInfo[] | undefined>
 export async function scanPaths(allFilePaths: string[], target: string, options: ScanFolderOptions): Promise<FileInfo[] | undefined>
-export async function scanPaths(allFilePaths: string[], arg2: Source[] | string, options: ScanFolderOptions): Promise<FileInfo[] | undefined> {
+export async function scanPaths(allFilePaths: string[], arg2: Methodology[] | string, options: ScanFolderOptions): Promise<FileInfo[] | undefined> {
 	if (typeof arg2 === "string") {
 		const bind = targetGet(arg2)
 		if (bind === undefined) {
 			throw TypeError(`view-ignored can not find target '${arg2}'`)
 		}
-		return scanPaths(allFilePaths, bind.sources, bind.scanOptions ?? {})
+		return scanPaths(allFilePaths, bind.methodology, bind.scanOptions ?? {})
 	}
 
 	const { filter = "included" } = options;
 	/** Contains parsed sources: file path = parser instance. */
-	const cache = new Map<string, PatternMatcher>()
+	const cache = new Map<string, Scanner>()
 
 	// Find good source.
-	for (const source of arg2) {
+	for (const methodology of arg2) {
 		let goodFound = false
 		const resultList: FileInfo[] = []
-		const sourceList: SourceFile[] = source.sources instanceof SourcePattern
-			? await source.sources.read(options)
-			: source.sources
+		const sourceInfoList: SourceInfo[] = methodologyToInfoList(methodology, options)
+
 		for (const filePath of allFilePaths) {
-			const possibleSource = findDomination(filePath, sourceList)
-			if (!possibleSource) {
+			const dominated = findDomination(filePath, sourceInfoList.map(sourceInfo => sourceInfo.sourcePath))
+			if (!dominated) {
 				break
 			}
-			const matcher = cache.get(possibleSource.path)
+			const source = SourceInfo.from(dominated)
+			const matcher = cache.get(source.sourcePath)
 			let info: FileInfo
 			if (!matcher) {
-				const newInfo = await scanFile(filePath, [source], options)
+				const newInfo = await scanFile(filePath, [methodology], options)
 				if (!newInfo) {
 					break
 				}
 				info = newInfo
-				cache.set(possibleSource.path, info.matcher)
+				cache.set(source.sourcePath, info.matcher)
 			} else {
-				info = FileInfo.from(filePath, matcher, possibleSource)
+				info = FileInfo.from(filePath, matcher, source)
 			}
 			const shouldPush = info.isIncludedBy(filter)
 			if (shouldPush) {
@@ -231,10 +212,10 @@ export async function scanPaths(allFilePaths: string[], arg2: Source[] | string,
 /**
  * Scans project directory paths to determine whether they are being ignored.
  */
-export function scanProject(sources: Source[], options: ScanFolderOptions): Promise<FileInfo[] | undefined>
+export function scanProject(sources: Methodology[], options: ScanFolderOptions): Promise<FileInfo[] | undefined>
 export function scanProject(target: string, options: ScanFolderOptions): Promise<FileInfo[] | undefined>
-export async function scanProject(arg: Source[] | string, options: ScanFolderOptions): Promise<FileInfo[] | undefined> {
-	const paths = await new SourcePattern("**").scan(options);
+export async function scanProject(arg: Methodology[] | string, options: ScanFolderOptions): Promise<FileInfo[] | undefined> {
+	const paths = await FastGlob.async("**", patchFastGlobOptions(options))
 	if (typeof arg === "string") {
 		return await scanPaths(paths, arg, options);
 	}
