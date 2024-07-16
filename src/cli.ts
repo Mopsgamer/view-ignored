@@ -1,17 +1,23 @@
 import fs from "fs";
-import { stdout } from "process";
+import { stdout, stderr } from "process";
 import { Chalk, ColorSupportLevel } from "chalk";
-import { Argument, InvalidArgumentError, Option, program } from "commander";
+import { Argument, InvalidArgumentError, Option, Command } from "commander";
 import { FileInfo, FilterName, scanProject, Sorting, Styling, Binding } from "./index.js";
 import { configValues, configManager, ConfigKey, Config, configKeyList, configFilePath } from "./config.js";
 
 configManager.load()
-export { program }
 
 /**
  * Command-line 'scan' command flags.
  */
-export interface Flags {
+export interface ProgramFlags {
+	plugins: string[]
+}
+
+/**
+ * Command-line 'scan' command flags.
+ */
+export interface ScanFlags extends ProgramFlags {
 	noColor: boolean,
 	color: string,
 	target: string,
@@ -21,12 +27,18 @@ export interface Flags {
 }
 
 /**
+ * `view-ignored` command-line programl
+ */
+export const program = new Command()
+
+/**
  * Command-line 'scan' command.
  */
 export const scanProgram = program
 	.command("scan")
 	.aliases(['sc'])
 	.description('get ignored paths')
+	.addOption(new Option('--plugins <modules...>'))
 	.addOption(new Option("--no-color"))
 	.addOption(new Option("--color <level>").default(configManager.get("color")).choices(configValues.color))
 	.addOption(new Option("--target <ignorer>").default(configManager.get("target")).choices(configValues.target))
@@ -94,10 +106,21 @@ export function parseArgKeyVal(pair: string): [ConfigKey, Config[ConfigKey]] {
 	return result
 }
 
+
+/**
+ * Command-line every command action.
+ */
+export async function importPluginsByFlag(flags: ProgramFlags) {
+	for (const module of flags.plugins) {
+		await Binding.loadPlugin(module)
+	}
+}
+
 /**
  * Command-line 'scan' command action.
  */
-export async function actionScan(flags: Flags): Promise<void> {
+export async function actionScan(flags: ScanFlags): Promise<void> {
+	await importPluginsByFlag(flags)
 	const start = Date.now()
 	const colorLevel = (flags.noColor ? 0 : Math.max(0, Math.min(Number(flags.color ?? 3), 3))) as ColorSupportLevel
 	/** Chalk, but configured by view-ignored cli. */
@@ -106,9 +129,8 @@ export async function actionScan(flags: Flags): Promise<void> {
 	const fileInfoList = await scanProject(flags.target, { filter: flags.filter })
 
 	if (!fileInfoList) {
-		stdout.write(`Bad source for ${flags.target}.`)
-		stdout.write('\n')
-		return
+		stderr.write(`Bad source for ${flags.target}.\n`)
+		process.exit(1)
 	}
 
 	const sorter = Sorting[flags.sort]
@@ -127,21 +149,17 @@ export async function actionScan(flags: Flags): Promise<void> {
 	stdout.write(`\n`)
 	const checkSymbol = Styling.styleCondition(flags.style, { ifEmoji: '✅', ifNerd: '\uf00c', postfix: ' ' })
 	const fastSymbol = Styling.styleCondition(flags.style, { ifEmoji: '⚡', ifNerd: '\udb85\udc0c' })
-	stdout.write(`${chalk.green(checkSymbol)}Done in ${time < 400 ? chalk.yellow(fastSymbol) : ''}${time}ms.`)
-	stdout.write(`\n\n`)
-	stdout.write(`${fileInfoList.length} files listed for ${bind.name} (${flags.filter}).`)
-	stdout.write('\n\n')
+	stdout.write(`${chalk.green(checkSymbol)}Done in ${time < 400 ? chalk.yellow(fastSymbol) : ''}${time}ms.\n\n`)
+	stdout.write(`${fileInfoList.length} files listed for ${bind.name} (${flags.filter}).\n\n`)
 	const infoSymbol = Styling.styleCondition(flags.style, { ifEmoji: 'ℹ️', ifNerd: '\ue66a', postfix: ' ' })
-	stdout.write(`${chalk.blue(infoSymbol)}You can use '${chalk.magenta(bind.testCommad ?? "")}' to check if the list is valid.`)
-	stdout.write('\n')
+	stdout.write(`${chalk.blue(infoSymbol)}You can use '${chalk.magenta(bind.testCommad ?? "")}' to check if the list is valid.\n`)
 }
 
 /**
  * Command-line 'config path' command action.
  */
 export function actionCfgPath(): void {
-	stdout.write(configFilePath)
-	stdout.write('\n')
+	stdout.write(configFilePath + '\n')
 }
 
 /**
@@ -149,8 +167,7 @@ export function actionCfgPath(): void {
  */
 export function actionCfgReset(): void {
 	configManager.unset().save()
-	stdout.write(configManager.getPairString())
-	stdout.write('\n')
+	stdout.write(configManager.getPairString() + '\n')
 }
 
 /**
@@ -159,8 +176,7 @@ export function actionCfgReset(): void {
 export function actionCfgSet(pair: [ConfigKey, Config[ConfigKey]]): void {
 	const [key, val] = pair
 	configManager.set(key, val).save()
-	stdout.write(configManager.getPairString(key))
-	stdout.write('\n')
+	stdout.write(configManager.getPairString(key) + '\n')
 }
 
 /**
@@ -170,14 +186,12 @@ export function actionCfgUnset(key: ConfigKey | undefined): void {
 	if (key !== undefined) {
 		configManager.unset(key).save()
 	}
-	stdout.write(configManager.getPairString(key))
-	stdout.write('\n')
+	stdout.write(configManager.getPairString(key) + '\n')
 }
 
 /**
  * Command-line 'config unset' command action
  */
 export function actionCfgGet(key: ConfigKey | undefined, options: { safe?: boolean }): void {
-	stdout.write(configManager.getPairString(key, options.safe ?? false))
-	stdout.write('\n')
+	stdout.write(configManager.getPairString(key, options.safe ?? false) + '\n')
 }

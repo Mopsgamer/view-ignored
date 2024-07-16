@@ -2,7 +2,7 @@ import { Scanner, PatternType } from "./scanner.js";
 import FastGlob from "fast-glob";
 import { FileInfo } from "./fileinfo.js";
 import { findDomination, SourceInfo } from "./sourceinfo.js";
-import { loadPlugin, targetGet } from "./binds/index.js";
+import { loadBuiltInPlugin, targetGet } from "./binds/index.js";
 
 export * from "./scanner.js"
 export * from "./fileinfo.js"
@@ -12,10 +12,10 @@ export * as Sorting from "./sorting.js"
 export * as Binding from "./binds/index.js"
 
 //#region default binds
-loadPlugin("./lib/browser/plugins/git.js")
-loadPlugin("./lib/browser/plugins/npm.js")
-loadPlugin("./lib/browser/plugins/vsce.js")
-loadPlugin("./lib/browser/plugins/yarn.js")
+loadBuiltInPlugin("git.js")
+loadBuiltInPlugin("npm.js")
+loadBuiltInPlugin("vsce.js")
+loadBuiltInPlugin("yarn.js")
 //#endregion
 
 export const filterNameList = ["ignored", "included", "all"] as const
