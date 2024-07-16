@@ -1,6 +1,7 @@
 import * as path from "path";
 import { stderr } from "process";
 import { fileURLToPath, pathToFileURL } from "url";
+import { resolve } from "import-meta-resolve";
 
 export * from "./targets.js"
 
@@ -9,7 +10,7 @@ export type PluginImportResult = [module: string, isLoaded: boolean, info: unkno
 export async function loadPlugin(module: string): Promise<PluginImportResult> {
     let result: PluginImportResult;
     try {
-        result = [module, true, await import(pathToFileURL(module).toString())]
+        result = [module, true, await import(resolve(module, import.meta.url))]
     } catch (error) {
         result = [module, false, error]
         stderr.write(`Unable to load '${module}'. Reason:\n`)

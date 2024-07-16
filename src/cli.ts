@@ -11,7 +11,7 @@ configManager.load()
  * Command-line 'scan' command flags.
  */
 export interface ProgramFlags {
-	plugins: string[]
+	plugins?: string[]
 }
 
 /**
@@ -38,7 +38,7 @@ export const scanProgram = program
 	.command("scan")
 	.aliases(['sc'])
 	.description('get ignored paths')
-	.addOption(new Option('--plugins <modules...>'))
+	.addOption(new Option('--plugin [modules...]'))
 	.addOption(new Option("--no-color"))
 	.addOption(new Option("--color <level>").default(configManager.get("color")).choices(configValues.color))
 	.addOption(new Option("--target <ignorer>").default(configManager.get("target")).choices(configValues.target))
@@ -111,7 +111,7 @@ export function parseArgKeyVal(pair: string): [ConfigKey, Config[ConfigKey]] {
  * Command-line every command action.
  */
 export async function importPluginsByFlag(flags: ProgramFlags) {
-	for (const module of flags.plugins) {
+	for (const module of flags.plugins ?? []) {
 		await Binding.loadPlugin(module)
 	}
 }
