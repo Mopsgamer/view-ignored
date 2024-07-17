@@ -51,13 +51,13 @@ export const configDefault: Config = {
 /**
  * Represents allowed values for each config property.
  */
-export const configValues = {
+export const configValues = () => ({
     color: ["1", "2", "3", "4"],
     target: Binding.targetList(),
     filter: filterNameList,
     sort: Sorting.sortNameList,
     style: Styling.styleNameList
-} as const
+} as const)
 
 /**
  * @see {@link configValues}
@@ -68,7 +68,7 @@ export function configPartialGood(cfg: unknown): cfg is Partial<Config> {
         return false
     }
     const jsonobj = cfg as Record<string, string>
-    return Object.entries(configValues).every(
+    return Object.entries(configValues()).every(
         ([key, possible]) => key in jsonobj
             ? (possible.includes(String(jsonobj[key]) as never))
             : true

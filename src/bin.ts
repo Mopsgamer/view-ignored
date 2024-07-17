@@ -1,3 +1,3 @@
 #! /usr/bin/env node
-import {program} from "./cli.js";
-program.parse()
+import { programInit, program } from "./cli.js";
+programInit().then(() => program.parse())

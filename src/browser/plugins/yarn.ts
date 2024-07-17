@@ -1,5 +1,6 @@
-import { Binding, Methodology } from "../index.js"
-import * as pluginNpm from "./npm.js"
+import { PluginExport } from "../binds/index.js";
+import { Binding, Methodology, ScanMethod } from "../index.js"
+import getValue from "get-value";
 
 export const id = "yarn"
 export const name = "Yarn"
@@ -37,13 +38,49 @@ export const addPatternsInclude = [
     'LICENCE.*',
 ];
 
+export const scanGit: ScanMethod = function (data) {
+    const { matcher, source } = data
+    matcher.patternType = "minimatch"
+    const pat = source.content?.toString()
+    if (!matcher.isValidPattern(pat)) {
+        return false
+    }
+    matcher.add(pat!)
+    return true
+}
+
+export const scanPackageJsonFiles: ScanMethod = function (data) {
+    const { matcher, source } = data
+    matcher.isNegated = true
+    let parsed: object
+    try {
+        const pat = source.content?.toString()
+        if (!pat) {
+            return false
+        }
+
+        const json = JSON.parse(pat)
+        if (json?.constructor !== Object) {
+            return false
+        }
+        parsed = json
+    } catch {
+        return false
+    }
+    const propVal = getValue(parsed, "files")
+    if (!Array.isArray(propVal)) {
+        return false
+    }
+    matcher.add(propVal)
+    return true
+}
+
 export const methodology: Methodology[] = [
-    { pattern: "**/package.json", patternType: "minimatch", scan: pluginNpm.scanPackageJsonFiles, addPatterns: addPatternsInclude },
-    { pattern: "**/.yarnignore", patternType: ".*ignore", scan: pluginNpm.scanGit, addPatterns: addPatternsExclude },
-    { pattern: "**/.npmignore", patternType: ".*ignore", scan: pluginNpm.scanGit, addPatterns: addPatternsExclude },
-    { pattern: "**/.gitignore", patternType: ".*ignore", scan: pluginNpm.scanGit, addPatterns: addPatternsExclude },
+    { pattern: "**/package.json", patternType: "minimatch", scan: scanPackageJsonFiles, addPatterns: addPatternsInclude },
+    { pattern: "**/.yarnignore", patternType: ".*ignore", scan: scanGit, addPatterns: addPatternsExclude },
+    { pattern: "**/.npmignore", patternType: ".*ignore", scan: scanGit, addPatterns: addPatternsExclude },
+    { pattern: "**/.gitignore", patternType: ".*ignore", scan: scanGit, addPatterns: addPatternsExclude },
 ]
 
 const bind: Binding.TargetBind = { id, name, methodology }
-Binding.targetSet(bind)
-export default bind
+export default { viewignored_TargetBindList: [bind] } as PluginExport["default"]

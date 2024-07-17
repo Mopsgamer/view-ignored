@@ -64,7 +64,8 @@ export function targetSet(bind: TargetBind): void {
  * ["git", "npm", "vsce", ...]
  */
 export function targetList(): string[] {
-    return Array.from(targetBindMap.keys())
+    const list = Array.from(targetBindMap.keys())
+    return list
 }
 
 /**

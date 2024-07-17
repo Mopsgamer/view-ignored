@@ -1,3 +1,4 @@
+import { PluginExport } from "../binds/index.js";
 import { Binding, ScanMethod, Methodology } from "../index.js"
 import getValue from "get-value";
 
@@ -77,5 +78,5 @@ export const methodology: Methodology[] = [
 
 
 const bind: Binding.TargetBind = { id, name, methodology, testCommad: check }
-Binding.targetSet(bind)
-export default bind
+export default { viewignored_TargetBindList: [bind] } as PluginExport["default"]
+
