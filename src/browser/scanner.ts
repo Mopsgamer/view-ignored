@@ -10,6 +10,9 @@ export function isPatternType(value: unknown): value is PatternType {
 	return typeof value === "string" && patternTypeList.includes(value as PatternType)
 }
 
+/**
+ * @see {@link Scanner}
+ */
 export interface ScannerOptions {
 	/**
 	 * @see {@link Scanner.isNegated}

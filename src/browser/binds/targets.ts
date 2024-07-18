@@ -1,12 +1,36 @@
-import { ScanFolderOptions, Methodology, isMethodology } from "../lib.js"
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { ScanFolderOptions, Methodology, isMethodology, scanPaths } from "../lib.js"
 import { StyleCondition } from "../styling.js"
 
+/**
+ * Should satisfy RegExp: `/^[-a-zA-Z0-9]+$/`.
+ */
 export type TargetId = string
 
+/**
+ * @param value Target's id. Simple name.
+ * @returns `true` if the id is available for binding.
+ */
+export function isTargetId(value: unknown): value is TargetId {
+    return typeof value === "string" && value.match(/^[-a-zA-Z0-9]+$/) != null
+}
+
+/**
+ * @param value Target's id. Simple name.
+ * @returns `true` if the id is bound.
+ */
+export function isBoundId(value: unknown): value is TargetId {
+	return typeof value === "string" && targetExists(String(value))
+}
+
+/**
+ * The bind which allows use predefined options for scan functions.
+ * @see {@link scanPaths}
+ */
 export interface TargetBind {
     /**
      * Simple name.
-     * @see {@link isValidId}
+     * @see {@link isTargetId}
      */
     id: TargetId
 
@@ -34,6 +58,9 @@ export interface TargetBind {
     testCommand?: string
 }
 
+/**
+ * Checks if the value is the {@link TargetBind}.
+ */
 export function isTargetBind(value: unknown): value is TargetBind {
     if (value?.constructor !== Object) {
         return false
@@ -41,27 +68,11 @@ export function isTargetBind(value: unknown): value is TargetBind {
 
     const v = value as Record<string, unknown>
 
-    return (isValidId(v.id))
+    return (isTargetId(v.id))
         && (typeof v.name === "string" || v.name?.constructor === Object)
         && (Array.isArray(v.methodology) && v.methodology.every(isMethodology))
         && (v.scanOptions === undefined || v.scanOptions?.constructor === Object)
         && (v.testCommand === undefined || typeof v.testCommand === "string")
-}
-
-/**
- * @param value Target's id. Simple name.
- * @returns `true` if the id is available for binding.
- */
-export function isValidId(value: unknown): value is TargetId {
-    return typeof value === "string" && value.match(/^[-a-zA-Z0-9]+$/) != null
-}
-
-/**
- * @param value Target's id. Simple name.
- * @returns `true` if the id is bound.
- */
-export function isBoundId(value: unknown): value is TargetId {
-	return typeof value === "string" && targetExists(String(value))
 }
 
 /**
@@ -77,7 +88,7 @@ const targetBindMap = new Map<string, TargetBind>()
  * scanProject("abc") // ok
  */
 export function targetSet(bind: TargetBind): void {
-    if (!isValidId(bind.id)) {
+    if (!isTargetId(bind.id)) {
         throw TypeError(`view-ignored can not bind target with id '${bind.id}'`)
     }
     targetBindMap.set(bind.id, bind)
@@ -107,7 +118,7 @@ export function targetExists(id: string): boolean {
  * @param id Target id.
  */
 export function targetGet(id: string): TargetBind | undefined {
-    if (!isValidId(id)) {
+    if (!isTargetId(id)) {
         throw TypeError(`view-ignored can not get bind for target with id '${id}'`)
     }
     return targetBindMap.get(id)

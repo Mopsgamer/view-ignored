@@ -55,12 +55,17 @@ export class SourceInfo {
 		public sourcePath: string
 	) { }
 
-	static from(path: string): SourceInfo
-	static from(arg: string): SourceInfo {
-		return new SourceInfo(arg)
+	/**
+	 * Creates new {@link SourceInfo} from the file path.
+	 */
+	static from(path: string): SourceInfo {
+		return new SourceInfo(path)
 	}
 
-	toString() {
+	/**
+	 * @returns File path of the source.
+	 */
+	toString(): string {
 		return this.sourcePath
 	}
 

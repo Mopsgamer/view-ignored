@@ -11,17 +11,34 @@ export * as Styling from "./styling.js"
 export * as Sorting from "./sorting.js"
 export * as Plugins from "./binds/index.js"
 
+/**
+ * Contains all filter names.
+ */
 export const filterNameList = ["ignored", "included", "all"] as const
+/**
+ * Contains all filter names as a type.
+ */
 export type FilterName = typeof filterNameList[number]
+/**
+ * Checks if the value is the {@link FilterName}.
+ */
 export function isFilterName(value: unknown): value is FilterName {
 	return typeof value === "string" && filterNameList.includes(value as FilterName)
 }
 
+/**
+ * Uses `readFileSync` and `readFile`.
+ * @extends FastGlob.FileSystemAdapter
+ */
 export interface FileSystemAdapter extends FastGlob.FileSystemAdapter {
 	readFileSync: (path: string) => Buffer
 	readFile: (path: string) => Promise<Buffer>
 }
 
+/**
+ * Returns new {@link FastGlob.Options} object with forced defaults:
+ * `onlyFiles: true`, `dot: true`, `followSymbolicLinks: false`.
+ */
 export function patchFastGlobOptions(options: FastGlob.Options) {
 	const patched: FastGlob.Options = {
 		...options,
@@ -73,6 +90,9 @@ export interface Methodology {
 	scan: ScanMethod
 }
 
+/**
+ * Checks if the value is the {@link Methodology}.
+ */
 export function isMethodology(value: unknown): value is Methodology {
 	if (value?.constructor !== Object) {
 		return false
@@ -129,6 +149,9 @@ export interface ScanFolderOptions extends ScanFileOptions {
 	filter?: FilterName
 }
 
+/**
+ * Gets sources from the methodology.
+ */
 export function methodologyToInfoList(methodology: Methodology, options: ScanFileOptions): SourceInfo[] {
 	return Array.isArray(methodology.pattern)
 		? methodology.pattern
@@ -161,7 +184,7 @@ export async function scanFile(filePath: string, sources: Methodology[], options
 }
 
 /**
- * Scans project directory paths to determine whether they are being ignored.
+ * Scans project's directory paths to determine whether they are being ignored.
  */
 export async function scanPaths(allFilePaths: string[], sources: Methodology[], options: ScanFolderOptions): Promise<FileInfo[] | undefined>
 export async function scanPaths(allFilePaths: string[], target: string, options: ScanFolderOptions): Promise<FileInfo[] | undefined>
@@ -215,7 +238,7 @@ export async function scanPaths(allFilePaths: string[], arg2: Methodology[] | st
 }
 
 /**
- * Scans project directory paths to determine whether they are being ignored.
+ * Scans project's directory paths to determine whether they are being ignored.
  */
 export function scanProject(sources: Methodology[], options: ScanFolderOptions): Promise<FileInfo[] | undefined>
 export function scanProject(target: string, options: ScanFolderOptions): Promise<FileInfo[] | undefined>

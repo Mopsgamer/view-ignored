@@ -1,12 +1,30 @@
 import path from "path"
 
+/**
+ * Contains all file sort names.
+ */
 export const sortNameList = ["firstFolders", "firstFiles", "type", "mixed", "modified"] as const
+/**
+ * Contains all file sort names as a type.
+ */
 export type SortName = typeof sortNameList[number]
+/**
+ * {@link Array.prototype.sort}'s file path comparator.
+ */
 export type SortFunc = (a: string, b: string) => number
+/**
+ * Checks if the value is the {@link SortName}.
+ */
 export function isSortName(value: unknown): value is SortName {
 	return typeof value === "string" && sortNameList.includes(value as SortName)
 }
 
+/**
+ * @example
+ * "path/to/the/file" -> ["path", "to/the/file", false]
+ * "file" -> ["file", "file", true]
+ * "file/" -> ["file", "", false]
+ */
 function slicePath(p: string): [next: string, other: string, isLast: boolean] {
 	const slashIndex = p.indexOf('/')
 	const next = p.substring(0, slashIndex)

@@ -52,6 +52,9 @@ export const scanOptionFilter = new Option("--filter <filter>")
 export const scanOptionSort = new Option("--sort <sorter>")
 export const scanOptionStyle = new Option("--style <style>")
 
+/**
+ * Init the command-line, parse arguments and invoke the program.
+ */
 export function optionsInit() {
 	optionColor.choices(Config.configValueList("color"))
 	optionColor.default(Config.configManager.get("color"))

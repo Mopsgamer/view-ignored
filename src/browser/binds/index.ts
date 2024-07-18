@@ -5,7 +5,6 @@ import { isTargetBind, TargetBind, targetSet } from "./targets.js";
 
 export * from "./targets.js"
 
-
 /**
  * The result of loading.
  */
@@ -22,6 +21,9 @@ export interface PluginExport {
     viewignored_addTargets: TargetBind[]
 }
 
+/**
+ * Checks if the value is the {@link PluginExport}.
+ */
 export function isPluginExport(value: unknown): value is PluginExport {
     if (value?.constructor !== Object) {
         return false
@@ -31,6 +33,9 @@ export function isPluginExport(value: unknown): value is PluginExport {
     return Array.isArray(v.viewignored_addTargets) && v.viewignored_addTargets.every(isTargetBind)
 }
 
+/**
+ * Imports the plugin's exported data.
+ */
 function importPlugin(exportData: PluginExport) {
     const { viewignored_addTargets } = exportData
     for (const targetBind of viewignored_addTargets) {
@@ -71,6 +76,10 @@ export function loadPlugin(moduleName: string): Promise<PluginLoaded> {
     }
 }
 
+/**
+ * Loads plugins one by one using {@link loadPlugin}.
+ * @param moduleNameList The list of plugins.
+ */
 export async function loadPlugins(moduleNameList?: string[]): Promise<PluginLoaded[]> {
     const resultList: PluginLoaded[] = []
     for (const module of moduleNameList ?? []) {
@@ -80,6 +89,11 @@ export async function loadPlugins(moduleNameList?: string[]): Promise<PluginLoad
     return resultList;
 }
 
+/**
+ * Loads built-in plugins.
+ * @param path The path after the "plugins" directory.
+ * @param browser Use plugins for a browser.
+ */
 async function loadBuiltInPlugin(path: string, browser: boolean = true): Promise<PluginLoaded> {
     const folderCore = pth.join(pth.dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
     let folder: string = pth.join(folderCore, 'lib', 'plugins')
@@ -91,6 +105,9 @@ async function loadBuiltInPlugin(path: string, browser: boolean = true): Promise
     return await loadPlugin(p)
 }
 
+/**
+ * Built-in plugins loading queue.
+ */
 export const BuiltIns = Promise.allSettled([
     loadBuiltInPlugin("git.js"),
     loadBuiltInPlugin("npm.js"),

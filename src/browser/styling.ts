@@ -1,13 +1,24 @@
-import { stdout } from "process"
 import { FilterName, FileInfo } from "../index.js"
 import { default as tree } from "treeify";
 import jsonifyPaths from "jsonify-paths";
 import { ChalkInstance } from "chalk";
 import path from "path";
 
+/**
+ * Contains all style names.
+ */
 export const styleNameList = ['tree', 'paths', 'treeEmoji', 'treeNerd'] as const
+/**
+ * Contains all style names as a type.
+ */
 export type StyleName = typeof styleNameList[number]
+/**
+ * General console.log printer.
+ */
 export type Style = (oc: ChalkInstance, files: FileInfo[], style: StyleName, filter: FilterName) => void
+/**
+ * Checks if the value is the {@link StyleName}.
+ */
 export function isStyleName(value: unknown): value is StyleName {
 	return typeof value === "string" && styleNameList.includes(value as StyleName)
 }
@@ -15,15 +26,19 @@ export function isStyleName(value: unknown): value is StyleName {
 const printTree: Style = function (oc, files, styleName) {
 	const pathsAsObject = jsonifyPaths.from(files.map(f => f.toString({ styleName, usePrefix: true, chalk: oc }, false)), { delimiter: "/" })
 	const pathsAsTree = tree.asTree(pathsAsObject, true, true)
-	stdout.write(pathsAsTree)
+	console.log(pathsAsTree.replace(/\n$/, ''))
 }
 
+const printPaths: Style = function (oc, files, styleName) {
+	const paths = files.map(f => `${f.toString({ styleName, usePrefix: true, chalk: oc })}`)
+	console.log(paths.join('\n'))
+}
+
+/**
+ * Represents all possible styles.
+ */
 export const Styles: Record<StyleName, Style> = {
-	paths(oc, files, styleName) {
-		stdout.write(files.map(
-			f => `${f.toString({ styleName, usePrefix: true, chalk: oc })}`)
-			.join('\n') + "\n")
-	},
+	paths: printPaths,
 	tree: printTree,
 	treeEmoji: printTree,
 	treeNerd: printTree

@@ -6,6 +6,21 @@ import path from "path"
 import { existsSync, readFileSync, rmSync, writeFileSync } from "fs"
 
 /**
+ * Contains all color level names.
+ */
+export const colorTypeList = ["0", "1", "2", "3"] as const
+/**
+ * Contains all color level names as a type.
+ */
+export type ColorType = `${ColorSupportLevel}`
+/**
+ * Checks if the value is the {@link ColorType}.
+ */
+export function isColorType(value: unknown): value is ColorType {
+    return typeof value === "string" && colorTypeList.includes(value as ColorType)
+}
+
+/**
  * The full config file name - `".view-ignored"`.
  */
 export const configFileName = ".view-ignored"
@@ -26,10 +41,16 @@ export const configKeyList = ["color", "target", "filter", "sort", "style"] as c
  */
 export type ConfigKey = typeof configKeyList[number] & keyof Config
 
+/**
+ * Checks if the value is the {@link ConfigKey}.
+ */
 export function isConfigKey(value: unknown): value is ConfigKey {
     return typeof value === "string" && configKeyList.includes(value as ConfigKey)
 }
 
+/**
+ * Checks if the value is the {@link Config} value for the specific {@link ConfigKey}.
+ */
 export function isConfigValue<T extends ConfigKey>(key: T, value: unknown): value is Config[T] {
     const c = {
         color: isColorType,
@@ -41,6 +62,9 @@ export function isConfigValue<T extends ConfigKey>(key: T, value: unknown): valu
     return c[key](value)
 }
 
+/**
+ * Represents array with the key nad the value.
+ */
 export type ConfigPair<KeyT extends ConfigKey = ConfigKey> = [key: KeyT, value: Config[KeyT]]
 
 /**
@@ -52,12 +76,6 @@ export type Config = {
     filter: FilterName,
     sort: Sorting.SortName,
     style: Styling.StyleName,
-}
-
-export const colorTypeList = ["0", "1", "2", "3"] as const
-export type ColorType = `${ColorSupportLevel}`
-export function isColorType(value: unknown): value is ColorType {
-    return typeof value === "string" && colorTypeList.includes(value as ColorType)
 }
 
 /**
@@ -111,6 +129,10 @@ export function configValueList<T extends ConfigKey>(key: T): Config[T][] {
     return configAvailable[key] as Config[T][]
 }
 
+/**
+ * File-specific actions container.
+ * @singleton
+ */
 class ConfigManager {
     /**
      * Do not change this value directly.
@@ -205,6 +227,6 @@ class ConfigManager {
 }
 
 /**
- * The config manipulator.
+ * File-specific actions container. Contains get, set, unset, save, load and other configuration actions.
  */
 export const configManager = new ConfigManager

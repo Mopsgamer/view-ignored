@@ -4,6 +4,9 @@ import path from "path"
 import { FilterName, SourceInfo } from "./lib.js"
 import { Scanner } from "./scanner.js"
 
+/**
+ * @see {@link FileInfo.prototype.toString}
+ */
 export interface FileInfoToStringOptions {
 	/**
 	 * The appearance behavior of the file icon.
@@ -54,7 +57,13 @@ export class FileInfo {
 		return this.matcher.ignores(this.filePath)
 	}
 
+	/**
+	 * Creates new {@link FileInfo} from each file path.
+	 */
 	static from(filePathList: string[], matcher: Scanner, sourceInfo: SourceInfo): FileInfo[]
+	/**
+	 * Creates new {@link FileInfo} from the file path.
+	 */
 	static from(filePath: string, matcher: Scanner, sourceInfo: SourceInfo): FileInfo
 	static from(arg: string | string[], matcher: Scanner, sourceInfo: SourceInfo): FileInfo | FileInfo[] {
 		if (Array.isArray(arg)) {
