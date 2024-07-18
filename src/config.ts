@@ -1,5 +1,5 @@
 import { ColorSupportLevel } from "chalk"
-import { FilterName, filterNameList, Plugins, Sorting, Styling } from "./browser/index.js"
+import { FilterName, filterNameList, isFilterName, Plugins, Sorting, Styling } from "./browser/index.js"
 import * as os from "os";
 import propertiesFile from "properties";
 import path from "path"
@@ -26,15 +26,38 @@ export const configKeyList = ["color", "target", "filter", "sort", "style"] as c
  */
 export type ConfigKey = typeof configKeyList[number] & keyof Config
 
+export function isConfigKey(value: unknown): value is ConfigKey {
+    return typeof value === "string" && configKeyList.includes(value as ConfigKey)
+}
+
+export function isConfigValue<T extends ConfigKey>(key: T, value: unknown): value is Config[T] {
+    const c = {
+        color: isColorType,
+        target: Plugins.isBoundId,
+        filter: isFilterName,
+        sort: Sorting.isSortName,
+        style: Styling.isStyleName
+    } as const
+    return c[key](value)
+}
+
+export type ConfigPair<KeyT extends ConfigKey = ConfigKey> = [key: KeyT, value: Config[KeyT]]
+
 /**
  * Command-line configuration structure.
  */
 export type Config = {
-    color: `${ColorSupportLevel}`,
+    color: ColorType,
     target: string,
     filter: FilterName,
     sort: Sorting.SortName,
     style: Styling.StyleName,
+}
+
+export const colorTypeList = ["0", "1", "2", "3"] as const
+export type ColorType = `${ColorSupportLevel}`
+export function isColorType(value: unknown): value is ColorType {
+    return typeof value === "string" && colorTypeList.includes(value as ColorType)
 }
 
 /**
@@ -49,18 +72,7 @@ export const configDefault: Config = {
 }
 
 /**
- * Represents allowed values for each config property.
- */
-export const configValues = () => ({
-    color: ["1", "2", "3", "4"],
-    target: Plugins.targetList(),
-    filter: filterNameList,
-    sort: Sorting.sortNameList,
-    style: Styling.styleNameList
-} as const)
-
-/**
- * @see {@link configValues}
+ * @see {@link isConfigValue}
  * @returns `true` if the value is a {@link Config}.
  */
 export function configPartialGood(cfg: unknown): cfg is Partial<Config> {
@@ -68,11 +80,35 @@ export function configPartialGood(cfg: unknown): cfg is Partial<Config> {
         return false
     }
     const jsonobj = cfg as Record<string, string>
-    return Object.entries(configValues()).every(
-        ([key, possible]) => key in jsonobj
-            ? (possible.includes(String(jsonobj[key]) as never))
+    return Object.entries(isConfigValue).every(
+        ([key, check]) => key in jsonobj
+            ? (check(String(jsonobj[key])))
             : true
     )
+}
+
+/**
+ * Returns available values for the specified property.
+ * @param key The config property.
+ * @param fallbackDefault If `true`, the default value will be used when the value is `undefined`. Default `true`.
+ */
+export function configValueList<T extends ConfigKey>(key: T): Config[T][] {
+    if (key === "target") {
+        /** optimization - do not create dynamic list if key is other than "target" */
+        return Plugins.targetList() as Config[T][]
+    }
+
+    /**
+     * Represents allowed values for each config property.
+     */
+    const configAvailable = {
+        color: colorTypeList,
+        filter: filterNameList,
+        target: [], // never
+        sort: Sorting.sortNameList,
+        style: Styling.styleNameList
+    }
+    return configAvailable[key] as Config[T][]
 }
 
 class ConfigManager {

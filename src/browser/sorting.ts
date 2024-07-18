@@ -3,6 +3,9 @@ import path from "path"
 export const sortNameList = ["firstFolders", "firstFiles", "type", "mixed", "modified"] as const
 export type SortName = typeof sortNameList[number]
 export type SortFunc = (a: string, b: string) => number
+export function isSortName(value: unknown): value is SortName {
+	return typeof value === "string" && sortNameList.includes(value as SortName)
+}
 
 function slicePath(p: string): [next: string, other: string, isLast: boolean] {
 	const slashIndex = p.indexOf('/')

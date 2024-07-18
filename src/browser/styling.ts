@@ -8,6 +8,9 @@ import path from "path";
 export const styleNameList = ['tree', 'paths', 'treeEmoji', 'treeNerd'] as const
 export type StyleName = typeof styleNameList[number]
 export type Style = (oc: ChalkInstance, files: FileInfo[], style: StyleName, filter: FilterName) => void
+export function isStyleName(value: unknown): value is StyleName {
+	return typeof value === "string" && styleNameList.includes(value as StyleName)
+}
 
 const printTree: Style = function (oc, files, styleName) {
 	const pathsAsObject = jsonifyPaths.from(files.map(f => f.toString({ styleName, usePrefix: true, chalk: oc }, false)), { delimiter: "/" })

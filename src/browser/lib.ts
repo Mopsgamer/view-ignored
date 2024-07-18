@@ -13,13 +13,16 @@ export * as Plugins from "./binds/index.js"
 
 export const filterNameList = ["ignored", "included", "all"] as const
 export type FilterName = typeof filterNameList[number]
+export function isFilterName(value: unknown): value is FilterName {
+	return typeof value === "string" && filterNameList.includes(value as FilterName)
+}
 
 export interface FileSystemAdapter extends FastGlob.FileSystemAdapter {
 	readFileSync: (path: string) => Buffer
 	readFile: (path: string) => Promise<Buffer>
 }
 
-function patchFastGlobOptions(options: FastGlob.Options) {
+export function patchFastGlobOptions(options: FastGlob.Options) {
 	const patched: FastGlob.Options = {
 		...options,
 		onlyFiles: true,

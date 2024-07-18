@@ -1,9 +1,7 @@
 import fs from "fs";
 import { Chalk, ColorSupportLevel } from "chalk";
 import { Argument, InvalidArgumentError, Option, Command } from "commander";
-import { FileInfo, FilterName, scanProject, Sorting, Styling, Plugins } from "./index.js";
-import { configValues, configManager, ConfigKey, Config, configKeyList, configFilePath } from "./config.js";
-import { styleCondition } from "./browser/styling.js";
+import { FileInfo, FilterName, scanProject, Sorting, Styling, Plugins, Config } from "./index.js";
 
 /**
  * Command-line entire program flags.
@@ -33,19 +31,18 @@ export const program = new Command()
 	.addOption(optionPlugin)
 
 export const scanOptionNoColor = new Option("--no-color")
-export const scanOptionColor = new Option("--color <level>").default(configManager.get("color"))
-export const scanOptionTarget = new Option("--target <ignorer>").default(configManager.get("target"))
-export const scanOptionFilter = new Option("--filter <filter>").default(configManager.get("filter"))
-export const scanOptionSort = new Option("--sort <sorter>").default(configManager.get("sort"))
-export const scanOptionStyle = new Option("--style <style>").default(configManager.get("style"))
+export const scanOptionColor = new Option("--color <level>").default(Config.configManager.get("color"))
+export const scanOptionTarget = new Option("--target <ignorer>").default(Config.configManager.get("target"))
+export const scanOptionFilter = new Option("--filter <filter>").default(Config.configManager.get("filter"))
+export const scanOptionSort = new Option("--sort <sorter>").default(Config.configManager.get("sort"))
+export const scanOptionStyle = new Option("--style <style>").default(Config.configManager.get("style"))
 
 export function refreshOptions() {
-	const values = configValues()
-	scanOptionColor.choices(values.color)
-	scanOptionTarget.choices(values.target)
-	scanOptionFilter.choices(values.filter)
-	scanOptionSort.choices(values.sort)
-	scanOptionStyle.choices(values.style)
+	scanOptionColor.choices(Config.configValueList("color"))
+	scanOptionTarget.choices(Config.configValueList("target"))
+	scanOptionFilter.choices(Config.configValueList("filter"))
+	scanOptionSort.choices(Config.configValueList("sort"))
+	scanOptionStyle.choices(Config.configValueList("style"))
 }
 
 /**
@@ -79,9 +76,9 @@ export const cfgProgram = program
 export const argConfigKeyVal = new Argument('<pair>', 'pair "key=value"').argParser(parseArgKeyVal)
 /**
  * Command-line argument: config property.
- * @see {@link configKeyList}
+ * @see {@link Config.configKeyList}
  */
-export const argConfigKey = new Argument('[key]', 'setting').choices(configKeyList)
+export const argConfigKey = new Argument('[key]', 'setting').choices(Config.configKeyList)
 
 cfgProgram
 	.command('path').description('print the config file path')
@@ -104,22 +101,21 @@ cfgProgram
 	.action(actionCfgGet)
 
 export function parseArgKey(key: string): string {
-	if (!configKeyList.includes(key as ConfigKey)) {
-		throw new InvalidArgumentError(`Allowed config properties are ${configKeyList.join(', ')}. Got ${key}.`)
+	if (!Config.isConfigKey(key)) {
+		throw new InvalidArgumentError(`Allowed config properties are ${Config.configKeyList.join(', ')}. Got ${key}.`)
 	}
 	return key;
 }
 
-export function parseArgKeyVal(pair: string): [ConfigKey, Config[ConfigKey]] {
-	const result = pair.split('=') as [ConfigKey, Config[ConfigKey]]
+export function parseArgKeyVal(pair: string): Config.ConfigPair {
+	const result = pair.split('=') as Config.ConfigPair
 	if (result.length !== 2) {
 		throw new InvalidArgumentError(`Invalid syntax. Expected 'setting=value'. Got '${pair}'.`)
 	}
 	const [key, val] = result
 	parseArgKey(key)
-	const values = configValues()
-	if (!values[key].includes(val as Config[ConfigKey] as never)) {
-		throw new InvalidArgumentError(`Allowed config properties are ${values[key].join(', ')}. Got '${val}'.`)
+	if (!Config.isConfigValue(key, val)) {
+		throw new InvalidArgumentError(`Allowed config properties are ${Config.configValueList(key).join(', ')}. Got '${val}'.`)
 	}
 	return result
 }
@@ -129,7 +125,7 @@ export function parseArgKeyVal(pair: string): [ConfigKey, Config[ConfigKey]] {
  * Prepare for {@link program}.parse().
  */
 export async function programInit() {
-	configManager.load()
+	Config.configManager.load()
     await Plugins.BuiltIns
 	program.parseOptions(process.argv)
 	const flags: ProgramOptions = program.optsWithGlobals()
@@ -170,7 +166,7 @@ export async function actionScan(flags: ScanOptions): Promise<void> {
 	const checkSymbol = Styling.styleCondition(flags.style, { ifEmoji: '✅', ifNerd: '\uf00c', postfix: ' ' })
 	const fastSymbol = Styling.styleCondition(flags.style, { ifEmoji: '⚡', ifNerd: '\udb85\udc0c' })
 	console.log(`${chalk.green(checkSymbol)}Done in ${time < 400 ? chalk.yellow(fastSymbol) : ''}${time}ms.\n`)
-	const name = typeof bind.name === "string" ? bind.name : styleCondition(flags.style, bind.name)
+	const name = typeof bind.name === "string" ? bind.name : Styling.styleCondition(flags.style, bind.name)
 	console.log(`${fileInfoList.length} files listed for ${name} (${flags.filter}).\n`)
 	const infoSymbol = Styling.styleCondition(flags.style, { ifEmoji: 'ℹ️', ifNerd: '\ue66a', postfix: ' ' })
 	console.log(`${chalk.blue(infoSymbol)}You can use '${chalk.magenta(bind.testCommand ?? "")}' to check if the list is valid.\n`)
@@ -180,39 +176,39 @@ export async function actionScan(flags: ScanOptions): Promise<void> {
  * Command-line 'config path' command action.
  */
 export function actionCfgPath(): void {
-	console.log(configFilePath)
+	console.log(Config.configFilePath)
 }
 
 /**
  * Command-line 'config reset' command action
  */
 export function actionCfgReset(): void {
-	configManager.unset().save()
-	console.log(configManager.getPairString())
+	Config.configManager.unset().save()
+	console.log(Config.configManager.getPairString())
 }
 
 /**
  * Command-line 'config set' command action
  */
-export function actionCfgSet(pair: [ConfigKey, Config[ConfigKey]]): void {
+export function actionCfgSet(pair: Config.ConfigPair): void {
 	const [key, val] = pair
-	configManager.set(key, val).save()
-	console.log(configManager.getPairString(key))
+	Config.configManager.set(key, val).save()
+	console.log(Config.configManager.getPairString(key))
 }
 
 /**
  * Command-line 'config unset' command action
  */
-export function actionCfgUnset(key: ConfigKey | undefined): void {
+export function actionCfgUnset(key: Config.ConfigKey | undefined): void {
 	if (key !== undefined) {
-		configManager.unset(key).save()
+		Config.configManager.unset(key).save()
 	}
-	console.log(configManager.getPairString(key))
+	console.log(Config.configManager.getPairString(key))
 }
 
 /**
  * Command-line 'config unset' command action
  */
-export function actionCfgGet(key: ConfigKey | undefined, options: { safe?: boolean }): void {
-	console.log(configManager.getPairString(key, options.safe ?? false))
+export function actionCfgGet(key: Config.ConfigKey | undefined, options: { safe?: boolean }): void {
+	console.log(Config.configManager.getPairString(key, options.safe ?? false))
 }

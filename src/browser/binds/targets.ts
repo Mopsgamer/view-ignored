@@ -1,12 +1,14 @@
 import { ScanFolderOptions, Methodology, isMethodology } from "../lib.js"
 import { StyleCondition } from "../styling.js"
 
+export type TargetId = string
+
 export interface TargetBind {
     /**
      * Simple name.
      * @see {@link isValidId}
      */
-    id: string
+    id: TargetId
 
     /**
      * Readable name.
@@ -47,11 +49,19 @@ export function isTargetBind(value: unknown): value is TargetBind {
 }
 
 /**
- * @param id The target simple name.
- * @returns `true` if the target id is valid.
+ * @param value Target's id. Simple name.
+ * @returns `true` if the id is available for binding.
  */
-export function isValidId(id: unknown): id is string {
-    return typeof id === "string" && id.match(/^[-a-zA-Z0-9]+$/) != null
+export function isValidId(value: unknown): value is TargetId {
+    return typeof value === "string" && value.match(/^[-a-zA-Z0-9]+$/) != null
+}
+
+/**
+ * @param value Target's id. Simple name.
+ * @returns `true` if the id is bound.
+ */
+export function isBoundId(value: unknown): value is TargetId {
+	return typeof value === "string" && targetExists(String(value))
 }
 
 /**
@@ -81,6 +91,15 @@ export function targetSet(bind: TargetBind): void {
 export function targetList(): string[] {
     const list = Array.from(targetBindMap.keys())
     return list
+}
+
+/**
+ * Get all target ids.
+ * @example
+ * ["git", "npm", "vsce", ...]
+ */
+export function targetExists(id: string): boolean {
+    return targetGet(id) !== undefined
 }
 
 /**
