@@ -33,7 +33,7 @@ export const addPatternsInclude = [
     'LICENCE.*',
 ];
 
-export const scanGit: ScanMethod = function (data) {
+export const scanGit: ScanMethod = function(data) {
     const { matcher, source } = data
     matcher.patternType = "minimatch"
     const pat = source.content?.toString()
@@ -44,7 +44,7 @@ export const scanGit: ScanMethod = function (data) {
     return true
 }
 
-export const scanPackageJsonFiles: ScanMethod = function (data) {
+export const scanPackageJsonFiles: ScanMethod = function(data) {
     const { matcher, source } = data
     matcher.isNegated = true
     let parsed: object
@@ -78,4 +78,4 @@ export const methodology: Methodology[] = [
 
 
 const bind: Plugins.TargetBind = { id, name, methodology, testCommand }
-export const viewignoredExport = { viewignored_addTargets: [bind] } as PluginExport
+export default ({ viewignored_addTargets: [bind] } as PluginExport)

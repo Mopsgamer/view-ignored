@@ -1,7 +1,7 @@
 import * as pth from "path";
 import { fileURLToPath, pathToFileURL } from "url";
-import { resolve } from "import-meta-resolve";
 import { isTargetBind, TargetBind, targetSet } from "./targets.js";
+import { loadPlugin as load } from "load-plugin";
 
 export * from "./targets.js"
 
@@ -50,9 +50,8 @@ function importPlugin(exportData: PluginExport) {
  */
 export function loadPlugin(moduleName: string): Promise<PluginLoaded> {
     try {
-        const p = pathToFileURL(resolve(moduleName, import.meta.url)).toString()
         return new Promise<PluginLoaded>((resolve) => {
-            import(p)
+            load(moduleName)
                 .catch((reason: unknown) => {
                     console.error('Unable to load \'%s\'. Reason:', moduleName)
                     console.error(reason)
@@ -61,9 +60,8 @@ export function loadPlugin(moduleName: string): Promise<PluginLoaded> {
                 })
                 .then((exports: unknown) => {
                     const result: PluginLoaded = { moduleName, isLoaded: true, exports }
-                    const def = (exports as { default?: unknown })?.default
-                    if (isPluginExport(def)) {
-                        importPlugin(def)
+                    if (isPluginExport(exports)) {
+                        importPlugin(exports)
                     }
                     resolve(result)
                 })

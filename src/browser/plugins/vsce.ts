@@ -10,7 +10,7 @@ export const addPatternsExclude: string[] = [
     "**/.DS_Store/**"
 ]
 
-export const scan: ScanMethod = function (data) {
+export const scan: ScanMethod = function(data) {
     const { matcher, source } = data
     const pat = source.content?.toString()
     if (!matcher.isValidPattern(pat)) {
@@ -25,4 +25,4 @@ export const methodology: Methodology[] = [
 ]
 
 const bind: Plugins.TargetBind = { id, name, methodology, testCommand }
-export const viewignoredExport = { viewignored_addTargets: [bind] } as PluginExport
+export default ({ viewignored_addTargets: [bind] } as PluginExport)
