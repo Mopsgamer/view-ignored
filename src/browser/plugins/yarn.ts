@@ -1,5 +1,5 @@
 import { PluginExport } from "../binds/index.js";
-import { Binding, Methodology, ScanMethod } from "../index.js"
+import { Plugins, Methodology, ScanMethod } from "../index.js"
 import getValue from "get-value";
 
 export const id = "yarn"
@@ -82,5 +82,5 @@ export const methodology: Methodology[] = [
     { pattern: "**/.gitignore", patternType: ".*ignore", scan: scanGit, addPatterns: addPatternsExclude },
 ]
 
-const bind: Binding.TargetBind = { id, name, methodology }
+const bind: Plugins.TargetBind = { id, name, methodology }
 export default { viewignored_TargetBindList: [bind] } as PluginExport["default"]

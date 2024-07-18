@@ -9,7 +9,7 @@ export * from "./fileinfo.js"
 export * from "./sourceinfo.js"
 export * as Styling from "./styling.js"
 export * as Sorting from "./sorting.js"
-export * as Binding from "./binds/index.js"
+export * as Plugins from "./binds/index.js"
 
 export const filterNameList = ["ignored", "included", "all"] as const
 export type FilterName = typeof filterNameList[number]

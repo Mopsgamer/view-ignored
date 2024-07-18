@@ -1,5 +1,5 @@
 import { ColorSupportLevel } from "chalk"
-import { FilterName, filterNameList, Binding, Sorting, Styling } from "./browser/index.js"
+import { FilterName, filterNameList, Plugins, Sorting, Styling } from "./browser/index.js"
 import * as os from "os";
 import propertiesFile from "properties";
 import path from "path"
@@ -53,7 +53,7 @@ export const configDefault: Config = {
  */
 export const configValues = () => ({
     color: ["1", "2", "3", "4"],
-    target: Binding.targetList(),
+    target: Plugins.targetList(),
     filter: filterNameList,
     sort: Sorting.sortNameList,
     style: Styling.styleNameList

@@ -1,7 +1,7 @@
 import fs from "fs";
 import { Chalk, ColorSupportLevel } from "chalk";
 import { Argument, InvalidArgumentError, Option, Command } from "commander";
-import { FileInfo, FilterName, scanProject, Sorting, Styling, Binding } from "./index.js";
+import { FileInfo, FilterName, scanProject, Sorting, Styling, Plugins } from "./index.js";
 import { configValues, configManager, ConfigKey, Config, configKeyList, configFilePath } from "./config.js";
 
 /**
@@ -129,10 +129,10 @@ export function parseArgKeyVal(pair: string): [ConfigKey, Config[ConfigKey]] {
  */
 export async function programInit() {
 	configManager.load()
-    await Binding.BuiltIns
+    await Plugins.BuiltIns
 	program.parseOptions(process.argv)
 	const flags: ProgramOptions = program.optsWithGlobals()
-	await Binding.loadPlugins(flags.plugins)
+	await Plugins.loadPlugins(flags.plugins)
     refreshOptions()
 }
 
@@ -157,7 +157,7 @@ export async function actionScan(flags: ScanOptions): Promise<void> {
 	for (const look of fileInfoList) {
 		cacheEditDates.set(look, fs.statSync(look.filePath).mtime)
 	}
-	const bind = Binding.targetGet(flags.target)!
+	const bind = Plugins.targetGet(flags.target)!
 	const lookedSorted = fileInfoList.sort((a, b) => sorter(
 		a.toString(), b.toString(),
 		cacheEditDates.get(a)!, cacheEditDates.get(b)!

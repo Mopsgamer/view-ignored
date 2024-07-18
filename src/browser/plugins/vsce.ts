@@ -1,5 +1,5 @@
 import { PluginExport } from "../binds/index.js"
-import { Binding, ScanMethod, Methodology } from "../index.js"
+import { Plugins, ScanMethod, Methodology } from "../index.js"
 
 export const id = "vsce"
 export const name = "VSC Extension"
@@ -25,5 +25,5 @@ export const methodology: Methodology[] = [
     { pattern: "**/.vscodeignore", patternType: "minimatch", scan: scan, addPatterns: addPatternsExclude },
 ]
 
-const bind: Binding.TargetBind = { id, name, methodology, testCommad: check }
+const bind: Plugins.TargetBind = { id, name, methodology, testCommad: check }
 export default { viewignored_TargetBindList: [bind] } as PluginExport["default"]
