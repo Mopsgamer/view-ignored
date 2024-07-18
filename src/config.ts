@@ -75,17 +75,13 @@ export function configPartialGood(cfg: unknown): cfg is Partial<Config> {
     )
 }
 
-/**
- * The config manipulator.
- * @todo Convert to a *class instance* or *just methods* and hide the 'data' property.
- */
-export const configManager = {
+class ConfigManager {
     /**
      * Do not change this value directly.
      * @todo Make private.
      * @see {@link configManager}.
      */
-    data: {} as Partial<Config>,
+    private data = {} as Partial<Config>
 
     /**
      * Loads the config from the file to {@link configManager.data}. If the data is not valid, throws an error without loading.
@@ -101,7 +97,7 @@ export const configManager = {
         }
         Object.assign(this.data, parsed)
         return this
-    },
+    }
 
     /**
      * Saves the partial config to the file. If there are no settings, the file will be deleted, if exists.
@@ -115,7 +111,7 @@ export const configManager = {
         }
         writeFileSync(configFilePath, propertiesFile.stringify(this.data)!)
         return this
-    },
+    }
 
     /**
      * Sets a new value for the specified config property.
@@ -126,7 +122,7 @@ export const configManager = {
     set<T extends ConfigKey>(key: T, value: Config[T]) {
         this.data[key] = value
         return this
-    },
+    }
 
     /**
      * Deletes the specified property from the config.
@@ -142,7 +138,7 @@ export const configManager = {
         }
         delete this.data[key]
         return this
-    },
+    }
 
     /**
      * Returns the value for the specified property.
@@ -155,7 +151,7 @@ export const configManager = {
             return configDefault[key]
         }
         return value
-    },
+    }
 
     /**
      * @param key The config property.
@@ -169,5 +165,10 @@ export const configManager = {
         }
         const val = this.get(key, fallbackDefault)
         return val ? `${key}=${val}` : ''
-    },
-} as const
+    }
+}
+
+/**
+ * The config manipulator.
+ */
+export const configManager = new ConfigManager
