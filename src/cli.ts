@@ -4,45 +4,78 @@ import { Argument, InvalidArgumentError, Option, Command } from "commander";
 import { FileInfo, FilterName, scanProject, Sorting, Styling, Plugins, Config } from "./index.js";
 
 /**
+ * Prepare for {@link program}.parse().
+ */
+export async function programInit() {
+	Config.configManager.load()
+	await Plugins.BuiltIns
+	program.parseOptions(process.argv)
+	const flags: ProgramOptions = program.optsWithGlobals()
+	await Plugins.loadPlugins(flags.plugin)
+	optionsInit()
+	program.parse()
+}
+
+/**
  * Command-line entire program flags.
  */
 export interface ProgramOptions {
-	plugin?: string[]
+	plugin: string[]
+	noColor: boolean,
+	color: string,
 }
 
 /**
  * Command-line 'scan' command flags.
  */
 export interface ScanOptions extends ProgramOptions {
-	noColor: boolean,
-	color: string,
 	target: string,
 	filter: FilterName,
 	sort: Sorting.SortName,
 	style: Styling.StyleName
 }
 
-export const optionPlugin = new Option('--plugin [modules...]')
+export const optionPlugin = new Option('--plugin <modules...>')
+export const optionNoColor = new Option("--no-color").default(false)
+export const optionColor = new Option("--color <level>")
 
 /**
  * `view-ignored` command-line programl
  */
 export const program = new Command()
 	.addOption(optionPlugin)
+	.addOption(optionColor)
+	.addOption(optionNoColor)
 
-export const scanOptionNoColor = new Option("--no-color")
-export const scanOptionColor = new Option("--color <level>").default(Config.configManager.get("color"))
-export const scanOptionTarget = new Option("--target <ignorer>").default(Config.configManager.get("target"))
-export const scanOptionFilter = new Option("--filter <filter>").default(Config.configManager.get("filter"))
-export const scanOptionSort = new Option("--sort <sorter>").default(Config.configManager.get("sort"))
-export const scanOptionStyle = new Option("--style <style>").default(Config.configManager.get("style"))
+export const scanOptionTarget = new Option("--target <ignorer>")
+export const scanOptionFilter = new Option("--filter <filter>")
+export const scanOptionSort = new Option("--sort <sorter>")
+export const scanOptionStyle = new Option("--style <style>")
 
-export function refreshOptions() {
-	scanOptionColor.choices(Config.configValueList("color"))
+export function optionsInit() {
+	optionColor.choices(Config.configValueList("color"))
+	optionColor.default(Config.configManager.get("color"))
+
 	scanOptionTarget.choices(Config.configValueList("target"))
+	scanOptionTarget.default(Config.configManager.get("target"))
+
 	scanOptionFilter.choices(Config.configValueList("filter"))
+	scanOptionFilter.default(Config.configManager.get("filter"))
+
 	scanOptionSort.choices(Config.configValueList("sort"))
+	scanOptionSort.default(Config.configManager.get("sort"))
+
 	scanOptionStyle.choices(Config.configValueList("style"))
+	scanOptionStyle.default(Config.configManager.get("style"))
+
+	scanProgram
+		.addOption(optionPlugin)
+		.addOption(optionNoColor)
+		.addOption(optionColor)
+		.addOption(scanOptionTarget)
+		.addOption(scanOptionFilter)
+		.addOption(scanOptionSort)
+		.addOption(scanOptionStyle)
 }
 
 /**
@@ -52,13 +85,6 @@ export const scanProgram = program
 	.command("scan")
 	.aliases(['sc'])
 	.description('get ignored paths')
-	.addOption(optionPlugin)
-	.addOption(scanOptionNoColor)
-	.addOption(scanOptionColor)
-	.addOption(scanOptionTarget)
-	.addOption(scanOptionFilter)
-	.addOption(scanOptionSort)
-	.addOption(scanOptionStyle)
 	.action(actionScan)
 
 /**
@@ -118,19 +144,6 @@ export function parseArgKeyVal(pair: string): Config.ConfigPair {
 		throw new InvalidArgumentError(`Allowed config properties are ${Config.configValueList(key).join(', ')}. Got '${val}'.`)
 	}
 	return result
-}
-
-
-/**
- * Prepare for {@link program}.parse().
- */
-export async function programInit() {
-	Config.configManager.load()
-    await Plugins.BuiltIns
-	program.parseOptions(process.argv)
-	const flags: ProgramOptions = program.optsWithGlobals()
-	await Plugins.loadPlugins(flags.plugin)
-    refreshOptions()
 }
 
 /**
