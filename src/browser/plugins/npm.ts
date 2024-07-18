@@ -4,7 +4,7 @@ import getValue from "get-value";
 
 export const id = "npm"
 export const name = "NPM"
-export const check = "npm pack --dry-run"
+export const testCommand = "npm pack --dry-run"
 
 export const addPatternsExclude = [
     '.*.swp',
@@ -77,6 +77,5 @@ export const methodology: Methodology[] = [
 ]
 
 
-const bind: Plugins.TargetBind = { id, name, methodology, testCommad: check }
-export default { viewignored_TargetBindList: [bind] } as PluginExport["default"]
-
+const bind: Plugins.TargetBind = { id, name, methodology, testCommand }
+export const viewignoredExport = { viewignored_addTargets: [bind] } as PluginExport

@@ -4,16 +4,22 @@ import { minimatch } from "minimatch"
 /**
  * Supported matchers/parsers by {@link Scanner}.
  */
-export type PatternType = ".*ignore" | "minimatch"
+export type PatternType = typeof patternTypeList[number]
+export const patternTypeList = [".*ignore", "minimatch"] as const
+export function isPatternType(value: unknown): value is PatternType {
+	return typeof value === "string" && patternTypeList.includes(value as PatternType)
+}
 
 export interface ScannerOptions {
 	/**
 	 * @see {@link Scanner.isNegated}
+	 * @default ".*ignore"
 	 */
 	negated?: boolean
 
 	/**
 	 * The parser for the patterns.
+	 * @default ".*ignore"
 	 */
 	patternType?: PatternType
 
@@ -31,6 +37,8 @@ export interface ScannerOptions {
 	 */
 	addPatterns?: string[]
 }
+
+export type IsValidPatternOptions = Pick<ScannerOptions, "patternType">
 
 /**
  * The Glob-like pattern of the specific matcher.
@@ -124,19 +132,29 @@ export class Scanner {
 
 	/**
 	 * Checks if given pattern is valid.
-	 * @param pattern Dir entry path.
+	 * @param pattern Parser pattern.
 	 */
 	isValidPattern(pattern: unknown): boolean {
+		return Scanner.isValidPattern(pattern, this)
+	}
+
+	/**
+	 * Checks if given pattern is valid.
+	 * @param pattern Parser pattern.
+	 */
+	static isValidPattern(pattern: unknown, options?: IsValidPatternOptions): boolean {
+		const { patternType = ".*ignore" } = options ?? {};
+
 		if (Array.isArray(pattern)) {
-			return pattern.every(this.isValidPattern)
+			return pattern.every(p => this.isValidPattern(p, options))
 		}
-		if(typeof pattern !== "string") {
+		if (typeof pattern !== "string") {
 			return false
 		}
-		if (this.patternType === ".*ignore") {
+		if (patternType === ".*ignore") {
 			return ignore.default.isPathValid(pattern)
 		}
-		if (this.patternType === "minimatch") {
+		if (patternType === "minimatch") {
 			try {
 				minimatch.makeRe(pattern)
 				return true
@@ -144,6 +162,6 @@ export class Scanner {
 				return false
 			}
 		}
-		throw new TypeError(`Unknown pattern type '${this.patternType}'.`)
+		throw new TypeError(`Unknown pattern type '${patternType}'.`)
 	}
 }

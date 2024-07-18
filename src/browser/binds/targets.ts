@@ -1,16 +1,17 @@
-import { ScanFolderOptions, Methodology } from "../lib.js"
+import { ScanFolderOptions, Methodology, isMethodology } from "../lib.js"
+import { StyleCondition } from "../styling.js"
 
 export interface TargetBind {
     /**
-     * The target simple name.
+     * Simple name.
      * @see {@link isValidId}
      */
     id: string
 
     /**
-     * The target readable name.
+     * Readable name.
      */
-    name: string
+    name: string | StyleCondition
 
     /**
      * The walkthrough. Files including patterns.
@@ -28,14 +29,28 @@ export interface TargetBind {
      * "npm pack --dry run"
      * "vsce ls"
      */
-    testCommad?: string
+    testCommand?: string
+}
+
+export function isTargetBind(value: unknown): value is TargetBind {
+    if (value?.constructor !== Object) {
+        return false
+    }
+
+    const v = value as Record<string, unknown>
+
+    return (isValidId(v.id))
+        && (typeof v.name === "string" || v.name?.constructor === Object)
+        && (Array.isArray(v.methodology) && v.methodology.every(isMethodology))
+        && (v.scanOptions === undefined || v.scanOptions?.constructor === Object)
+        && (v.testCommand === undefined || typeof v.testCommand === "string")
 }
 
 /**
  * @param id The target simple name.
  * @returns `true` if the target id is valid.
  */
-export function isValidId(id: unknown): boolean {
+export function isValidId(id: unknown): id is string {
     return typeof id === "string" && id.match(/^[-a-zA-Z0-9]+$/) != null
 }
 

@@ -3,8 +3,7 @@ import { Plugins, ScanMethod, Methodology } from "../index.js"
 
 export const id = "vsce"
 export const name = "VSC Extension"
-export const check = "vsce ls"
-
+export const testCommand = "vsce ls"
 
 export const addPatternsExclude: string[] = [
     "**/.git/**",
@@ -25,5 +24,5 @@ export const methodology: Methodology[] = [
     { pattern: "**/.vscodeignore", patternType: "minimatch", scan: scan, addPatterns: addPatternsExclude },
 ]
 
-const bind: Plugins.TargetBind = { id, name, methodology, testCommad: check }
-export default { viewignored_TargetBindList: [bind] } as PluginExport["default"]
+const bind: Plugins.TargetBind = { id, name, methodology, testCommand }
+export const viewignoredExport = { viewignored_addTargets: [bind] } as PluginExport

@@ -58,5 +58,26 @@
 			"preLaunchTask": "Build",
 			"sourceMaps": true
 		},
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "viewig scan --plugin t",
+			"skipFiles": [
+				"<node_internals>/**"
+			],
+			"args": [
+				"scan",
+				"--plugin",
+				"t"
+			],
+			"internalConsoleOptions": "neverOpen",
+			"program": "${workspaceFolder}/src/bin.ts",
+			"cwd": "${workspaceFolder}",
+			"outFiles": [
+				"${workspaceFolder}/lib/**/*.js"
+			],
+			"preLaunchTask": "Build",
+			"sourceMaps": true
+		},
 	]
 }

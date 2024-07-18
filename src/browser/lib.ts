@@ -1,4 +1,4 @@
-import { Scanner, PatternType } from "./scanner.js";
+import { Scanner, PatternType, isPatternType } from "./scanner.js";
 import FastGlob from "fast-glob";
 import { FileInfo } from "./fileinfo.js";
 import { findDomination, SourceInfo } from "./sourceinfo.js";
@@ -70,8 +70,16 @@ export interface Methodology {
 	scan: ScanMethod
 }
 
-export function isSource(source: unknown): source is Methodology {
-	return typeof source === "object"
+export function isMethodology(value: unknown): value is Methodology {
+	if (value?.constructor !== Object) {
+		return false
+	}
+
+	const v = value as Record<string, unknown>
+
+	return isPatternType(v.patternType)
+		&& (typeof v.pattern === "string" && FastGlob.isDynamicPattern(v.pattern))
+		&& (v.addPatterns === undefined || Array.isArray(v.addPatterns) && v.addPatterns.every(p => Scanner.isValidPattern(p, { patternType: v.patternType as PatternType })))
 }
 
 /**

@@ -3,12 +3,13 @@ import { Chalk, ColorSupportLevel } from "chalk";
 import { Argument, InvalidArgumentError, Option, Command } from "commander";
 import { FileInfo, FilterName, scanProject, Sorting, Styling, Plugins } from "./index.js";
 import { configValues, configManager, ConfigKey, Config, configKeyList, configFilePath } from "./config.js";
+import { styleCondition } from "./browser/styling.js";
 
 /**
  * Command-line entire program flags.
  */
 export interface ProgramOptions {
-	plugins?: string[]
+	plugin?: string[]
 }
 
 /**
@@ -132,7 +133,7 @@ export async function programInit() {
     await Plugins.BuiltIns
 	program.parseOptions(process.argv)
 	const flags: ProgramOptions = program.optsWithGlobals()
-	await Plugins.loadPlugins(flags.plugins)
+	await Plugins.loadPlugins(flags.plugin)
     refreshOptions()
 }
 
@@ -169,9 +170,10 @@ export async function actionScan(flags: ScanOptions): Promise<void> {
 	const checkSymbol = Styling.styleCondition(flags.style, { ifEmoji: '✅', ifNerd: '\uf00c', postfix: ' ' })
 	const fastSymbol = Styling.styleCondition(flags.style, { ifEmoji: '⚡', ifNerd: '\udb85\udc0c' })
 	console.log(`${chalk.green(checkSymbol)}Done in ${time < 400 ? chalk.yellow(fastSymbol) : ''}${time}ms.\n`)
-	console.log(`${fileInfoList.length} files listed for ${bind.name} (${flags.filter}).\n`)
+	const name = typeof bind.name === "string" ? bind.name : styleCondition(flags.style, bind.name)
+	console.log(`${fileInfoList.length} files listed for ${name} (${flags.filter}).\n`)
 	const infoSymbol = Styling.styleCondition(flags.style, { ifEmoji: 'ℹ️', ifNerd: '\ue66a', postfix: ' ' })
-	console.log(`${chalk.blue(infoSymbol)}You can use '${chalk.magenta(bind.testCommad ?? "")}' to check if the list is valid.\n`)
+	console.log(`${chalk.blue(infoSymbol)}You can use '${chalk.magenta(bind.testCommand ?? "")}' to check if the list is valid.\n`)
 }
 
 /**

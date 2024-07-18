@@ -71,7 +71,7 @@ export function styleCondition(styleName: StyleName | undefined, condition: Styl
 	const isNerd = styleName.toLowerCase().includes('nerd')
 	const isEmoji = styleName.toLowerCase().includes('emoji')
 
-	let result: string = ''
+	let result: string = condition.ifAny ?? ''
 	if (isEmoji) {
 		result = condition.ifEmoji ?? result
 	} else if (isNerd) {

@@ -1,34 +1,39 @@
 import * as pth from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 import { resolve } from "import-meta-resolve";
-import { TargetBind, targetSet } from "./targets.js";
+import { isTargetBind, TargetBind, targetSet } from "./targets.js";
 
 export * from "./targets.js"
 
-export interface PluginImportResult {
+
+/**
+ * The result of loading.
+ */
+export interface PluginLoaded {
     moduleName: string
     isLoaded: boolean
     exports: unknown
 }
 
+/**
+ * If a plugin wants to change something, it must export it as default.
+ */
 export interface PluginExport {
-    default: {
-        viewignored_TargetBindList: TargetBind[]
-    }
+    viewignored_addTargets: TargetBind[]
 }
 
 export function isPluginExport(value: unknown): value is PluginExport {
-    if (value === null || typeof value !== "object" || !("default" in value)) {
+    if (value?.constructor !== Object) {
         return false
     }
-    const def = value.default
-    return def !== null && typeof def === "object"
-        && "viewignored_TargetBindList" in def
+    const v = value as Record<string, unknown>
+
+    return Array.isArray(v.viewignored_addTargets) && v.viewignored_addTargets.every(isTargetBind)
 }
 
 function importPlugin(exportData: PluginExport) {
-    const { viewignored_TargetBindList } = exportData.default
-    for (const targetBind of viewignored_TargetBindList) {
+    const { viewignored_addTargets } = exportData
+    for (const targetBind of viewignored_addTargets) {
         targetSet(targetBind)
     }
 }
@@ -38,35 +43,36 @@ function importPlugin(exportData: PluginExport) {
  * @param moduleName Plugin name.
  * @returns Import result for the module.
  */
-export function loadPlugin(moduleName: string): Promise<PluginImportResult> {
+export function loadPlugin(moduleName: string): Promise<PluginLoaded> {
     try {
         const p = pathToFileURL(resolve(moduleName, import.meta.url)).toString()
-        return new Promise<PluginImportResult>((resolve) => {
+        return new Promise<PluginLoaded>((resolve) => {
             import(p)
                 .catch((reason: unknown) => {
                     console.error('Unable to load \'%s\'. Reason:', moduleName)
                     console.error(reason)
-                    const fail: PluginImportResult = { moduleName, isLoaded: false, exports: reason }
+                    const fail: PluginLoaded = { moduleName, isLoaded: false, exports: reason }
                     resolve(fail)
                 })
                 .then((exports: unknown) => {
-                    const result: PluginImportResult = { moduleName, isLoaded: true, exports }
-                    if (isPluginExport(exports)) {
-                        importPlugin(exports)
+                    const result: PluginLoaded = { moduleName, isLoaded: true, exports }
+                    const def = (exports as { default?: unknown })?.default
+                    if (isPluginExport(def)) {
+                        importPlugin(def)
                     }
                     resolve(result)
                 })
         })
     } catch (reason) {
-        const fail: PluginImportResult = { moduleName, isLoaded: false, exports: reason }
+        const fail: PluginLoaded = { moduleName, isLoaded: false, exports: reason }
         console.error('Unable to resolve \'%s\'. Reason:', moduleName)
         console.error(reason)
         return Promise.resolve(fail)
     }
 }
 
-export async function loadPlugins(moduleNameList?: string[]): Promise<PluginImportResult[]> {
-    const resultList: PluginImportResult[] = []
+export async function loadPlugins(moduleNameList?: string[]): Promise<PluginLoaded[]> {
+    const resultList: PluginLoaded[] = []
     for (const module of moduleNameList ?? []) {
         const result = await loadPlugin(module)
         resultList.push(result)
@@ -74,7 +80,7 @@ export async function loadPlugins(moduleNameList?: string[]): Promise<PluginImpo
     return resultList;
 }
 
-async function loadBuiltInPlugin(path: string, browser: boolean = true): Promise<PluginImportResult> {
+async function loadBuiltInPlugin(path: string, browser: boolean = true): Promise<PluginLoaded> {
     const folderCore = pth.join(pth.dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
     let folder: string = pth.join(folderCore, 'lib', 'plugins')
     if (browser) {
