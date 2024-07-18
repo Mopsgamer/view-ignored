@@ -50,16 +50,10 @@ export function loadPlugin(moduleName: string): Promise<PluginImportResult> {
                     resolve(fail)
                 })
                 .then((exports: unknown) => {
-                    if (!isPluginExport(exports)) {
-                        const message = 'Invalid export - expected PluginExport module structure.'
-                        const reason = new Error(message)
-                        const fail: PluginImportResult = { moduleName, isLoaded: false, exports: reason }
-                        console.error('Unable to import \'%s\'. Reason: %s', moduleName, message)
-                        resolve(fail)
-                        return;
-                    }
                     const result: PluginImportResult = { moduleName, isLoaded: true, exports }
-                    importPlugin(exports)
+                    if (isPluginExport(exports)) {
+                        importPlugin(exports)
+                    }
                     resolve(result)
                 })
         })
