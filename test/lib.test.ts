@@ -130,6 +130,36 @@ const targetTestList = {
                 'package.json': ''
             },
         },
+        'real project: .npmignore, .gitignore, package.json no "files" prop': {
+            shouldInclude: ['README.md', 'bin/app', 'lib/cli.js', 'lib/index.js', 'packagee.json'],
+            content: {
+                '.github': {},
+                'bin': {
+                    'app': ''
+                },
+                'node_modules': {
+                    'tempdep': {
+                        'indexOf.js': ''
+                    }
+                },
+                'lib': {
+                    'cli.js': '',
+                    'index.js': ''
+                },
+                'test': {
+                    'app.test.js': ''
+                },
+                'README.md': '',
+                'config.json': '',
+                '.npmignore': 'node_modules\nconfig*.json\ntest\n.github',
+                '.gitignore': 'node_modules\nconfig.json',
+                'package.json': JSON.stringify({
+                    main: './lib/index.js',
+                    name: 'app',
+                    version: '0.0.1'
+                })
+            },
+        },
     },
 
     /**
@@ -155,30 +185,28 @@ const targetTestList = {
 
 const testPath = './test/.simulation'
 
-async function testTarget(id: string, test: Case) {
-    mock({ [pathToFileURL(testPath).toString()]: test.content })
-    const lookList = await viewig.scanProject(id, { cwd: testPath, filter: 'included' })
-
-    if (!lookList) return;
-
-    const sourcesView = JSON.stringify(test.content, null, ' '.repeat(2))
-
-    assert.deepEqual(
-        lookList.map(l => l.filePath).sort(),
-        test.shouldInclude.sort(),
-        `Bad paths results.\n\n${sourcesView}`
-    )
-}
-
 describe("Targets", function () {
-    before(async () => {await viewig.Plugins.BuiltIns})
+    before(async () => { await viewig.Plugins.BuiltIns })
     for (const targetId in targetTestList) {
         describe(targetId, function () {
             const tests = targetTestList[targetId]
             for (const testName in tests) {
                 it(testName, async function () {
                     const test = tests[testName]
-                    await testTarget(targetId, test)
+                    mock({ [pathToFileURL(testPath).toString()]: test.content })
+                    const lookList = await viewig.scanProject(targetId, { cwd: testPath, filter: 'included' })
+
+                    assert(lookList !== undefined, "lookList should be an array")
+
+                    const sourcesView = JSON.stringify(test.content, null, ' '.repeat(2))
+
+                    const cmp1 = lookList.map(l => l.filePath).sort()
+                    const cmp2 = test.shouldInclude.sort()
+                    assert.deepEqual(
+                        cmp1,
+                        cmp2,
+                        `Bad paths results.\n\n${sourcesView}`
+                    )
                 })
             }
         })

@@ -12,9 +12,7 @@
 				"<node_internals>/**"
 			],
 			"args": [
-				"--require",
-				"tsx",
-				"./test/**/*.test.ts"
+				"./out/test/**/*.test.js"
 			],
 			"program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
 		},
