@@ -23,19 +23,23 @@ export function isStyleName(value: unknown): value is StyleName {
 	return typeof value === "string" && styleNameList.includes(value as StyleName)
 }
 
-const printTree: Style = function (oc, files, styleName) {
+const printTree: Style = function(oc, files, styleName) {
 	const pathsAsObject = jsonifyPaths.from(files.map(f => f.toString({ styleName, usePrefix: true, chalk: oc }, false)), { delimiter: "/" })
 	const pathsAsTree = tree.asTree(pathsAsObject, true, true)
 	console.log(pathsAsTree.replace(/\n$/, ''))
 }
 
-const printPaths: Style = function (oc, files, styleName) {
+const printPaths: Style = function(oc, files, styleName) {
 	const paths = files.map(f => `${f.toString({ styleName, usePrefix: true, chalk: oc })}`)
 	console.log(paths.join('\n'))
 }
 
 /**
  * Represents all possible styles.
+ * @todo Style represents:
+ * paths/tree + normal/icons/nerd + showSources + colorLevel
+ * so, should split.
+ * @todo Is Styles used only in command-line? Move it and hide forthelib.ts.
  */
 export const Styles: Record<StyleName, Style> = {
 	paths: printPaths,

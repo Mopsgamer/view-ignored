@@ -15,6 +15,12 @@ export interface FileInfoToStringOptions {
 	styleName?: StyleName
 
 	/**
+	 * Show the matcher's source after the file path.
+	 * @default false
+	 */
+	useSource?: boolean
+
+	/**
 	 * The appearance behavior of the prefix.
 	 * `"+"` for included, `"!"` for excluded.
 	 * @default false
@@ -78,21 +84,23 @@ export class FileInfo {
 	 * @returns Relative file path. Optionally formatted.
 	 */
 	toString(options: FileInfoToStringOptions = {}, formatEntire = true): string {
-		const { styleName, usePrefix = false, chalk } = options;
+		const { styleName, chalk, usePrefix = false, useSource = false } = options
 		const parsed = path.parse(this.filePath)
-		const fileIcon = styleConditionFile(styleName, this.filePath)
+		const fIcon = styleConditionFile(styleName, this.filePath)
 		const prefix = usePrefix ? (this.ignored ? '!' : '+') : ''
+		const postfix = useSource ? chalk.dim(" << " + this.source.toString()) : ''
+
 		if (chalk) {
 			const clr = chalk[this.ignored ? "red" : "green"]
 			if (formatEntire) {
-				return fileIcon + clr(prefix + this.filePath)
+				return fIcon + clr(prefix + this.filePath + postfix)
 			}
-			return parsed.dir + '/' + fileIcon + clr(prefix + parsed.base)
+			return parsed.dir + '/' + fIcon + clr(prefix + parsed.base + postfix)
 		}
 		if (formatEntire) {
-			return prefix + this.filePath
+			return prefix + this.filePath + postfix
 		}
-		return parsed.dir + '/' + fileIcon + prefix + parsed.base
+		return parsed.dir + '/' + fIcon + prefix + parsed.base + postfix
 	}
 
 	/**
