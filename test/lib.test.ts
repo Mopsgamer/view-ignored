@@ -196,8 +196,6 @@ describe("Targets", function () {
                     mock({ [pathToFileURL(testPath).toString()]: test.content })
                     const lookList = await viewig.scanProject(targetId, { cwd: testPath, filter: 'included' })
 
-                    assert(lookList !== undefined, "lookList should be an array")
-
                     const sourcesView = JSON.stringify(test.content, null, ' '.repeat(2))
 
                     const cmp1 = lookList.map(l => l.filePath).sort()

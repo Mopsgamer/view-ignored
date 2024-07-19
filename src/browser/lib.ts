@@ -158,11 +158,24 @@ export function methodologyToInfoList(methodology: Methodology, options: ScanFil
 		: FastGlob.sync(methodology.pattern, patchFastGlobOptions(options)).map(path => SourceInfo.from(path))
 }
 
+export class ErrorNoSources extends Error {
+	constructor(public readonly sources: (readonly Methodology[]) | string) {
+		super("No available sources for methodology: " + ErrorNoSources.walk(sources))
+	}
+	static walk(sources: (readonly Methodology[]) | string): string {
+		const s = typeof sources === "string" ? targetGet(sources)?.methodology : sources
+		if (!s) {
+			return `bad bind for target '${s}'`
+		}
+		return s.map(m => `'${m.pattern}'`).join(" -> ")
+	}
+}
+
 /**
  * Gets info about the file: it is ignored or not.
  * @returns `undefined` if the source is bad.
  */
-export async function scanFile(filePath: string, sources: Methodology[], options: ScanFileOptions): Promise<FileInfo | undefined> {
+export async function scanFile(filePath: string, sources: Methodology[], options: ScanFileOptions): Promise<FileInfo> {
 	for (const methodology of sources) {
 		const sourceInfoList: SourceInfo[] = methodologyToInfoList(methodology, options)
 		const matcher = new Scanner({
@@ -181,18 +194,19 @@ export async function scanFile(filePath: string, sources: Methodology[], options
 			}
 		}
 	}
+	throw new ErrorNoSources(sources)
 }
 
 /**
  * Scans project's directory paths to determine whether they are being ignored.
  */
-export async function scanPaths(allFilePaths: string[], sources: Methodology[], options: ScanFolderOptions): Promise<FileInfo[] | undefined>
-export async function scanPaths(allFilePaths: string[], target: string, options: ScanFolderOptions): Promise<FileInfo[] | undefined>
-export async function scanPaths(allFilePaths: string[], arg2: Methodology[] | string, options: ScanFolderOptions): Promise<FileInfo[] | undefined> {
+export async function scanPaths(allFilePaths: string[], sources: Methodology[], options: ScanFolderOptions): Promise<FileInfo[]>
+export async function scanPaths(allFilePaths: string[], target: string, options: ScanFolderOptions): Promise<FileInfo[]>
+export async function scanPaths(allFilePaths: string[], arg2: Methodology[] | string, options: ScanFolderOptions): Promise<FileInfo[]> {
 	if (typeof arg2 === "string") {
 		const bind = targetGet(arg2)
 		if (bind === undefined) {
-			throw Error(`view-ignored can not find target '${arg2}'`)
+			throw new ErrorNoSources(arg2)
 		}
 		return scanPaths(allFilePaths, bind.methodology, bind.scanOptions ?? {})
 	}
@@ -235,14 +249,15 @@ export async function scanPaths(allFilePaths: string[], arg2: Methodology[] | st
 			return resultList
 		}
 	}
+	throw new ErrorNoSources(arg2)
 }
 
 /**
  * Scans project's directory paths to determine whether they are being ignored.
  */
-export function scanProject(sources: Methodology[], options: ScanFolderOptions): Promise<FileInfo[] | undefined>
-export function scanProject(target: string, options: ScanFolderOptions): Promise<FileInfo[] | undefined>
-export async function scanProject(arg: Methodology[] | string, options: ScanFolderOptions): Promise<FileInfo[] | undefined> {
+export function scanProject(sources: Methodology[], options: ScanFolderOptions): Promise<FileInfo[]>
+export function scanProject(target: string, options: ScanFolderOptions): Promise<FileInfo[]>
+export async function scanProject(arg: Methodology[] | string, options: ScanFolderOptions): Promise<FileInfo[]> {
 	const paths = await FastGlob.async("**", patchFastGlobOptions(options))
 	if (typeof arg === "string") {
 		return await scanPaths(paths, arg, options);
