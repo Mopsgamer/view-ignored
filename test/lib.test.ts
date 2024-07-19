@@ -1,7 +1,8 @@
-import mock from "mock-fs"
 import * as viewig from "../src/index.js"
+import mock from "mock-fs"
 import assert from "assert"
 import type FileSystem from "mock-fs/lib/filesystem.js"
+import { pathToFileURL } from "url"
 
 interface Case {
     shouldInclude: string[]
@@ -150,31 +151,38 @@ const targetTestList = {
             content: {},
         },
     },
-} as const satisfies Plan
+} as Plan
 
 const testPath = './test/.simulation'
+
+async function testTarget(id: string, test: Case) {
+    mock({ [pathToFileURL(testPath).toString()]: test.content })
+    const lookList = await viewig.scanProject(id, { cwd: testPath, filter: 'included' })
+
+    if (!lookList) return;
+
+    const sourcesView = JSON.stringify(test.content, null, ' '.repeat(2))
+
+    assert.deepEqual(
+        lookList.map(l => l.filePath).sort(),
+        test.shouldInclude.sort(),
+        `Bad paths results.\n\n${sourcesView}`
+    )
+}
+
 describe("Targets", function () {
-    for (const target in targetTestList) {
-        describe(target, function () {
-            const tests = targetTestList[target] as DirCase
+    before(async () => {await viewig.Plugins.BuiltIns})
+    for (const targetId in targetTestList) {
+        describe(targetId, function () {
+            const tests = targetTestList[targetId]
             for (const testName in tests) {
                 it(testName, async function () {
-                    const test = tests[testName] as Case
-                    mock({ [testPath]: test.content })
-                    const lookList = await viewig.scanProject(target, { cwd: testPath, filter: 'included' })
-
-                    if (!lookList) return;
-
-                    const sourcesView = JSON.stringify(test.content, null, ' '.repeat(2))
-
-                    assert.deepEqual(
-                        lookList.map(l => l.filePath).sort(),
-                        test.shouldInclude.sort(),
-                        `Bad paths results.\n\n${sourcesView}`
-                    )
+                    const test = tests[testName]
+                    await testTarget(targetId, test)
                 })
             }
         })
     }
 })
+
 mock.restore()

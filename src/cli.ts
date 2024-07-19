@@ -1,7 +1,8 @@
 import fs from "fs";
 import { Chalk, ColorSupportLevel } from "chalk";
 import { Argument, InvalidArgumentError, Option, Command } from "commander";
-import { FileInfo, FilterName, scanProject, Sorting, Styling, Plugins, Config } from "./index.js";
+import * as Config from "./config.js";
+import { FilterName, scanProject, FileInfo, Plugins, Sorting, Styling } from "./browser/lib.js";
 
 /**
  * Prepare for {@link program}.parse().

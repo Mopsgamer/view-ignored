@@ -192,7 +192,7 @@ export async function scanPaths(allFilePaths: string[], arg2: Methodology[] | st
 	if (typeof arg2 === "string") {
 		const bind = targetGet(arg2)
 		if (bind === undefined) {
-			throw TypeError(`view-ignored can not find target '${arg2}'`)
+			throw Error(`view-ignored can not find target '${arg2}'`)
 		}
 		return scanPaths(allFilePaths, bind.methodology, bind.scanOptions ?? {})
 	}

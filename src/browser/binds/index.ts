@@ -1,5 +1,3 @@
-import * as pth from "path";
-import { fileURLToPath, pathToFileURL } from "url";
 import { isTargetBind, TargetBind, targetSet } from "./targets.js";
 import { loadPlugin as load } from "load-plugin";
 import isInstalledGlobally from "is-installed-globally";
@@ -88,28 +86,18 @@ export async function loadPlugins(moduleNameList?: string[]): Promise<PluginLoad
     return resultList;
 }
 
-/**
- * Loads built-in plugins.
- * @param path The path after the "plugins" directory.
- * @param browser Use plugins for a browser.
- */
-async function loadBuiltInPlugin(path: string, browser: boolean = true): Promise<PluginLoaded> {
-    const folderCore = pth.join(pth.dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
-    let folder: string = pth.join(folderCore, 'lib', 'plugins')
-    if (browser) {
-        folder = pth.join(folderCore, 'lib', 'browser', 'plugins')
-    }
-    const p = pth.join(folder, path)
-
-    return await loadPlugin(p)
-}
+export const BuiltInGit = import("../plugins/git.js")
+BuiltInGit.then(e => e.default).then(importPlugin)
+export const BuiltInVsce = import("../plugins/vsce.js")
+BuiltInVsce.then(e => e.default).then(importPlugin)
+export const BuiltInNpm = import("../plugins/npm.js")
+BuiltInNpm.then(e => e.default).then(importPlugin)
+export const BuiltInYarn = import("../plugins/yarn.js")
+BuiltInYarn.then(e => e.default).then(importPlugin)
 
 /**
  * Built-in plugins loading queue.
  */
-export const BuiltIns = Promise.allSettled([
-    loadBuiltInPlugin("git.js"),
-    loadBuiltInPlugin("npm.js"),
-    loadBuiltInPlugin("vsce.js"),
-    loadBuiltInPlugin("yarn.js")
-])
+export const BuiltIns = Promise.allSettled(
+    [BuiltInGit, BuiltInVsce, BuiltInNpm, BuiltInYarn]
+)

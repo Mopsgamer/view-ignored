@@ -49,12 +49,12 @@ viewig config set style=treeNerd
 import * as vign from "view-ignored";
 import * as vign from "view-ignored/lib/browser"; // for web environment apps
 
-const fileInfoList = vign.scanProject("git");
-const fileInfoList = vign.scanPaths(filePathList, "git");
-const fileInfo = vign.scanFile(filePath, "git");
+const fileInfoList = await vign.scanProject("git");
+const fileInfoList = await vign.scanPaths(filePathList, "git");
+const fileInfo = await vign.scanFile(filePath, "git");
 
 // options available
-const fileInfoList = vign.scanProject("git", { cwd, ... });
+const fileInfoList = await vign.scanProject("git", { cwd, ... });
 
 // custom
 /**@type {vign.ScanMethod}*/
@@ -83,13 +83,13 @@ if (fileInfo.ignored) {
 #### Sorting:
 
 ```js
-const fileInfoList = vign.scanProject("npm");
+const fileInfoList = await vign.scanProject("npm");
 const sorter = vign.Sorting.Sorters.firstFolders;
 fileInfoList.map(String).sort(sorter);
 ```
 
 ```js
-const fileInfoList = vign.scanProject("npm")
+const fileInfoList = await vign.scanProject("npm")
 const sorter = Sorting.Sorters[flags.sort]
 /** @type {Map<FileInfo, Date>} */
 const cacheEditDates = new Map()
