@@ -3,6 +3,7 @@ import FastGlob from "fast-glob";
 import { FileInfo } from "./fileinfo.js";
 import { findDomination, SourceInfo } from "./sourceinfo.js";
 import { targetGet } from "./binds/index.js";
+import { readFile, readFileSync } from "fs";
 
 export * from "./scanner.js"
 export * from "./fileinfo.js"
@@ -31,16 +32,16 @@ export function isFilterName(value: unknown): value is FilterName {
  * @extends FastGlob.FileSystemAdapter
  */
 export interface FileSystemAdapter extends FastGlob.FileSystemAdapter {
-	readFileSync: (path: string) => Buffer
-	readFile: (path: string) => Promise<Buffer>
+	readFileSync: typeof readFileSync
+	readFile: typeof readFile
 }
 
 /**
  * Returns new {@link FastGlob.Options} object with forced defaults:
  * `onlyFiles: true`, `dot: true`, `followSymbolicLinks: false`.
  */
-export function patchFastGlobOptions(options: FastGlob.Options) {
-	const patched: FastGlob.Options = {
+export function patchFastGlobOptions<T extends FastGlob.Options>(options: T) {
+	const patched: T = {
 		...options,
 		onlyFiles: true,
 		dot: true,
@@ -176,8 +177,9 @@ export class ErrorNoSources extends Error {
  * @returns `undefined` if the source is bad.
  */
 export async function scanFile(filePath: string, sources: Methodology[], options: ScanFileOptions): Promise<FileInfo> {
+	const optionsPatched = patchFastGlobOptions(options)
 	for (const methodology of sources) {
-		const sourceInfoList: SourceInfo[] = methodologyToInfoList(methodology, options)
+		const sourceInfoList: SourceInfo[] = methodologyToInfoList(methodology, optionsPatched)
 		const matcher = new Scanner({
 			addPatterns: methodology.addPatterns,
 			ignoreCase: methodology.ignoreCase,
@@ -211,7 +213,9 @@ export async function scanPaths(allFilePaths: string[], arg2: Methodology[] | st
 		return scanPaths(allFilePaths, bind.methodology, bind.scanOptions ?? {})
 	}
 
-	const { filter = "included" } = options;
+	const optionsPatched = patchFastGlobOptions(options)
+
+	const { filter = "included" } = optionsPatched;
 	/** Contains parsed sources: file path = parser instance. */
 	const cache = new Map<string, Scanner>()
 
@@ -219,7 +223,7 @@ export async function scanPaths(allFilePaths: string[], arg2: Methodology[] | st
 	for (const methodology of arg2) {
 		let goodFound = false
 		const resultList: FileInfo[] = []
-		const sourceInfoList: SourceInfo[] = methodologyToInfoList(methodology, options)
+		const sourceInfoList: SourceInfo[] = methodologyToInfoList(methodology, optionsPatched)
 
 		for (const filePath of allFilePaths) {
 			const dominated = findDomination(filePath, sourceInfoList.map(sourceInfo => sourceInfo.sourcePath))
@@ -230,7 +234,7 @@ export async function scanPaths(allFilePaths: string[], arg2: Methodology[] | st
 			const matcher = cache.get(source.sourcePath)
 			let fileInfo: FileInfo
 			if (!matcher) {
-				const newInfo = await scanFile(filePath, [methodology], options)
+				const newInfo = await scanFile(filePath, [methodology], optionsPatched)
 				if (!newInfo) {
 					break
 				}
@@ -258,10 +262,11 @@ export async function scanPaths(allFilePaths: string[], arg2: Methodology[] | st
 export function scanProject(sources: Methodology[], options: ScanFolderOptions): Promise<FileInfo[]>
 export function scanProject(target: string, options: ScanFolderOptions): Promise<FileInfo[]>
 export async function scanProject(arg: Methodology[] | string, options: ScanFolderOptions): Promise<FileInfo[]> {
-	const paths = await FastGlob.async("**", patchFastGlobOptions(options))
+	const optionsPatched = patchFastGlobOptions(options)
+	const paths = await FastGlob.async("**", optionsPatched)
 	if (typeof arg === "string") {
-		return await scanPaths(paths, arg, options);
+		return await scanPaths(paths, arg, optionsPatched);
 	}
-	return await scanPaths(paths, arg, options);
+	return await scanPaths(paths, arg, optionsPatched);
 }
 //#endregion

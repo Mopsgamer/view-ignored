@@ -1,7 +1,7 @@
-import * as viewig from "../src/index.js"
 import mock from "mock-fs"
-import assert from "assert"
 import type FileSystem from "mock-fs/lib/filesystem.js"
+import * as viewig from "../src/index.js"
+import assert from "assert"
 import { pathToFileURL } from "url"
 
 interface Case {
@@ -211,4 +211,6 @@ describe("Targets", function () {
     }
 })
 
-mock.restore()
+afterEach(() => {
+    mock.restore()
+})
