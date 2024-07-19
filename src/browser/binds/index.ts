@@ -2,6 +2,7 @@ import * as pth from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 import { isTargetBind, TargetBind, targetSet } from "./targets.js";
 import { loadPlugin as load } from "load-plugin";
+import isInstalledGlobally from "is-installed-globally";
 
 export * from "./targets.js"
 
@@ -51,7 +52,7 @@ function importPlugin(exportData: PluginExport) {
 export function loadPlugin(moduleName: string): Promise<PluginLoaded> {
     try {
         return new Promise<PluginLoaded>((resolve) => {
-            load(moduleName)
+            load(moduleName, { global: isInstalledGlobally })
                 .catch((reason: unknown) => {
                     console.error('Unable to load \'%s\'. Reason:', moduleName)
                     console.error(reason)
