@@ -7,27 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Renames
-- LookFolderOptions -> ScanFolderOptions
-- Looker -> Scanner
-- LookerOptions -> ScannerOptions
-- Source -> Methodology
-- Source.sources -> Methodology.pattern
-- Source.method -> Methodology.scan
-- TargetBind.source -> TargetBind.scan
-- SourceFile -> SourceInfo: convert to a class with own methods.
-- TargetBind.source
-
-### Changes
-- Command-line remove short options and add `--no-colors`.
-- Sorting.Sorters[sortername] -> Sorting[sortername]
-- Change `FileInfo.from`.
-- Change `Scanner.isValidPattern`.
-- Add `SourcePattern.scanSync`.
-- Add `patchFastGlobOptions`.
-- Add `methodologyToInfoList`.
-- Add `isSource`.
-- Remove `LookMethodData`.
+- Refactor and add more stuff.
+- Change project structure: move 'lib' -> 'out/src'
+- Implement command-line `--plugin` option.
 
 ## [0.1.1] - 2024-07-14
 

@@ -10,7 +10,7 @@ Retrieve list of files ignored/included by Git, NPM, Yarn and VSC Extension.
 - **Multi-target.** Get list of included files, using configuration files reader, not command-line wrapper.
 - **Use in browser.** view-ignored supports file system adapter.
 - **Command-line.** Supports no-color and multiple output styles, including [nerd fonts](https://github.com/ryanoasis/nerd-fonts).
-- **Plugins.** view-ignored allows you to add new [targets](#targets) programmatically. Command-line interface does NOT support plugins.
+- **Plugins.** view-ignored allows you to add new [targets](#targets) programmatically. Command-line interface supports plugins throught `--plugin` option.
 
 ## Install
 
