@@ -76,6 +76,7 @@ export const program = new Command()
 	.addOption(optionPlugin)
 	.addOption(optionColor)
 	.addOption(optionNoColor)
+	.addOption(optionDecor)
 
 export const scanOptionTarget = new Option("--target <ignorer>")
 export const scanOptionFilter = new Option("--filter <filter>")
