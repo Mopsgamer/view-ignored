@@ -20,6 +20,26 @@
 		{
 			"type": "node",
 			"request": "launch",
+			"name": "viewig cfg get",
+			"skipFiles": [
+				"<node_internals>/**"
+			],
+			"args": [
+				"cfg",
+				"get"
+			],
+			"internalConsoleOptions": "neverOpen",
+			"program": "${workspaceFolder}/out/src/bin.js",
+			"cwd": "${workspaceFolder}",
+			"outFiles": [
+				"${workspaceFolder}/out/src/**/*.js"
+			],
+			"preLaunchTask": "Build",
+			"sourceMaps": true
+		},
+		{
+			"type": "node",
+			"request": "launch",
 			"name": "viewig scan",
 			"skipFiles": [
 				"<node_internals>/**"
@@ -28,10 +48,10 @@
 				"scan"
 			],
 			"internalConsoleOptions": "neverOpen",
-			"program": "${workspaceFolder}/src/bin.ts",
+			"program": "${workspaceFolder}/out/src/bin.js",
 			"cwd": "${workspaceFolder}",
 			"outFiles": [
-				"${workspaceFolder}/lib/**/*.js"
+				"${workspaceFolder}/out/src/**/*.js"
 			],
 			"preLaunchTask": "Build",
 			"sourceMaps": true
@@ -49,10 +69,10 @@
 				"--filter=all",
 			],
 			"internalConsoleOptions": "neverOpen",
-			"program": "${workspaceFolder}/src/bin.ts",
+			"program": "${workspaceFolder}/out/src/bin.js",
 			"cwd": "${workspaceFolder}",
 			"outFiles": [
-				"${workspaceFolder}/lib/**/*.js"
+				"${workspaceFolder}/out/src/**/*.js"
 			],
 			"preLaunchTask": "Build",
 			"sourceMaps": true
@@ -70,10 +90,10 @@
 				"t"
 			],
 			"internalConsoleOptions": "neverOpen",
-			"program": "${workspaceFolder}/src/bin.ts",
+			"program": "${workspaceFolder}/out/src/bin.js",
 			"cwd": "${workspaceFolder}",
 			"outFiles": [
-				"${workspaceFolder}/lib/**/*.js"
+				"${workspaceFolder}/out/src/**/*.js"
 			],
 			"preLaunchTask": "Build",
 			"sourceMaps": true

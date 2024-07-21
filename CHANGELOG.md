@@ -7,9 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Refactor and add more stuff.
+- Refactor, add more stuff: changes for the command-line and API.
 - Change project structure: move 'lib' -> 'out/src'
-- Implement command-line `--plugin` option.
+- Implement command-line `--plugin` and `--showSources` options.
 
 ## [0.1.1] - 2024-07-14
 

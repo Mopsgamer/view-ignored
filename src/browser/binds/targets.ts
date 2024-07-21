@@ -1,6 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { ScanFolderOptions, Methodology, isMethodology, scanPaths } from "../lib.js"
-import { StyleCondition } from "../styling.js"
+import { DecorConditionOptions } from "../styling.js"
 
 /**
  * Should satisfy RegExp: `/^[-a-zA-Z0-9]+$/`.
@@ -9,7 +9,7 @@ export type TargetId = string
 
 /**
  * @param value Target's id. Simple name.
- * @returns `true` if the id is available for binding.
+ * @returns `true`, if the id is available for binding.
  */
 export function isTargetId(value: unknown): value is TargetId {
     return typeof value === "string" && value.match(/^[-a-zA-Z0-9]+$/) != null
@@ -17,7 +17,7 @@ export function isTargetId(value: unknown): value is TargetId {
 
 /**
  * @param value Target's id. Simple name.
- * @returns `true` if the id is bound.
+ * @returns `true`, if the id is bound.
  */
 export function isBoundId(value: unknown): value is TargetId {
 	return typeof value === "string" && targetExists(String(value))
@@ -37,7 +37,7 @@ export interface TargetBind {
     /**
      * Readable name.
      */
-    name: string | StyleCondition
+    name: string | DecorConditionOptions
 
     /**
      * The walkthrough. Files including patterns.

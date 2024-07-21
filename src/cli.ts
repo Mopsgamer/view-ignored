@@ -1,44 +1,73 @@
 import fs from "fs";
-import { Chalk, ColorSupportLevel } from "chalk";
+import { Chalk, ChalkInstance, ColorSupportLevel } from "chalk";
 import { Argument, InvalidArgumentError, Option, Command } from "commander";
 import * as Config from "./config.js";
-import { FilterName, scanProject, FileInfo, Plugins, Sorting, Styling } from "./browser/lib.js";
+import { BuiltIns, loadPlugins, targetGet } from "./browser/binds/index.js";
+import { decorCondition, DecorName, formatFiles, StyleName } from "./browser/styling.js";
+import { SortName } from "./browser/sorting.js";
+import { FileInfo, FilterName, scanProject, Sorting } from "./lib.js";
+import { formatConfigConflicts } from "./styling.js";
 
 /**
  * Prepare for {@link program}.parse().
  */
 export async function programInit() {
-	Config.configManager.load()
-	await Plugins.BuiltIns
+	const flags: ProgramFlags = program.optsWithGlobals()
+	const chalk = getChalk(flags)
+	try {
+		Config.configManager.load()
+	} catch (error) {
+		formatConfigConflicts(chalk, flags.decor, error)
+		return
+	}
+	await BuiltIns
 	program.parseOptions(process.argv)
-	const flags: ProgramOptions = program.optsWithGlobals()
-	await Plugins.loadPlugins(flags.plugin)
+	await loadPlugins(flags.plugin)
 	optionsInit()
 	program.parse()
+}
+
+/** Chalk, but configured by view-ignored cli. */
+export function getChalk(flags: ProgramFlags): ChalkInstance {
+	const colorLevel = (flags.noColor ? 0 : Math.max(0, Math.min(Number(flags.color ?? 3), 3))) as ColorSupportLevel
+	const chalk = new Chalk({ level: colorLevel })
+	return chalk
 }
 
 /**
  * Command-line entire program flags.
  */
-export interface ProgramOptions {
+export interface ProgramFlags {
 	plugin: string[]
-	noColor: boolean,
-	color: string,
+	noColor: boolean
+	color: string
+	decor: DecorName
 }
 
 /**
  * Command-line 'scan' command flags.
  */
-export interface ScanOptions extends ProgramOptions {
-	target: string,
-	filter: FilterName,
-	sort: Sorting.SortName,
-	style: Styling.StyleName
+export interface ScanFlags extends ProgramFlags {
+	target: string
+	filter: FilterName
+	sort: SortName
+	style: StyleName
+	showSources: boolean
+}
+
+/**
+ * Command-line 'cfg get' command flags.
+ */
+export interface ConfigGetFlags {
+	defs: boolean
 }
 
 export const optionPlugin = new Option('--plugin <modules...>')
 export const optionNoColor = new Option("--no-color").default(false)
 export const optionColor = new Option("--color <level>")
+Config.configValuePutChoices(optionColor, "color")
+export const optionDecor = new Option("--decor <decor>")
+Config.configValuePutChoices(optionDecor, "decor")
 
 /**
  * `view-ignored` command-line programl
@@ -50,36 +79,25 @@ export const program = new Command()
 
 export const scanOptionTarget = new Option("--target <ignorer>")
 export const scanOptionFilter = new Option("--filter <filter>")
+Config.configValuePutChoices(scanOptionFilter, "filter")
+
 export const scanOptionSort = new Option("--sort <sorter>")
+Config.configValuePutChoices(scanOptionSort, "sort")
+
 export const scanOptionStyle = new Option("--style <style>")
+Config.configValuePutChoices(scanOptionStyle, "style")
+
+export const scanOptionShowSources = new Option("--show-sources")
+Config.configValuePutChoices(scanOptionShowSources, "showSources")
 
 /**
  * Init the command-line, parse arguments and invoke the program.
  */
 export function optionsInit() {
-	optionColor.choices(Config.configValueList("color"))
-	optionColor.default(Config.configManager.get("color"))
-
-	scanOptionTarget.choices(Config.configValueList("target"))
-	scanOptionTarget.default(Config.configManager.get("target"))
-
-	scanOptionFilter.choices(Config.configValueList("filter"))
-	scanOptionFilter.default(Config.configManager.get("filter"))
-
-	scanOptionSort.choices(Config.configValueList("sort"))
-	scanOptionSort.default(Config.configManager.get("sort"))
-
-	scanOptionStyle.choices(Config.configValueList("style"))
-	scanOptionStyle.default(Config.configManager.get("style"))
+	Config.configValuePutChoices(scanOptionTarget, "target")
 
 	scanProgram
-		.addOption(optionPlugin)
-		.addOption(optionNoColor)
-		.addOption(optionColor)
 		.addOption(scanOptionTarget)
-		.addOption(scanOptionFilter)
-		.addOption(scanOptionSort)
-		.addOption(scanOptionStyle)
 }
 
 /**
@@ -90,6 +108,13 @@ export const scanProgram = program
 	.aliases(['sc'])
 	.description('get ignored paths')
 	.action(actionScan)
+	.addOption(optionPlugin)
+	.addOption(optionNoColor)
+	.addOption(optionColor)
+	.addOption(scanOptionFilter)
+	.addOption(scanOptionSort)
+	.addOption(scanOptionStyle)
+	.addOption(scanOptionShowSources)
 
 /**
  * Command-line 'config' command.
@@ -110,6 +135,8 @@ export const argConfigKeyVal = new Argument('<pair>', 'pair "key=value"').argPar
  */
 export const argConfigKey = new Argument('[key]', 'setting').choices(Config.configKeyList)
 
+export const cfgGetOption = new Option('--defs', 'use default value(s) as fallback for printing').default(false)
+
 cfgProgram
 	.command('path').description('print the config file path')
 	.action(actionCfgPath)
@@ -126,7 +153,7 @@ cfgProgram
 	.action(actionCfgUnset)
 cfgProgram
 	.command('get').description('print a list of all configuration values or a specific one')
-	.option('--safe', 'use default value(s) as fallback for printing')
+	.addOption(cfgGetOption)
 	.addArgument(argConfigKey)
 	.action(actionCfgGet)
 
@@ -145,7 +172,11 @@ export function parseArgKeyVal(pair: string): Config.ConfigPair {
 	const [key, val] = result
 	parseArgKey(key)
 	if (!Config.isConfigValue(key, val)) {
-		throw new InvalidArgumentError(`Allowed config properties are ${Config.configValueList(key).join(', ')}. Got '${val}'.`)
+		const list = Config.configValueList(key)
+		if (list === undefined) {
+			throw new InvalidArgumentError(`Got '${val}'.`)
+		}
+		throw new InvalidArgumentError(`Allowed config properties are ${list.join(', ')}. Got '${val}'.`)
 	}
 	return result
 }
@@ -153,11 +184,9 @@ export function parseArgKeyVal(pair: string): Config.ConfigPair {
 /**
  * Command-line 'scan' command action.
  */
-export async function actionScan(flags: ScanOptions): Promise<void> {
+export async function actionScan(flags: ScanFlags): Promise<void> {
 	const start = Date.now()
-	const colorLevel = (flags.noColor ? 0 : Math.max(0, Math.min(Number(flags.color ?? 3), 3))) as ColorSupportLevel
-	/** Chalk, but configured by view-ignored cli. */
-	const chalk = new Chalk({ level: colorLevel })
+	const chalk = getChalk(flags)
 
 	const fileInfoList = await scanProject(flags.target, { filter: flags.filter })
 
@@ -171,21 +200,21 @@ export async function actionScan(flags: ScanOptions): Promise<void> {
 	for (const look of fileInfoList) {
 		cacheEditDates.set(look, fs.statSync(look.filePath).mtime)
 	}
-	const bind = Plugins.targetGet(flags.target)!
+	const bind = targetGet(flags.target)!
 	const lookedSorted = fileInfoList.sort((a, b) => sorter(
 		a.toString(), b.toString(),
 		cacheEditDates.get(a)!, cacheEditDates.get(b)!
 	))
 	console.log(process.cwd())
-	Styling.Styles[flags.style](chalk, lookedSorted, flags.style, flags.filter)
+	formatFiles(lookedSorted, { chalk, style: flags.style, decor: flags.decor, showSources: flags.showSources })
 	const time = Date.now() - start
-	console.log('')
-	const checkSymbol = Styling.styleCondition(flags.style, { ifEmoji: '✅', ifNerd: '\uf00c', postfix: ' ' })
-	const fastSymbol = Styling.styleCondition(flags.style, { ifEmoji: '⚡', ifNerd: '\udb85\udc0c' })
+	console.log()
+	const checkSymbol = decorCondition(flags.decor, { ifEmoji: '✅', ifNerd: '\uf00c', postfix: ' ' })
+	const fastSymbol = decorCondition(flags.decor, { ifEmoji: '⚡', ifNerd: '\udb85\udc0c' })
 	console.log(`${chalk.green(checkSymbol)}Done in ${time < 400 ? chalk.yellow(fastSymbol) : ''}${time}ms.\n`)
-	const name = typeof bind.name === "string" ? bind.name : Styling.styleCondition(flags.style, bind.name)
+	const name = typeof bind.name === "string" ? bind.name : decorCondition(flags.decor, bind.name)
 	console.log(`${fileInfoList.length} files listed for ${name} (${flags.filter}).\n`)
-	const infoSymbol = Styling.styleCondition(flags.style, { ifEmoji: 'ℹ️', ifNerd: '\ue66a', postfix: ' ' })
+	const infoSymbol = decorCondition(flags.decor, { ifEmoji: 'ℹ️', ifNerd: '\ue66a', postfix: ' ' })
 	console.log(`${chalk.blue(infoSymbol)}You can use '${chalk.magenta(bind.testCommand ?? "")}' to check if the list is valid.\n`)
 }
 
@@ -226,6 +255,6 @@ export function actionCfgUnset(key: Config.ConfigKey | undefined): void {
 /**
  * Command-line 'config unset' command action
  */
-export function actionCfgGet(key: Config.ConfigKey | undefined, options: { safe?: boolean }): void {
-	console.log(Config.configManager.getPairString(key, options.safe ?? false))
+export function actionCfgGet(key: Config.ConfigKey | undefined, options: ConfigGetFlags): void {
+	console.log(Config.configManager.getPairString(key, options.defs))
 }

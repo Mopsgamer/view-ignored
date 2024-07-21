@@ -1,21 +1,53 @@
-import { FilterName, FileInfo } from "../index.js"
+import { FileInfo } from "../index.js"
 import { default as tree } from "treeify";
 import jsonifyPaths from "jsonify-paths";
 import { ChalkInstance } from "chalk";
 import path from "path";
 
+export interface FormatFilesOptions {
+	/**
+	 * @default false
+	 */
+	showSources?: boolean
+	/**
+	 * @default "paths"
+	 */
+	style: StyleName,
+	/**
+	 * @default "paths"
+	 */
+	decor?: DecorName,
+	chalk: ChalkInstance
+}
+
+/**
+ * @returns Prints a readable file list.
+ */
+export function formatFiles(files: FileInfo[], options: FormatFilesOptions): void {
+	const { showSources = false, chalk, decor, style: name } = options ?? {};
+
+	const isPaths = name === "paths"
+	const paths = files.map(f => f.toString({ fileIcon: decor, usePrefix: true, chalk: chalk, source: showSources, entire: isPaths }))
+
+	if (isPaths) {
+		console.log(paths.join('\n') + '\n')
+		return
+	}
+
+	// isTree
+	const pathsAsObject = jsonifyPaths.from(paths, { delimiter: "/" })
+	const pathsAsTree = tree.asTree(pathsAsObject, true, true)
+	console.log(pathsAsTree)
+}
+
 /**
  * Contains all style names.
  */
-export const styleNameList = ['tree', 'paths', 'treeEmoji', 'treeNerd'] as const
+export const styleNameList = ['tree', 'paths'] as const
 /**
  * Contains all style names as a type.
  */
 export type StyleName = typeof styleNameList[number]
-/**
- * General console.log printer.
- */
-export type Style = (oc: ChalkInstance, files: FileInfo[], style: StyleName, filter: FilterName) => void
 /**
  * Checks if the value is the {@link StyleName}.
  */
@@ -23,35 +55,25 @@ export function isStyleName(value: unknown): value is StyleName {
 	return typeof value === "string" && styleNameList.includes(value as StyleName)
 }
 
-const printTree: Style = function(oc, files, styleName) {
-	const pathsAsObject = jsonifyPaths.from(files.map(f => f.toString({ styleName, usePrefix: true, chalk: oc }, false)), { delimiter: "/" })
-	const pathsAsTree = tree.asTree(pathsAsObject, true, true)
-	console.log(pathsAsTree.replace(/\n$/, ''))
-}
-
-const printPaths: Style = function(oc, files, styleName) {
-	const paths = files.map(f => `${f.toString({ styleName, usePrefix: true, chalk: oc })}`)
-	console.log(paths.join('\n'))
+/**
+ * Contains all decor names.
+ */
+export const decorNameList = ['normal', 'emoji', 'nerdfonts'] as const
+/**
+ * Contains all decor names as a type.
+ */
+export type DecorName = typeof decorNameList[number]
+/**
+ * Checks if the value is the {@link DecorName}.
+ */
+export function isDecorName(value: unknown): value is DecorName {
+	return typeof value === "string" && decorNameList.includes(value as DecorName)
 }
 
 /**
- * Represents all possible styles.
- * @todo Style represents:
- * paths/tree + normal/icons/nerd + showSources + colorLevel
- * so, should split.
- * @todo Is Styles used only in command-line? Move it and hide forthelib.ts.
+ * Formatting options for the {@link decorCondition}.
  */
-export const Styles: Record<StyleName, Style> = {
-	paths: printPaths,
-	tree: printTree,
-	treeEmoji: printTree,
-	treeNerd: printTree
-}
-
-/**
- * Formatting options for the {@link styleCondition}.
- */
-export interface StyleCondition {
+export interface DecorConditionOptions {
 	/**
 	 * @default ""
 	 */
@@ -63,10 +85,10 @@ export interface StyleCondition {
 	postfix?: string
 
 	/**
-	 * If style is not an emoji or nerd use this string.
+	 * If the decor is not an emoji or nerd use this string.
 	 * @default ""
 	 */
-	ifAny?: string
+	ifNormal?: string
 
 	/**
 	 * If style name (lowercase) contains `emoji` use this string.
@@ -83,24 +105,17 @@ export interface StyleCondition {
 
 /**
  * Formats the string for specific style types.
- * @param styleName The style name.
+ * @param decor The decor name.
  * @param condition Formatting options.
  */
-export function styleCondition(styleName: StyleName | undefined, condition: StyleCondition): string {
-	if (styleName === undefined) {
-		return ''
-	}
-	const isNerd = styleName.toLowerCase().includes('nerd')
-	const isEmoji = styleName.toLowerCase().includes('emoji')
-
-	let result: string = condition.ifAny ?? ''
-	if (isEmoji) {
+export function decorCondition(decor: DecorName, condition: DecorConditionOptions): string {
+	let result: string = condition.ifNormal ?? ''
+	if (decor === 'emoji') {
 		result = condition.ifEmoji ?? result
-	} else if (isNerd) {
+	} else if (decor === 'nerdfonts') {
 		result = condition.ifNerd ?? result
-	} else {
-		result = condition.ifAny ?? result
 	}
+
 	if (result !== '') {
 		result = (condition.prefix ?? '') + result + (condition.postfix ?? '')
 	}
@@ -108,11 +123,11 @@ export function styleCondition(styleName: StyleName | undefined, condition: Styl
 }
 
 /**
- * Adds the file icon prefix to the string.
- * @param styleName The style name.
+ * Returns file icon for the file name & extension.
+ * @param decor The decor name.
  * @param filePath The full file path.
  */
-export function styleConditionFile(styleName: StyleName | undefined, filePath: string): string {
+export function decorFile(decor: DecorName | undefined, filePath: string): string {
 	const parsed = path.parse(filePath)
 	let icon = ''
 	switch (parsed.ext.toLocaleLowerCase()) {
@@ -184,7 +199,10 @@ export function styleConditionFile(styleName: StyleName | undefined, filePath: s
 		default:
 			break;
 	}
-	return styleCondition(styleName, {
+	if (!decor) {
+		return ''
+	}
+	return decorCondition(decor, {
 		ifEmoji: '📄',
 		ifNerd: icon,
 		postfix: ' '

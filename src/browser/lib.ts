@@ -53,7 +53,7 @@ export function patchFastGlobOptions<T extends FastGlob.Options>(options: T) {
 //#region looking
 /**
  * Also can write rules to the {@link Scanner}.
- * @returns `true` if the given source is valid.
+ * @returns `true`, if the given source is valid.
  */
 export type ScanMethod = (fileInfo: FileInfo) => boolean
 
@@ -86,7 +86,7 @@ export interface Methodology {
 	patternType: PatternType
 
 	/**
-	 * Scanner function. Should return `true` if the given source is valid.
+	 * Scanner function. Should return `true`, if the given source is valid.
 	 */
 	scan: ScanMethod
 }

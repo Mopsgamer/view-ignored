@@ -2,8 +2,8 @@ import { PluginExport } from "../binds/index.js"
 import { Plugins, ScanMethod, Methodology, Styling } from "../index.js"
 
 const id = "git"
-const name: Styling.StyleCondition = {
-    ifAny: "Git",
+const name: Styling.DecorConditionOptions = {
+    ifNormal: "Git",
     ifNerd: "\ue65d Git"
 }
 const testCommand = `git ls-tree -r <git-branch-name> --name-only`

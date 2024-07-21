@@ -1,5 +1,5 @@
 import { ChalkInstance } from "chalk"
-import { styleConditionFile, StyleName } from "./styling.js"
+import { decorFile, DecorName } from "./styling.js"
 import path from "path"
 import { FilterName, SourceInfo } from "./lib.js"
 import { Scanner } from "./scanner.js"
@@ -12,13 +12,13 @@ export interface FileInfoToStringOptions {
 	 * The appearance behavior of the file icon.
 	 * @default undefined
 	 */
-	styleName?: StyleName
+	fileIcon?: DecorName
 
 	/**
 	 * Show the matcher's source after the file path.
 	 * @default false
 	 */
-	useSource?: boolean
+	source?: boolean
 
 	/**
 	 * The appearance behavior of the prefix.
@@ -32,6 +32,12 @@ export interface FileInfoToStringOptions {
 	 * @default undefined
 	 */
 	chalk?: ChalkInstance
+
+	/**
+	 * Determines if the path's base or the entire path should be formatted.
+	 * @default true
+	 */
+	entire?: boolean
 }
 
 /**
@@ -79,25 +85,26 @@ export class FileInfo {
 	}
 
 	/**
-	 * @param options Styling options. Default `{}`.
-	 * @param formatEntire Determines if the path's base or the entire path should be formatted. Default `true`.
+	 * @param options Styling options.
 	 * @returns Relative file path. Optionally formatted.
 	 */
-	toString(options: FileInfoToStringOptions = {}, formatEntire = true): string {
-		const { styleName, chalk, usePrefix = false, useSource = false } = options
+	toString(options?: FileInfoToStringOptions): string {
+		const { fileIcon, chalk, usePrefix = false, source: useSource = false, entire = true } = options ?? {}
 		const parsed = path.parse(this.filePath)
-		const fIcon = styleConditionFile(styleName, this.filePath)
-		const prefix = usePrefix ? (this.ignored ? '!' : '+') : ''
-		const postfix = useSource ? chalk.dim(" << " + this.source.toString()) : ''
+		const fIcon = decorFile(fileIcon, this.filePath)
+		let prefix = usePrefix ? (this.ignored ? '!' : '+') : ''
+		let postfix = useSource ? " << " + this.source.toString() : ''
 
 		if (chalk) {
+			prefix = chalk.dim(prefix)
+			postfix = chalk.dim(postfix)
 			const clr = chalk[this.ignored ? "red" : "green"]
-			if (formatEntire) {
+			if (entire) {
 				return fIcon + clr(prefix + this.filePath + postfix)
 			}
 			return parsed.dir + '/' + fIcon + clr(prefix + parsed.base + postfix)
 		}
-		if (formatEntire) {
+		if (entire) {
 			return prefix + this.filePath + postfix
 		}
 		return parsed.dir + '/' + fIcon + prefix + parsed.base + postfix
@@ -105,7 +112,7 @@ export class FileInfo {
 
 	/**
 	 * @param filter The group name.
-	 * @returns `true` if the file is contained by the filter.
+	 * @returns `true`, if the file is contained by the filter.
 	 */
 	isIncludedBy(filter: FilterName): boolean {
 		const filterIgnore = (filter === "ignored") && this.ignored
