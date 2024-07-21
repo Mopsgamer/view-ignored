@@ -88,6 +88,7 @@ export const scanOptionStyle = new Option("--style <style>")
 Config.configValuePutChoices(scanOptionStyle, "style")
 
 export const scanOptionShowSources = new Option("--show-sources")
+	.argParser(parseArgBool)
 Config.configValuePutChoices(scanOptionShowSources, "showSources")
 
 /**
@@ -156,6 +157,10 @@ cfgProgram
 	.addOption(cfgGetOption)
 	.addArgument(argConfigKey)
 	.action(actionCfgGet)
+
+export function parseArgBool(arg: string): "true" | "false" {
+	return String(!!arg) as "true" | "false"
+}
 
 export function parseArgKey(key: string): string {
 	if (!Config.isConfigKey(key)) {

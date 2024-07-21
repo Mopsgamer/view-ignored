@@ -9,16 +9,17 @@ import { Option } from "commander";
 /**
  * Contains all color level names.
  */
-export const colorTypeList = ["0", "1", "2", "3"] as const
+export const colorTypeList = [0, 1, 2, 3] as const
 /**
  * Contains all color level names as a type.
  */
-export type ColorType = `${ColorSupportLevel}`
+export type ColorType = ColorSupportLevel
 /**
  * Checks if the value is the {@link ColorType}.
  */
 export function isColorType(value: unknown): value is ColorType {
-    return typeof value === "string" && colorTypeList.includes(value as ColorType)
+    const num = Number(value)
+    return Number.isFinite(num) && colorTypeList.includes(num as ColorType)
 }
 
 /**
@@ -51,10 +52,10 @@ export function isConfigKey(value: unknown): value is ConfigKey {
 
 export type ConfigValue<KeyT extends ConfigKey = ConfigKey, Safe extends boolean = true> = Safe extends true ? Config[KeyT] : Config[KeyT] | undefined
 
-export type ShowSourcesType = 'true' | 'false'
+export type ShowSourcesType = boolean
 
 export function isShowSources(value: unknown): value is ShowSourcesType {
-    return value === 'true' || value === 'false'
+    return typeof value === "boolean"
 }
 
 /**
@@ -98,13 +99,13 @@ export type Config = {
  * Command-line default config values.
  */
 export const configDefault: Readonly<Config> = {
-    color: "3",
+    color: 3,
     target: "git",
     filter: "included",
     sort: "firstFolders",
     style: "tree",
     decor: "normal",
-    showSources: "false"
+    showSources: false
 }
 
 /**
@@ -117,7 +118,7 @@ export function isConfigPartial(cfg: unknown): cfg is Partial<Config> {
     const jsonobj = cfg as Record<string, unknown>
     return Object.entries(jsonobj).every(
         ([key, value]) => isConfigKey(key)
-            ? isConfigValue(key, String(value))
+            ? isConfigValue(key, value)
             : true
     )
 }
@@ -131,7 +132,7 @@ export function configValueList<T extends ConfigKey>(key: T): readonly string[] 
     /**
      * Represents allowed values for each config property.
      */
-    const configAvailable: Partial<Record<ConfigKey, readonly string[] | (() => readonly string[])>> = {
+    const configAvailable: Partial<Record<ConfigKey, readonly ConfigValue[] | (() => readonly ConfigValue[])>> = {
         color: colorTypeList,
         filter: filterNameList,
         target: Plugins.targetList,
