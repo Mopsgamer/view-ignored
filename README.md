@@ -50,29 +50,10 @@ import * as vign from "view-ignored";
 import * as vign from "view-ignored/lib/browser"; // for web environment apps
 
 const fileInfoList = await vign.scanProject("git");
-const fileInfoList = await vign.scanPaths(filePathList, "git");
 const fileInfo = await vign.scanFile(filePath, "git");
 
 // options available
 const fileInfoList = await vign.scanProject("git", { cwd, ... });
-
-// custom
-/**@type {vign.ScanMethod}*/
-export const scan = function (data) {
-    const { scanner, source } = data
-    const pat = source.content?.toString()
-    if (!scanner.isValidPattern(pat)) {
-        return false
-    }
-    scanner.add(pat!)
-    return true
-}
-
-/**@type {vign.Methodology[]}*/
-export const methodology = [
-    { pattern: "**/.gitignore", patternType: ".*ignore", scan: scan, addPatterns: addPatternsExclude },
-]
-vign.scanProject(methodology)
 
 // use results
 if (fileInfo.ignored) {
@@ -84,18 +65,20 @@ if (fileInfo.ignored) {
 
 ```js
 const fileInfoList = await vign.scanProject("npm");
-const sorter = vign.Sorting.Sorters.firstFolders;
+const sorter = vign.Sorting.firstFolders;
 fileInfoList.map(String).sort(sorter);
 ```
 
 ```js
 const fileInfoList = await vign.scanProject("npm")
-const sorter = Sorting.Sorters[flags.sort]
+const sorter = vign.Sorting.firstFolders;
+
 /** @type {Map<FileInfo, Date>} */
 const cacheEditDates = new Map()
 for (const fileInfo of fileInfoList) {
 	cacheEditDates.set(fileInfo, fs.statSync(fileInfo.filePath).mtime)
 }
+
 const fileInfoSorted = fileInfoList.sort((a, b) => sorter(
 	a.toString(), b.toString(),
 	cacheEditDates.get(a)!, cacheEditDates.get(b)!

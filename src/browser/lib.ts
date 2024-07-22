@@ -1,10 +1,11 @@
 import { Scanner, PatternType, isPatternType } from "./scanner.js";
 import FastGlob from "fast-glob";
 import { FileInfo } from "./fileinfo.js";
-import { findDomination, readdirOfFileSync, SourceInfo, statSync } from "./sourceinfo.js";
-import { targetGet } from "./binds/index.js";
+import { findDomination, readdirSync, SourceInfo, statSync } from "./sourceinfo.js";
+import { ErrorTargetNotBound, targetGet } from "./binds/index.js";
 import { readFile, readFileSync } from "fs";
 import path from "path";
+import arrify from "arrify";
 
 export * from "./scanner.js"
 export * from "./fileinfo.js"
@@ -70,21 +71,21 @@ export interface Methodology {
 	ignoreCase?: boolean
 
 	/**
+	 * Pattern parser name.
+	 */
+	matcher: PatternType
+
+	/**
 	 * Additional patterns, which will be used as
 	 * other patterns in the `.gitignore` file, or `package.json` "files" property.
 	 * @default []
 	 */
-	addPatterns?: string[]
+	matcherAdd?: string[]
 
 	/**
 	 * First valid source will be used as {@link Scanner}.
 	 */
-	pattern: SourceInfo[] | FastGlob.Pattern
-
-	/**
-	 * Pattern parser name.
-	 */
-	patternType: PatternType
+	pattern: SourceInfo[] | FastGlob.Pattern[] | SourceInfo | FastGlob.Pattern
 
 	/**
 	 * Scanner function. Should return `true`, if the given source is valid.
@@ -155,16 +156,19 @@ export interface ScanFolderOptions extends ScanFileOptions {
  * Gets sources from the methodology.
  */
 export function methodologyToInfoList(methodology: Methodology, options: ScanFileOptions): SourceInfo[] {
-	return Array.isArray(methodology.pattern)
-		? methodology.pattern
-		: FastGlob.sync(methodology.pattern, patchFastGlobOptions(options)).map(path => SourceInfo.from(
-			path, new Scanner({
-				addPatterns: methodology.addPatterns,
-				ignoreCase: methodology.ignoreCase,
-				patternType: methodology.patternType,
-				cwd: options.cwd
-			})
-		))
+	const patterns = arrify(methodology.pattern)
+	if (patterns.some(p => typeof p !== "string")) {
+		return patterns as SourceInfo[]
+	}
+
+	return FastGlob.sync(patterns as string[], patchFastGlobOptions(options)).map(path => SourceInfo.from(
+		path, new Scanner({
+			addPatterns: methodology.matcherAdd,
+			ignoreCase: methodology.ignoreCase,
+			patternType: methodology.matcher,
+			cwd: options.cwd
+		})
+	))
 }
 
 export class ErrorNoSources extends Error {
@@ -205,15 +209,15 @@ export async function scanFile(filePath: string, sources: Methodology[], options
  * Scans project's directory paths to determine whether they are being ignored.
  * @throws {ErrorNoSources} if the source is bad.
  */
-export async function scanPaths(allFilePaths: string[], sources: Methodology[], options: ScanFolderOptions): Promise<FileInfo[]>
-export async function scanPaths(allFilePaths: string[], target: string, options: ScanFolderOptions): Promise<FileInfo[]>
-export async function scanPaths(allFilePaths: string[], arg2: Methodology[] | string, options: ScanFolderOptions): Promise<FileInfo[]> {
+export async function scanProject(sources: Methodology[], options: ScanFolderOptions): Promise<FileInfo[]>
+export async function scanProject(target: string, options: ScanFolderOptions): Promise<FileInfo[]>
+export async function scanProject(arg2: Methodology[] | string, options: ScanFolderOptions): Promise<FileInfo[]> {
 	if (typeof arg2 === "string") {
 		const bind = targetGet(arg2)
 		if (bind === undefined) {
-			throw new ErrorNoSources(arg2)
+			throw new ErrorTargetNotBound(arg2)
 		}
-		return scanPaths(allFilePaths, bind.methodology, bind.scanOptions ?? {})
+		return scanProject(bind.methodology, bind.scanOptions ?? {})
 	}
 
 	// Find good source.
@@ -224,60 +228,51 @@ export async function scanPaths(allFilePaths: string[], arg2: Methodology[] | st
 		const resultList: FileInfo[] = []
 		const sourceInfoList: SourceInfo[] = methodologyToInfoList(methodology, optionsPatched)
 
-		/** Map<filePath, fileInfo>. */
-		const cache = new Map<string, SourceInfo>()
+		/** Map<filePath, sourceInfo>. */
+		const cacheFilePaths = new Map<string, SourceInfo>()
+		const allFilePaths = FastGlob.sync("**", optionsPatched)
 		for (const filePath of allFilePaths) {
 			let fileInfo: FileInfo | undefined
-			{
-				let sourceInfo: SourceInfo | undefined = cache.get(filePath)
-				fileInfo = sourceInfo && FileInfo.from(filePath, sourceInfo)
-				if (!fileInfo) {
-					sourceInfo = findDomination(filePath, sourceInfoList)
-					if (sourceInfo === undefined) {
-						throw new ErrorNoSources(arg2)
-					}
+			let sourceInfo: SourceInfo | undefined = cacheFilePaths.get(filePath)
+			fileInfo = sourceInfo && FileInfo.from(filePath, sourceInfo)
 
-					const entryList = readdirOfFileSync(filePath)
-					for (const entry of entryList) {
-						const stat = statSync(entry, path.dirname(filePath), options.fs)
-						if (stat.isFile()) {
-							cache.set(entry, sourceInfo)
-						}
-					}
+			if (!fileInfo) {
+				sourceInfo = findDomination(filePath, sourceInfoList)
+				if (sourceInfo === undefined) {
+					break
+				}
 
-					sourceInfo.readSync()
-					fileInfo = FileInfo.from(filePath, sourceInfo)
+				fileInfo = FileInfo.from(filePath, sourceInfo)
+
+				const fileDir = path.dirname(filePath)
+				const entryList = readdirSync(fileDir)
+				for (const entry of entryList) {
+					const stat = statSync(entry, fileDir, options.fs)
+					if (stat.isFile()) {
+						const entryPath = fileDir !== '.' ? fileDir + '/' + entry : entry
+						cacheFilePaths.set(entryPath, sourceInfo)
+					}
 				}
 			}
 
-			goodFound = methodology.scan(fileInfo)
-			if (!goodFound) {
-				break
+			if (!sourceInfo!.content) {
+				sourceInfo!.readSync()
+				goodFound = methodology.scan(fileInfo)
+				if (!goodFound) {
+					break
+				}
 			}
+
 			const shouldPush = fileInfo.isIncludedBy(filter)
 			if (shouldPush) {
 				resultList.push(fileInfo)
 			}
-		}
+		} // forend
+
 		if (goodFound) {
 			return resultList
 		}
-	}
+	} // forend
 	throw new ErrorNoSources(arg2)
-}
-
-/**
- * Scans project's directory paths to determine whether they are being ignored.
- * @throws {ErrorNoSources} if the source is bad.
- */
-export function scanProject(sources: Methodology[], options: ScanFolderOptions): Promise<FileInfo[]>
-export function scanProject(target: string, options: ScanFolderOptions): Promise<FileInfo[]>
-export async function scanProject(arg: Methodology[] | string, options: ScanFolderOptions): Promise<FileInfo[]> {
-	const optionsPatched = patchFastGlobOptions(options)
-	const paths = await FastGlob.async("**", optionsPatched)
-	if (typeof arg === "string") {
-		return await scanPaths(paths, arg, optionsPatched);
-	}
-	return await scanPaths(paths, arg, optionsPatched);
 }
 //#endregion

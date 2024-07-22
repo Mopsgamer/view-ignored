@@ -55,6 +55,9 @@ export class FileInfo {
 		public readonly source: SourceInfo
 	) { }
 
+	/**
+	 * The pattern parser.
+	 */
 	get scanner(): Scanner {
 		return this.source.scanner
 	}

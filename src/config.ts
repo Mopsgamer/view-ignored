@@ -36,7 +36,7 @@ export const configFilePath = path.join(os.homedir(), configFileName)
 /**
  * Command-line configuration property list.
  */
-export const configKeyList = ["color", "target", "filter", "sort", "style", "decor", "showSources"] as const satisfies readonly (keyof Config)[]
+export const configKeyList = ["color", "target", "filter", "sort", "style", "decor", "depth", "showSources"] as const satisfies readonly (keyof Config)[]
 
 /**
  * Command-line configuration's key type.
@@ -64,11 +64,12 @@ export function isShowSources(value: unknown): value is ShowSourcesType {
 export function isConfigValue<T extends ConfigKey>(key: T, value: unknown): value is Config[T] {
     const c: Record<ConfigKey, (value: unknown) => boolean> = {
         color: isColorType,
-        target: Plugins.isBoundId,
+        target: t => Plugins.isTargetId(t) && Plugins.targetGet(t) !== undefined,
         filter: isFilterName,
         sort: Sorting.isSortName,
         style: Styling.isStyleName,
         decor: Styling.isDecorName,
+        depth: Number.isInteger,
         showSources: isShowSources
     }
 
@@ -92,6 +93,7 @@ export type Config = {
     sort: Sorting.SortName,
     style: Styling.StyleName,
     decor: Styling.DecorName,
+    depth: number,
     showSources: ShowSourcesType
 }
 
@@ -105,6 +107,7 @@ export const configDefault: Readonly<Config> = {
     sort: "firstFolders",
     style: "tree",
     decor: "normal",
+    depth: Infinity,
     showSources: false
 }
 

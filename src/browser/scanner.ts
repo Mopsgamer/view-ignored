@@ -84,7 +84,7 @@ export class Scanner {
 	 * @default false
 	 */
 	public readonly ignoreCase: boolean
-	private patternList: string[] = []
+	private patternList: Set<string> = new Set()
 	private ignoreInstance: Ignore
 
 	constructor(options?: ScannerOptions) {
@@ -94,6 +94,16 @@ export class Scanner {
 		this.cwd = options?.cwd ?? process.cwd()
 		this.ignoreInstance = ignore.default(options)
 		this.add(options?.addPatterns ?? [])
+	}
+
+	static negatePattern(pattern: string[]): string[]
+	static negatePattern(pattern: string): string
+	static negatePattern(pattern: ScannerPattern): ScannerPattern {
+		if (Array.isArray(pattern)) {
+			return pattern.map(Scanner.negatePattern) as string[]
+		}
+
+		return pattern.startsWith('!') ? pattern.replace(/^!/, '') : `!${pattern}`
 	}
 
 	/**
@@ -110,11 +120,11 @@ export class Scanner {
 	 */
 	add(pattern: ScannerPattern): this {
 		if (typeof pattern === "string") {
-			this.patternList.push(pattern)
-			this.ignoreInstance.add(pattern)
-		} else {
+			pattern = pattern.split('\n')
+		}
+		if (Array.isArray(pattern)) {
 			for (const pat of pattern) {
-				this.patternList.push(pat)
+				this.patternList.add(pat)
 				this.ignoreInstance.add(pat)
 			}
 		}
@@ -131,12 +141,12 @@ export class Scanner {
 		if (this.patternType === ".*ignore") {
 			ignores = this.ignoreInstance.ignores(path)
 		} else { // minimatch
-			ignores = this.patternList.some(pattern => {
-				const isMatch = minimatch(path, pattern, {matchBase: true, dot: true})
-				return isMatch
+			ignores = Array.from(this.patternList).some((pattern) => {
+				return minimatch(path, pattern, { dot: true })
 			})
 		}
-		return this.isNegated ? !ignores : ignores;
+		const result =  this.isNegated ? !ignores : ignores
+		return result;
 	}
 
 	/**

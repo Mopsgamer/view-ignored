@@ -24,7 +24,7 @@ const scan: ScanMethod = function (data) {
 }
 
 const methodology: Methodology[] = [
-    { pattern: "**/.gitignore", patternType: ".*ignore", scan: scan, addPatterns: addPatternsExclude },
+    { pattern: "**/.gitignore", matcher: ".*ignore", scan: scan, matcherAdd: addPatternsExclude },
 ]
 
 const bind: Plugins.TargetBind = { id, name, methodology, testCommand }

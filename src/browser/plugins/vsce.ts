@@ -21,7 +21,7 @@ export const scan: ScanMethod = function(data) {
 }
 
 export const methodology: Methodology[] = [
-    { pattern: "**/.vscodeignore", patternType: "minimatch", scan: scan, addPatterns: addPatternsExclude },
+    { pattern: "**/.vscodeignore", matcher: "minimatch", scan: scan, matcherAdd: addPatternsExclude },
 ]
 
 const bind: Plugins.TargetBind = { id, name, methodology, testCommand }

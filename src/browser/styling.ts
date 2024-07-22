@@ -17,17 +17,22 @@ export interface FormatFilesOptions {
 	 * @default "paths"
 	 */
 	decor?: DecorName,
-	chalk: ChalkInstance
+	chalk: ChalkInstance,
+	/**
+	 * @default Infinity
+	 */
+	depth?: number
 }
 
 /**
  * @returns Prints a readable file list.
  */
 export function formatFiles(files: FileInfo[], options: FormatFilesOptions): void {
-	const { showSources = false, chalk, decor, style: name } = options ?? {};
+	const { showSources = false, chalk, decor, style, depth = Infinity } = options ?? {};
 
-	const isPaths = name === "paths"
+	const isPaths = style === "paths"
 	const paths = files.map(f => f.toString({ fileIcon: decor, usePrefix: true, chalk: chalk, source: showSources, entire: isPaths }))
+		.filter(p => Array.from(p).filter(c => c === '/').length < depth)
 
 	if (isPaths) {
 		console.log(paths.join('\n') + '\n')

@@ -14,10 +14,10 @@ export function statSync(path: string, cwd?: string, fsa?: FileSystemAdapter): f
 /**
  * Reads the file's dir using fs adapter.
  */
-export function readdirOfFileSync(path: string, cwd?: string, fsa?: FileSystemAdapter): string[] {
+export function readdirSync(path: string, cwd?: string, fsa?: FileSystemAdapter): string[] {
 	const readdirSync = fsa?.readdirSync || fs.readdirSync
 	const filePath = join(cwd ?? process.cwd(), path)
-	return readdirSync(dirname(filePath))
+	return readdirSync(filePath)
 }
 
 /**
@@ -114,6 +114,6 @@ export class SourceInfo {
 	 * @returns Parent directory entry paths.
 	 */
 	readdirSync(): string[] {
-		return readdirOfFileSync(this.sourcePath)
+		return readdirSync(dirname(this.sourcePath))
 	}
 }

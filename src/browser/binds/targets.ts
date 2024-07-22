@@ -1,5 +1,5 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { ScanFolderOptions, Methodology, isMethodology, scanPaths } from "../lib.js"
+import { ScanFolderOptions, Methodology, isMethodology, scanProject } from "../lib.js"
 import { DecorConditionOptions } from "../styling.js"
 
 /**
@@ -15,17 +15,15 @@ export function isTargetId(value: unknown): value is TargetId {
     return typeof value === "string" && value.match(/^[-a-zA-Z0-9]+$/) != null
 }
 
-/**
- * @param value Target's id. Simple name.
- * @returns `true`, if the id is bound.
- */
-export function isBoundId(value: unknown): value is TargetId {
-	return typeof value === "string" && targetExists(String(value))
+export class ErrorTargetNotBound extends Error {
+    constructor(targetId: unknown) {
+        super(`The target has no bound: '${targetId}'.`)
+    }
 }
 
 /**
  * The bind which allows use predefined options for scan functions.
- * @see {@link scanPaths}
+ * @see {@link scanProject}
  */
 export interface TargetBind {
     /**
@@ -105,21 +103,9 @@ export function targetList(): string[] {
 }
 
 /**
- * Get all target ids.
- * @example
- * ["git", "npm", "vsce", ...]
- */
-export function targetExists(id: string): boolean {
-    return targetGet(id) !== undefined
-}
-
-/**
  * Get target bind by target id.
  * @param id Target id.
  */
-export function targetGet(id: string): TargetBind | undefined {
-    if (!isTargetId(id)) {
-        throw TypeError(`view-ignored can not get bind for target with id '${id}'`)
-    }
+export function targetGet(id: TargetId): TargetBind | undefined {
     return targetBindMap.get(id)
 }

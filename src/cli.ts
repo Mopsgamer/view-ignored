@@ -53,6 +53,7 @@ export interface ScanFlags extends ProgramFlags {
 	sort: SortName
 	style: StyleName
 	showSources: boolean
+	depth: number
 }
 
 /**
@@ -96,6 +97,7 @@ export function optionsInit() {
 	Config.configValuePutChoices(scanProgram, new Option("--filter <filter>"), "filter")
 	Config.configValuePutChoices(scanProgram, new Option("--sort <sorter>"), "sort")
 	Config.configValuePutChoices(scanProgram, new Option("--style <style>"), "style")
+	Config.configValuePutChoices(scanProgram, new Option("--depth <depth>").argParser(parseArgInt), "depth")
 	Config.configValuePutChoices(scanProgram, new Option("--show-sources").argParser(parseArgBool), "showSources")
 }
 
@@ -132,8 +134,19 @@ cfgProgram
 	.addArgument(argConfigKey)
 	.action(actionCfgGet)
 
-export function parseArgBool(arg: string): "true" | "false" {
-	return String(!!arg) as "true" | "false"
+export function parseArgBool(arg: string): boolean {
+	if (!['true', 'false', '1', '0'].includes(arg.trim())) {
+		throw new InvalidArgumentError(`Got invalid value '${arg}'. Should be a boolen.`)
+	}
+	return !!arg
+}
+
+export function parseArgInt(arg: string): number {
+	const num = parseInt(arg.trim())
+	if (!Number.isInteger(num)) {
+		throw new InvalidArgumentError(`Got invalid value '${num}'. Should be an integer.`)
+	}
+	return num
 }
 
 export function parseArgKey(key: string): Config.ConfigKey {
@@ -197,7 +210,8 @@ export async function actionScan(flags: ScanFlags): Promise<void> {
 		cacheEditDates.get(a)!, cacheEditDates.get(b)!
 	))
 	console.log(process.cwd())
-	formatFiles(lookedSorted, { chalk, style: flags.style, decor: flags.decor, showSources: flags.showSources })
+	// console.log(Array.from(new Set(lookedSorted.map(s => s.filePath.split('/')[0]))).join('\n'))
+	formatFiles(lookedSorted, { chalk, style: flags.style, decor: flags.decor, showSources: flags.showSources, depth: flags.depth })
 	const time = Date.now() - start
 	console.log()
 	const checkSymbol = decorCondition(flags.decor, { ifEmoji: '✅', ifNerd: '\uf00c', postfix: ' ' })
