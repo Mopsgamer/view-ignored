@@ -1,7 +1,8 @@
 import mock from "mock-fs"
+import type FileSystem from "mock-fs/lib/filesystem.js"
 import * as viewig from "../src/index.js"
 import assert from "assert"
-import type FileSystem from "mock-fs/lib/filesystem.js"
+import { pathToFileURL } from "url"
 
 interface Case {
     shouldInclude: string[]
@@ -129,6 +130,36 @@ const targetTestList = {
                 'package.json': ''
             },
         },
+        'real project: .npmignore, .gitignore, package.json no "files" prop': {
+            shouldInclude: ['README.md', 'bin/app', 'lib/cli.js', 'lib/index.js', 'packagee.json'],
+            content: {
+                '.github': {},
+                'bin': {
+                    'app': ''
+                },
+                'node_modules': {
+                    'tempdep': {
+                        'indexOf.js': ''
+                    }
+                },
+                'lib': {
+                    'cli.js': '',
+                    'index.js': ''
+                },
+                'test': {
+                    'app.test.js': ''
+                },
+                'README.md': '',
+                'config.json': '',
+                '.npmignore': 'node_modules\nconfig*.json\ntest\n.github',
+                '.gitignore': 'node_modules\nconfig.json',
+                'package.json': JSON.stringify({
+                    main: './lib/index.js',
+                    name: 'app',
+                    version: '0.0.1'
+                })
+            },
+        },
     },
 
     /**
@@ -150,26 +181,28 @@ const targetTestList = {
             content: {},
         },
     },
-} as const satisfies Plan
+} as Plan
 
 const testPath = './test/.simulation'
+
 describe("Targets", function () {
-    for (const target in targetTestList) {
-        describe(target, function () {
-            const tests = targetTestList[target] as DirCase
+    before(async () => { await viewig.Plugins.BuiltIns })
+    for (const targetId in targetTestList) {
+        describe(targetId, function () {
+            const tests = targetTestList[targetId]
             for (const testName in tests) {
                 it(testName, async function () {
-                    const test = tests[testName] as Case
-                    mock({ [testPath]: test.content })
-                    const lookList = await viewig.scanProject(target, { cwd: testPath, filter: 'included' })
-
-                    if (!lookList) return;
+                    const test = tests[testName]
+                    mock({ [pathToFileURL(testPath).toString()]: test.content })
+                    const lookList = await viewig.scanProject(targetId, { cwd: testPath, filter: 'included' })
 
                     const sourcesView = JSON.stringify(test.content, null, ' '.repeat(2))
 
+                    const cmp1 = lookList.map(l => l.filePath).sort()
+                    const cmp2 = test.shouldInclude.sort()
                     assert.deepEqual(
-                        lookList.map(l => l.filePath).sort(),
-                        test.shouldInclude.sort(),
+                        cmp1,
+                        cmp2,
                         `Bad paths results.\n\n${sourcesView}`
                     )
                 })
@@ -177,4 +210,7 @@ describe("Targets", function () {
         })
     }
 })
-mock.restore()
+
+afterEach(() => {
+    mock.restore()
+})

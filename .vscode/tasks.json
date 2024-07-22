@@ -8,7 +8,6 @@
 			},
 			"type": "npm",
 			"script": "release:major",
-			"problemMatcher": [],
 			"label": "Release major - any backward incompatible changes",
 			"detail": "pnpm release-it --increment=major"
 		},
@@ -19,7 +18,6 @@
 			},
 			"type": "npm",
 			"script": "release:minor",
-			"problemMatcher": [],
 			"label": "Release minor - any new public functionality or deprecation",
 			"detail": "pnpm release-it --increment=minor"
 		},
@@ -30,7 +28,6 @@
 			},
 			"type": "npm",
 			"script": "release:patch",
-			"problemMatcher": [],
 			"label": "Release patch - any backward compatible bug fixes",
 			"detail": "pnpm release-it --increment=patch"
 		},
@@ -41,9 +38,8 @@
 			},
 			"type": "npm",
 			"script": "build",
-			"problemMatcher": [],
 			"label": "Build",
-			"detail": "pnpm tsc"
+			"detail": "pnpm shx rm -rf out && pnpm tsc"
 		},
 		{
 			"icon": {
@@ -52,7 +48,6 @@
 			},
 			"type": "npm",
 			"script": "lint",
-			"problemMatcher": [],
 			"label": "Lint",
 			"detail": "pnpm eslint"
 		},
@@ -63,7 +58,6 @@
 			},
 			"type": "npm",
 			"script": "lint:fix",
-			"problemMatcher": [],
 			"label": "Lint and fix",
 			"detail": "pnpm eslint . --fix"
 		},
@@ -74,7 +68,6 @@
 			},
 			"type": "npm",
 			"script": "test",
-			"problemMatcher": [],
 			"label": "Test",
 			"detail": "pnpm mocha --require tsx ./test/**/*.test.ts"
 		},

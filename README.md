@@ -10,7 +10,7 @@ Retrieve list of files ignored/included by Git, NPM, Yarn and VSC Extension.
 - **Multi-target.** Get list of included files, using configuration files reader, not command-line wrapper.
 - **Use in browser.** view-ignored supports file system adapter.
 - **Command-line.** Supports no-color and multiple output styles, including [nerd fonts](https://github.com/ryanoasis/nerd-fonts).
-- **Plugins.** view-ignored allows you to add new [targets](#targets) programmatically. Command-line interface does NOT support plugins.
+- **Plugins.** view-ignored allows you to add new [targets](#targets) programmatically. Command-line interface supports plugins throught `--plugin` option.
 
 ## Install
 
@@ -49,30 +49,11 @@ viewig config set style=treeNerd
 import * as vign from "view-ignored";
 import * as vign from "view-ignored/lib/browser"; // for web environment apps
 
-const fileInfoList = vign.scanProject("git");
-const fileInfoList = vign.scanPaths(filePathList, "git");
-const fileInfo = vign.scanFile(filePath, "git");
+const fileInfoList = await vign.scanProject("git");
+const fileInfo = await vign.scanFile(filePath, "git");
 
 // options available
-const fileInfoList = vign.scanProject("git", { cwd, ... });
-
-// custom
-/**@type {vign.ScanMethod}*/
-export const scan = function (data) {
-    const { matcher, source } = data
-    const pat = source.content?.toString()
-    if (!matcher.isValidPattern(pat)) {
-        return false
-    }
-    matcher.add(pat!)
-    return true
-}
-
-/**@type {vign.Methodology[]}*/
-export const methodology = [
-    { pattern: "**/.gitignore", patternType: ".*ignore", scan: scan, addPatterns: addPatternsExclude },
-]
-vign.scanProject(methodology)
+const fileInfoList = await vign.scanProject("git", { cwd, ... });
 
 // use results
 if (fileInfo.ignored) {
@@ -83,19 +64,21 @@ if (fileInfo.ignored) {
 #### Sorting:
 
 ```js
-const fileInfoList = vign.scanProject("npm");
-const sorter = vign.Sorting.Sorters.firstFolders;
+const fileInfoList = await vign.scanProject("npm");
+const sorter = vign.Sorting.firstFolders;
 fileInfoList.map(String).sort(sorter);
 ```
 
 ```js
-const fileInfoList = vign.scanProject("npm")
-const sorter = Sorting.Sorters[flags.sort]
+const fileInfoList = await vign.scanProject("npm")
+const sorter = vign.Sorting.firstFolders;
+
 /** @type {Map<FileInfo, Date>} */
 const cacheEditDates = new Map()
 for (const fileInfo of fileInfoList) {
 	cacheEditDates.set(fileInfo, fs.statSync(fileInfo.filePath).mtime)
 }
+
 const fileInfoSorted = fileInfoList.sort((a, b) => sorter(
 	a.toString(), b.toString(),
 	cacheEditDates.get(a)!, cacheEditDates.get(b)!

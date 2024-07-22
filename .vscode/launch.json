@@ -11,12 +11,35 @@
 			"skipFiles": [
 				"<node_internals>/**"
 			],
+			"runtimeArgs": [
+				"-r",
+				"ts-node/register",
+			],
 			"args": [
-				"--require",
-				"tsx",
-				"./test/**/*.test.ts"
+				"./out/test/**/*.test.js"
 			],
 			"program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+			"sourceMaps": true,
+		},
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "viewig cfg set showSources=true",
+			"skipFiles": [
+				"<node_internals>/**"
+			],
+			"runtimeArgs": [
+				"-r",
+				"ts-node/register",
+			],
+			"args": [
+				"cfg",
+				"set",
+				"showSources=true"
+			],
+			"program": "${workspaceFolder}/src/bin.ts",
+			"cwd": "${workspaceFolder}",
+			"sourceMaps": true,
 		},
 		{
 			"type": "node",
@@ -25,17 +48,16 @@
 			"skipFiles": [
 				"<node_internals>/**"
 			],
+			"runtimeArgs": [
+				"-r",
+				"ts-node/register",
+			],
 			"args": [
 				"scan"
 			],
-			"internalConsoleOptions": "neverOpen",
 			"program": "${workspaceFolder}/src/bin.ts",
 			"cwd": "${workspaceFolder}",
-			"outFiles": [
-				"${workspaceFolder}/lib/**/*.js"
-			],
-			"preLaunchTask": "Build",
-			"sourceMaps": true
+			"sourceMaps": true,
 		},
 		{
 			"type": "node",
@@ -44,19 +66,38 @@
 			"skipFiles": [
 				"<node_internals>/**"
 			],
+			"runtimeArgs": [
+				"-r",
+				"ts-node/register",
+			],
 			"args": [
 				"scan",
 				"--target=npm",
 				"--filter=all",
 			],
-			"internalConsoleOptions": "neverOpen",
 			"program": "${workspaceFolder}/src/bin.ts",
 			"cwd": "${workspaceFolder}",
-			"outFiles": [
-				"${workspaceFolder}/lib/**/*.js"
+			"sourceMaps": true,
+		},
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "viewig scan --plugin t",
+			"skipFiles": [
+				"<node_internals>/**"
 			],
-			"preLaunchTask": "Build",
-			"sourceMaps": true
+			"runtimeArgs": [
+				"-r",
+				"ts-node/register",
+			],
+			"args": [
+				"scan",
+				"--plugin",
+				"t"
+			],
+			"program": "${workspaceFolder}/src/bin.ts",
+			"cwd": "${workspaceFolder}",
+			"sourceMaps": true,
 		},
 	]
 }

@@ -1,2 +1,2 @@
 #! /usr/bin/env node
-import "../lib/bin.js"
+import "../out/src/bin.js"

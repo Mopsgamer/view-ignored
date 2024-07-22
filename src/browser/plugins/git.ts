@@ -1,28 +1,31 @@
-import { Binding, ScanMethod, Methodology } from "../index.js"
+import { PluginExport } from "../binds/index.js"
+import { Plugins, ScanMethod, Methodology, Styling } from "../index.js"
 
-export const id = "git"
-export const name = "Git"
-export const check = `git ls-tree -r <git-branch-name> --name-only`
+const id = "git"
+const name: Styling.DecorConditionOptions = {
+    ifNormal: "Git",
+    ifNerd: "\ue65d Git"
+}
+const testCommand = `git ls-tree -r <git-branch-name> --name-only`
 
-export const addPatternsExclude: string[] = [
+const addPatternsExclude: string[] = [
     "**/.git/**",
     "**/.DS_Store/**"
 ]
 
-export const scan: ScanMethod = function (data) {
-    const { matcher, source } = data
+const scan: ScanMethod = function (data) {
+    const { scanner, source } = data
     const pat = source.content?.toString()
-    if (!matcher.isValidPattern(pat)) {
+    if (!scanner.isValidPattern(pat)) {
         return false
     }
-    matcher.add(pat!)
+    scanner.add(pat!)
     return true
 }
 
-export const methodology: Methodology[] = [
-    { pattern: "**/.gitignore", patternType: ".*ignore", scan: scan, addPatterns: addPatternsExclude },
+const methodology: Methodology[] = [
+    { pattern: "**/.gitignore", matcher: ".*ignore", scan: scan, matcherAdd: addPatternsExclude },
 ]
 
-const bind: Binding.TargetBind = { id, name, methodology, testCommad: check }
-Binding.targetSet(bind)
-export default bind
+const bind: Plugins.TargetBind = { id, name, methodology, testCommand }
+export default ({ viewignored_addTargets: [bind] } as PluginExport)

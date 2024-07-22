@@ -1,11 +1,13 @@
-import { Binding, ScanMethod, Methodology } from "../index.js"
+import { PluginExport } from "../binds/index.js";
+import { Plugins, ScanMethod, Methodology, Scanner } from "../index.js"
 import getValue from "get-value";
 
 export const id = "npm"
 export const name = "NPM"
-export const check = "npm pack --dry-run"
+export const testCommand = "npm pack --dry-run"
 
 export const addPatternsExclude = [
+    '**/node_modules/**',
     '.*.swp',
     '._*',
     '.DS_Store',
@@ -32,20 +34,20 @@ export const addPatternsInclude = [
     'LICENCE.*',
 ];
 
-export const scanGit: ScanMethod = function (data) {
-    const { matcher, source } = data
-    matcher.patternType = "minimatch"
+export const scanGit: ScanMethod = function(data) {
+    const { scanner, source } = data
+    scanner.patternType = "minimatch"
     const pat = source.content?.toString()
-    if (!matcher.isValidPattern(pat)) {
+    if (!scanner.isValidPattern(pat)) {
         return false
     }
-    matcher.add(pat!)
+    scanner.add(pat!)
     return true
 }
 
-export const scanPackageJsonFiles: ScanMethod = function (data) {
-    const { matcher, source } = data
-    matcher.isNegated = true
+export const scanPackageJsonFiles: ScanMethod = function(data) {
+    const { scanner, source } = data
+    scanner.isNegated = true
     let parsed: object
     try {
         const pat = source.content?.toString()
@@ -65,17 +67,16 @@ export const scanPackageJsonFiles: ScanMethod = function (data) {
     if (!Array.isArray(propVal)) {
         return false
     }
-    matcher.add(propVal)
+    scanner.add(propVal)
     return true
 }
 
 export const methodology: Methodology[] = [
-    { pattern: "**/package.json", patternType: "minimatch", scan: scanPackageJsonFiles, addPatterns: addPatternsInclude },
-    { pattern: "**/.npmignore", patternType: ".*ignore", scan: scanGit, addPatterns: addPatternsExclude },
-    { pattern: "**/.gitignore", patternType: ".*ignore", scan: scanGit, addPatterns: addPatternsExclude },
+    { pattern: ["**/package.json", "!**/node_modules/**"], matcher: ".*ignore", scan: scanPackageJsonFiles, matcherAdd: addPatternsInclude },
+    { pattern: ["**/.npmignore", "!**/node_modules/**"], matcher: ".*ignore", scan: scanGit, matcherAdd: addPatternsExclude.concat(Scanner.negatePattern(addPatternsInclude)) },
+    { pattern: ["**/.gitignore", "!**/node_modules/**"], matcher: ".*ignore", scan: scanGit, matcherAdd: addPatternsExclude.concat(Scanner.negatePattern(addPatternsInclude)) },
 ]
 
 
-const bind: Binding.TargetBind = { id, name, methodology, testCommad: check }
-Binding.targetSet(bind)
-export default bind
+const bind: Plugins.TargetBind = { id, name, methodology, testCommand }
+export default ({ viewignored_addTargets: [bind] } as PluginExport)
