@@ -4,7 +4,7 @@ import * as os from "os";
 import propertiesFile from "properties";
 import path from "path"
 import { existsSync, readFileSync, rmSync, writeFileSync } from "fs"
-import { Option } from "commander";
+import { Command, Option } from "commander";
 
 /**
  * Contains all color level names.
@@ -145,12 +145,13 @@ export function configValueList<T extends ConfigKey>(key: T): readonly string[] 
     return choices
 }
 
-export function configValuePutChoices<T extends ConfigKey>(option: Option, key: T): Option {
+export function configValuePutChoices<T extends ConfigKey>(command: Command, option: Option, key: T): Option {
     const list = configValueList(key)
     if (list !== undefined) {
         option.choices(list)
     }
     option.default(configManager.get(key))
+    command.addOption(option)
     return option
 }
 
@@ -273,7 +274,7 @@ export class ConfigManager {
             return configKeyList.map((key) => this.getPairString(key as KeyT, defs)).filter(Boolean).join('\n')
         }
         const val = this.get(key, defs)
-        return val ? `${key}=${val}` : ''
+        return val === undefined ? '' : `${key}=${val}`
     }
 }
 

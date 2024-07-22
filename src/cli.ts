@@ -62,45 +62,12 @@ export interface ConfigGetFlags {
 	defs: boolean
 }
 
-export const optionPlugin = new Option('--plugin <modules...>')
-export const optionNoColor = new Option("--no-color").default(false)
-export const optionColor = new Option("--color <level>")
-Config.configValuePutChoices(optionColor, "color")
-export const optionDecor = new Option("--decor <decor>")
-Config.configValuePutChoices(optionDecor, "decor")
-
 /**
  * `view-ignored` command-line programl
  */
 export const program = new Command()
-	.addOption(optionPlugin)
-	.addOption(optionColor)
-	.addOption(optionNoColor)
-	.addOption(optionDecor)
-
-export const scanOptionTarget = new Option("--target <ignorer>")
-export const scanOptionFilter = new Option("--filter <filter>")
-Config.configValuePutChoices(scanOptionFilter, "filter")
-
-export const scanOptionSort = new Option("--sort <sorter>")
-Config.configValuePutChoices(scanOptionSort, "sort")
-
-export const scanOptionStyle = new Option("--style <style>")
-Config.configValuePutChoices(scanOptionStyle, "style")
-
-export const scanOptionShowSources = new Option("--show-sources")
-	.argParser(parseArgBool)
-Config.configValuePutChoices(scanOptionShowSources, "showSources")
-
-/**
- * Init the command-line, parse arguments and invoke the program.
- */
-export function optionsInit() {
-	Config.configValuePutChoices(scanOptionTarget, "target")
-
-	scanProgram
-		.addOption(scanOptionTarget)
-}
+	.addOption(new Option('--plugin <modules...>'))
+	.addOption(new Option("--no-color").default(false))
 
 /**
  * Command-line 'scan' command.
@@ -110,27 +77,33 @@ export const scanProgram = program
 	.aliases(['sc'])
 	.description('get ignored paths')
 	.action(actionScan)
-	.addOption(optionPlugin)
-	.addOption(optionNoColor)
-	.addOption(optionColor)
-	.addOption(scanOptionFilter)
-	.addOption(scanOptionSort)
-	.addOption(scanOptionStyle)
-	.addOption(scanOptionShowSources)
 
 /**
- * Command-line 'config' command.
- */
+* Command-line 'config' command.
+*/
 export const cfgProgram = program
 	.command("config")
 	.alias('cfg')
 	.description('cli config manipulation')
 
 /**
+ * Init the command-line, parse arguments and invoke the program.
+ */
+export function optionsInit() {
+	Config.configValuePutChoices(program, new Option("--color <level>"), "color")
+	Config.configValuePutChoices(program, new Option("--decor <decor>"), "decor")
+	Config.configValuePutChoices(scanProgram, new Option("--target <ignorer>"), "target")
+	Config.configValuePutChoices(scanProgram, new Option("--filter <filter>"), "filter")
+	Config.configValuePutChoices(scanProgram, new Option("--sort <sorter>"), "sort")
+	Config.configValuePutChoices(scanProgram, new Option("--style <style>"), "style")
+	Config.configValuePutChoices(scanProgram, new Option("--show-sources").argParser(parseArgBool), "showSources")
+}
+
+/**
  * Command-line argument: key=value pair.
  * @see {@link parseArgKeyVal}
  */
-export const argConfigKeyVal = new Argument('<pair>', 'pair "key=value"').argParser(parseArgKeyVal)
+export const argConfigKeyVal = new Argument('[pair]', 'pair "key=value"').argParser(parseArgKeyVal)
 /**
  * Command-line argument: config property.
  * @see {@link Config.configKeyList}
@@ -163,28 +136,36 @@ export function parseArgBool(arg: string): "true" | "false" {
 	return String(!!arg) as "true" | "false"
 }
 
-export function parseArgKey(key: string): string {
+export function parseArgKey(key: string): Config.ConfigKey {
 	if (!Config.isConfigKey(key)) {
-		throw new InvalidArgumentError(`Allowed config properties are ${Config.configKeyList.join(', ')}. Got ${key}.`)
+		throw new InvalidArgumentError(`Got invalid key '${key}'. Allowed config keys are ${Config.configKeyList.join(', ')}.`)
 	}
 	return key;
 }
 
 export function parseArgKeyVal(pair: string): Config.ConfigPair {
-	const result = pair.split('=') as Config.ConfigPair
+	const result = pair.split('=') as [string, unknown]
+	const r1num = Number(result[1])
+	if (!isNaN(r1num)) {
+		result[1] = r1num
+	} else if (['true', 'false'].includes(result[1] as string)) {
+		result[1] = result[1] === 'true'
+	}
 	if (result.length !== 2) {
-		throw new InvalidArgumentError(`Invalid syntax. Expected 'setting=value'. Got '${pair}'.`)
+		throw new InvalidArgumentError(`Invalid syntax. Expected 'setting=value'.`)
 	}
 	const [key, val] = result
-	parseArgKey(key)
+	if (!Config.isConfigKey(key)) {
+		throw new InvalidArgumentError(`Got invalid key '${key}'. Allowed config keys are ${Config.configKeyList.join(', ')}.`)
+	}
 	if (!Config.isConfigValue(key, val)) {
 		const list = Config.configValueList(key)
 		if (list === undefined) {
-			throw new InvalidArgumentError(`Got '${val}'.`)
+			throw new InvalidArgumentError(`Invalid value '${val}' for the key '${key}'.`)
 		}
-		throw new InvalidArgumentError(`Allowed config properties are ${list.join(', ')}. Got '${val}'.`)
+		throw new InvalidArgumentError(`Invalid value '${val}' for the key '${key}'. Allowed config values are ${list.join(', ')}`)
 	}
-	return result
+	return result as [Config.ConfigKey, Config.ConfigValue]
 }
 
 /**
@@ -242,7 +223,11 @@ export function actionCfgReset(): void {
 /**
  * Command-line 'config set' command action
  */
-export function actionCfgSet(pair: Config.ConfigPair): void {
+export function actionCfgSet(pair?: Config.ConfigPair): void {
+	if (pair === undefined) {
+		console.log(`Allowed config keys are ${Config.configKeyList.join(', ')}.`)
+		return
+	}
 	const [key, val] = pair
 	Config.configManager.set(key, val).save()
 	console.log(Config.configManager.getPairString(key))

@@ -20,13 +20,14 @@
 		{
 			"type": "node",
 			"request": "launch",
-			"name": "viewig cfg get",
+			"name": "viewig cfg set showSources=true",
 			"skipFiles": [
 				"<node_internals>/**"
 			],
 			"args": [
 				"cfg",
-				"get"
+				"set",
+				"showSources=true"
 			],
 			"internalConsoleOptions": "neverOpen",
 			"program": "${workspaceFolder}/out/src/bin.js",
