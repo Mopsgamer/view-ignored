@@ -5,7 +5,7 @@ import * as Config from "./config.js";
 import { BuiltIns, loadPlugins, targetGet } from "./browser/binds/index.js";
 import { decorCondition, DecorName, formatFiles, StyleName } from "./browser/styling.js";
 import { SortName } from "./browser/sorting.js";
-import { FileInfo, FilterName, scanProject, Sorting } from "./lib.js";
+import { ErrorNoSources, FileInfo, FilterName, scanProject, Sorting } from "./lib.js";
 import { formatConfigConflicts } from "./styling.js";
 
 /**
@@ -175,10 +175,14 @@ export async function actionScan(flags: ScanFlags): Promise<void> {
 	const start = Date.now()
 	const chalk = getChalk(flags)
 
-	const fileInfoList = await scanProject(flags.target, { filter: flags.filter })
-
-	if (!fileInfoList) {
-		console.error(`Bad source for ${flags.target}.`)
+	let fileInfoList: FileInfo[]
+	try {
+		fileInfoList = await scanProject(flags.target, { filter: flags.filter })
+	} catch (error) {
+		if (!(error instanceof ErrorNoSources)) {
+			throw error
+		}
+		console.error(`Bad sources for ${flags.target}: ${ErrorNoSources.walk(flags.target)}`)
 		process.exit(1)
 	}
 

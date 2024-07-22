@@ -1,8 +1,7 @@
 import { ChalkInstance } from "chalk"
 import { decorFile, DecorName } from "./styling.js"
 import path from "path"
-import { FilterName, SourceInfo } from "./lib.js"
-import { Scanner } from "./scanner.js"
+import { FilterName, Scanner, SourceInfo } from "./lib.js"
 
 /**
  * @see {@link FileInfo.prototype.toString}
@@ -15,7 +14,7 @@ export interface FileInfoToStringOptions {
 	fileIcon?: DecorName
 
 	/**
-	 * Show the matcher's source after the file path.
+	 * Show the scanner's source after the file path.
 	 * @default false
 	 */
 	source?: boolean
@@ -51,37 +50,35 @@ export class FileInfo {
 		public readonly filePath: string,
 
 		/**
-		 * Parser instance. Can be used to determine if the file is ignored.
-		 * @see {@link ignored} can be used instead of it.
-		 */
-		public readonly matcher: Scanner,
-
-		/**
-		 * Source of patterns, used by {@link matcher}.
+		 * Source of patterns, used by {@link scanner}.
 		 */
 		public readonly source: SourceInfo
 	) { }
+
+	get scanner(): Scanner {
+		return this.source.scanner
+	}
 
 	/**
 	 * Determines if ignored file is ignored or not.
 	 */
 	get ignored(): boolean {
-		return this.matcher.ignores(this.filePath)
+		return this.scanner.ignores(this.filePath)
 	}
 
 	/**
 	 * Creates new {@link FileInfo} from each file path.
 	 */
-	static from(filePathList: string[], matcher: Scanner, sourceInfo: SourceInfo): FileInfo[]
+	static from(filePathList: string[], sourceInfo: SourceInfo): FileInfo[]
 	/**
 	 * Creates new {@link FileInfo} from the file path.
 	 */
-	static from(filePath: string, matcher: Scanner, sourceInfo: SourceInfo): FileInfo
-	static from(arg: string | string[], matcher: Scanner, sourceInfo: SourceInfo): FileInfo | FileInfo[] {
+	static from(filePath: string, sourceInfo: SourceInfo): FileInfo
+	static from(arg: string | string[], sourceInfo: SourceInfo): FileInfo | FileInfo[] {
 		if (Array.isArray(arg)) {
-			return arg.map(path => FileInfo.from(path, matcher, sourceInfo))
+			return arg.map(path => FileInfo.from(path, sourceInfo))
 		}
-		return new FileInfo(arg, matcher, sourceInfo)
+		return new FileInfo(arg, sourceInfo)
 	}
 
 	/**

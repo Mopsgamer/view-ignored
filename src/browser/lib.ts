@@ -1,9 +1,10 @@
 import { Scanner, PatternType, isPatternType } from "./scanner.js";
 import FastGlob from "fast-glob";
 import { FileInfo } from "./fileinfo.js";
-import { findDomination, SourceInfo } from "./sourceinfo.js";
+import { findDomination, readdirOfFileSync, SourceInfo, statSync } from "./sourceinfo.js";
 import { targetGet } from "./binds/index.js";
 import { readFile, readFileSync } from "fs";
+import path from "path";
 
 export * from "./scanner.js"
 export * from "./fileinfo.js"
@@ -156,7 +157,14 @@ export interface ScanFolderOptions extends ScanFileOptions {
 export function methodologyToInfoList(methodology: Methodology, options: ScanFileOptions): SourceInfo[] {
 	return Array.isArray(methodology.pattern)
 		? methodology.pattern
-		: FastGlob.sync(methodology.pattern, patchFastGlobOptions(options)).map(path => SourceInfo.from(path))
+		: FastGlob.sync(methodology.pattern, patchFastGlobOptions(options)).map(path => SourceInfo.from(
+			path, new Scanner({
+				addPatterns: methodology.addPatterns,
+				ignoreCase: methodology.ignoreCase,
+				patternType: methodology.patternType,
+				cwd: options.cwd
+			})
+		))
 }
 
 export class ErrorNoSources extends Error {
@@ -174,25 +182,19 @@ export class ErrorNoSources extends Error {
 
 /**
  * Gets info about the file: it is ignored or not.
- * @returns `undefined` if the source is bad.
+ * @throws {ErrorNoSources} if the source is bad.
  */
 export async function scanFile(filePath: string, sources: Methodology[], options: ScanFileOptions): Promise<FileInfo> {
 	const optionsPatched = patchFastGlobOptions(options)
 	for (const methodology of sources) {
 		const sourceInfoList: SourceInfo[] = methodologyToInfoList(methodology, optionsPatched)
-		const matcher = new Scanner({
-			addPatterns: methodology.addPatterns,
-			ignoreCase: methodology.ignoreCase,
-			patternType: methodology.patternType,
-		})
 
 		for (const sourceInfo of sourceInfoList) {
-			const l = matcher.clone()
-			const fileInfo = FileInfo.from(filePath, l, sourceInfo)
+			const fileInfo = FileInfo.from(filePath, sourceInfo)
 			sourceInfo.readSync()
 			const isGoodSource = methodology.scan(fileInfo)
 			if (isGoodSource) {
-				return FileInfo.from(filePath, l, sourceInfo)
+				return fileInfo
 			}
 		}
 	}
@@ -201,6 +203,7 @@ export async function scanFile(filePath: string, sources: Methodology[], options
 
 /**
  * Scans project's directory paths to determine whether they are being ignored.
+ * @throws {ErrorNoSources} if the source is bad.
  */
 export async function scanPaths(allFilePaths: string[], sources: Methodology[], options: ScanFolderOptions): Promise<FileInfo[]>
 export async function scanPaths(allFilePaths: string[], target: string, options: ScanFolderOptions): Promise<FileInfo[]>
@@ -213,41 +216,48 @@ export async function scanPaths(allFilePaths: string[], arg2: Methodology[] | st
 		return scanPaths(allFilePaths, bind.methodology, bind.scanOptions ?? {})
 	}
 
-	const optionsPatched = patchFastGlobOptions(options)
-
-	const { filter = "included" } = optionsPatched;
-	/** Contains parsed sources: file path = parser instance. */
-	const cache = new Map<string, Scanner>()
-
 	// Find good source.
+	const optionsPatched = patchFastGlobOptions(options)
+	const { filter = "included" } = optionsPatched;
 	for (const methodology of arg2) {
 		let goodFound = false
 		const resultList: FileInfo[] = []
 		const sourceInfoList: SourceInfo[] = methodologyToInfoList(methodology, optionsPatched)
 
+		/** Map<filePath, fileInfo>. */
+		const cache = new Map<string, SourceInfo>()
 		for (const filePath of allFilePaths) {
-			const dominated = findDomination(filePath, sourceInfoList.map(sourceInfo => sourceInfo.sourcePath))
-			if (dominated === undefined) {
-				break
-			}
-			const source = SourceInfo.from(dominated)
-			const matcher = cache.get(source.sourcePath)
-			let fileInfo: FileInfo
-			if (!matcher) {
-				const newInfo = await scanFile(filePath, [methodology], optionsPatched)
-				if (!newInfo) {
-					break
+			let fileInfo: FileInfo | undefined
+			{
+				let sourceInfo: SourceInfo | undefined = cache.get(filePath)
+				fileInfo = sourceInfo && FileInfo.from(filePath, sourceInfo)
+				if (!fileInfo) {
+					sourceInfo = findDomination(filePath, sourceInfoList)
+					if (sourceInfo === undefined) {
+						throw new ErrorNoSources(arg2)
+					}
+
+					const entryList = readdirOfFileSync(filePath)
+					for (const entry of entryList) {
+						const stat = statSync(entry, path.dirname(filePath), options.fs)
+						if (stat.isFile()) {
+							cache.set(entry, sourceInfo)
+						}
+					}
+
+					sourceInfo.readSync()
+					fileInfo = FileInfo.from(filePath, sourceInfo)
 				}
-				fileInfo = newInfo
-				cache.set(source.sourcePath, fileInfo.matcher)
-			} else {
-				fileInfo = FileInfo.from(filePath, matcher, source)
+			}
+
+			goodFound = methodology.scan(fileInfo)
+			if (!goodFound) {
+				break
 			}
 			const shouldPush = fileInfo.isIncludedBy(filter)
 			if (shouldPush) {
 				resultList.push(fileInfo)
 			}
-			goodFound = true
 		}
 		if (goodFound) {
 			return resultList
@@ -258,6 +268,7 @@ export async function scanPaths(allFilePaths: string[], arg2: Methodology[] | st
 
 /**
  * Scans project's directory paths to determine whether they are being ignored.
+ * @throws {ErrorNoSources} if the source is bad.
  */
 export function scanProject(sources: Methodology[], options: ScanFolderOptions): Promise<FileInfo[]>
 export function scanProject(target: string, options: ScanFolderOptions): Promise<FileInfo[]>

@@ -14,12 +14,12 @@ const addPatternsExclude: string[] = [
 ]
 
 const scan: ScanMethod = function (data) {
-    const { matcher, source } = data
+    const { scanner, source } = data
     const pat = source.content?.toString()
-    if (!matcher.isValidPattern(pat)) {
+    if (!scanner.isValidPattern(pat)) {
         return false
     }
-    matcher.add(pat!)
+    scanner.add(pat!)
     return true
 }
 

@@ -7,6 +7,7 @@ export const name = "NPM"
 export const testCommand = "npm pack --dry-run"
 
 export const addPatternsExclude = [
+    'node_modules',
     '.*.swp',
     '._*',
     '.DS_Store',
@@ -34,19 +35,19 @@ export const addPatternsInclude = [
 ];
 
 export const scanGit: ScanMethod = function(data) {
-    const { matcher, source } = data
-    matcher.patternType = "minimatch"
+    const { scanner, source } = data
+    scanner.patternType = "minimatch"
     const pat = source.content?.toString()
-    if (!matcher.isValidPattern(pat)) {
+    if (!scanner.isValidPattern(pat)) {
         return false
     }
-    matcher.add(pat!)
+    scanner.add(pat!)
     return true
 }
 
 export const scanPackageJsonFiles: ScanMethod = function(data) {
-    const { matcher, source } = data
-    matcher.isNegated = true
+    const { scanner, source } = data
+    scanner.isNegated = true
     let parsed: object
     try {
         const pat = source.content?.toString()
@@ -66,7 +67,7 @@ export const scanPackageJsonFiles: ScanMethod = function(data) {
     if (!Array.isArray(propVal)) {
         return false
     }
-    matcher.add(propVal)
+    scanner.add(propVal)
     return true
 }
 

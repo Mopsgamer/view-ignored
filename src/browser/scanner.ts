@@ -15,6 +15,13 @@ export function isPatternType(value: unknown): value is PatternType {
  */
 export interface ScannerOptions {
 	/**
+	 * The root directory.
+	 * @default process.cwd()
+	 */
+	cwd?: string
+
+	/**
+	 * If `true`, when calling {@link Scanner.ignores}, method will return `true` for ignored path.
 	 * @see {@link Scanner.isNegated}
 	 * @default ".*ignore"
 	 */
@@ -52,6 +59,13 @@ export type ScannerPattern = string | string[]
  * The pattern parser. Can check if the file path is ignored.
  */
 export class Scanner {
+
+	/**
+	 * The root directory.
+	 * @default process.cwd()
+	 */
+	public cwd: string
+
 	/**
 	 * If `true`, when calling {@link Scanner.ignores}, method will return `true` for ignored path.
 	 * @default false
@@ -77,20 +91,9 @@ export class Scanner {
 		this.isNegated = options?.negated ?? false
 		this.patternType = options?.patternType ?? ".*ignore"
 		this.ignoreCase = options?.ignoreCase ?? false
+		this.cwd = options?.cwd ?? process.cwd()
 		this.ignoreInstance = ignore.default(options)
 		this.add(options?.addPatterns ?? [])
-	}
-
-	/**
-	 * Clone instance.
-	 */
-	clone(): Scanner {
-		const cloned = new Scanner({
-			addPatterns: this.patternList,
-			negated: this.isNegated,
-			patternType: this.patternType,
-		})
-		return cloned;
 	}
 
 	/**
@@ -119,7 +122,7 @@ export class Scanner {
 	}
 
 	/**
-	 * Checks if the matcher should ignore dir entry path.
+	 * Checks if the scanner should ignore dir entry path.
 	 * @see {@link Scanner.isNegated} can change the return value.
 	 * @param path Dir entry path.
 	 */
@@ -128,7 +131,10 @@ export class Scanner {
 		if (this.patternType === ".*ignore") {
 			ignores = this.ignoreInstance.ignores(path)
 		} else { // minimatch
-			ignores = this.patternList.some(pattern => minimatch(path, pattern))
+			ignores = this.patternList.some(pattern => {
+				const isMatch = minimatch(path, pattern, {matchBase: true, dot: true})
+				return isMatch
+			})
 		}
 		return this.isNegated ? !ignores : ignores;
 	}

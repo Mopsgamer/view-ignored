@@ -12,6 +12,7 @@
 		"postinstall": "pnpm run build",
 		"test": "pnpm run build && pnpm mocha ./out/test/**/*.test.js",
 		"build": "pnpm shx rm -rf out && pnpm tsc",
+		"build:watch": "pnpm tsc --watch",
 		"lint": "pnpm eslint .",
 		"lint:fix": "pnpm eslint . --fix",
 		"release:major": "pnpm release-it --increment=major",
@@ -85,6 +86,7 @@
 		"mock-fs": "^5.2.0",
 		"release-it": "^17.3.0",
 		"shx": "^0.3.4",
+		"ts-node": "^10.9.2",
 		"typescript": "^5.4.5",
 		"typescript-eslint": "^7.13.0"
 	},
