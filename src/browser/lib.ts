@@ -220,11 +220,11 @@ export async function scanFile(filePath: string, sources: Methodology[], options
  */
 export async function scanProject(sources: Methodology[], options: ScanFolderOptions): Promise<FileInfo[]>
 export async function scanProject(target: string, options: ScanFolderOptions): Promise<FileInfo[]>
-export async function scanProject(arg2: Methodology[] | string, options: ScanFolderOptions): Promise<FileInfo[]> {
-	if (typeof arg2 === "string") {
-		const bind = targetGet(arg2)
+export async function scanProject(arg1: Methodology[] | string, options: ScanFolderOptions): Promise<FileInfo[]> {
+	if (typeof arg1 === "string") {
+		const bind = targetGet(arg1)
 		if (bind === undefined) {
-			throw new ErrorTargetNotBound(arg2)
+			throw new ErrorTargetNotBound(arg1)
 		}
 		return scanProject(bind.methodology, bind.scanOptions ?? {})
 	}
@@ -232,7 +232,7 @@ export async function scanProject(arg2: Methodology[] | string, options: ScanFol
 	// Find good source.
 	const optionsPatched = patchFastGlobOptions(options)
 	const { filter = "included" } = optionsPatched;
-	for (const methodology of arg2) {
+	for (const methodology of arg1) {
 		let goodFound = false
 		const resultList: FileInfo[] = []
 		const sourceInfoList: SourceInfo[] = methodologyToInfoList(methodology, optionsPatched)
@@ -282,6 +282,6 @@ export async function scanProject(arg2: Methodology[] | string, options: ScanFol
 			return resultList
 		}
 	} // forend
-	throw new ErrorNoSources(arg2)
+	throw new ErrorNoSources(arg1)
 }
 //#endregion
