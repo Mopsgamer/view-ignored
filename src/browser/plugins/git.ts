@@ -8,7 +8,7 @@ const name: Styling.DecorConditionOptions = {
 }
 const testCommand = `git ls-tree -r <git-branch-name> --name-only`
 
-const addPatternsExclude: string[] = [
+const matcherExclude: string[] = [
     "**/.git/**",
     "**/.DS_Store/**"
 ]
@@ -16,15 +16,15 @@ const addPatternsExclude: string[] = [
 const scan: ScanMethod = function (data) {
     const { scanner, source } = data
     const pat = source.content?.toString()
-    if (!scanner.isValidPattern(pat)) {
+    if (!scanner.patternIsValid(pat)) {
         return false
     }
-    scanner.add(pat!)
+    scanner.add(pat)
     return true
 }
 
 const methodology: Methodology[] = [
-    { pattern: "**/.gitignore", matcher: ".*ignore", scan: scan, matcherAdd: addPatternsExclude },
+    { pattern: "**/.gitignore", matcher: ".*ignore", scan, matcherExclude },
 ]
 
 const bind: Plugins.TargetBind = { id, name, methodology, testCommand }

@@ -28,7 +28,7 @@ export interface FormatFilesOptions {
  * @returns Prints a readable file list.
  */
 export function formatFiles(files: FileInfo[], options: FormatFilesOptions): void {
-	const { showSources = false, chalk, decor, style, depth = Infinity } = options ?? {};
+	const { showSources = false, chalk, decor = "normal", style, depth = Infinity } = options ?? {};
 
 	const isPaths = style === "paths"
 	const paths = files.map(f => f.toString({ fileIcon: decor, usePrefix: true, chalk: chalk, source: showSources, entire: isPaths }))

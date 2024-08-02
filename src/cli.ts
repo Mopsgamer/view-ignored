@@ -210,17 +210,17 @@ export async function actionScan(flags: ScanFlags): Promise<void> {
 		cacheEditDates.get(a)!, cacheEditDates.get(b)!
 	))
 	console.log(process.cwd())
-	// console.log(Array.from(new Set(lookedSorted.map(s => s.filePath.split('/')[0]))).join('\n'))
 	formatFiles(lookedSorted, { chalk, style: flags.style, decor: flags.decor, showSources: flags.showSources, depth: flags.depth })
 	const time = Date.now() - start
-	console.log()
 	const checkSymbol = decorCondition(flags.decor, { ifEmoji: '✅', ifNerd: '\uf00c', postfix: ' ' })
 	const fastSymbol = decorCondition(flags.decor, { ifEmoji: '⚡', ifNerd: '\udb85\udc0c' })
-	console.log(`${chalk.green(checkSymbol)}Done in ${time < 400 ? chalk.yellow(fastSymbol) : ''}${time}ms.\n`)
+	console.log(`${chalk.green(checkSymbol)}Done in ${time < 400 ? chalk.yellow(fastSymbol) : ''}${time}ms.`)
 	const name = typeof bind.name === "string" ? bind.name : decorCondition(flags.decor, bind.name)
 	console.log(`${fileInfoList.length} files listed for ${name} (${flags.filter}).\n`)
 	const infoSymbol = decorCondition(flags.decor, { ifEmoji: 'ℹ️', ifNerd: '\ue66a', postfix: ' ' })
-	console.log(`${chalk.blue(infoSymbol)}You can use '${chalk.magenta(bind.testCommand ?? "")}' to check if the list is valid.\n`)
+	if (bind.testCommand) {
+		console.log(`${chalk.blue(infoSymbol)}You can use '${chalk.magenta(bind.testCommand)}' to check if the list is valid.\n`)
+	}
 }
 
 /**

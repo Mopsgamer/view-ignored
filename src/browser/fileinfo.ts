@@ -43,6 +43,12 @@ export interface FileInfoToStringOptions {
  * The result of the file path scan.
  */
 export class FileInfo {
+
+	/**
+	 * The pattern parser.
+	 */
+	public readonly scanner: Scanner
+
 	constructor(
 		/**
 		 * Relative path to the file.
@@ -53,20 +59,15 @@ export class FileInfo {
 		 * Source of patterns, used by {@link scanner}.
 		 */
 		public readonly source: SourceInfo
-	) { }
-
-	/**
-	 * The pattern parser.
-	 */
-	get scanner(): Scanner {
-		return this.source.scanner
+	) {
+		this.scanner = this.source.scanner
 	}
 
 	/**
 	 * Determines if ignored file is ignored or not.
 	 */
-	get ignored(): boolean {
-		return this.scanner.ignores(this.filePath)
+	isIgnored(): boolean {
+		return this.scanner.matches(this.filePath)
 	}
 
 	/**
@@ -92,13 +93,14 @@ export class FileInfo {
 		const { fileIcon, chalk, usePrefix = false, source: useSource = false, entire = true } = options ?? {}
 		const parsed = path.parse(this.filePath)
 		const fIcon = decorFile(fileIcon, this.filePath)
-		let prefix = usePrefix ? (this.ignored ? '!' : '+') : ''
+		const ignored = this.isIgnored()
+		let prefix = usePrefix ? (ignored ? '!' : '+') : ''
 		let postfix = useSource ? " << " + this.source.toString() : ''
 
 		if (chalk) {
 			prefix = chalk.dim(prefix)
 			postfix = chalk.dim(postfix)
-			const clr = chalk[this.ignored ? "red" : "green"]
+			const clr = chalk[ignored ? "red" : "green"]
 			if (entire) {
 				return fIcon + clr(prefix + this.filePath + postfix)
 			}
@@ -115,8 +117,8 @@ export class FileInfo {
 	 * @returns `true`, if the file is contained by the filter.
 	 */
 	isIncludedBy(filter: FilterName): boolean {
-		const filterIgnore = (filter === "ignored") && this.ignored
-		const filterInclude = (filter === "included") && !this.ignored
+		const filterIgnore = (filter === "ignored") && this.isIgnored()
+		const filterInclude = (filter === "included") && !this.isIgnored()
 		const filterAll = filter === "all"
 		const result = filterIgnore || filterInclude || filterAll
 		return result

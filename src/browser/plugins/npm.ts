@@ -1,12 +1,12 @@
 import { PluginExport } from "../binds/index.js";
-import { Plugins, ScanMethod, Methodology, Scanner } from "../index.js"
+import { Plugins, ScanMethod, Methodology } from "../index.js"
 import getValue from "get-value";
 
 export const id = "npm"
 export const name = "NPM"
 export const testCommand = "npm pack --dry-run"
 
-export const addPatternsExclude = [
+export const matcherExclude = [
     '**/node_modules/**',
     '.*.swp',
     '._*',
@@ -23,7 +23,7 @@ export const addPatternsExclude = [
     'CVS',
     'npm-debug.log',
 ];
-export const addPatternsInclude = [
+export const matcherInclude = [
     'bin/',
     'package.json',
     'README',
@@ -34,18 +34,17 @@ export const addPatternsInclude = [
     'LICENCE.*',
 ];
 
-export const scanGit: ScanMethod = function(data) {
+export const scanGit: ScanMethod = function (data) {
     const { scanner, source } = data
-    scanner.patternType = "minimatch"
     const pat = source.content?.toString()
-    if (!scanner.isValidPattern(pat)) {
+    if (!scanner.patternIsValid(pat)) {
         return false
     }
     scanner.add(pat!)
     return true
 }
 
-export const scanPackageJsonFiles: ScanMethod = function(data) {
+export const scanPackageJsonFiles: ScanMethod = function (data) {
     const { scanner, source } = data
     scanner.isNegated = true
     let parsed: object
@@ -72,9 +71,9 @@ export const scanPackageJsonFiles: ScanMethod = function(data) {
 }
 
 export const methodology: Methodology[] = [
-    { pattern: ["**/package.json", "!**/node_modules/**"], matcher: ".*ignore", scan: scanPackageJsonFiles, matcherAdd: addPatternsInclude },
-    { pattern: ["**/.npmignore", "!**/node_modules/**"], matcher: ".*ignore", scan: scanGit, matcherAdd: addPatternsExclude.concat(Scanner.negatePattern(addPatternsInclude)) },
-    { pattern: ["**/.gitignore", "!**/node_modules/**"], matcher: ".*ignore", scan: scanGit, matcherAdd: addPatternsExclude.concat(Scanner.negatePattern(addPatternsInclude)) },
+    { pattern: ["**/package.json"], matcher: "minimatch", scan: scanPackageJsonFiles, matcherInclude, matcherExclude },
+    { pattern: ["**/.npmignore"], matcher: "minimatch", scan: scanGit, matcherInclude, matcherExclude },
+    { pattern: ["**/.gitignore"], matcher: "minimatch", scan: scanGit, matcherInclude, matcherExclude },
 ]
 
 

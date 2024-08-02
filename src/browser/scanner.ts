@@ -21,7 +21,7 @@ export interface ScannerOptions {
 	cwd?: string
 
 	/**
-	 * If `true`, when calling {@link Scanner.ignores}, method will return `true` for ignored path.
+	 * If `true`, when calling {@link Scanner.matches}, method will return `true` for ignored path.
 	 * @see {@link Scanner.isNegated}
 	 * @default ".*ignore"
 	 */
@@ -67,7 +67,7 @@ export class Scanner {
 	public cwd: string
 
 	/**
-	 * If `true`, when calling {@link Scanner.ignores}, method will return `true` for ignored path.
+	 * If `true`, when calling {@link Scanner.matches}, method will return `true` for ignored path.
 	 * @default false
 	 */
 	public isNegated: boolean
@@ -76,7 +76,7 @@ export class Scanner {
 	 * Defines way to check paths.
 	 * @default ".*ignore"
 	 */
-	public patternType: PatternType
+	public readonly patternType: PatternType
 
 	/**
 	 * Git configuration property.
@@ -85,7 +85,11 @@ export class Scanner {
 	 */
 	public readonly ignoreCase: boolean
 	private patternList: Set<string> = new Set()
+	private patternListExclude: Set<string> = new Set()
+	private patternListInclude: Set<string> = new Set()
 	private ignoreInstance: Ignore
+	private ignoreInstanceExclude: Ignore
+	private ignoreInstanceInclude: Ignore
 
 	constructor(options?: ScannerOptions) {
 		this.isNegated = options?.negated ?? false
@@ -93,17 +97,9 @@ export class Scanner {
 		this.ignoreCase = options?.ignoreCase ?? false
 		this.cwd = options?.cwd ?? process.cwd()
 		this.ignoreInstance = ignore.default(options)
+		this.ignoreInstanceExclude = ignore.default(options)
+		this.ignoreInstanceInclude = ignore.default(options)
 		this.add(options?.addPatterns ?? [])
-	}
-
-	static negatePattern(pattern: string[]): string[]
-	static negatePattern(pattern: string): string
-	static negatePattern(pattern: ScannerPattern): ScannerPattern {
-		if (Array.isArray(pattern)) {
-			return pattern.map(Scanner.negatePattern) as string[]
-		}
-
-		return pattern.startsWith('!') ? pattern.replace(/^!/, '') : `!${pattern}`
 	}
 
 	/**
@@ -132,40 +128,99 @@ export class Scanner {
 	}
 
 	/**
-	 * Checks if the scanner should ignore dir entry path.
-	 * @see {@link Scanner.isNegated} can change the return value.
-	 * @param path Dir entry path.
+	 * Force ignore pattern.
+	 * @param pattern .gitignore file specification pattern.
 	 */
-	ignores(path: string): boolean {
-		let ignores: boolean
-		if (this.patternType === ".*ignore") {
-			ignores = this.ignoreInstance.ignores(path)
-		} else { // minimatch
-			ignores = Array.from(this.patternList).some((pattern) => {
-				return minimatch(path, pattern, { dot: true })
-			})
+	exclude(pattern: ScannerPattern): this {
+		if (typeof pattern === "string") {
+			pattern = pattern.split('\n')
 		}
-		const result =  this.isNegated ? !ignores : ignores
-		return result;
+		if (Array.isArray(pattern)) {
+			for (const pat of pattern) {
+				this.patternListExclude.add(pat)
+				this.ignoreInstanceExclude.add(pat)
+			}
+		}
+		return this
+	}
+
+	/**
+	 * Force ignore pattern.
+	 * @param pattern .gitignore file specification pattern.
+	 */
+	include(pattern: ScannerPattern): this {
+		if (typeof pattern === "string") {
+			pattern = pattern.split('\n')
+		}
+		if (Array.isArray(pattern)) {
+			for (const pat of pattern) {
+				this.patternListInclude.add(pat)
+				this.ignoreInstanceInclude.add(pat)
+			}
+		}
+		return this
+	}
+
+	/**
+	 * Checks if the scanner should ignore path.
+	 * @see {@link Scanner.isNegated} can change the return value.
+	 * @param path Dir entry, path.
+	 */
+	matches(path: string): boolean {
+		if (this.patternType === ".*ignore") {
+			return this.matchesReal(
+				() => Scanner.matchesGitignore(path, this.ignoreInstanceInclude),
+				() => Scanner.matchesGitignore(path, this.ignoreInstanceExclude),
+				() => Scanner.matchesGitignore(path, this.ignoreInstance)
+			)
+		}
+
+		// minimatch
+		return this.matchesReal(
+			() => Scanner.matchesMinimatch(path, Array.from(this.patternListInclude)),
+			() => Scanner.matchesMinimatch(path, Array.from(this.patternListExclude)),
+			() => Scanner.matchesMinimatch(path, Array.from(this.patternList))
+		)
+	}
+
+	private matchesReal(include: () => boolean, exclude: () => boolean, ignores: () => boolean) {
+		if (include()) {
+			return false
+		}
+		if (exclude()) {
+			return true
+		}
+		const ign = ignores()
+		return this.isNegated ? !ign : ign
+	}
+
+	private static matchesGitignore(path: string, ignoreInstance: Ignore) {
+		return ignoreInstance.ignores(path)
+	}
+
+	private static matchesMinimatch(path: string, patternList: string[]) {
+		return Array.from(patternList).some((pattern) => {
+			return minimatch(path, pattern, { dot: true })
+		})
 	}
 
 	/**
 	 * Checks if given pattern is valid.
 	 * @param pattern Parser pattern.
 	 */
-	isValidPattern(pattern: unknown): boolean {
-		return Scanner.isValidPattern(pattern, this)
+	patternIsValid(pattern: unknown): pattern is ScannerPattern {
+		return Scanner.patternIsValid(pattern, this)
 	}
 
 	/**
 	 * Checks if given pattern is valid.
 	 * @param pattern Parser pattern.
 	 */
-	static isValidPattern(pattern: unknown, options?: IsValidPatternOptions): boolean {
+	static patternIsValid(pattern: unknown, options?: IsValidPatternOptions): pattern is ScannerPattern {
 		const { patternType = ".*ignore" } = options ?? {};
 
 		if (Array.isArray(pattern)) {
-			return pattern.every(p => this.isValidPattern(p, options))
+			return pattern.every(p => this.patternIsValid(p, options))
 		}
 		if (typeof pattern !== "string") {
 			return false
@@ -182,5 +237,25 @@ export class Scanner {
 			}
 		}
 		throw new TypeError(`Unknown pattern type '${patternType}'.`)
+	}
+
+	/**
+	 * @returns New pattern array: `!pattern` for `pattern`, and `pattern` for `!pattern`.
+	 */
+	static patternToNegated(pattern: string[]): string[]
+	/**
+	 * @returns New pattern: `!pattern` for `pattern`, and `pattern` for `!pattern`.
+	 */
+	static patternToNegated(pattern: string): string
+	static patternToNegated(pattern: ScannerPattern): ScannerPattern {
+		if (Array.isArray(pattern)) {
+			return pattern.map(Scanner.patternToNegated) as string[]
+		}
+
+		return Scanner.patternIsNegated(pattern) ? pattern.replace(/^!/, '') : `!${pattern}`
+	}
+
+	static patternIsNegated(pattern: string): boolean {
+		return pattern.startsWith('!')
 	}
 }

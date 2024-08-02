@@ -60,7 +60,7 @@ export function patchFastGlobOptions<T extends FastGlob.Options>(options: T) {
 export type ScanMethod = (fileInfo: FileInfo) => boolean
 
 /**
- * Represents the methodology for reading the target source.
+ * Represents the methodology for reading the target's source.
  */
 export interface Methodology {
 	/**
@@ -72,15 +72,31 @@ export interface Methodology {
 
 	/**
 	 * Pattern parser name.
+	 * @default ".*ignore"
 	 */
 	matcher: PatternType
 
 	/**
-	 * Additional patterns, which will be used as
-	 * other patterns in the `.gitignore` file, or `package.json` "files" property.
+	 * Additional patterns for files, provided by the {@link pattern}.
+	 *
+	 * Example: You have the '.gitignore' file. You want to scan patterns from it and add additional patterns. Use this property.
 	 * @default []
 	 */
 	matcherAdd?: string[]
+
+	/**
+	 * Force ignore patterns.
+	 * Takes precedence over {@link matcherAdd}.
+	 * @default []
+	 */
+	matcherExclude?: string[]
+
+	/**
+	 * Force include patterns.
+	 * Takes precedence over {@link matcherExclude}.
+	 * @default []
+	 */
+	matcherInclude?: string[]
 
 	/**
 	 * First valid source will be used as {@link Scanner}.
@@ -88,7 +104,7 @@ export interface Methodology {
 	pattern: SourceInfo[] | FastGlob.Pattern[] | SourceInfo | FastGlob.Pattern
 
 	/**
-	 * Scanner function. Should return `true`, if the given source is valid.
+	 * Scanner function. Should return `true`, if the given source is valid and also add patterns to the {@link FileInfo.scanner}.
 	 */
 	scan: ScanMethod
 }
@@ -105,7 +121,7 @@ export function isMethodology(value: unknown): value is Methodology {
 
 	return isPatternType(v.patternType)
 		&& (typeof v.pattern === "string" && FastGlob.isDynamicPattern(v.pattern))
-		&& (v.addPatterns === undefined || Array.isArray(v.addPatterns) && v.addPatterns.every(p => Scanner.isValidPattern(p, { patternType: v.patternType as PatternType })))
+		&& (v.addPatterns === undefined || Array.isArray(v.addPatterns) && v.addPatterns.every(p => Scanner.patternIsValid(p, { patternType: v.patternType as PatternType })))
 }
 
 /**

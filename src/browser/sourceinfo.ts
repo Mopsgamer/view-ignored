@@ -72,16 +72,16 @@ export class SourceInfo {
 		/**
 		 * The relative path to the file.
 		 */
-		public sourcePath: string,
+		public readonly sourcePath: string,
 
 		/**
 		 * The pattern parser.
 		 */
-		public scanner: Scanner
+		public readonly scanner: Scanner
 	) { }
 
 	/**
-	 * Creates new {@link SourceInfo} from the file path.
+	 * Creates new {@link SourceInfo} instance.
 	 */
 	static from(path: string, scanner: Scanner): SourceInfo {
 		return new SourceInfo(path, scanner)
