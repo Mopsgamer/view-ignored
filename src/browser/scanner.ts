@@ -15,19 +15,6 @@ export function isPatternType(value: unknown): value is PatternType {
  */
 export interface ScannerOptions {
 	/**
-	 * The root directory.
-	 * @default process.cwd()
-	 */
-	cwd?: string
-
-	/**
-	 * If `true`, when calling {@link Scanner.matches}, method will return `true` for ignored path.
-	 * @see {@link Scanner.isNegated}
-	 * @default ".*ignore"
-	 */
-	negated?: boolean
-
-	/**
 	 * The parser for the patterns.
 	 * @default ".*ignore"
 	 */
@@ -39,13 +26,6 @@ export interface ScannerOptions {
 	 * @default false
 	 */
 	ignoreCase?: boolean
-
-	/**
-	 * Additional patterns, which will be used as
-	 * other patterns in the `.gitignore` file, or `package.json` "files" property.
-	 * @default []
-	 */
-	addPatterns?: string[]
 }
 
 export type IsValidPatternOptions = Pick<ScannerOptions, "patternType">
@@ -59,18 +39,11 @@ export type ScannerPattern = string | string[]
  * The pattern parser. Can check if the file path is ignored.
  */
 export class Scanner {
-
-	/**
-	 * The root directory.
-	 * @default process.cwd()
-	 */
-	public cwd: string
-
 	/**
 	 * If `true`, when calling {@link Scanner.matches}, method will return `true` for ignored path.
 	 * @default false
 	 */
-	public isNegated: boolean
+	public isNegated: boolean = false
 
 	/**
 	 * Defines way to check paths.
@@ -92,21 +65,18 @@ export class Scanner {
 	private ignoreInstanceInclude: Ignore
 
 	constructor(options?: ScannerOptions) {
-		this.isNegated = options?.negated ?? false
 		this.patternType = options?.patternType ?? ".*ignore"
 		this.ignoreCase = options?.ignoreCase ?? false
-		this.cwd = options?.cwd ?? process.cwd()
 		this.ignoreInstance = ignore.default(options)
 		this.ignoreInstanceExclude = ignore.default(options)
 		this.ignoreInstanceInclude = ignore.default(options)
-		this.add(options?.addPatterns ?? [])
 	}
 
 	/**
 	 * Invert checking for the {@link add} method.
 	 */
-	negate(): this {
-		this.isNegated = !this.isNegated
+	negate(force?: boolean): this {
+		this.isNegated = (force === undefined ? !this.isNegated : force)
 		return this
 	}
 
