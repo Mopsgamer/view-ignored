@@ -9,8 +9,8 @@ const name: Styling.DecorConditionOptions = {
 const testCommand = `git ls-tree -r <git-branch-name> --name-only`
 
 const matcherExclude: string[] = [
-    "**/.git/**",
-    "**/.DS_Store/**"
+    ".git/**",
+    ".DS_Store/**"
 ]
 
 const scan: ScanMethod = function (data) {

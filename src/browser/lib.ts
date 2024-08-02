@@ -177,14 +177,7 @@ export function methodologyToInfoList(methodology: Methodology, options: ScanFil
 		return patterns as SourceInfo[]
 	}
 
-	return FastGlob.sync(patterns as string[], patchFastGlobOptions(options)).map(path => SourceInfo.from(
-		path, new Scanner({
-			addPatterns: methodology.matcherAdd,
-			ignoreCase: methodology.ignoreCase,
-			patternType: methodology.matcher,
-			cwd: options.cwd
-		})
-	))
+	return FastGlob.sync(patterns as string[], patchFastGlobOptions(options)).map(path => SourceInfo.from(path, methodology))
 }
 
 export class ErrorNoSources extends Error {

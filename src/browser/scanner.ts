@@ -84,7 +84,7 @@ export class Scanner {
 	 * Adds new ignore rule.
 	 * @param pattern .gitignore file specification pattern.
 	 */
-	add(pattern: ScannerPattern): this {
+	add(pattern?: ScannerPattern): this {
 		if (typeof pattern === "string") {
 			pattern = pattern.split('\n')
 		}
@@ -101,7 +101,7 @@ export class Scanner {
 	 * Force ignore pattern.
 	 * @param pattern .gitignore file specification pattern.
 	 */
-	exclude(pattern: ScannerPattern): this {
+	addExclude(pattern?: ScannerPattern): this {
 		if (typeof pattern === "string") {
 			pattern = pattern.split('\n')
 		}
@@ -118,7 +118,7 @@ export class Scanner {
 	 * Force ignore pattern.
 	 * @param pattern .gitignore file specification pattern.
 	 */
-	include(pattern: ScannerPattern): this {
+	addInclude(pattern?: ScannerPattern): this {
 		if (typeof pattern === "string") {
 			pattern = pattern.split('\n')
 		}

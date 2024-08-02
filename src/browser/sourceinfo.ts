@@ -1,6 +1,6 @@
 import * as fs from "fs"
 import { join, dirname } from "path"
-import { FileSystemAdapter, Scanner } from "./lib.js"
+import { FileSystemAdapter, Methodology, Scanner } from "./lib.js"
 
 /**
  * Gets the file's stats using fs adapter.
@@ -83,7 +83,14 @@ export class SourceInfo {
 	/**
 	 * Creates new {@link SourceInfo} instance.
 	 */
-	static from(path: string, scanner: Scanner): SourceInfo {
+	static from(path: string, methodology: Methodology): SourceInfo {
+		const scanner = new Scanner({
+			ignoreCase: methodology.ignoreCase,
+			patternType: methodology.matcher
+		})
+		scanner.add(methodology.matcherAdd)
+		scanner.addExclude(methodology.matcherExclude)
+		scanner.addInclude(methodology.matcherInclude)
 		return new SourceInfo(path, scanner)
 	}
 

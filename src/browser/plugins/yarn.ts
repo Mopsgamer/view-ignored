@@ -9,20 +9,21 @@ export const name = "Yarn"
  * [!WARNING] All patterns copied from npm plugin, so they should be verified with yarn docs.
  */
 export const matcherExclude = [
-    '**/node_modules/**',
+    'node_modules/**',
     '.*.swp',
     '._*',
-    '.DS_Store',
-    '.git',
+    '.DS_Store/**',
+    '.git/**',
     '.gitignore',
-    '.hg',
+    '.hg/**',
+    '.yarnignore',
     '.npmignore',
     '.npmrc',
     '.lock-wscript',
-    '.svn',
+    '.svn/**',
     '.wafpickle-*',
     'config.gypi',
-    'CVS',
+    'CVS/**',
     'npm-debug.log',
 ];
 /**
@@ -68,7 +69,7 @@ export const scanPackageJsonFiles: ScanMethod = function (data) {
         return false
     }
     const propVal = getValue(parsed, "files")
-    if (!Array.isArray(propVal)) {
+    if (!scanner.patternIsValid(propVal)) {
         return false
     }
     scanner.add(propVal)

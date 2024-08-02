@@ -6,8 +6,8 @@ export const name = "VSC Extension"
 export const testCommand = "vsce ls"
 
 export const matcherExclude: string[] = [
-    "**/.git/**",
-    "**/.DS_Store/**"
+    ".git/**",
+    ".DS_Store/**"
 ]
 
 export const scan: ScanMethod = function (data) {
