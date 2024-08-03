@@ -166,6 +166,7 @@ describe("Targets", function () {
 
                     const fixture = await createFixture({ '.test': test.content })
                     const lookListPromise = viewig.scanProject(targetId, { cwd: fixture.getPath('.test'), filter: 'included' })
+                    lookListPromise.then(() => fixture.rm())
                     if (!Array.isArray(test.shouldInclude)) {
                         try {
                             await lookListPromise
