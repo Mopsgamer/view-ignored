@@ -11,10 +11,6 @@
 			"skipFiles": [
 				"<node_internals>/**"
 			],
-			"runtimeArgs": [
-				"-r",
-				"ts-node/register",
-			],
 			"args": [
 				"./out/test/**/*.test.js"
 			],

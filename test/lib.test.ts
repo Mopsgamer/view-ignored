@@ -1,12 +1,12 @@
-import mock from "mock-fs"
-import type FileSystem from "mock-fs/lib/filesystem.js"
+import { FileTree, createFixture } from "fs-fixture"
 import * as viewig from "../src/index.js"
 import assert from "assert"
-import { pathToFileURL } from "url"
+import { readFileSync } from "fs"
+import chalk from "chalk"
 
 interface Case {
-    shouldInclude: string[]
-    content: FileSystem.DirectoryItem
+    shouldInclude: string[] | typeof viewig.SomeError
+    content: FileTree
 }
 type DirCase = Record<string, Case>
 type Plan = Record<string, DirCase>
@@ -14,11 +14,11 @@ type Plan = Record<string, DirCase>
 const targetTestList = {
     git: {
         'empty project': {
-            shouldInclude: [],
+            shouldInclude: viewig.ErrorNoSources,
             content: {},
         },
         'single file, no .gitignore': {
-            shouldInclude: ['file.txt'],
+            shouldInclude: viewig.ErrorNoSources,
             content: {
                 'file.txt': ''
             },
@@ -27,11 +27,7 @@ const targetTestList = {
             shouldInclude: ['file.txt', '.gitignore'],
             content: {
                 'file.txt': '',
-                'node_modules': {
-                    'tempdep': {
-                        'indexOf.js': ''
-                    }
-                },
+                'node_modules/tempdep/indexOf.js': '',
                 '.gitignore': 'node_modules'
             },
         },
@@ -42,17 +38,17 @@ const targetTestList = {
      */
     npm: {
         'empty project': {
-            shouldInclude: [],
+            shouldInclude: viewig.ErrorNoSources,
             content: {},
         },
         'empty project node_modules only': {
-            shouldInclude: [],
+            shouldInclude: viewig.ErrorNoSources,
             content: {
                 'node_modules': {}
             },
         },
         'single file, no ignore sources': {
-            shouldInclude: ['file.txt'],
+            shouldInclude: viewig.ErrorNoSources,
             content: {
                 'file.txt': ''
             },
@@ -61,11 +57,7 @@ const targetTestList = {
             shouldInclude: ['file.txt'],
             content: {
                 'file.txt': '',
-                'node_modules': {
-                    'tempdep': {
-                        'indexOf.js': ''
-                    }
-                },
+                'node_modules/tempdep/indexOf.js': '',
                 '.gitignore': 'node_modules'
             },
         },
@@ -74,11 +66,7 @@ const targetTestList = {
             content: {
                 'file.txt': '',
                 'file2.txt': '',
-                'node_modules': {
-                    'tempdep': {
-                        'indexOf.js': ''
-                    }
-                },
+                'node_modules/tempdep/indexOf.js': '',
                 '.npmignore': 'file.txt',
                 '.gitignore': 'file2.txt'
             },
@@ -88,11 +76,7 @@ const targetTestList = {
             content: {
                 'file.txt': '',
                 'file2.txt': '',
-                'node_modules': {
-                    'tempdep': {
-                        'indexOf.js': ''
-                    }
-                },
+                'node_modules/tempdep/indexOf.js': '',
                 '.npmignore': 'file.txt',
                 '.gitignore': 'file2.txt',
                 'package.json': JSON.stringify({
@@ -105,11 +89,7 @@ const targetTestList = {
             content: {
                 'file.txt': '',
                 'file2.txt': '',
-                'node_modules': {
-                    'tempdep': {
-                        'indexOf.js': ''
-                    }
-                },
+                'node_modules/tempdep/indexOf.js': '',
                 '.npmignore': 'file.txt',
                 '.gitignore': 'file2.txt',
                 'package.json': '{}'
@@ -120,35 +100,21 @@ const targetTestList = {
             content: {
                 'file.txt': '',
                 'file2.txt': '',
-                'node_modules': {
-                    'tempdep': {
-                        'indexOf.js': ''
-                    }
-                },
+                'node_modules/tempdep/indexOf.js': '',
                 '.npmignore': 'file.txt',
                 '.gitignore': 'file2.txt',
                 'package.json': ''
             },
         },
         'real project: .npmignore, .gitignore, package.json no "files" prop': {
-            shouldInclude: ['README.md', 'bin/app', 'lib/cli.js', 'lib/index.js', 'packagee.json'],
+            shouldInclude: ['README.md', 'bin/app', 'lib/cli.js', 'lib/index.js', 'test/app.test.js', 'package.json'],
             content: {
                 '.github': {},
-                'bin': {
-                    'app': ''
-                },
-                'node_modules': {
-                    'tempdep': {
-                        'indexOf.js': ''
-                    }
-                },
-                'lib': {
-                    'cli.js': '',
-                    'index.js': ''
-                },
-                'test': {
-                    'app.test.js': ''
-                },
+                'bin/app': '',
+                'node_modules/tempdep/indexOf.js': '',
+                'lib/cli.js': '',
+                'lib/index.js': '',
+                'test/app.test.js': '',
                 'README.md': '',
                 'config.json': '',
                 '.npmignore': 'node_modules\nconfig*.json\ntest\n.github',
@@ -167,7 +133,7 @@ const targetTestList = {
      */
     yarn: {
         'empty project': {
-            shouldInclude: [],
+            shouldInclude: viewig.ErrorNoSources,
             content: {},
         },
     },
@@ -177,15 +143,19 @@ const targetTestList = {
      */
     vsce: {
         'empty project': {
-            shouldInclude: [],
+            shouldInclude: viewig.ErrorNoSources,
             content: {},
         },
     },
 } as Plan
 
-const testPath = './test/.simulation'
+function lineInfo(line: number, name?: string) {
+    return `${chalk.cyan('./test/lib.test.ts')}${chalk.white(':')}${chalk.yellow(line)}${name ? `\t- ${name}` : ''}`
+}
 
 describe("Targets", function () {
+    const myContent = readFileSync('./test/lib.test.ts').toString()
+    const myContentLines = myContent.split('\n')
     before(async () => { await viewig.Plugins.BuiltIns })
     for (const targetId in targetTestList) {
         describe(targetId, function () {
@@ -193,24 +163,33 @@ describe("Targets", function () {
             for (const testName in tests) {
                 it(testName, async function () {
                     const test = tests[testName]
-                    mock({ [pathToFileURL(testPath).toString()]: test.content })
-                    const lookList = await viewig.scanProject(targetId, { cwd: testPath, filter: 'included' })
 
-                    const sourcesView = JSON.stringify(test.content, null, ' '.repeat(2))
+                    const fixture = await createFixture({ '.test': test.content })
+                    const lookListPromise = viewig.scanProject(targetId, { cwd: fixture.getPath('.test'), filter: 'included' })
+                    if (!Array.isArray(test.shouldInclude)) {
+                        try {
+                            await lookListPromise
+                            assert.throws(async () => { await lookListPromise })
+                        } catch (exc) {
+                            assert(exc instanceof test.shouldInclude, "Bad SomeError prototype.")
+                        }
+                        return;
+                    }
 
-                    const cmp1 = lookList.map(l => l.filePath).sort()
+                    const cmp1 = (await lookListPromise).map(l => l.toString()).sort()
                     const cmp2 = test.shouldInclude.sort()
-                    assert.deepEqual(
-                        cmp1,
-                        cmp2,
-                        `Bad paths results.\n\n${sourcesView}`
-                    )
+                    const testLine = myContentLines.findIndex(ln => ln.includes(testName)) + 1
+                    const testLineContent = testLine + myContentLines.slice(testLine).findIndex(ln => ln.includes('content')) + 1
+                    const actual = (await lookListPromise)
+                        .filter(l => !cmp2.includes(l.toString()))
+                        .map(l => {
+                            const testLineSource = testLineContent + myContentLines.slice(testLineContent).findIndex(ln => ln.includes(l.source.sourcePath)) + 1
+                            return chalk.red(l.toString({ source: true, chalk })) + ' ' + lineInfo(testLineSource)
+                        })
+                        .sort().join('\n        ');
+                    assert.deepEqual(cmp1, cmp2, 'Bad scan.' + chalk.white(`\n      Test location: ${lineInfo(testLine)}\n      Test name: ${chalk.magenta(testName)}\n      Results: \n        ${actual}\n`))
                 })
             }
         })
     }
-})
-
-afterEach(() => {
-    mock.restore()
 })

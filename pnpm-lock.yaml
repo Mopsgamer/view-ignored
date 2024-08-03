@@ -60,9 +60,6 @@ importers:
       '@types/mocha':
         specifier: ^10.0.6
         version: 10.0.6
-      '@types/mock-fs':
-        specifier: ^4.13.4
-        version: 4.13.4
       '@types/node':
         specifier: ^20.14.2
         version: 20.14.2
@@ -75,15 +72,15 @@ importers:
       eslint-plugin-only-warn:
         specifier: ^1.1.0
         version: 1.1.0
+      fs-fixture:
+        specifier: ^2.4.0
+        version: 2.4.0
       globals:
         specifier: ^15.4.0
         version: 15.4.0
       mocha:
         specifier: ^10.4.0
         version: 10.4.0
-      mock-fs:
-        specifier: ^5.2.0
-        version: 5.2.0
       release-it:
         specifier: ^17.3.0
         version: 17.3.0(typescript@5.4.5)
@@ -321,9 +318,6 @@ packages:
 
   '@types/mocha@10.0.6':
     resolution: {integrity: sha512-dJvrYWxP/UcXm36Qn36fxhUKu8A/xMRXVT2cliFF1Z7UA9liG5Psj3ezNSZw+5puH2czDXRLcXQxf8JbJt0ejg==}
-
-  '@types/mock-fs@4.13.4':
-    resolution: {integrity: sha512-mXmM0o6lULPI8z3XNnQCpL0BGxPwx1Ul1wXYEPBGl4efShyxW2Rln0JOPEWGyZaYZMM6OVXM/15zUuFMY52ljg==}
 
   '@types/node@20.14.2':
     resolution: {integrity: sha512-xyu6WAMVwv6AKFLB+e/7ySZVr/0zLCzOa7rSpq6jNwpqOrUbcACDWC+53d4n2QHOnDou0fbIsg8wZu/sxrnI4Q==}
@@ -958,6 +952,10 @@ packages:
     resolution: {integrity: sha512-PmDi3uwK5nFuXh7XDTlVnS17xJS7vW36is2+w3xcv8SVxiB4NyATf4ctkVY5bkSjX0Y4nbvZCq1/EjtEyr9ktw==}
     engines: {node: '>=14.14'}
 
+  fs-fixture@2.4.0:
+    resolution: {integrity: sha512-aFoTWGj288IEOdXBeesdcbdMvRtExbqpOp1SCjE3nRdlT7vBBCD6bf76C9FCq8/6pIPSo56P7+HeT9zT/n8rMA==}
+    engines: {node: '>=18.0.0'}
+
   fs.realpath@1.0.0:
     resolution: {integrity: sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==}
 
@@ -1574,10 +1572,6 @@ packages:
     resolution: {integrity: sha512-eqhGB8JKapEYcC4ytX/xrzKforgEc3j1pGlAXVy3eRwrtAy5/nIfT1SvgGzfN0XZZxeLq0aQWkOUAmqIJiv+bA==}
     engines: {node: '>= 14.0.0'}
     hasBin: true
-
-  mock-fs@5.2.0:
-    resolution: {integrity: sha512-2dF2R6YMSZbpip1V1WHKGLNjr/k48uQClqMVb5H3MOvwc9qhYis3/IWbj02qIg/Y8MDXKFF4c5v0rxx2o6xTZw==}
-    engines: {node: '>=12.0.0'}
 
   ms@2.1.2:
     resolution: {integrity: sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==}
@@ -2598,10 +2592,6 @@ snapshots:
 
   '@types/mocha@10.0.6': {}
 
-  '@types/mock-fs@4.13.4':
-    dependencies:
-      '@types/node': 20.14.2
-
   '@types/node@20.14.2':
     dependencies:
       undici-types: 5.26.5
@@ -3351,6 +3341,8 @@ snapshots:
       jsonfile: 6.1.0
       universalify: 2.0.1
 
+  fs-fixture@2.4.0: {}
+
   fs.realpath@1.0.0: {}
 
   fsevents@2.3.3:
@@ -3958,8 +3950,6 @@ snapshots:
       yargs: 16.2.0
       yargs-parser: 20.2.4
       yargs-unparser: 2.0.0
-
-  mock-fs@5.2.0: {}
 
   ms@2.1.2: {}
 

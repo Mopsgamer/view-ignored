@@ -3,7 +3,7 @@ import { join, dirname } from "path"
 import { FileSystemAdapter, Methodology, Scanner } from "./lib.js"
 
 /**
- * Gets the file's stats using fs adapter.
+ * Gets the file's stats using a fs adapter.
  */
 export function statSync(path: string, cwd?: string, fsa?: FileSystemAdapter): fs.Stats {
 	const statsSync = fsa?.statSync || fs.statSync
@@ -12,7 +12,7 @@ export function statSync(path: string, cwd?: string, fsa?: FileSystemAdapter): f
 }
 
 /**
- * Reads the file's dir using fs adapter.
+ * Reads the file's dir using a fs adapter.
  */
 export function readdirSync(path: string, cwd?: string, fsa?: FileSystemAdapter): string[] {
 	const readdirSync = fsa?.readdirSync || fs.readdirSync
@@ -21,7 +21,7 @@ export function readdirSync(path: string, cwd?: string, fsa?: FileSystemAdapter)
 }
 
 /**
- * Reads the file path using fs adapter.
+ * Reads the file path using a fs adapter.
  */
 export function readSourceSync(path: string, cwd?: string, fsa?: FileSystemAdapter): Buffer {
 	const readFileSync = fsa?.readFileSync || fs.readFileSync
@@ -30,7 +30,7 @@ export function readSourceSync(path: string, cwd?: string, fsa?: FileSystemAdapt
 }
 
 /**
- * Reads the file path using fs adapter.
+ * Reads the file path using a fs adapter.
  */
 export function readSource(path: string, cwd?: string, fsa?: FileSystemAdapter): Promise<Buffer> {
 	const readFile = fsa?.readFile || fs.readFile
@@ -104,8 +104,8 @@ export class SourceInfo {
 	/**
 	 * @returns File content.
 	 */
-	read(): Promise<Buffer> {
-		const r = readSource(this.sourcePath)
+	read(cwd?: string, fs?: FileSystemAdapter): Promise<Buffer> {
+		const r = readSource(this.sourcePath, cwd, fs)
 		r.then(c => this.content = c)
 		return r
 	}
@@ -113,14 +113,14 @@ export class SourceInfo {
 	/**
 	 * @returns File content.
 	 */
-	readSync(): Buffer {
-		return this.content = readSourceSync(this.sourcePath)
+	readSync(cwd?: string, fs?: FileSystemAdapter): Buffer {
+		return this.content = readSourceSync(this.sourcePath, cwd, fs)
 	}
 
 	/**
 	 * @returns Parent directory entry paths.
 	 */
-	readdirSync(): string[] {
-		return readdirSync(dirname(this.sourcePath))
+	readdirSync(cwd?: string, fs?: FileSystemAdapter): string[] {
+		return readdirSync(dirname(this.sourcePath), cwd, fs)
 	}
 }

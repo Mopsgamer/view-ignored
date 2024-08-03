@@ -43,6 +43,17 @@
 		},
 		{
 			"icon": {
+				"id": "package",
+				"color": "terminal.ansiWhite"
+			},
+			"problemMatcher": "$tsc-watch",
+			"type": "npm",
+			"script": "build:watch",
+			"label": "Build & Watch",
+			"detail": "pnpm shx rm -rf out && pnpm tsc --watch"
+		},
+		{
+			"icon": {
 				"id": "sparkle",
 				"color": "terminal.ansiWhite"
 			},

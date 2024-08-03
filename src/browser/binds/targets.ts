@@ -15,12 +15,6 @@ export function isTargetId(value: unknown): value is TargetId {
     return typeof value === "string" && value.match(/^[-a-zA-Z0-9]+$/) != null
 }
 
-export class ErrorTargetNotBound extends Error {
-    constructor(targetId: unknown) {
-        super(`The target has no bound: '${targetId}'.`)
-    }
-}
-
 /**
  * The bind which allows use predefined options for scan functions.
  * @see {@link scanProject}

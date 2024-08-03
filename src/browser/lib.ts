@@ -2,11 +2,12 @@ import { Scanner, PatternType, isPatternType } from "./scanner.js";
 import FastGlob from "fast-glob";
 import { FileInfo } from "./fileinfo.js";
 import { findDomination, readdirSync, SourceInfo, statSync } from "./sourceinfo.js";
-import { ErrorTargetNotBound, targetGet } from "./binds/index.js";
-import { readFile, readFileSync } from "fs";
+import { targetGet } from "./binds/index.js";
 import path from "path";
 import arrify from "arrify";
+import { ErrorNoSources, ErrorTargetNotBound } from "./errors.js";
 
+export * from "./errors.js"
 export * from "./scanner.js"
 export * from "./fileinfo.js"
 export * from "./sourceinfo.js"
@@ -34,8 +35,8 @@ export function isFilterName(value: unknown): value is FilterName {
  * @extends FastGlob.FileSystemAdapter
  */
 export interface FileSystemAdapter extends FastGlob.FileSystemAdapter {
-	readFileSync: typeof readFileSync
-	readFile: typeof readFile
+	readFileSync: (path: string) => Buffer
+	readFile: (path: string, cb: (err: NodeJS.ErrnoException | null | undefined, data: Buffer) => void) => void
 }
 
 /**
@@ -177,20 +178,9 @@ export function methodologyToInfoList(methodology: Methodology, options: ScanFil
 		return patterns as SourceInfo[]
 	}
 
-	return FastGlob.sync(patterns as string[], patchFastGlobOptions(options)).map(path => SourceInfo.from(path, methodology))
-}
-
-export class ErrorNoSources extends Error {
-	constructor(public readonly sources: (readonly Methodology[]) | string) {
-		super("No available sources for methodology: " + ErrorNoSources.walk(sources))
-	}
-	static walk(sources: (readonly Methodology[]) | string): string {
-		const s = typeof sources === "string" ? targetGet(sources)?.methodology : sources
-		if (!s) {
-			return `bad bind for target '${s}'`
-		}
-		return s.map(m => `'${m.pattern}'`).join(" -> ")
-	}
+	const paths = FastGlob.sync(patterns as string[], options)
+	const sourceInfoList = paths.map(p => SourceInfo.from(p, methodology))
+	return sourceInfoList
 }
 
 /**
@@ -204,7 +194,7 @@ export async function scanFile(filePath: string, sources: Methodology[], options
 
 		for (const sourceInfo of sourceInfoList) {
 			const fileInfo = FileInfo.from(filePath, sourceInfo)
-			sourceInfo.readSync()
+			sourceInfo.readSync(options.cwd, options.fs)
 			const isGoodSource = methodology.scan(fileInfo)
 			if (isGoodSource) {
 				return fileInfo
@@ -226,7 +216,7 @@ export async function scanProject(arg1: Methodology[] | string, options: ScanFol
 		if (bind === undefined) {
 			throw new ErrorTargetNotBound(arg1)
 		}
-		return scanProject(bind.methodology, bind.scanOptions ?? {})
+		return scanProject(bind.methodology, Object.assign(options, bind.scanOptions))
 	}
 
 	// Find good source.
@@ -254,18 +244,18 @@ export async function scanProject(arg1: Methodology[] | string, options: ScanFol
 				fileInfo = FileInfo.from(filePath, sourceInfo)
 
 				const fileDir = path.dirname(filePath)
-				const entryList = readdirSync(fileDir)
+				const entryList = readdirSync(fileDir, options.cwd, options.fs)
 				for (const entry of entryList) {
-					const stat = statSync(entry, fileDir, options.fs)
+					const entryPath = fileDir !== '.' ? fileDir + '/' + entry : entry
+					const stat = statSync(entryPath, options.cwd, options.fs)
 					if (stat.isFile()) {
-						const entryPath = fileDir !== '.' ? fileDir + '/' + entry : entry
 						cacheFilePaths.set(entryPath, sourceInfo)
 					}
 				}
 			}
 
 			if (!sourceInfo!.content) {
-				sourceInfo!.readSync()
+				sourceInfo!.readSync(options.cwd, options.fs)
 				goodFound = methodology.scan(fileInfo)
 				if (!goodFound) {
 					break
