@@ -20,58 +20,29 @@
 		{
 			"type": "node",
 			"request": "launch",
-			"name": "viewig cfg set showSources=true",
-			"skipFiles": [
-				"<node_internals>/**"
-			],
-			"runtimeArgs": [
-				"-r",
-				"ts-node/register",
-			],
-			"args": [
-				"cfg",
-				"set",
-				"showSources=true"
-			],
-			"program": "${workspaceFolder}/src/bin.ts",
-			"cwd": "${workspaceFolder}",
-			"sourceMaps": true,
-		},
-		{
-			"type": "node",
-			"request": "launch",
 			"name": "viewig scan",
 			"skipFiles": [
 				"<node_internals>/**"
 			],
-			"runtimeArgs": [
-				"-r",
-				"ts-node/register",
-			],
 			"args": [
 				"scan"
 			],
-			"program": "${workspaceFolder}/src/bin.ts",
+			"program": "${workspaceFolder}/out/src/bin.js",
 			"cwd": "${workspaceFolder}",
 			"sourceMaps": true,
 		},
 		{
 			"type": "node",
 			"request": "launch",
-			"name": "viewig scan - npm all",
+			"name": "viewig scan --target npm",
 			"skipFiles": [
 				"<node_internals>/**"
-			],
-			"runtimeArgs": [
-				"-r",
-				"ts-node/register",
 			],
 			"args": [
 				"scan",
 				"--target=npm",
-				"--filter=all",
 			],
-			"program": "${workspaceFolder}/src/bin.ts",
+			"program": "${workspaceFolder}/out/src/bin.js",
 			"cwd": "${workspaceFolder}",
 			"sourceMaps": true,
 		},
@@ -82,16 +53,12 @@
 			"skipFiles": [
 				"<node_internals>/**"
 			],
-			"runtimeArgs": [
-				"-r",
-				"ts-node/register",
-			],
 			"args": [
 				"scan",
 				"--plugin",
 				"t"
 			],
-			"program": "${workspaceFolder}/src/bin.ts",
+			"program": "${workspaceFolder}/out/src/bin.js",
 			"cwd": "${workspaceFolder}",
 			"sourceMaps": true,
 		},

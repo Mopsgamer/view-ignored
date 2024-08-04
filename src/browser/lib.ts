@@ -58,7 +58,7 @@ export function patchFastGlobOptions<T extends FastGlob.Options>(options: T) {
  * Also can write rules to the {@link Scanner}.
  * @returns `true`, if the given source is valid.
  */
-export type ScanMethod = (fileInfo: FileInfo) => boolean
+export type ScanMethod = (sourceInfo: SourceInfo) => boolean
 
 /**
  * Represents the methodology for reading the target's source.
@@ -193,11 +193,10 @@ export async function scanFile(filePath: string, sources: Methodology[], options
 		const sourceInfoList: SourceInfo[] = methodologyToInfoList(methodology, optionsPatched)
 
 		for (const sourceInfo of sourceInfoList) {
-			const fileInfo = FileInfo.from(filePath, sourceInfo)
 			sourceInfo.readSync(options.cwd, options.fs)
-			const isGoodSource = methodology.scan(fileInfo)
+			const isGoodSource = methodology.scan(sourceInfo)
 			if (isGoodSource) {
-				return fileInfo
+				return FileInfo.from(filePath, sourceInfo)
 			}
 		}
 	}
@@ -231,18 +230,17 @@ export async function scanProject(arg1: Methodology[] | string, options: ScanFol
 		const cacheFilePaths = new Map<string, SourceInfo>()
 		const allFilePaths = FastGlob.sync("**", optionsPatched)
 		for (const filePath of allFilePaths) {
-			let fileInfo: FileInfo | undefined
 			let sourceInfo: SourceInfo | undefined = cacheFilePaths.get(filePath)
-			fileInfo = sourceInfo && FileInfo.from(filePath, sourceInfo)
 
-			if (!fileInfo) {
+			if (!sourceInfo) { // if no cache records -> create
 				sourceInfo = findDomination(filePath, sourceInfoList)
 				if (sourceInfo === undefined) {
 					break
 				}
 
-				fileInfo = FileInfo.from(filePath, sourceInfo)
+				cacheFilePaths.set(filePath, sourceInfo)
 
+				// also create cache for each file in the direcotry
 				const fileDir = path.dirname(filePath)
 				const entryList = readdirSync(fileDir, options.cwd, options.fs)
 				for (const entry of entryList) {
@@ -254,14 +252,17 @@ export async function scanProject(arg1: Methodology[] | string, options: ScanFol
 				}
 			}
 
-			if (!sourceInfo!.content) {
-				sourceInfo!.readSync(options.cwd, options.fs)
-				goodFound = methodology.scan(fileInfo)
+			// find good source
+			if (!sourceInfo.content) {
+				sourceInfo.readSync(options.cwd, options.fs)
+				goodFound = methodology.scan(sourceInfo)
 				if (!goodFound) {
 					break
 				}
 			}
 
+			// push new FileInfo
+			const fileInfo = FileInfo.from(filePath, sourceInfo)
 			const shouldPush = fileInfo.isIncludedBy(filter)
 			if (shouldPush) {
 				resultList.push(fileInfo)

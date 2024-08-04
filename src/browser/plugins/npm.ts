@@ -35,21 +35,21 @@ export const matcherInclude = [
 ];
 
 export const scanGit: ScanMethod = function (data) {
-    const { scanner, source } = data
-    const pat = source.content?.toString()
+    const { scanner, content } = data
+    const pat = content?.toString()
     if (!scanner.patternIsValid(pat)) {
         return false
     }
-    scanner.add(pat!)
+    scanner.add(pat)
     return true
 }
 
 export const scanPackageJsonFiles: ScanMethod = function (data) {
-    const { scanner, source } = data
+    const { scanner, content } = data
     scanner.isNegated = true
     let parsed: object
     try {
-        const pat = source.content?.toString()
+        const pat = content?.toString()
         if (!pat) {
             return false
         }

@@ -14,8 +14,8 @@ const matcherExclude: string[] = [
 ]
 
 const scan: ScanMethod = function (data) {
-    const { scanner, source } = data
-    const pat = source.content?.toString()
+    const { scanner, content } = data
+    const pat = content?.toString()
     if (!scanner.patternIsValid(pat)) {
         return false
     }

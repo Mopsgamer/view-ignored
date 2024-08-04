@@ -107,7 +107,14 @@ const targetTestList = {
             },
         },
         'real project: .npmignore, .gitignore, package.json no "files" prop': {
-            shouldInclude: ['README.md', 'bin/app', 'lib/cli.js', 'lib/index.js', 'test/app.test.js', 'package.json'],
+            shouldInclude: [
+                'README.md',
+                'bin/app',
+                'lib/cli.js',
+                'lib/index.js',
+                'test/app.test.js',
+                'package.json'
+            ],
             content: {
                 '.github': {},
                 'bin/app': '',
