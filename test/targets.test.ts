@@ -157,11 +157,11 @@ const targetTestList = {
 } as Plan
 
 function lineInfo(line: number, name?: string) {
-    return `${chalk.cyan('./test/lib.test.ts')}${chalk.white(':')}${chalk.yellow(line)}${name ? `\t- ${name}` : ''}`
+    return `${chalk.cyan('./test/targets.test.ts')}${chalk.white(':')}${chalk.yellow(line)}${name ? `\t- ${name}` : ''}`
 }
 
 describe("Targets", function () {
-    const myContent = readFileSync('./test/lib.test.ts').toString()
+    const myContent = readFileSync('./test/targets.test.ts').toString()
     const myContentLines = myContent.split('\n')
     before(async () => { await viewig.Plugins.BuiltIns })
     for (const targetId in targetTestList) {

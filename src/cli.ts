@@ -8,7 +8,7 @@ import { SortName } from "./browser/sorting.js";
 import { ErrorNoSources, FileInfo, FilterName, scanProject, Sorting } from "./lib.js";
 import { formatConfigConflicts } from "./styling.js";
 
-export const {version} = JSON.parse(readFileSync("package.json").toString());
+export const { version } = JSON.parse(readFileSync("package.json").toString());
 
 /**
  * Prepare for {@link program}.parse().
@@ -101,7 +101,7 @@ export function optionsInit() {
 	Config.configValuePutChoices(scanProgram, new Option("--sort <sorter>"), "sort")
 	Config.configValuePutChoices(scanProgram, new Option("--style <style>"), "style")
 	Config.configValuePutChoices(scanProgram, new Option("--depth <depth>").argParser(parseArgInt), "depth")
-	Config.configValuePutChoices(scanProgram, new Option("--show-sources").argParser(parseArgBool), "showSources")
+	Config.configValuePutChoices(scanProgram, new Option("--show-sources [showSources]").argParser(parseArgBool), "showSources")
 }
 
 /**
@@ -138,10 +138,14 @@ cfgProgram
 	.action(actionCfgGet)
 
 export function parseArgBool(arg: string): boolean {
-	if (!['true', 'false', '1', '0'].includes(arg.trim())) {
+	console.log(typeof arg)
+	arg = arg.trim()
+	const trueValues: string[] = ['true', 'on', 'yes', 'y', 'enable', 'enabled', '1']
+	const falseValues: string[] = ['false', 'off', 'no', 'n', 'disable', 'disabled', '0']
+	if (![...trueValues, ...falseValues].includes(arg)) {
 		throw new InvalidArgumentError(`Got invalid value '${arg}'. Should be a boolen.`)
 	}
-	return !!arg
+	return trueValues.includes(arg)
 }
 
 export function parseArgInt(arg: string): number {

@@ -52,7 +52,6 @@ export const scanGit: ScanMethod = function (data) {
 
 export const scanPackageJsonFiles: ScanMethod = function (data) {
     const { scanner, content } = data
-    scanner.isNegated = true
     let parsed: object
     try {
         const pat = content?.toString()
@@ -77,10 +76,10 @@ export const scanPackageJsonFiles: ScanMethod = function (data) {
 }
 
 export const methodology: Methodology[] = [
-    { pattern: "**/package.json", matcher: ".*ignore", scan: scanPackageJsonFiles, matcherInclude, matcherExclude },
-    { pattern: "**/.yarnignore", matcher: ".*ignore", scan: scanGit, matcherInclude, matcherExclude },
-    { pattern: "**/.npmignore", matcher: ".*ignore", scan: scanGit, matcherInclude, matcherExclude },
-    { pattern: "**/.gitignore", matcher: ".*ignore", scan: scanGit, matcherInclude, matcherExclude },
+    { pattern: "**/package.json", matcherNegated: true, matcher: "gitignore", scan: scanPackageJsonFiles, matcherInclude, matcherExclude },
+    { pattern: "**/.yarnignore", matcher: "gitignore", scan: scanGit, matcherInclude, matcherExclude },
+    { pattern: "**/.npmignore", matcher: "gitignore", scan: scanGit, matcherInclude, matcherExclude },
+    { pattern: "**/.gitignore", matcher: "gitignore", scan: scanGit, matcherInclude, matcherExclude },
 ]
 
 const bind: Plugins.TargetBind = { id, name, methodology }

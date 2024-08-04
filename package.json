@@ -56,7 +56,7 @@
 		"access": "public"
 	},
 	"directories": {
-		"lib": "lib"
+		"lib": "out/src"
 	},
 	"dependencies": {
 		"arrify": "^3.0.0",

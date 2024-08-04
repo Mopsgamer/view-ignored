@@ -1,10 +1,9 @@
 import { Scanner, PatternType, isPatternType } from "./scanner.js";
 import FastGlob from "fast-glob";
 import { FileInfo } from "./fileinfo.js";
-import { findDomination, readdirSync, SourceInfo, statSync } from "./sourceinfo.js";
+import { readdirSync, SourceInfo, statSync } from "./sourceinfo.js";
 import { targetGet } from "./binds/index.js";
 import path from "path";
-import arrify from "arrify";
 import { ErrorNoSources, ErrorTargetNotBound } from "./errors.js";
 
 export * from "./errors.js"
@@ -39,20 +38,6 @@ export interface FileSystemAdapter extends FastGlob.FileSystemAdapter {
 	readFile: (path: string, cb: (err: NodeJS.ErrnoException | null | undefined, data: Buffer) => void) => void
 }
 
-/**
- * Returns new {@link FastGlob.Options} object with forced defaults:
- * `onlyFiles: true`, `dot: true`, `followSymbolicLinks: false`.
- */
-export function patchFastGlobOptions<T extends FastGlob.Options>(options: T) {
-	const patched: T = {
-		...options,
-		onlyFiles: true,
-		dot: true,
-		followSymbolicLinks: false,
-	}
-	return patched;
-}
-
 //#region looking
 /**
  * Also can write rules to the {@link Scanner}.
@@ -66,16 +51,22 @@ export type ScanMethod = (sourceInfo: SourceInfo) => boolean
 export interface Methodology {
 	/**
 	 * Git configuration property.
-	 * @see Official git documentation: {@link https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase|ignorecase}.
+	 * @see {@link https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase|git-config ignorecase}.
 	 * @default false
 	 */
 	ignoreCase?: boolean
 
 	/**
-	 * Pattern parser name.
-	 * @default ".*ignore"
+	 * The parser for the patterns.
+	 * @default "gitignore"
 	 */
 	matcher: PatternType
+
+	/**
+	 * Use the patterns for including instead of excluding/ignoring.
+	 * @default false
+	 */
+	matcherNegated?: boolean
 
 	/**
 	 * Additional patterns for files, provided by the {@link pattern}.
@@ -170,27 +161,12 @@ export interface ScanFolderOptions extends ScanFileOptions {
 }
 
 /**
- * Gets sources from the methodology.
- */
-export function methodologyToInfoList(methodology: Methodology, options: ScanFileOptions): SourceInfo[] {
-	const patterns = arrify(methodology.pattern)
-	if (patterns.some(p => typeof p !== "string")) {
-		return patterns as SourceInfo[]
-	}
-
-	const paths = FastGlob.sync(patterns as string[], options)
-	const sourceInfoList = paths.map(p => SourceInfo.from(p, methodology))
-	return sourceInfoList
-}
-
-/**
  * Gets info about the file: it is ignored or not.
  * @throws {ErrorNoSources} if the source is bad.
  */
 export async function scanFile(filePath: string, sources: Methodology[], options: ScanFileOptions): Promise<FileInfo> {
-	const optionsPatched = patchFastGlobOptions(options)
 	for (const methodology of sources) {
-		const sourceInfoList: SourceInfo[] = methodologyToInfoList(methodology, optionsPatched)
+		const sourceInfoList: SourceInfo[] = SourceInfo.fromMethodology(methodology, options)
 
 		for (const sourceInfo of sourceInfoList) {
 			sourceInfo.readSync(options.cwd, options.fs)
@@ -219,59 +195,65 @@ export async function scanProject(arg1: Methodology[] | string, options: ScanFol
 	}
 
 	// Find good source.
-	const optionsPatched = patchFastGlobOptions(options)
-	const { filter = "included" } = optionsPatched;
+	const { filter = "included" } = options;
 	for (const methodology of arg1) {
-		let goodFound = false
 		const resultList: FileInfo[] = []
-		const sourceInfoList: SourceInfo[] = methodologyToInfoList(methodology, optionsPatched)
+		const sourceInfoList: SourceInfo[] = SourceInfo.fromMethodology(methodology, options)
 
-		/** Map<filePath, sourceInfo>. */
-		const cacheFilePaths = new Map<string, SourceInfo>()
-		const allFilePaths = FastGlob.sync("**", optionsPatched)
+		if (sourceInfoList.length < 1) {
+			continue
+		}
+
+		const allFilePaths = FastGlob.sync("**", {
+			...options,
+			onlyFiles: true,
+			dot: true,
+			followSymbolicLinks: false,
+		})
+		const processedFilePaths = new Set<string>()
+
 		for (const filePath of allFilePaths) {
-			let sourceInfo: SourceInfo | undefined = cacheFilePaths.get(filePath)
+			if (processedFilePaths.has(filePath)) {
+				continue
+			}
 
-			if (!sourceInfo) { // if no cache records -> create
-				sourceInfo = findDomination(filePath, sourceInfoList)
-				if (sourceInfo === undefined) {
-					break
+			const sourceInfo = SourceInfo.hierarcy(filePath, sourceInfoList, {
+				closest: false,
+				filter(sourceInfo) {
+					if (!(sourceInfo instanceof SourceInfo)) {
+						return true
+					}
+					if (sourceInfo.content === undefined) {
+						sourceInfo.readSync()
+					}
+					return methodology.scan(sourceInfo)
 				}
+			})
 
-				cacheFilePaths.set(filePath, sourceInfo)
+			if (sourceInfo === undefined) {
+				break
+			}
 
-				// also create cache for each file in the direcotry
-				const fileDir = path.dirname(filePath)
-				const entryList = readdirSync(fileDir, options.cwd, options.fs)
-				for (const entry of entryList) {
-					const entryPath = fileDir !== '.' ? fileDir + '/' + entry : entry
-					const stat = statSync(entryPath, options.cwd, options.fs)
-					if (stat.isFile()) {
-						cacheFilePaths.set(entryPath, sourceInfo)
+			// also create cache for each file in the direcotry
+			const fileDir = path.dirname(filePath)
+			const entryList = readdirSync(fileDir, options.cwd, options.fs)
+
+			for (const entry of entryList) {
+				const entryPath = fileDir !== '.' ? fileDir + '/' + entry : entry
+				const stat = statSync(entryPath, options.cwd, options.fs)
+				processedFilePaths.add(entryPath)
+
+				if (stat.isFile()) {
+					// push new FileInfo
+					const fileInfo = FileInfo.from(entryPath, sourceInfo)
+					if (fileInfo.isIncludedBy(filter)) {
+						resultList.push(fileInfo)
 					}
 				}
 			}
-
-			// find good source
-			if (!sourceInfo.content) {
-				sourceInfo.readSync(options.cwd, options.fs)
-				goodFound = methodology.scan(sourceInfo)
-				if (!goodFound) {
-					break
-				}
-			}
-
-			// push new FileInfo
-			const fileInfo = FileInfo.from(filePath, sourceInfo)
-			const shouldPush = fileInfo.isIncludedBy(filter)
-			if (shouldPush) {
-				resultList.push(fileInfo)
-			}
 		} // forend
 
-		if (goodFound) {
-			return resultList
-		}
+		return resultList
 	} // forend
 	throw new ErrorNoSources(arg1)
 }
