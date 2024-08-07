@@ -28,4 +28,4 @@ const methodology: Methodology[] = [
 ]
 
 const bind: Plugins.TargetBind = { id, name, methodology, testCommand }
-export default ({ viewignored_addTargets: [bind] } as PluginExport)
+export default ({ viewignored: { addTargets: [bind] } } as PluginExport)

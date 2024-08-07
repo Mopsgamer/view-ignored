@@ -17,27 +17,30 @@ export interface PluginLoaded {
  * If a plugin wants to change something, it must export it as default.
  */
 export interface PluginExport {
-    viewignored_addTargets: TargetBind[]
+    viewignored: {
+        addTargets: TargetBind[]
+    }
 }
 
 /**
  * Checks if the value is the {@link PluginExport}.
  */
 export function isPluginExport(value: unknown): value is PluginExport {
-    if (value?.constructor !== Object) {
+    if (typeof value !== "object" || value === null) {
         return false
     }
-    const v = value as Record<string, unknown>
 
-    return Array.isArray(v.viewignored_addTargets) && v.viewignored_addTargets.every(isTargetBind)
+    const vign = (value as Record<string, unknown>).viewignored
+    return (typeof vign === "object" && vign !== null)
+        && 'addTargets' in vign && Array.isArray(vign.addTargets) && vign.addTargets.every(isTargetBind)
 }
 
 /**
  * Imports the plugin's exported data.
  */
 function importPlugin(exportData: PluginExport) {
-    const { viewignored_addTargets } = exportData
-    for (const targetBind of viewignored_addTargets) {
+    const { addTargets } = exportData.viewignored
+    for (const targetBind of addTargets) {
         targetSet(targetBind)
     }
 }
