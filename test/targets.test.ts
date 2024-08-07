@@ -86,7 +86,7 @@ const targetTestList: Plan = {
                     'bin/app',
                     'package.json',
                 ],
-                source: '.npmignore',
+                source: 'package.json',
             },
             content: {
                 ...realProject,
