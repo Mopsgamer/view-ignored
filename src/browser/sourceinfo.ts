@@ -121,7 +121,8 @@ export class SourceInfo {
 	/**
 	 * @returns The contents of the source file.
 	 */
-	readSync(cwd: string | undefined, fs: FileSystemAdapter): Buffer {
-		return this.content = fs.readFileSync(join(cwd ?? process.cwd(), this.sourcePath))
+	readSync(cwd: string | undefined, readFileSync: FileSystemAdapter["readFileSync"]): Buffer {
+		cwd ??= process.cwd()
+		return this.content = readFileSync(join(cwd, this.sourcePath))
 	}
 }

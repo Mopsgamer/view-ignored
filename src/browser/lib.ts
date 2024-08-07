@@ -172,7 +172,7 @@ export async function scanFile(filePath: string, sources: Methodology[], options
 		const sourceInfoList: SourceInfo[] = SourceInfo.fromMethodology(methodology, options)
 
 		for (const sourceInfo of sourceInfoList) {
-			sourceInfo.readSync(cwd, fsa)
+			sourceInfo.readSync(cwd, fsa.readFileSync)
 			const isGoodSource = methodology.scan(sourceInfo)
 			if (isGoodSource) {
 				return FileInfo.from(filePath, sourceInfo)
@@ -207,7 +207,7 @@ export async function scanProject(arg1: Methodology[] | string, options: ScanFol
 			continue
 		}
 
-		const allFilePaths = FastGlob.sync("**", {
+		const allFilePaths = await FastGlob.async("**", {
 			...options,
 			onlyFiles: true,
 			dot: true,
@@ -215,6 +215,7 @@ export async function scanProject(arg1: Methodology[] | string, options: ScanFol
 		})
 		const cache = new Set<string>()
 
+		let noSource = false
 		for (const filePath of allFilePaths) {
 			if (cache.has(filePath)) {
 				continue
@@ -227,13 +228,14 @@ export async function scanProject(arg1: Methodology[] | string, options: ScanFol
 						return true
 					}
 					if (sourceInfo.content === undefined) {
-						sourceInfo.readSync(cwd, fsa)
+						sourceInfo.readSync(cwd, fsa.readFileSync)
 					}
 					return methodology.scan(sourceInfo)
 				}
 			})
 
 			if (sourceInfo === undefined) {
+				noSource = true
 				break
 			}
 
@@ -258,6 +260,10 @@ export async function scanProject(arg1: Methodology[] | string, options: ScanFol
 				}
 			}
 		} // forend
+
+		if (noSource) {
+			continue
+		}
 
 		return resultList
 	} // forend

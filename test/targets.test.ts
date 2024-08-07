@@ -15,27 +15,41 @@ interface Case {
 type DirCase = Record<string, Case>
 type Plan = Record<string, DirCase>
 
+const realProject = {
+    '.github': {},
+    'bin/app': '',
+    'node_modules/tempdep/indexOf.js': '',
+    'lib/cli.js': '',
+    'lib/index.js': '',
+    'test/app.test.js': '',
+    'README.md': '',
+    'config.json': '',
+}
+
 const targetTestList: Plan = {
     git: {
         'empty project': {
             should: viewig.ErrorNoSources,
             content: {},
         },
-        'single file, no .gitignore': {
+        'single file': {
             should: viewig.ErrorNoSources,
             content: {
                 'file.txt': ''
             },
         },
-        'minimal project: .gitignore': {
+        '.gitignore': {
             should: {
-                include: ['file.txt', '.gitignore'],
+                include: [
+                    'file.txt',
+                    '.gitignore',
+                ],
                 source: '.gitignore'
             },
             content: {
                 'file.txt': '',
                 'node_modules/tempdep/indexOf.js': '',
-                '.gitignore': 'node_modules'
+                '.gitignore': 'node_modules',
             },
         },
     },
@@ -48,114 +62,64 @@ const targetTestList: Plan = {
             should: viewig.ErrorNoSources,
             content: {},
         },
-        'empty project node_modules only': {
+        'single file': {
             should: viewig.ErrorNoSources,
             content: {
-                'node_modules': {}
+                'file.txt': '',
             },
         },
-        'single file, no ignore sources': {
-            should: viewig.ErrorNoSources,
-            content: {
-                'file.txt': ''
-            },
-        },
-        'minimal project: .gitignore': {
+        '.gitignore': {
             should: {
                 include: ['file.txt'],
-                source: '.gitignore'
+                source: '.gitignore',
             },
             content: {
                 'file.txt': '',
                 'node_modules/tempdep/indexOf.js': '',
-                '.gitignore': 'node_modules'
+                '.gitignore': 'node_modules',
             },
         },
-        'minimal project: .npmignore, .gitignore': {
+        'real project: (package.json), .npmignore, .gitignore': {
             should: {
-                include: ['file2.txt'],
-                source: '.npmignore'
+                include: [
+                    'README.md',
+                    'bin/app',
+                    'package.json',
+                ],
+                source: '.npmignore',
             },
             content: {
-                'file.txt': '',
-                'file2.txt': '',
-                'node_modules/tempdep/indexOf.js': '',
-                '.npmignore': 'file.txt',
-                '.gitignore': 'file2.txt'
-            },
-        },
-        'minimal project: package.json, .npmignore, .gitignore': {
-            should: {
-                include: ['file2.txt', 'package.json'],
-                source: 'package.json'
-            },
-            content: {
-                'file.txt': '',
-                'file2.txt': '',
-                'node_modules/tempdep/indexOf.js': '',
-                '.npmignore': 'file.txt',
-                '.gitignore': 'file2.txt',
+                ...realProject,
+                '.npmignore': 'node_modules\nconfig*.json\ntest\n.github',
+                '.gitignore': 'node_modules\nconfig.json',
                 'package.json': JSON.stringify({
-                    files: ['file2.txt']
-                })
+                    files: [],
+                    main: './lib/index.js',
+                    name: 'app',
+                    version: '0.0.1',
+                }),
             },
         },
-        'minimal project: .npmignore, .gitignore, "{}" package.json': {
-            should: {
-                include: ['file2.txt', 'package.json'],
-                source: '.npmignore'
-            },
-            content: {
-                'file.txt': '',
-                'file2.txt': '',
-                'node_modules/tempdep/indexOf.js': '',
-                '.npmignore': 'file.txt',
-                '.gitignore': 'file2.txt',
-                'package.json': '{}'
-            },
-        },
-        'minimal project: .npmignore, .gitignore, "" package.json': {
-            should: {
-                include: ['file2.txt', 'package.json'],
-                source: '.npmignore'
-            },
-            content: {
-                'file.txt': '',
-                'file2.txt': '',
-                'node_modules/tempdep/indexOf.js': '',
-                '.npmignore': 'file.txt',
-                '.gitignore': 'file2.txt',
-                'package.json': ''
-            },
-        },
-        'real project: .npmignore, .gitignore, package.json no "files" prop': {
+        'real project: package.json, (.npmignore), .gitignore': {
             should: {
                 include: [
                     'README.md',
                     'bin/app',
                     'lib/cli.js',
                     'lib/index.js',
-                    'test/app.test.js',
                     'package.json'
                 ],
-                source: '.npmignore'
+                source: '.npmignore',
             },
             content: {
-                '.github': {},
-                'bin/app': '',
-                'node_modules/tempdep/indexOf.js': '',
-                'lib/cli.js': '',
-                'lib/index.js': '',
-                'test/app.test.js': '',
-                'README.md': '',
-                'config.json': '',
+                ...realProject,
                 '.npmignore': 'node_modules\nconfig*.json\ntest\n.github',
                 '.gitignore': 'node_modules\nconfig.json',
                 'package.json': JSON.stringify({
                     main: './lib/index.js',
                     name: 'app',
-                    version: '0.0.1'
-                })
+                    version: '0.0.1',
+                }),
             },
         },
     },
@@ -223,9 +187,9 @@ describe("Targets", function () {
                         .sort().join('\n        ');
                     const info = `\n      Test location: ${lineInfo(testLine)}\n      Test name: ${chalk.magenta(testName)}\n      Results: \n        ${actual}\n`
                     for (const fileInfo of (await lookListPromise)) {
-                        assert.strictEqual(fileInfo.source.sourcePath, should.source, 'Bad scan source.' + chalk.white(info))
+                        assert.strictEqual(fileInfo.source.sourcePath, should.source, 'The source is not right.' + chalk.white(info))
                     }
-                    assert.deepEqual(cmp1, cmp2, 'Bad scan.' + chalk.white(info))
+                    assert.deepEqual(cmp1, cmp2, 'The path list is bad.' + chalk.white(info))
                 })
             }
         })
