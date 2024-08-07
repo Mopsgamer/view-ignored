@@ -1,49 +1,7 @@
-import * as fs from "fs"
-import { join, dirname } from "path"
+import { dirname, join } from "path"
 import { FileSystemAdapter, Methodology, ScanFileOptions, Scanner } from "./lib.js"
 import FastGlob from "fast-glob"
 import arrify from "arrify"
-
-/**
- * Gets the file's stats using a fs adapter.
- */
-export function statSync(path: string, cwd?: string, fsa?: FileSystemAdapter): fs.Stats {
-	const statsSync = fsa?.statSync || fs.statSync
-	const filePath = join(cwd ?? process.cwd(), path)
-	return statsSync(filePath)
-}
-
-/**
- * Reads the file's dir using a fs adapter.
- */
-export function readdirSync(path: string, cwd?: string, fsa?: FileSystemAdapter): string[] {
-	const readdirSync = fsa?.readdirSync || fs.readdirSync
-	const filePath = join(cwd ?? process.cwd(), path)
-	return readdirSync(filePath)
-}
-
-/**
- * Reads the file path using a fs adapter.
- */
-export function readSourceSync(path: string, cwd?: string, fsa?: FileSystemAdapter): Buffer {
-	const readFileSync = fsa?.readFileSync || fs.readFileSync
-	const filePath = join(cwd ?? process.cwd(), path)
-	return readFileSync(filePath)
-}
-
-/**
- * Reads the file path using a fs adapter.
- */
-export function readSource(path: string, cwd?: string, fsa?: FileSystemAdapter): Promise<Buffer> {
-	const readFile = fsa?.readFile || fs.readFile
-	const filePath = join(cwd ?? process.cwd(), path)
-	return new Promise((resolve, reject) => {
-		readFile(filePath, function (err, data) {
-			if (err) return reject(err)
-			resolve(data)
-		})
-	})
-}
 
 export interface SourceInfoHierarcyOptions<T extends { toString(): string }> {
 	/**
@@ -161,25 +119,9 @@ export class SourceInfo {
 	}
 
 	/**
-	 * @returns File content.
+	 * @returns The contents of the source file.
 	 */
-	read(cwd?: string, fs?: FileSystemAdapter): Promise<Buffer> {
-		const r = readSource(this.sourcePath, cwd, fs)
-		r.then(c => this.content = c)
-		return r
-	}
-
-	/**
-	 * @returns File content.
-	 */
-	readSync(cwd?: string, fs?: FileSystemAdapter): Buffer {
-		return this.content = readSourceSync(this.sourcePath, cwd, fs)
-	}
-
-	/**
-	 * @returns Parent directory entry paths.
-	 */
-	readdirSync(cwd?: string, fs?: FileSystemAdapter): string[] {
-		return readdirSync(dirname(this.sourcePath), cwd, fs)
+	readSync(cwd: string | undefined, fs: FileSystemAdapter): Buffer {
+		return this.content = fs.readFileSync(join(cwd ?? process.cwd(), this.sourcePath))
 	}
 }

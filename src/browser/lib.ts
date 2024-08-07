@@ -1,10 +1,11 @@
 import { Scanner, PatternType, isPatternType } from "./scanner.js";
 import FastGlob from "fast-glob";
 import { FileInfo } from "./fileinfo.js";
-import { readdirSync, SourceInfo, statSync } from "./sourceinfo.js";
+import { SourceInfo } from "./sourceinfo.js";
 import { targetGet } from "./binds/index.js";
 import path from "path";
 import { ErrorNoSources, ErrorTargetNotBound } from "./errors.js";
+import * as FS from "fs"
 
 export * from "./errors.js"
 export * from "./scanner.js"
@@ -34,8 +35,9 @@ export function isFilterName(value: unknown): value is FilterName {
  * @extends FastGlob.FileSystemAdapter
  */
 export interface FileSystemAdapter extends FastGlob.FileSystemAdapter {
-	readFileSync: (path: string) => Buffer
-	readFile: (path: string, cb: (err: NodeJS.ErrnoException | null | undefined, data: Buffer) => void) => void
+	readFileSync: typeof FS.readFileSync
+	readdirSync: typeof FS.readdirSync
+	statSync: typeof FS.statSync
 }
 
 //#region looking
@@ -123,9 +125,9 @@ export function isMethodology(value: unknown): value is Methodology {
 export interface ScanFileOptions {
 	/**
 	 * Custom implementation of methods for working with the file system.
-	 * @default fs.*
+	 * @default import * as FS from "fs"
 	 */
-	fs?: FileSystemAdapter
+	fsa?: FileSystemAdapter
 
 	/**
 	 * The current working directory in which to search.
@@ -165,11 +167,12 @@ export interface ScanFolderOptions extends ScanFileOptions {
  * @throws {ErrorNoSources} if the source is bad.
  */
 export async function scanFile(filePath: string, sources: Methodology[], options: ScanFileOptions): Promise<FileInfo> {
+	const { fsa = FS, cwd = process.cwd() } = options ?? {}
 	for (const methodology of sources) {
 		const sourceInfoList: SourceInfo[] = SourceInfo.fromMethodology(methodology, options)
 
 		for (const sourceInfo of sourceInfoList) {
-			sourceInfo.readSync(options.cwd, options.fs)
+			sourceInfo.readSync(cwd, fsa)
 			const isGoodSource = methodology.scan(sourceInfo)
 			if (isGoodSource) {
 				return FileInfo.from(filePath, sourceInfo)
@@ -195,7 +198,7 @@ export async function scanProject(arg1: Methodology[] | string, options: ScanFol
 	}
 
 	// Find good source.
-	const { filter = "included" } = options;
+	const { filter = "included", fsa = FS, cwd = process.cwd() } = options;
 	for (const methodology of arg1) {
 		const resultList: FileInfo[] = []
 		const sourceInfoList: SourceInfo[] = SourceInfo.fromMethodology(methodology, options)
@@ -210,10 +213,10 @@ export async function scanProject(arg1: Methodology[] | string, options: ScanFol
 			dot: true,
 			followSymbolicLinks: false,
 		})
-		const processedFilePaths = new Set<string>()
+		const cache = new Set<string>()
 
 		for (const filePath of allFilePaths) {
-			if (processedFilePaths.has(filePath)) {
+			if (cache.has(filePath)) {
 				continue
 			}
 
@@ -224,7 +227,7 @@ export async function scanProject(arg1: Methodology[] | string, options: ScanFol
 						return true
 					}
 					if (sourceInfo.content === undefined) {
-						sourceInfo.readSync()
+						sourceInfo.readSync(cwd, fsa)
 					}
 					return methodology.scan(sourceInfo)
 				}
@@ -236,16 +239,19 @@ export async function scanProject(arg1: Methodology[] | string, options: ScanFol
 
 			// also create cache for each file in the direcotry
 			const fileDir = path.dirname(filePath)
-			const entryList = readdirSync(fileDir, options.cwd, options.fs)
+			const fileDirAbsolute = path.join(cwd, fileDir)
+			const entryList = fsa?.readdirSync(fileDirAbsolute)
 
 			for (const entry of entryList) {
-				const entryPath = fileDir !== '.' ? fileDir + '/' + entry : entry
-				const stat = statSync(entryPath, options.cwd, options.fs)
-				processedFilePaths.add(entryPath)
+				const entryPath = path.join(fileDir, entry)
+				const entryPathNormal = fileDir !== '.' ? fileDir + '/' + entry : entry
+				const entryPathAbsolute = path.join(cwd, entryPath)
+				const stat = fsa?.statSync(entryPathAbsolute)
+				cache.add(entryPathNormal)
 
 				if (stat.isFile()) {
 					// push new FileInfo
-					const fileInfo = FileInfo.from(entryPath, sourceInfo)
+					const fileInfo = FileInfo.from(entryPathNormal, sourceInfo)
 					if (fileInfo.isIncludedBy(filter)) {
 						resultList.push(fileInfo)
 					}

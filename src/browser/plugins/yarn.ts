@@ -30,14 +30,14 @@ export const matcherExclude = [
  * [!WARNING] All patterns copied from npm plugin, so they should be verified with yarn docs.
  */
 export const matcherInclude = [
-    'bin/',
-    'package.json',
-    'README',
-    'README.*',
-    'LICENSE',
-    'LICENSE.*',
-    'LICENCE',
-    'LICENCE.*',
+    '/bin/',
+    '/package.json',
+    '/README',
+    '/README.*',
+    '/LICENSE',
+    '/LICENSE.*',
+    '/LICENCE',
+    '/LICENCE.*',
 ];
 
 export const scanGit: ScanMethod = function (data) {

@@ -24,14 +24,14 @@ export const matcherExclude = [
     'npm-debug.log',
 ];
 export const matcherInclude = [
-    'bin/',
-    'package.json',
-    'README',
-    'README.*',
-    'LICENSE',
-    'LICENSE.*',
-    'LICENCE',
-    'LICENCE.*',
+    '/bin/',
+    '/package.json',
+    '/README',
+    '/README.*',
+    '/LICENSE',
+    '/LICENSE.*',
+    '/LICENCE',
+    '/LICENCE.*',
 ];
 
 export const scanGit: ScanMethod = function (data) {
