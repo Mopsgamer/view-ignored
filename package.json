@@ -69,6 +69,7 @@
 		"jsonify-paths": "^1.1.0",
 		"load-plugin": "^6.0.3",
 		"minimatch": "^10.0.1",
+		"ora": "^8.0.1",
 		"properties": "^1.2.1",
 		"treeify": "^1.1.0",
 		"tslib": "^2.6.3"

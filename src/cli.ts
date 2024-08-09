@@ -7,6 +7,7 @@ import { decorCondition, DecorName, formatFiles, StyleName } from "./browser/sty
 import { SortName } from "./browser/sorting.js";
 import { ErrorNoSources, FileInfo, FilterName, scanProject, Sorting } from "./lib.js";
 import { formatConfigConflicts } from "./styling.js";
+import ora from "ora";
 import packageJSON from "../package.json" with {type: "json"}
 
 export const { version } = packageJSON;
@@ -193,13 +194,18 @@ export function parseArgKeyVal(pair: string): Config.ConfigPair {
  * Command-line 'scan' command action.
  */
 export async function actionScan(flags: ScanFlags): Promise<void> {
+	const cwd = process.cwd()
 	const start = Date.now()
 	const chalk = getChalk(flags)
 
 	let fileInfoList: FileInfo[]
+	const spinner = ora({ text: cwd })
+	spinner.start()
 	try {
 		fileInfoList = await scanProject(flags.target, { filter: flags.filter })
 	} catch (error) {
+		spinner.stop()
+		spinner.clear()
 		if (!(error instanceof ErrorNoSources)) {
 			throw error
 		}
@@ -217,8 +223,10 @@ export async function actionScan(flags: ScanFlags): Promise<void> {
 		a.toString(), b.toString(),
 		cacheEditDates.get(a)!, cacheEditDates.get(b)!
 	))
-	console.log(process.cwd())
-	console.log(formatFiles(lookedSorted, { chalk, style: flags.style, decor: flags.decor, showSources: flags.showSources, depth: flags.depth }))
+
+	const tree = formatFiles(lookedSorted, { chalk, style: flags.style, decor: flags.decor, showSources: flags.showSources, depth: flags.depth })
+	spinner.succeed()
+	console.log(tree)
 	const time = Date.now() - start
 	const checkSymbol = decorCondition(flags.decor, { ifEmoji: '✅', ifNerd: '\uf00c', postfix: ' ' })
 	const fastSymbol = decorCondition(flags.decor, { ifEmoji: '⚡', ifNerd: '\udb85\udc0c' })
