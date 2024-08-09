@@ -89,8 +89,7 @@ const fileInfoSorted = fileInfoList.sort((a, b) => sorter(
 
 - `git`
   - Test command: `git ls-tree -r <git-branch-name> --name-only`
-  - Sources walkthrough: '.gitignore' and git config `core.excludesFile`.
-  - `core.excludesFile` does not work at this moment.
+  - Sources walkthrough: '.gitignore'.
 - `npm` (can be usable for PNPM and Bun)
   - Test command: `npm pack --dry-run`
   - Sources walkthrough: 'package.json'>"files" otherwise '.npmignore' otherwise '.gitignore'.

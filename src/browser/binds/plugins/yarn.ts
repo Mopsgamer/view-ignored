@@ -1,5 +1,4 @@
-import { PluginExport } from "../binds/index.js";
-import { Plugins, Methodology, ScanMethod } from "../index.js"
+import { Plugins, Methodology, ScanMethod } from "../../index.js"
 import getValue from "get-value";
 
 export const id = "yarn"
@@ -83,4 +82,4 @@ export const methodology: Methodology[] = [
 ]
 
 const bind: Plugins.TargetBind = { id, name, methodology }
-export default ({ viewignored: { addTargets: [bind] } } as PluginExport)
+export default ({ viewignored: { addTargets: [bind] } } as Plugins.PluginExport)

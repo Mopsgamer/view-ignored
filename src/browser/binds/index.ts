@@ -38,7 +38,7 @@ export function isPluginExport(value: unknown): value is PluginExport {
 /**
  * Imports the plugin's exported data.
  */
-function importPlugin(exportData: PluginExport) {
+export function importPlugin(exportData: PluginExport) {
     const { addTargets } = exportData.viewignored
     for (const targetBind of addTargets) {
         targetSet(targetBind)
@@ -89,13 +89,13 @@ export async function loadPlugins(moduleNameList?: string[]): Promise<PluginLoad
     return resultList;
 }
 
-export const BuiltInGit = import("../plugins/git.js")
+export const BuiltInGit = import("./plugins/git.js")
 BuiltInGit.then(e => e.default).then(importPlugin)
-export const BuiltInVsce = import("../plugins/vsce.js")
+export const BuiltInVsce = import("./plugins/vsce.js")
 BuiltInVsce.then(e => e.default).then(importPlugin)
-export const BuiltInNpm = import("../plugins/npm.js")
+export const BuiltInNpm = import("./plugins/npm.js")
 BuiltInNpm.then(e => e.default).then(importPlugin)
-export const BuiltInYarn = import("../plugins/yarn.js")
+export const BuiltInYarn = import("./plugins/yarn.js")
 BuiltInYarn.then(e => e.default).then(importPlugin)
 
 /**

@@ -1,5 +1,4 @@
-import { PluginExport } from "../binds/index.js"
-import { Plugins, ScanMethod, Methodology } from "../index.js"
+import { Plugins, ScanMethod, Methodology } from "../../index.js"
 
 export const id = "vsce"
 export const name = "VSC Extension"
@@ -25,4 +24,4 @@ export const methodology: Methodology[] = [
 ]
 
 const bind: Plugins.TargetBind = { id, name, methodology, testCommand }
-export default ({ viewignored: { addTargets: [bind] } } as PluginExport)
+export default ({ viewignored: { addTargets: [bind] } } as Plugins.PluginExport)

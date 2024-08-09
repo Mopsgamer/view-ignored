@@ -1,5 +1,4 @@
-import { PluginExport } from "../binds/index.js"
-import { Plugins, ScanMethod, Methodology, Styling } from "../index.js"
+import { Plugins, ScanMethod, Methodology, Styling, SourceInfo } from "../../index.js"
 
 const id = "git"
 const name: Styling.DecorConditionOptions = {
@@ -13,8 +12,8 @@ const matcherExclude: string[] = [
     ".DS_Store/**"
 ]
 
-const scan: ScanMethod = function (data) {
-    const { scanner, content } = data
+const scan: ScanMethod = function (fileInfo: SourceInfo) {
+    const { scanner, content } = fileInfo
     const pat = content?.toString()
     if (!scanner.patternIsValid(pat)) {
         return false
@@ -28,4 +27,4 @@ const methodology: Methodology[] = [
 ]
 
 const bind: Plugins.TargetBind = { id, name, methodology, testCommand }
-export default ({ viewignored: { addTargets: [bind] } } as PluginExport)
+export default ({ viewignored: { addTargets: [bind] } } as Plugins.PluginExport)
