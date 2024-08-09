@@ -1,4 +1,4 @@
-import fs, { readFileSync } from "fs";
+import fs from "fs";
 import { Chalk, ChalkInstance, ColorSupportLevel } from "chalk";
 import { Argument, InvalidArgumentError, Option, Command } from "commander";
 import * as Config from "./config.js";
@@ -7,8 +7,9 @@ import { decorCondition, DecorName, formatFiles, StyleName } from "./browser/sty
 import { SortName } from "./browser/sorting.js";
 import { ErrorNoSources, FileInfo, FilterName, scanProject, Sorting } from "./lib.js";
 import { formatConfigConflicts } from "./styling.js";
+import packageJSON from "../package.json" with {type: "json"}
 
-export const { version } = JSON.parse(readFileSync("package.json").toString());
+export const { version } = packageJSON;
 
 /**
  * Prepare for {@link program}.parse().
