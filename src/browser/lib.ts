@@ -1,5 +1,5 @@
 import { Scanner, PatternType, isPatternType } from "./scanner.js";
-import FastGlob from "fast-glob";
+import { glob, FSOption } from "glob";
 import { FileInfo } from "./fileinfo.js";
 import { SourceInfo } from "./sourceinfo.js";
 import { targetGet } from "./binds/index.js";
@@ -32,12 +32,12 @@ export function isFilterName(value: unknown): value is FilterName {
 
 /**
  * Uses `readFileSync` and `readFile`.
- * @extends FastGlob.FileSystemAdapter
+ * @extends glob.FileSystemAdapter
  */
-export interface FileSystemAdapter extends FastGlob.FileSystemAdapter {
-	readFileSync: typeof FS.readFileSync
-	readdirSync: typeof FS.readdirSync
-	statSync: typeof FS.statSync
+export interface FileSystemAdapter extends FSOption {
+	readFileSync?: typeof FS.readFileSync
+	readdirSync?: typeof FS.readdirSync
+	statSync?: typeof FS.statSync
 }
 
 //#region looking
@@ -95,7 +95,7 @@ export interface Methodology {
 	/**
 	 * First valid source will be used as {@link Scanner}.
 	 */
-	pattern: SourceInfo[] | FastGlob.Pattern[] | SourceInfo | FastGlob.Pattern
+	pattern: SourceInfo[] | string[] | SourceInfo | string
 
 	/**
 	 * Scanner function. Should return `true`, if the given source is valid and also add patterns to the {@link FileInfo.scanner}.
@@ -111,11 +111,11 @@ export function isMethodology(value: unknown): value is Methodology {
 		return false
 	}
 
-	const v = value as Record<string, unknown>
+	const v = value as Partial<Methodology>
 
-	return isPatternType(v.patternType)
-		&& (typeof v.pattern === "string" && FastGlob.isDynamicPattern(v.pattern))
-		&& (v.addPatterns === undefined || Array.isArray(v.addPatterns) && v.addPatterns.every(p => Scanner.patternIsValid(p, { patternType: v.patternType as PatternType })))
+	return isPatternType(v.matcher)
+		&& (typeof v.pattern === "string")
+		&& (v.matcherAdd === undefined || Array.isArray(v.matcherAdd) && v.matcherAdd.every(p => Scanner.patternIsValid(p, { patternType: v.matcher as PatternType })))
 }
 
 /**
@@ -169,10 +169,10 @@ export interface ScanFolderOptions extends ScanFileOptions {
 export async function scanFile(filePath: string, sources: Methodology[], options: ScanFileOptions): Promise<FileInfo> {
 	const { fsa = FS, cwd = process.cwd() } = options ?? {}
 	for (const methodology of sources) {
-		const sourceInfoList: SourceInfo[] = SourceInfo.fromMethodology(methodology, options)
+		const sourceInfoList: SourceInfo[] = await SourceInfo.fromMethodology(methodology, options)
 
 		for (const sourceInfo of sourceInfoList) {
-			sourceInfo.readSync(cwd, fsa.readFileSync)
+			sourceInfo.readSync(cwd, fsa.readFileSync ?? FS.readFileSync)
 			const isGoodSource = methodology.scan(sourceInfo)
 			if (isGoodSource) {
 				return FileInfo.from(filePath, sourceInfo)
@@ -201,17 +201,17 @@ export async function scanProject(arg1: Methodology[] | string, options: ScanFol
 	const { filter = "included", fsa = FS, cwd = process.cwd() } = options;
 	for (const methodology of arg1) {
 		const resultList: FileInfo[] = []
-		const sourceInfoList: SourceInfo[] = SourceInfo.fromMethodology(methodology, options)
+		const sourceInfoList: SourceInfo[] = await SourceInfo.fromMethodology(methodology, options)
 
 		if (sourceInfoList.length < 1) {
 			continue
 		}
 
-		const allFilePaths = await FastGlob.async("**", {
+		const allFilePaths = await glob("**", {
 			...options,
-			onlyFiles: true,
+			nodir: true,
 			dot: true,
-			followSymbolicLinks: false,
+			posix: true
 		})
 		const cache = new Set<string>()
 
@@ -228,7 +228,7 @@ export async function scanProject(arg1: Methodology[] | string, options: ScanFol
 						return true
 					}
 					if (sourceInfo.content === undefined) {
-						sourceInfo.readSync(cwd, fsa.readFileSync)
+						sourceInfo.readSync(cwd, fsa.readFileSync ?? FS.readFileSync)
 					}
 					return methodology.scan(sourceInfo)
 				}
@@ -242,13 +242,13 @@ export async function scanProject(arg1: Methodology[] | string, options: ScanFol
 			// also create cache for each file in the direcotry
 			const fileDir = path.dirname(filePath)
 			const fileDirAbsolute = path.join(cwd, fileDir)
-			const entryList = fsa?.readdirSync(fileDirAbsolute)
+			const entryList = (fsa?.readdirSync ?? FS.readdirSync)(fileDirAbsolute)
 
 			for (const entry of entryList) {
 				const entryPath = path.join(fileDir, entry)
 				const entryPathNormal = fileDir !== '.' ? fileDir + '/' + entry : entry
 				const entryPathAbsolute = path.join(cwd, entryPath)
-				const stat = fsa?.statSync(entryPathAbsolute)
+				const stat = (fsa?.statSync ?? FS.statSync)(entryPathAbsolute)
 				cache.add(entryPathNormal)
 
 				if (stat.isFile()) {

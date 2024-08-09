@@ -25,9 +25,9 @@ export interface FormatFilesOptions {
 }
 
 /**
- * @returns Prints a readable file list.
+ * @returns Prints a readable file list. Here is '\n' ending.
  */
-export function formatFiles(files: FileInfo[], options: FormatFilesOptions): void {
+export function formatFiles(files: FileInfo[], options: FormatFilesOptions): string {
 	const { showSources = false, chalk, decor = "normal", style, depth = Infinity } = options ?? {};
 
 	const isPaths = style === "paths"
@@ -35,14 +35,13 @@ export function formatFiles(files: FileInfo[], options: FormatFilesOptions): voi
 		.filter(p => Array.from(p).filter(c => c === '/').length < depth)
 
 	if (isPaths) {
-		console.log(paths.join('\n') + '\n')
-		return
+		return paths.join('\n') + '\n'
 	}
 
 	// isTree
 	const pathsAsObject = jsonifyPaths.from(paths, { delimiter: "/" })
 	const pathsAsTree = tree.asTree(pathsAsObject, true, true)
-	console.log(pathsAsTree)
+	return pathsAsTree
 }
 
 /**

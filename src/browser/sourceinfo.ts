@@ -1,6 +1,6 @@
 import { dirname, join } from "path"
 import { FileSystemAdapter, Methodology, ScanFileOptions, Scanner } from "./lib.js"
-import FastGlob from "fast-glob"
+import { glob } from "glob"
 import arrify from "arrify"
 
 export interface SourceInfoHierarcyOptions<T extends { toString(): string }> {
@@ -53,17 +53,17 @@ export class SourceInfo {
 	/**
 	 * Gets sources from the methodology.
 	 */
-	static fromMethodology(methodology: Methodology, options: ScanFileOptions): SourceInfo[] {
+	static async fromMethodology(methodology: Methodology, options: ScanFileOptions): Promise<SourceInfo[]> {
 		const patterns = arrify(methodology.pattern)
 		if (patterns.some(p => typeof p !== "string")) {
 			return patterns as SourceInfo[]
 		}
 
-		const paths = FastGlob.sync(patterns as string[], {
+		const paths = await glob(patterns as string[], {
 			...options,
-			onlyFiles: true,
+			nodir: true,
 			dot: true,
-			followSymbolicLinks: false,
+			posix: true
 		})
 		const sourceInfoList = paths.map(p => SourceInfo.from(p, methodology))
 		return sourceInfoList
@@ -121,7 +121,7 @@ export class SourceInfo {
 	/**
 	 * @returns The contents of the source file.
 	 */
-	readSync(cwd: string | undefined, readFileSync: FileSystemAdapter["readFileSync"]): Buffer {
+	readSync(cwd: string | undefined, readFileSync: Exclude<FileSystemAdapter["readFileSync"], undefined>): Buffer {
 		cwd ??= process.cwd()
 		return this.content = readFileSync(join(cwd, this.sourcePath))
 	}

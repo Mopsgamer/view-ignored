@@ -26,12 +26,12 @@ export interface PluginExport {
  * Checks if the value is the {@link PluginExport}.
  */
 export function isPluginExport(value: unknown): value is PluginExport {
-    if (typeof value !== "object" || value === null) {
+    if (value?.constructor === Object) {
         return false
     }
 
-    const vign = (value as Record<string, unknown>).viewignored
-    return (typeof vign === "object" && vign !== null)
+    const vign = (value as Partial<PluginExport>).viewignored
+    return (vign?.constructor === Object)
         && 'addTargets' in vign && Array.isArray(vign.addTargets) && vign.addTargets.every(isTargetBind)
 }
 

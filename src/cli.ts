@@ -217,7 +217,7 @@ export async function actionScan(flags: ScanFlags): Promise<void> {
 		cacheEditDates.get(a)!, cacheEditDates.get(b)!
 	))
 	console.log(process.cwd())
-	formatFiles(lookedSorted, { chalk, style: flags.style, decor: flags.decor, showSources: flags.showSources, depth: flags.depth })
+	console.log(formatFiles(lookedSorted, { chalk, style: flags.style, decor: flags.decor, showSources: flags.showSources, depth: flags.depth }))
 	const time = Date.now() - start
 	const checkSymbol = decorCondition(flags.decor, { ifEmoji: '✅', ifNerd: '\uf00c', postfix: ' ' })
 	const fastSymbol = decorCondition(flags.decor, { ifEmoji: '⚡', ifNerd: '\udb85\udc0c' })
