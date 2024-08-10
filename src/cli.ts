@@ -264,8 +264,9 @@ export async function actionScan(): Promise<void> {
         message += `${chalk.blue(infoSymbol)}You can use '${chalk.magenta(bind.testCommand)}' to check if the list is valid.`
     }
     message += '\n'
-    spinner.suffixText = '\n' + message;
-    spinner.succeed()
+    spinner.stop()
+    spinner.clear()
+    console.log(cwd + '\n' + message)
 }
 
 /**
