@@ -65,7 +65,7 @@ export interface ScanFlags extends ProgramFlags {
  * Command-line 'cfg get' command flags.
  */
 export interface ConfigGetFlags {
-    defs: boolean
+    real: boolean
 }
 
 /**
@@ -119,24 +119,21 @@ export const argConfigKeyVal = new Argument('[pair]', 'pair "key=value"').argPar
  */
 export const argConfigKey = new Argument('[key]', 'setting').choices(Config.configKeyList)
 
-export const cfgGetOption = new Option('--defs', 'use default value(s) as fallback for printing').default(false)
+export const cfgGetOption = new Option('--real', 'use default value(s) as fallback').default(false)
 
 cfgProgram
     .command('path').description('print the config file path')
     .action(actionCfgPath)
 cfgProgram
-    .command('reset').description('reset config by deleting the file. alias for no-prop unset')
-    .action(actionCfgReset)
-cfgProgram
     .command('set').description('set config property using syntax "key=value"')
     .addArgument(argConfigKeyVal)
     .action(actionCfgSet)
 cfgProgram
-    .command('unset').description("unset all configuration values or a specific one")
+    .command('unset').description("delete configuration value if cpecified, otherwise delete entire config")
     .addArgument(argConfigKey)
     .action(actionCfgUnset)
 cfgProgram
-    .command('get').description('print a list of all configuration values or a specific one')
+    .command('get').description('print configuration value(s). You can use --real option to view real values')
     .addOption(cfgGetOption)
     .addArgument(argConfigKey)
     .action(actionCfgGet)
@@ -262,14 +259,6 @@ export function actionCfgPath(): void {
 }
 
 /**
- * Command-line 'config reset' command action
- */
-export function actionCfgReset(): void {
-    Config.configManager.unset().save()
-    console.log(Config.configManager.getPairString())
-}
-
-/**
  * Command-line 'config set' command action
  */
 export function actionCfgSet(pair?: Config.ConfigPair): void {
@@ -286,9 +275,10 @@ export function actionCfgSet(pair?: Config.ConfigPair): void {
  * Command-line 'config unset' command action
  */
 export function actionCfgUnset(key: Config.ConfigKey | undefined): void {
-    if (key !== undefined) {
-        Config.configManager.unset(key).save()
+    if (key === undefined) {
+        console.log('Configuration file has been completely deleted.')
     }
+    Config.configManager.unset(key).save()
     console.log(Config.configManager.getPairString(key))
 }
 
@@ -296,5 +286,5 @@ export function actionCfgUnset(key: Config.ConfigKey | undefined): void {
  * Command-line 'config unset' command action
  */
 export function actionCfgGet(key: Config.ConfigKey | undefined, options: ConfigGetFlags): void {
-    console.log(Config.configManager.getPairString(key, options.defs))
+    console.log(Config.configManager.getPairString(key, options.real))
 }
