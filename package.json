@@ -8,9 +8,12 @@
 		"view-ignored": "./bin/viewig"
 	},
 	"scripts": {
-		"prerelease": "pnpm lint && pnpm test && pnpm build",
-		"test": "pnpm mocha --require tsx ./test/**/*.test.ts",
-		"build": "pnpm tsc",
+		"prerelease": "pnpm lint && pnpm build:pub && pnpm test",
+		"postinstall": "pnpm run build",
+		"test": "pnpm mocha ./out/test/**/*.test.js",
+		"build": "pnpm shx rm -rf out && pnpm tsc",
+		"build:pub": "pnpm shx rm -rf out && pnpm tsc --sourceMap false",
+		"build:watch": "pnpm tsc --watch",
 		"lint": "pnpm eslint .",
 		"lint:fix": "pnpm eslint . --fix",
 		"release:major": "pnpm release-it --increment=major",
@@ -19,9 +22,9 @@
 	},
 	"author": "Mopsgamer",
 	"license": "ISC",
-	"main": "./lib/index.js",
+	"main": "./lib/src/index.js",
 	"files": [
-		"lib"
+		"out/src"
 	],
 	"repository": {
 		"type": "git",
@@ -53,35 +56,38 @@
 		"access": "public"
 	},
 	"directories": {
-		"lib": "lib"
+		"lib": "out/src"
 	},
 	"dependencies": {
+		"arrify": "^3.0.0",
+		"boxen": "^8.0.1",
 		"chalk": "^5.3.0",
 		"commander": "^12.1.0",
-		"fast-glob": "^3.3.2",
 		"get-value": "^3.0.1",
+		"glob": "^11.0.0",
 		"ignore": "^5.3.1",
 		"jsonify-paths": "^1.1.0",
-		"minimatch": "^9.0.4",
-		"properties": "^1.2.1",
+		"load-plugin": "^6.0.3",
+		"minimatch": "^10.0.1",
+		"ora": "^8.0.1",
 		"treeify": "^1.1.0",
-		"tslib": "^2.6.3"
+		"tslib": "^2.6.3",
+		"yaml": "^2.5.0"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.4.0",
 		"@release-it/keep-a-changelog": "^5.0.0",
 		"@types/get-value": "^3.0.5",
 		"@types/mocha": "^10.0.6",
-		"@types/mock-fs": "^4.13.4",
 		"@types/node": "^20.14.2",
 		"@types/treeify": "^1.0.3",
 		"eslint": "^8.57.0",
 		"eslint-plugin-only-warn": "^1.1.0",
+		"fs-fixture": "^2.4.0",
 		"globals": "^15.4.0",
 		"mocha": "^10.4.0",
-		"mock-fs": "^5.2.0",
 		"release-it": "^17.3.0",
-		"tsx": "^4.15.1",
+		"shx": "^0.3.4",
 		"typescript": "^5.4.5",
 		"typescript-eslint": "^7.13.0"
 	},

@@ -1,35 +1,80 @@
-import { stdout } from "process"
-import { FilterName, FileInfo } from "../index.js"
+import { FileInfo } from "../index.js"
 import { default as tree } from "treeify";
 import jsonifyPaths from "jsonify-paths";
 import { ChalkInstance } from "chalk";
 import path from "path";
+import boxen, { Options } from "boxen";
+import { stripVTControlCharacters } from "util";
 
-export const styleNameList = ['tree', 'paths', 'treeEmoji', 'treeNerd'] as const
-export type StyleName = typeof styleNameList[number]
-export type Style = (oc: ChalkInstance, files: FileInfo[], style: StyleName, filter: FilterName) => void
-
-const printTree: Style = function (oc, files, styleName) {
-	const pathsAsObject = jsonifyPaths.from(files.map(f => f.toString({ styleName, usePrefix: true, chalk: oc }, false)), { delimiter: "/" })
-	const pathsAsTree = tree.asTree(pathsAsObject, true, true)
-	stdout.write(pathsAsTree)
-}
-
-export const Styles: Record<StyleName, Style> = {
-	paths(oc, files, styleName) {
-		stdout.write(files.map(
-			f => `${f.toString({ styleName, usePrefix: true, chalk: oc })}`)
-			.join('\n') + "\n")
-	},
-	tree: printTree,
-	treeEmoji: printTree,
-	treeNerd: printTree
+export interface FormatFilesOptions {
+	/**
+	 * @default false
+	 */
+	showSources?: boolean
+	/**
+	 * @default "paths"
+	 */
+	style: StyleName,
+	/**
+	 * @default "paths"
+	 */
+	decor?: DecorName,
+	chalk: ChalkInstance,
 }
 
 /**
- * Formatting options for the {@link styleCondition}.
+ * @returns Prints a readable file list. Here is '\n' ending.
  */
-export interface StyleCondition {
+export function formatFiles(files: FileInfo[], options: FormatFilesOptions): string {
+	const { showSources = false, chalk, decor = "normal", style } = options ?? {};
+
+	const isPaths = style === "paths"
+	const paths = files.map(f => f.toString({ fileIcon: decor, usePrefix: true, chalk: chalk, source: showSources, entire: isPaths }))
+
+	if (isPaths) {
+		return paths.join('\n') + '\n'
+	}
+
+	// isTree
+	const pathsAsObject = jsonifyPaths.from(paths, { delimiter: "/" })
+	const pathsAsTree = tree.asTree(pathsAsObject, true, true)
+	return pathsAsTree
+}
+
+/**
+ * Contains all style names.
+ */
+export const styleNameList = ['tree', 'paths'] as const
+/**
+ * Contains all style names as a type.
+ */
+export type StyleName = typeof styleNameList[number]
+/**
+ * Checks if the value is the {@link StyleName}.
+ */
+export function isStyleName(value: unknown): value is StyleName {
+	return typeof value === "string" && styleNameList.includes(value as StyleName)
+}
+
+/**
+ * Contains all decor names.
+ */
+export const decorNameList = ['normal', 'emoji', 'nerdfonts'] as const
+/**
+ * Contains all decor names as a type.
+ */
+export type DecorName = typeof decorNameList[number]
+/**
+ * Checks if the value is the {@link DecorName}.
+ */
+export function isDecorName(value: unknown): value is DecorName {
+	return typeof value === "string" && decorNameList.includes(value as DecorName)
+}
+
+/**
+ * Formatting options for the {@link decorCondition}.
+ */
+export interface DecorConditionOptions {
 	/**
 	 * @default ""
 	 */
@@ -41,10 +86,10 @@ export interface StyleCondition {
 	postfix?: string
 
 	/**
-	 * If style is not an emoji or nerd use this string.
+	 * If the decor is not an emoji or nerd use this string.
 	 * @default ""
 	 */
-	ifAny?: string
+	ifNormal?: string
 
 	/**
 	 * If style name (lowercase) contains `emoji` use this string.
@@ -61,36 +106,47 @@ export interface StyleCondition {
 
 /**
  * Formats the string for specific style types.
- * @param styleName The style name.
+ * @param decor The decor name.
  * @param condition Formatting options.
  */
-export function styleCondition(styleName: StyleName | undefined, condition: StyleCondition): string {
-	if (styleName === undefined) {
-		return ''
-	}
-	const isNerd = styleName.toLowerCase().includes('nerd')
-	const isEmoji = styleName.toLowerCase().includes('emoji')
-
-	let result: string = ''
-	if (isEmoji) {
+export function decorCondition(decor: DecorName, condition: DecorConditionOptions): string {
+	let result: string = condition.ifNormal ?? ''
+	if (decor === 'emoji') {
 		result = condition.ifEmoji ?? result
-	} else if (isNerd) {
+	} else if (decor === 'nerdfonts') {
 		result = condition.ifNerd ?? result
-	} else {
-		result = condition.ifAny ?? result
 	}
+
 	if (result !== '') {
 		result = (condition.prefix ?? '') + result + (condition.postfix ?? '')
 	}
 	return result
 }
 
+export interface BoxOptions extends Options {
+	noColor?: boolean
+}
+
+export function boxError(message: string, options?: BoxOptions): string {
+	let result = ('\n' + boxen(message, {
+		titleAlignment: "left",
+		padding: { left: 2, right: 2 },
+		borderColor: "redBright",
+		borderStyle: "round",
+		...options,
+	}))
+	if (options?.noColor) {
+		result = stripVTControlCharacters(result)
+	}
+	return result
+}
+
 /**
- * Adds the file icon prefix to the string.
- * @param styleName The style name.
+ * Returns file icon for the file name & extension.
+ * @param decor The decor name.
  * @param filePath The full file path.
  */
-export function styleConditionFile(styleName: StyleName | undefined, filePath: string): string {
+export function decorFile(decor: DecorName | undefined, filePath: string): string {
 	const parsed = path.parse(filePath)
 	let icon = ''
 	switch (parsed.ext.toLocaleLowerCase()) {
@@ -162,7 +218,10 @@ export function styleConditionFile(styleName: StyleName | undefined, filePath: s
 		default:
 			break;
 	}
-	return styleCondition(styleName, {
+	if (!decor) {
+		return ''
+	}
+	return decorCondition(decor, {
 		ifEmoji: '📄',
 		ifNerd: icon,
 		postfix: ' '

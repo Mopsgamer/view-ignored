@@ -1,42 +1,17 @@
-import * as fs from "fs"
-import { join, dirname } from "path"
-import { FileSystemAdapter } from "./lib.js"
+import { dirname, join } from "path"
+import { FileSystemAdapter, Methodology, ScanFileOptions, Scanner } from "./lib.js"
+import { glob } from "glob"
+import arrify from "arrify"
 
-/**
- * Reads the file path using fs adapter.
- */
-function readSourceSync(path: string, cwd?: string, fsa?: FileSystemAdapter): Buffer {
-	const readFileSync = fsa?.readFileSync || fs.readFileSync
-	const filePath = join(cwd ?? process.cwd(), path)
-	return readFileSync(filePath)
-}
-
-/**
- * Reads the file path using fs adapter.
- */
-function readSource(path: string, cwd?: string, fsa?: FileSystemAdapter): Promise<Buffer> {
-	const readFile = fsa?.readFile || fs.readFile
-	const filePath = join(cwd ?? process.cwd(), path)
-	return new Promise((resolve, reject) => {
-		readFile(filePath, function (err, data) {
-			if (err) return reject(err)
-			resolve(data)
-		})
-	})
-}
-
-/**
- * @returns Closest dir entry path for another one using the given list.
- * If `undefined`, there are no reliable sources that contain patterns to ignore.
- */
-export function findDomination(filePath: string, paths: string[]): string | undefined {
-	const filePathDir = dirname(filePath)
-	const result = paths.reverse().find(p => {
-		const pd = dirname(p)
-		const result = filePathDir.startsWith(pd) || pd === '.'
-		return result
-	})
-	return result
+export interface SourceInfoHierarcyOptions<T extends { toString(): string }> {
+	/**
+	 * @default true
+	 */
+	closest?: boolean
+	/**
+	 * @default undefined
+	 */
+	filter?: (path: T) => boolean
 }
 
 /**
@@ -50,33 +25,104 @@ export class SourceInfo {
 
 	constructor(
 		/**
-		 * Relative path to the file.
+		 * The relative path to the file.
 		 */
-		public sourcePath: string
+		public readonly sourcePath: string,
+
+		/**
+		 * The pattern parser.
+		 */
+		public readonly scanner: Scanner
 	) { }
 
-	static from(path: string): SourceInfo
-	static from(arg: string): SourceInfo {
-		return new SourceInfo(arg)
+	/**
+	 * Creates new {@link SourceInfo} instance.
+	 */
+	static from(path: string, methodology: Methodology): SourceInfo {
+		const scanner = new Scanner({
+			negated: methodology.matcherNegated,
+			ignoreCase: methodology.ignoreCase,
+			patternType: methodology.matcher
+		})
+		scanner.add(methodology.matcherAdd)
+		scanner.addExclude(methodology.matcherExclude)
+		scanner.addInclude(methodology.matcherInclude)
+		return new SourceInfo(path, scanner)
 	}
 
-	toString() {
+	/**
+	 * Gets sources from the methodology.
+	 */
+	static async fromMethodology(methodology: Methodology, options: ScanFileOptions): Promise<SourceInfo[]> {
+		const patterns = arrify(methodology.pattern)
+		if (patterns.some(p => typeof p !== "string")) {
+			return patterns as SourceInfo[]
+		}
+
+		const paths = await glob(patterns as string[], {
+			...options,
+			nodir: true,
+			dot: true,
+			posix: true
+		})
+		const sourceInfoList = paths.map(p => SourceInfo.from(p, methodology))
+		return sourceInfoList
+	}
+
+	/**
+	 * Selects the closest or farthest siblings relative to the path.
+	 */
+	static hierarcy<T extends { toString(): string }>(target: string, pathList: T[], options?: SourceInfoHierarcyOptions<T>): T | undefined {
+		const { closest = true, filter: scan } = options ?? {}
+		pathList = pathList.sort((a, b) => a.toString().localeCompare(b.toString()))
+
+		const checkStack: string[] = []
+		// fill checkStack
+		let dir = target.toString()
+		for (; ;) {
+			const parent = dirname(dir)
+			if (dir === parent) {
+				break;
+			}
+
+			checkStack.push(dir = parent)
+		}
+
+		if (!closest) {
+			checkStack.reverse()
+		}
+
+		const cacheDirNames: Map<T, string> = new Map()
+		for (const dir of checkStack) {
+			const closestPath = pathList.find(path => {
+				let pathDir = cacheDirNames.get(path)
+				if (!pathDir) {
+					cacheDirNames.set(path, pathDir = dirname(path.toString()))
+				}
+
+				if (dir !== pathDir) {
+					return false
+				}
+
+				return scan ? scan?.(path) : true
+			})
+
+			return closestPath
+		}
+	}
+
+	/**
+	 * @returns File path of the source.
+	 */
+	toString(): string {
 		return this.sourcePath
 	}
 
 	/**
-	 * @returns File content.
+	 * @returns The contents of the source file.
 	 */
-	read(): Promise<Buffer> {
-		const r = readSource(this.sourcePath)
-		r.then(c => this.content = c)
-		return r
-	}
-
-	/**
-	 * @returns File content.
-	 */
-	readSync(): Buffer {
-		return this.content = readSourceSync(this.sourcePath)
+	readSync(cwd: string | undefined, readFileSync: Exclude<FileSystemAdapter["readFileSync"], undefined>): Buffer {
+		cwd ??= process.cwd()
+		return this.content = readFileSync(join(cwd, this.sourcePath))
 	}
 }

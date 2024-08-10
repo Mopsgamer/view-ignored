@@ -1,16 +1,35 @@
-import { ScanFolderOptions, Methodology } from "../lib.js"
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { ScanFolderOptions, Methodology, isMethodology, scanProject } from "../lib.js"
+import { DecorConditionOptions } from "../styling.js"
 
+/**
+ * Should satisfy RegExp: `/^[-a-zA-Z0-9]+$/`.
+ */
+export type TargetId = string
+
+/**
+ * @param value Target's id. Simple name.
+ * @returns `true`, if the id is available for binding.
+ */
+export function isTargetId(value: unknown): value is TargetId {
+    return typeof value === "string" && value.match(/^[-a-zA-Z0-9]+$/) != null
+}
+
+/**
+ * The bind which allows use predefined options for scan functions.
+ * @see {@link scanProject}
+ */
 export interface TargetBind {
     /**
-     * The target simple name.
-     * @see {@link isValidId}
+     * Simple name.
+     * @see {@link isTargetId}
      */
-    id: string
+    id: TargetId
 
     /**
-     * The target readable name.
+     * Readable name.
      */
-    name: string
+    name: string | DecorConditionOptions
 
     /**
      * The walkthrough. Files including patterns.
@@ -28,15 +47,24 @@ export interface TargetBind {
      * "npm pack --dry run"
      * "vsce ls"
      */
-    testCommad?: string
+    testCommand?: string
 }
 
 /**
- * @param id The target simple name.
- * @returns `true` if the target id is valid.
+ * Checks if the value is the {@link TargetBind}.
  */
-export function isValidId(id: unknown): boolean {
-    return typeof id === "string" && id.match(/^[-a-zA-Z0-9]+$/) != null
+export function isTargetBind(value: unknown): value is TargetBind {
+    if (value?.constructor !== Object) {
+        return false
+    }
+
+    const v = value as Record<string, unknown>
+
+    return (isTargetId(v.id))
+        && (typeof v.name === "string" || v.name?.constructor === Object)
+        && (Array.isArray(v.methodology) && v.methodology.every(isMethodology))
+        && (v.scanOptions === undefined || v.scanOptions?.constructor === Object)
+        && (v.testCommand === undefined || typeof v.testCommand === "string")
 }
 
 /**
@@ -52,7 +80,7 @@ const targetBindMap = new Map<string, TargetBind>()
  * scanProject("abc") // ok
  */
 export function targetSet(bind: TargetBind): void {
-    if (!isValidId(bind.id)) {
+    if (!isTargetId(bind.id)) {
         throw TypeError(`view-ignored can not bind target with id '${bind.id}'`)
     }
     targetBindMap.set(bind.id, bind)
@@ -64,16 +92,14 @@ export function targetSet(bind: TargetBind): void {
  * ["git", "npm", "vsce", ...]
  */
 export function targetList(): string[] {
-    return Array.from(targetBindMap.keys())
+    const list = Array.from(targetBindMap.keys())
+    return list
 }
 
 /**
  * Get target bind by target id.
  * @param id Target id.
  */
-export function targetGet(id: string): TargetBind | undefined {
-    if (!isValidId(id)) {
-        throw TypeError(`view-ignored can not get bind for target with id '${id}'`)
-    }
+export function targetGet(id: TargetId): TargetBind | undefined {
     return targetBindMap.get(id)
 }

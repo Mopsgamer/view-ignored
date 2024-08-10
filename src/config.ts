@@ -1,9 +1,26 @@
 import { ColorSupportLevel } from "chalk"
-import { FilterName, filterNameList, Binding, Sorting, Styling } from "./browser/index.js"
+import { FilterName, filterNameList, isFilterName, Plugins, Sorting, Styling } from "./browser/index.js"
 import * as os from "os";
-import propertiesFile from "properties";
+import * as yaml from "yaml";
 import path from "path"
 import { existsSync, readFileSync, rmSync, writeFileSync } from "fs"
+import { Command, Option } from "commander";
+
+/**
+ * Contains all color level names.
+ */
+export const colorTypeList = [0, 1, 2, 3] as const
+/**
+ * Contains all color level names as a type.
+ */
+export type ColorType = ColorSupportLevel
+/**
+ * Checks if the value is the {@link ColorType}.
+ */
+export function isColorType(value: unknown): value is ColorType {
+    const num = Number(value)
+    return Number.isFinite(num) && colorTypeList.includes(num as ColorType)
+}
 
 /**
  * The full config file name - `".view-ignored"`.
@@ -19,103 +36,229 @@ export const configFilePath = path.join(os.homedir(), configFileName)
 /**
  * Command-line configuration property list.
  */
-export const configKeyList = ["color", "target", "filter", "sort", "style"] as const satisfies readonly (keyof Config)[]
+export const configKeyList = ["color", "target", "filter", "sort", "style", "decor", "depth", "showSources", "plugins", "parsable"] as const satisfies readonly (keyof Config)[]
 
 /**
- * Command-line configuration property type.
+ * Command-line configuration's key type.
  */
 export type ConfigKey = typeof configKeyList[number] & keyof Config
 
 /**
+ * Checks if the value is the {@link ConfigKey}.
+ */
+export function isConfigKey(value: unknown): value is ConfigKey {
+    return typeof value === "string" && configKeyList.includes(value as ConfigKey)
+}
+
+export type ConfigValue<KeyT extends ConfigKey = ConfigKey> = Config[KeyT]
+
+export type ShowSourcesType = boolean
+
+export function isShowSources(value: unknown): value is ShowSourcesType {
+    return typeof value === "boolean"
+}
+
+/**
+ * Checks if the value is the {@link Config} value for the specific {@link ConfigKey}.
+ */
+export function isConfigValue<T extends ConfigKey>(key: T, value: unknown): value is Config[T] {
+    const c: Record<ConfigKey, (value: unknown) => boolean> = {
+        parsable: v => typeof v === "boolean",
+        plugins: v => Array.isArray(v) && v.every(p => typeof p === "string"),
+        color: isColorType,
+        target: t => Plugins.isTargetId(t) && Plugins.targetGet(t) !== undefined,
+        filter: isFilterName,
+        sort: Sorting.isSortName,
+        style: Styling.isStyleName,
+        decor: Styling.isDecorName,
+        depth: Number.isInteger,
+        showSources: isShowSources
+    }
+
+    const check = c[key]
+    return check(value)
+}
+
+/**
+ * Represents array with the key nad the value.
+ */
+export type ConfigPair<KeyT extends ConfigKey = ConfigKey> = [key: KeyT, value: ConfigValue<KeyT>]
+
+/**
  * Command-line configuration structure.
+ * @see {@link configKeyList} Before adding new properties.
  */
 export type Config = {
-    color: `${ColorSupportLevel}`,
+    parsable: boolean,
+    plugins: string[],
+    color: ColorType,
     target: string,
     filter: FilterName,
     sort: Sorting.SortName,
     style: Styling.StyleName,
+    decor: Styling.DecorName,
+    depth: number,
+    showSources: ShowSourcesType,
 }
 
 /**
  * Command-line default config values.
  */
-export const configDefault: Config = {
-    color: "3",
+export const configDefault: Readonly<Config> = {
+    parsable: false,
+    plugins: [],
+    color: 3,
     target: "git",
     filter: "included",
     sort: "firstFolders",
-    style: "treeEmoji",
+    style: "tree",
+    decor: "normal",
+    depth: Infinity,
+    showSources: false
 }
 
 /**
- * Represents allowed values for each config property.
+ * @returns `true`, if the value can be used as a configuration.
  */
-export const configValues = {
-    color: ["1", "2", "3", "4"],
-    target: Binding.targetList(),
-    filter: filterNameList,
-    sort: Sorting.sortNameList,
-    style: Styling.styleNameList
-} as const
-
-/**
- * @see {@link configValues}
- * @returns `true` if the value is a {@link Config}.
- */
-export function configPartialGood(cfg: unknown): cfg is Partial<Config> {
+export function isConfigPartial(cfg: unknown): cfg is Partial<Config> {
     if (cfg?.constructor !== Object) {
         return false
     }
-    const jsonobj = cfg as Record<string, string>
-    return Object.entries(configValues).every(
-        ([key, possible]) => key in jsonobj
-            ? (possible.includes(String(jsonobj[key]) as never))
+    const jsonobj = cfg as Record<string, unknown>
+    return Object.entries(jsonobj).every(
+        ([key, value]) => isConfigKey(key)
+            ? isConfigValue(key, value)
             : true
     )
 }
 
+export const trueValues: string[] = ['true', 'on', 'yes', 'y', 'enable', 'enabled', '1']
+export const falseValues: string[] = ['false', 'off', 'no', 'n', 'disable', 'disabled', '0']
+export const boolValues = trueValues.concat(falseValues)
+
 /**
- * The config manipulator.
- * @todo Convert to a *class instance* or *just methods* and hide the 'data' property.
+ * @returns available values or requirement message for the specified property.
+ * @param key The config property.
+ * @param fallbackDefault If `true`, the default value will be used when the value is `undefined`. Default `true`.
  */
-export const configManager = {
+export function configValueList<T extends ConfigKey>(key: T): readonly string[] | string {
+    const msg = {
+        int: 'The value should be an integer.',
+        bool: `The value should be a boolean. Available bool literals: ${boolValues.join(', ')}`,
+        arrStr: `The value should be an array of a strings.`,
+    }
+    /**
+     * Represents allowed values for each config property.
+     */
+    const configAvailable: Record<ConfigKey, readonly ConfigValue[] | string | (() => readonly ConfigValue[])> = {
+        color: colorTypeList,
+        filter: filterNameList,
+        target: Plugins.targetList,
+        sort: Sorting.sortNameList,
+        style: Styling.styleNameList,
+        decor: Styling.decorNameList,
+        depth: msg.int,
+        parsable: msg.bool,
+        plugins: msg.arrStr,
+        showSources: msg.bool,
+    }
+    const val = configAvailable[key] as readonly string[] | string | (() => readonly string[])
+    const choices = (typeof val === "function" ? val() : val)
+    return choices
+}
+
+const configCliOptMap = new Map<ConfigKey, Option>
+
+export function configValueLinkCliOption<T extends ConfigKey>(key: T, command: Command, option: Option, parseArg?: (arg: string) => unknown): Option {
+    const list = configValueList(key)
+    if (Array.isArray(list)) {
+        option.choices(list)
+    }
+    if (parseArg) {
+        option.argParser(parseArg)
+    }
+    option.default(configManager.get(key))
+    command.addOption(option)
+    configCliOptMap.set(key, option)
+    return option
+}
+
+export function configValueGetCliOption<T extends ConfigKey>(key: T): Option | undefined {
+    return configCliOptMap.get(key)
+}
+
+/**
+ * File-specific actions container.
+ */
+export class ConfigManager {
+
+    constructor(
+        public readonly filePath: string
+    ) { }
+
     /**
      * Do not change this value directly.
-     * @todo Make private.
      * @see {@link configManager}.
      */
-    data: {} as Partial<Config>,
+    private data = {} as Partial<Config>
+
+    dataRaw(): unknown {
+        return structuredClone(this.data)
+    }
+
+    entries() {
+        const obj = this.dataRaw()
+        if (obj?.constructor !== Object) {
+            return
+        }
+        return Object.entries(obj)
+    }
 
     /**
      * Loads the config from the file to {@link configManager.data}. If the data is not valid, throws an error without loading.
      * @returns `undefined` if the config file does not exist.
      */
     load() {
-        const parsed: unknown | undefined = existsSync(configFilePath) ? propertiesFile.parse(readFileSync(configFilePath).toString()) : undefined
+        const parsed: unknown = existsSync(this.filePath) ? yaml.parse(readFileSync(this.filePath).toString()) : undefined
         if (parsed === undefined) {
+            return parsed
+        }
+        const obj = parsed as Record<string, string>
+        if (obj?.constructor !== Object) {
             return this
         }
-        if (!configPartialGood(parsed)) {
-            throw new TypeError(`Invalid config. Got ${parsed && JSON.stringify(parsed)}.`)
+        for (const key in obj) {
+            const element = obj[key];
+            if (typeof element !== "string") {
+                continue
+            }
+            if (element.startsWith('|')) {
+                const array = element.split(',')
+                array.shift();
+                (parsed as Record<string, string[] | string>)[key] = array
+            }
+        }
+        if (!isConfigPartial(parsed)) {
+            throw new TypeError(`Invalid config.`, { cause: parsed })
         }
         Object.assign(this.data, parsed)
         return this
-    },
+    }
 
     /**
      * Saves the partial config to the file. If there are no settings, the file will be deleted, if exists.
      */
     save() {
         if (Object.keys(this.data).length === 0) {
-            if (existsSync(configFilePath)) {
-                rmSync(configFilePath)
+            if (existsSync(this.filePath)) {
+                rmSync(this.filePath)
             }
             return this
         }
-        writeFileSync(configFilePath, propertiesFile.stringify(this.data)!)
+
+        writeFileSync(this.filePath, yaml.stringify(this.data))
         return this
-    },
+    }
 
     /**
      * Sets a new value for the specified config property.
@@ -126,7 +269,7 @@ export const configManager = {
     set<T extends ConfigKey>(key: T, value: Config[T]) {
         this.data[key] = value
         return this
-    },
+    }
 
     /**
      * Deletes the specified property from the config.
@@ -142,32 +285,48 @@ export const configManager = {
         }
         delete this.data[key]
         return this
-    },
+    }
 
     /**
-     * Returns the value for the specified property.
-     * @param key The config property.
-     * @param fallbackDefault If `true`, the default value will be used when the value is `undefined`. Default `true`.
+     * @returns An array of properties which defined in the configuration file.
      */
-    get<T extends ConfigKey>(key: T, fallbackDefault: boolean = true): typeof fallbackDefault extends true ? Config[T] : Config[T] | undefined {
-        const value: Config[T] | undefined = this.data[key]
-        if (fallbackDefault && value === undefined) {
+    definedKeys(): ConfigKey[] {
+        const keys = Object.keys(this.data) as ConfigKey[]
+        return keys.filter(k => this.data[k] !== undefined)
+    }
+
+    /**
+     * @param key The config property.
+     * @param defs If `true`, the default value will be used when the value is `undefined`. Default `true`.
+     * @returns The value for the specified property.
+     */
+    get<KeyT extends ConfigKey>(key: KeyT, defs: false): ConfigValue<KeyT> | undefined
+    get<KeyT extends ConfigKey>(key: KeyT, defs?: true): ConfigValue<KeyT>
+    get<KeyT extends ConfigKey>(key: KeyT, defs: boolean): ConfigValue<KeyT> | undefined
+    get<KeyT extends ConfigKey>(key: KeyT, defs: boolean = true): ConfigValue<KeyT> | undefined {
+        const value: Config[KeyT] | undefined = this.data[key]
+        if (defs && value === undefined) {
             return configDefault[key]
         }
         return value
-    },
+    }
 
     /**
      * @param key The config property.
-     * @param fallbackDefault If `true`, the default value will be used when the value is `undefined`. Default `true`.
-     * @returns The string in the `"key=value"` format, if the property is specified.
-     * Otherwise in format `"key=value\nkey=value\n..."` without new line ending.
+     * @param defs If `true`, the default value will be used when the value is `undefined`. Default `true`.
+     * @returns A string in the `"key=value"` format, if the property is specified.
+     * Otherwise in format `"key=value\nkey=value\n..."` without the '\n' ending.
      */
-    getPairString<T extends ConfigKey>(key?: T, fallbackDefault: boolean = true): string {
+    getPairString<KeyT extends ConfigKey>(key?: KeyT, defs: boolean = true): string {
         if (key === undefined) {
-            return configKeyList.map((key) => this.getPairString(key as T, fallbackDefault)).filter(Boolean).join('\n')
+            return configKeyList.map((key) => this.getPairString(key as KeyT, defs)).filter(Boolean).join('\n')
         }
-        const val = this.get(key, fallbackDefault)
-        return val ? `${key}=${val}` : ''
-    },
-} as const
+        const val = this.get(key, defs)
+        return val === undefined ? '' : `${key}=${val}`
+    }
+}
+
+/**
+ * File-specific actions container. Contains get, set, unset, save, load and other configuration actions.
+ */
+export const configManager = new ConfigManager(configFilePath)

@@ -12,11 +12,10 @@
 				"<node_internals>/**"
 			],
 			"args": [
-				"--require",
-				"tsx",
-				"./test/**/*.test.ts"
+				"./out/test/**/*.test.js"
 			],
 			"program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+			"sourceMaps": true,
 		},
 		{
 			"type": "node",
@@ -28,35 +27,39 @@
 			"args": [
 				"scan"
 			],
-			"internalConsoleOptions": "neverOpen",
-			"program": "${workspaceFolder}/src/bin.ts",
+			"program": "${workspaceFolder}/out/src/bin.js",
 			"cwd": "${workspaceFolder}",
-			"outFiles": [
-				"${workspaceFolder}/lib/**/*.js"
-			],
-			"preLaunchTask": "Build",
-			"sourceMaps": true
+			"sourceMaps": true,
 		},
 		{
 			"type": "node",
 			"request": "launch",
-			"name": "viewig scan - npm all",
+			"name": "viewig scan --target npm",
 			"skipFiles": [
 				"<node_internals>/**"
 			],
 			"args": [
 				"scan",
 				"--target=npm",
-				"--filter=all",
 			],
-			"internalConsoleOptions": "neverOpen",
-			"program": "${workspaceFolder}/src/bin.ts",
+			"program": "${workspaceFolder}/out/src/bin.js",
 			"cwd": "${workspaceFolder}",
-			"outFiles": [
-				"${workspaceFolder}/lib/**/*.js"
+			"sourceMaps": true,
+		},
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "viewig scan --plugins=t",
+			"skipFiles": [
+				"<node_internals>/**"
 			],
-			"preLaunchTask": "Build",
-			"sourceMaps": true
+			"args": [
+				"scan",
+				"--plugins=t",
+			],
+			"program": "${workspaceFolder}/out/src/bin.js",
+			"cwd": "${workspaceFolder}",
+			"sourceMaps": true,
 		},
 	]
 }

@@ -1,84 +1,121 @@
-import { Scanner, PatternType } from "./scanner.js";
-import FastGlob from "fast-glob";
+import { Scanner, PatternType, isPatternType } from "./scanner.js";
+import { glob, FSOption } from "glob";
 import { FileInfo } from "./fileinfo.js";
-import { findDomination, SourceInfo } from "./sourceinfo.js";
+import { SourceInfo } from "./sourceinfo.js";
 import { targetGet } from "./binds/index.js";
+import path from "path";
+import { ErrorNoSources, ErrorTargetNotBound } from "./errors.js";
+import * as FS from "fs"
 
+export * from "./errors.js"
 export * from "./scanner.js"
 export * from "./fileinfo.js"
 export * from "./sourceinfo.js"
 export * as Styling from "./styling.js"
 export * as Sorting from "./sorting.js"
-export * as Binding from "./binds/index.js"
+export * as Plugins from "./binds/index.js"
 
-//#region default binds
-import "./plugins/git.js"
-import "./plugins/npm.js"
-import "./plugins/vsce.js"
-import "./plugins/yarn.js"
-//#endregion
-
+/**
+ * Contains all filter names.
+ */
 export const filterNameList = ["ignored", "included", "all"] as const
+/**
+ * Contains all filter names as a type.
+ */
 export type FilterName = typeof filterNameList[number]
-
-export interface FileSystemAdapter extends FastGlob.FileSystemAdapter {
-	readFileSync: (path: string) => Buffer
-	readFile: (path: string) => Promise<Buffer>
+/**
+ * Checks if the value is the {@link FilterName}.
+ */
+export function isFilterName(value: unknown): value is FilterName {
+	return typeof value === "string" && filterNameList.includes(value as FilterName)
 }
 
-function patchFastGlobOptions(options: FastGlob.Options) {
-	const patched: FastGlob.Options = {
-        ...options,
-        onlyFiles: true,
-        dot: true,
-        followSymbolicLinks: false,
-    }
-	return patched;
+/**
+ * Uses `readFileSync` and `readFile`.
+ * @extends glob.FileSystemAdapter
+ */
+export interface FileSystemAdapter extends FSOption {
+	readFileSync?: typeof FS.readFileSync
+	readdirSync?: typeof FS.readdirSync
+	statSync?: typeof FS.statSync
 }
 
 //#region looking
 /**
  * Also can write rules to the {@link Scanner}.
- * @returns `true` if the given source is valid.
+ * @returns `true`, if the given source is valid.
  */
-export type ScanMethod = (fileInfo: FileInfo) => boolean
+export type ScanMethod = (sourceInfo: SourceInfo) => boolean
 
 /**
- * Represents the methodology for reading the target source.
+ * Represents the methodology for reading the target's source.
  */
 export interface Methodology {
 	/**
 	 * Git configuration property.
-	 * @see Official git documentation: {@link https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase|ignorecase}.
+	 * @see {@link https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase|git-config ignorecase}.
 	 * @default false
 	 */
 	ignoreCase?: boolean
 
 	/**
-	 * Additional patterns, which will be used as
-	 * other patterns in the `.gitignore` file, or `package.json` "files" property.
+	 * The parser for the patterns.
+	 * @default "gitignore"
+	 */
+	matcher: PatternType
+
+	/**
+	 * Use the patterns for including instead of excluding/ignoring.
+	 * @default false
+	 */
+	matcherNegated?: boolean
+
+	/**
+	 * Additional patterns for files, provided by the {@link pattern}.
+	 *
+	 * Example: You have the '.gitignore' file. You want to scan patterns from it and add additional patterns. Use this property.
 	 * @default []
 	 */
-	addPatterns?: string[]
+	matcherAdd?: string[]
+
+	/**
+	 * Force ignore patterns.
+	 * Takes precedence over {@link matcherAdd}.
+	 * @default []
+	 */
+	matcherExclude?: string[]
+
+	/**
+	 * Force include patterns.
+	 * Takes precedence over {@link matcherExclude}.
+	 * @default []
+	 */
+	matcherInclude?: string[]
 
 	/**
 	 * First valid source will be used as {@link Scanner}.
 	 */
-	pattern: SourceInfo[] | FastGlob.Pattern
+	pattern: SourceInfo[] | string[] | SourceInfo | string
 
 	/**
-	 * Pattern parser name.
-	 */
-	patternType: PatternType
-
-	/**
-	 * Scanner function. Should return `true` if the given source is valid.
+	 * Scanner function. Should return `true`, if the given source is valid and also add patterns to the {@link FileInfo.scanner}.
 	 */
 	scan: ScanMethod
 }
 
-export function isSource(source: unknown): source is Methodology {
-	return typeof source === "object"
+/**
+ * Checks if the value is the {@link Methodology}.
+ */
+export function isMethodology(value: unknown): value is Methodology {
+	if (value?.constructor !== Object) {
+		return false
+	}
+
+	const v = value as Partial<Methodology>
+
+	return isPatternType(v.matcher)
+		&& (typeof v.pattern === "string")
+		&& (v.matcherAdd === undefined || Array.isArray(v.matcherAdd) && v.matcherAdd.every(p => Scanner.patternIsValid(p, { patternType: v.matcher as PatternType })))
 }
 
 /**
@@ -88,9 +125,9 @@ export function isSource(source: unknown): source is Methodology {
 export interface ScanFileOptions {
 	/**
 	 * Custom implementation of methods for working with the file system.
-	 * @default fs.*
+	 * @default import * as FS from "fs"
 	 */
-	fs?: FileSystemAdapter
+	fsa?: FileSystemAdapter
 
 	/**
 	 * The current working directory in which to search.
@@ -110,7 +147,7 @@ export interface ScanFileOptions {
 	 * directory.
 	 * @default Infinity
 	 */
-	deep?: number
+	maxDepth?: number
 }
 
 /**
@@ -122,104 +159,114 @@ export interface ScanFolderOptions extends ScanFileOptions {
 	 * Filter output.
 	 * @default "included"
 	 */
-	filter?: FilterName
-}
-
-export function methodologyToInfoList(methodology: Methodology, options: ScanFileOptions): SourceInfo[] {
-	return Array.isArray(methodology.pattern)
-		? methodology.pattern
-		: FastGlob.sync(methodology.pattern, patchFastGlobOptions(options)).map(path => SourceInfo.from(path))
+	filter?: FilterName | ((fileInfo: FileInfo) => boolean)
 }
 
 /**
  * Gets info about the file: it is ignored or not.
- * @returns `undefined` if the source is bad.
+ * @throws {ErrorNoSources} if the source is bad.
  */
-export async function scanFile(filePath: string, sources: Methodology[], options: ScanFileOptions): Promise<FileInfo | undefined> {
+export async function scanFile(filePath: string, sources: Methodology[], options: ScanFileOptions): Promise<FileInfo> {
+	const { fsa = FS, cwd = process.cwd() } = options ?? {}
 	for (const methodology of sources) {
-		const sourceInfoList: SourceInfo[] = methodologyToInfoList(methodology, options)
-		const matcher = new Scanner({
-			addPatterns: methodology.addPatterns,
-			ignoreCase: methodology.ignoreCase,
-			patternType: methodology.patternType,
-		})
+		const sourceInfoList: SourceInfo[] = await SourceInfo.fromMethodology(methodology, options)
 
 		for (const sourceInfo of sourceInfoList) {
-			const l = matcher.clone()
-			const fileInfo = FileInfo.from(filePath, l, sourceInfo)
-			sourceInfo.readSync()
-			const isGoodSource = methodology.scan(fileInfo)
+			sourceInfo.readSync(cwd, fsa.readFileSync ?? FS.readFileSync)
+			const isGoodSource = methodology.scan(sourceInfo)
 			if (isGoodSource) {
-				return FileInfo.from(filePath, l, sourceInfo)
+				return FileInfo.from(filePath, sourceInfo)
 			}
 		}
 	}
+	throw new ErrorNoSources(sources)
 }
 
 /**
- * Scans project directory paths to determine whether they are being ignored.
+ * Scans project's directory paths to determine whether they are being ignored.
+ * @throws {ErrorNoSources} if the source is bad.
  */
-export async function scanPaths(allFilePaths: string[], sources: Methodology[], options: ScanFolderOptions): Promise<FileInfo[] | undefined>
-export async function scanPaths(allFilePaths: string[], target: string, options: ScanFolderOptions): Promise<FileInfo[] | undefined>
-export async function scanPaths(allFilePaths: string[], arg2: Methodology[] | string, options: ScanFolderOptions): Promise<FileInfo[] | undefined> {
-	if (typeof arg2 === "string") {
-		const bind = targetGet(arg2)
+export async function scanProject(sources: Methodology[], options: ScanFolderOptions): Promise<FileInfo[]>
+export async function scanProject(target: string, options: ScanFolderOptions): Promise<FileInfo[]>
+export async function scanProject(arg1: Methodology[] | string, options: ScanFolderOptions): Promise<FileInfo[]> {
+	if (typeof arg1 === "string") {
+		const bind = targetGet(arg1)
 		if (bind === undefined) {
-			throw TypeError(`view-ignored can not find target '${arg2}'`)
+			throw new ErrorTargetNotBound(arg1)
 		}
-		return scanPaths(allFilePaths, bind.methodology, bind.scanOptions ?? {})
+		return scanProject(bind.methodology, Object.assign(options, bind.scanOptions))
 	}
-
-	const { filter = "included" } = options;
-	/** Contains parsed sources: file path = parser instance. */
-	const cache = new Map<string, Scanner>()
 
 	// Find good source.
-	for (const methodology of arg2) {
-		let goodFound = false
+	const { filter = "included", fsa = FS, cwd = process.cwd() } = options;
+	for (const methodology of arg1) {
 		const resultList: FileInfo[] = []
-		const sourceInfoList: SourceInfo[] = methodologyToInfoList(methodology, options)
+		const sourceInfoList: SourceInfo[] = await SourceInfo.fromMethodology(methodology, options)
 
+		if (sourceInfoList.length < 1) {
+			continue
+		}
+
+		const allFilePaths = await glob("**", {
+			...options,
+			nodir: true,
+			dot: true,
+			posix: true,
+		})
+		const cache = new Set<string>()
+
+		let noSource = false
 		for (const filePath of allFilePaths) {
-			const dominated = findDomination(filePath, sourceInfoList.map(sourceInfo => sourceInfo.sourcePath))
-			if (dominated === undefined) {
+			if (cache.has(filePath)) {
+				continue
+			}
+
+			const sourceInfo = SourceInfo.hierarcy(filePath, sourceInfoList, {
+				closest: false,
+				filter(sourceInfo) {
+					if (!(sourceInfo instanceof SourceInfo)) {
+						return true
+					}
+					if (sourceInfo.content === undefined) {
+						sourceInfo.readSync(cwd, fsa.readFileSync ?? FS.readFileSync)
+					}
+					return methodology.scan(sourceInfo)
+				}
+			})
+
+			if (sourceInfo === undefined) {
+				noSource = true
 				break
 			}
-			const source = SourceInfo.from(dominated)
-			const matcher = cache.get(source.sourcePath)
-			let fileInfo: FileInfo
-			if (!matcher) {
-				const newInfo = await scanFile(filePath, [methodology], options)
-				if (!newInfo) {
-					break
-				}
-				fileInfo = newInfo
-				cache.set(source.sourcePath, fileInfo.matcher)
-			} else {
-				fileInfo = FileInfo.from(filePath, matcher, source)
-			}
-			const shouldPush = fileInfo.isIncludedBy(filter)
-			if (shouldPush) {
-				resultList.push(fileInfo)
-			}
-			goodFound = true
-		}
-		if (goodFound) {
-			return resultList
-		}
-	}
-}
 
-/**
- * Scans project directory paths to determine whether they are being ignored.
- */
-export function scanProject(sources: Methodology[], options: ScanFolderOptions): Promise<FileInfo[] | undefined>
-export function scanProject(target: string, options: ScanFolderOptions): Promise<FileInfo[] | undefined>
-export async function scanProject(arg: Methodology[] | string, options: ScanFolderOptions): Promise<FileInfo[] | undefined> {
-	const paths = await FastGlob.async("**", patchFastGlobOptions(options))
-	if (typeof arg === "string") {
-		return await scanPaths(paths, arg, options);
-	}
-	return await scanPaths(paths, arg, options);
+			// also create cache for each file in the direcotry
+			const fileDir = path.dirname(filePath)
+			const fileDirAbsolute = path.join(cwd, fileDir)
+			const entryList = (fsa?.readdirSync ?? FS.readdirSync)(fileDirAbsolute)
+
+			for (const entry of entryList) {
+				const entryPath = path.join(fileDir, entry)
+				const entryPathNormal = fileDir !== '.' ? fileDir + '/' + entry : entry
+				const entryPathAbsolute = path.join(cwd, entryPath)
+				const stat = (fsa?.statSync ?? FS.statSync)(entryPathAbsolute)
+				cache.add(entryPathNormal)
+
+				if (stat.isFile()) {
+					// push new FileInfo
+					const fileInfo = FileInfo.from(entryPathNormal, sourceInfo)
+					if (fileInfo.isIncludedBy(filter)) {
+						resultList.push(fileInfo)
+					}
+				}
+			}
+		} // forend
+
+		if (noSource) {
+			continue
+		}
+
+		return resultList
+	} // forend
+	throw new ErrorNoSources(arg1)
 }
 //#endregion
