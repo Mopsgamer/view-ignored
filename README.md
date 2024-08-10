@@ -31,22 +31,24 @@ view-ignored --help
 # scan: git (default) and npm
 viewig scan .
 viewig scan . --target=npm
+viewig scan . --parsable
 
-# scan: plugins (space or comma)
+# scan: plugins (space, comma or pipe separated)
 viewig scan . --plugins="vign-p-tsx, vign-p-jsdoc"
 viewig scan . --plugins="vign-p-tsx vign-p-jsdoc"
 viewig scan . --plugins vign-p-tsx vign-p-jsdoc
 viewig scan . --plugins vign-p-tsx, vign-p-jsdoc
 
-# config: print all
+# config: print configuration entries
 viewig config get
-# config: print with defaults
-viewig config get --safe
+viewig config get --real
 # config: set npm as default target and scan for npm
 viewig config set target=npm
 viewig scan .
-# config: always use nerd font
-viewig config set style=treeNerd
+# config: always use nerdfonts
+viewig config set style=tree
+# config: always use nerdfonts
+viewig config set decor=nerdfonts
 # config: always use plugins
 viewig config set plugins=typescript-viewig,eslint-vign-plugin
 ```
@@ -65,7 +67,7 @@ const fileInfoList = await vign.scanProject("git", { cwd, ... });
 
 // use results
 if (fileInfo.ignored) {
-    superCodeEditor.explorer.colorFile(fileInfo.filePath, "gray")
+    superCodeEditor.explorer.colorFile(fileInfo.filePath, "gray");
 }
 ```
 
@@ -81,18 +83,10 @@ const fileInfoSorted = fileInfoList.map(String).sort(sorter);
 const sorter = vign.Sorting.modified;
 const fileInfoList = await vign.scanProject("npm");
 
-/** @type {{fileInfo: FileInfo, modified: number, path: string}[]} */
-const cache = new Map(
-    fileInfoList.map((fileInfo) => ({
-        fileInfo,
-        path: fileInfo.filePath,
-        modified: fs.statSync(filePath).mtime.getTime(),
-    }))
+const cache = new Map<string, number>(fileInfoList.map(String).map(
+    filePath => [filePath, fs.statSync(filePath).mtime.getTime()])
 );
-
-const fileInfoSorted = cache.sort((a, b) =>
-    sorter(a.toString(), b.toString(), cacheEditDates)
-);
+const lookedSorted = fileInfoList.sort((a, b) => sorter(a.toString(), b.toString(), cache));
 ```
 
 ### Targets

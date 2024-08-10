@@ -236,29 +236,30 @@ export async function actionScan(): Promise<void> {
     const spinner = ora({ text: cwd, color: 'white' })
     spinner.start()
 
-    const fileInfoList = await fileInfoListP
-    const filePathList = fileInfoList.map(String)
     spinner.suffixText = "Generating...";
+    const fileInfoList = await fileInfoListP
 
     const sorter = Sorting[flagsGlobal.sort]
-    const cacheEditDates = new Map<string, number>(filePathList.map(
+    const cache = new Map<string, number>(fileInfoList.map(String).map(
         filePath => [filePath, fs.statSync(filePath).mtime.getTime()])
     )
-    const lookedSorted = fileInfoList.sort((a, b) => sorter(a.toString(), b.toString(), cacheEditDates))
+    const lookedSorted = fileInfoList.sort((a, b) => sorter(a.toString(), b.toString(), cache))
 
-    let message = ''
-    message += formatFiles(lookedSorted, { chalk, style: flagsGlobal.style, decor: flagsGlobal.decor, showSources: flagsGlobal.showSources })
-    message += '\n'
-    const time = Date.now() - start
+    const files = formatFiles(lookedSorted, { chalk, style: flagsGlobal.style, decor: flagsGlobal.decor, showSources: flagsGlobal.showSources })
     const checkSymbol = decorCondition(flagsGlobal.decor, { ifEmoji: '✅', ifNerd: '\uf00c', postfix: ' ' })
     const fastSymbol = decorCondition(flagsGlobal.decor, { ifEmoji: '⚡', ifNerd: '\udb85\udc0c' })
-    message += `${chalk.green(checkSymbol)}Done in ${time < 400 ? chalk.yellow(fastSymbol) : ''}${time}ms.`
-    message += '\n'
     const bind = targetGet(flagsGlobal.target)!
     const name = typeof bind.name === "string" ? bind.name : decorCondition(flagsGlobal.decor, bind.name)
+    const infoSymbol = decorCondition(flagsGlobal.decor, { ifEmoji: 'ℹ️', ifNerd: '\ue66a', postfix: ' ' })
+
+    const time = Date.now() - start
+    let message = ''
+    message += files
+    message += '\n'
+    message += `${chalk.green(checkSymbol)}Done in ${time < 400 ? chalk.yellow(fastSymbol) : ''}${time}ms.`
+    message += '\n'
     message += `${fileInfoList.length} files listed for ${name} (${flagsGlobal.filter}).`
     message += '\n'
-    const infoSymbol = decorCondition(flagsGlobal.decor, { ifEmoji: 'ℹ️', ifNerd: '\ue66a', postfix: ' ' })
     if (bind.testCommand) {
         message += '\n'
         message += `${chalk.blue(infoSymbol)}You can use '${chalk.magenta(bind.testCommand)}' to check if the list is valid.`
