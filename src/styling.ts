@@ -48,5 +48,5 @@ export function formatConfigConflicts(chalk: ChalkInstance, decor: DecorName, er
     ).join('\n')
     console.error(message)
     console.log()
-    console.log("Path: '%s'.", chalk.magenta(configFilePath))
+    console.log(configFilePath)
 }
