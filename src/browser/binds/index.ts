@@ -52,13 +52,17 @@ export function importPlugin(exportData: PluginExport) {
  */
 export function loadPlugin(moduleName: string): Promise<PluginLoaded> {
     try {
-        return new Promise<PluginLoaded>((resolve) => {
+        return new Promise<PluginLoaded>((resolve, reject) => {
             load(moduleName, { global: isInstalledGlobally })
                 .catch((reason: unknown) => {
+                    const r = reason as Record<string, unknown>
+                    if (r?.code === 'ERR_MODULE_NOT_FOUND') {
+                        reason = r.message
+                    }
                     console.error('Unable to load \'%s\'. Reason:', moduleName)
                     console.error(reason)
                     const fail: PluginLoaded = { moduleName, isLoaded: false, exports: reason }
-                    resolve(fail)
+                    reject(fail)
                 })
                 .then((exports: unknown) => {
                     const result: PluginLoaded = { moduleName, isLoaded: true, exports }
@@ -80,7 +84,7 @@ export function loadPlugin(moduleName: string): Promise<PluginLoaded> {
  * Loads plugins one by one using {@link loadPlugin}.
  * @param moduleNameList The list of plugins.
  */
-export async function loadPlugins(moduleNameList?: string[]): Promise<PluginLoaded[]> {
+export async function loadPluginsQueue(moduleNameList?: string[]): Promise<PluginLoaded[]> {
     const resultList: PluginLoaded[] = []
     for (const module of moduleNameList ?? []) {
         const result = await loadPlugin(module)

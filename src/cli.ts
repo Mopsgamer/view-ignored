@@ -2,10 +2,10 @@ import fs from "fs";
 import { Chalk, ChalkInstance, ColorSupportLevel } from "chalk";
 import { Argument, InvalidArgumentError, Option, Command } from "commander";
 import * as Config from "./config.js";
-import { BuiltIns, loadPlugins, targetGet } from "./browser/binds/index.js";
+import { BuiltIns, loadPluginsQueue, targetGet } from "./browser/binds/index.js";
 import { decorCondition, DecorName, formatFiles, StyleName } from "./browser/styling.js";
 import { SortName } from "./browser/sorting.js";
-import { ErrorNoSources, FileInfo, FilterName, scanProject, Sorting } from "./lib.js";
+import { ErrorNoSources, FilterName, scanProject, Sorting } from "./lib.js";
 import { formatConfigConflicts } from "./styling.js";
 import ora from "ora";
 import packageJSON from "../package.json" with {type: "json"}
@@ -16,7 +16,9 @@ export const { version } = packageJSON;
  * Use it instead of {@link program}.parse()
  */
 export async function programInit() {
-    const flags: ProgramFlags = program.optsWithGlobals()
+    optionsInit()
+    program.parseOptions(process.argv)
+    const flags = program.opts<ProgramFlags>()
     const chalk = getChalk(flags)
     try {
         Config.configManager.load()
@@ -24,10 +26,12 @@ export async function programInit() {
         formatConfigConflicts(chalk, flags.decor, error)
         return
     }
-    await BuiltIns
-    program.parseOptions(process.argv)
-    await loadPlugins(flags.plugin)
-    optionsInit()
+    try {
+        await BuiltIns
+        await loadPluginsQueue(flags.plugins)
+    } catch {
+        return
+    }
     program.parse()
 }
 
@@ -42,7 +46,7 @@ export function getChalk(flags: ProgramFlags): ChalkInstance {
  * Command-line entire program flags.
  */
 export interface ProgramFlags {
-    plugin: string[]
+    plugins: string[]
     noColor: boolean
     color: string
     decor: DecorName
@@ -139,7 +143,7 @@ cfgProgram
     .action(actionCfgGet)
 
 export function parseArgArrStr(arg: string): string[] {
-    return arg.split(/[ ,|]/).filter(s => s !== "")
+    return arg.split(/[ ,|]/).filter(Boolean)
 }
 
 export function parseArgBool(arg: string): boolean {
@@ -217,18 +221,14 @@ export async function actionScan(flags: ScanFlags): Promise<void> {
         })
 
     const fileInfoList = await fileInfoListP
+    const filePathList = fileInfoList.map(String)
     spinner.suffixText = "Generating...";
 
     const sorter = Sorting[flags.sort]
-    const cacheEditDates = new Map<FileInfo, Date>()
-    for (const look of fileInfoList) {
-        cacheEditDates.set(look, fs.statSync(look.filePath).mtime)
-    }
-    const bind = targetGet(flags.target)!
-    const lookedSorted = fileInfoList.sort((a, b) => sorter(
-        a.toString(), b.toString(),
-        cacheEditDates.get(a)!, cacheEditDates.get(b)!
-    ))
+    const cacheEditDates = new Map<string, number>(filePathList.map(
+        filePath => [filePath, fs.statSync(filePath).mtime.getTime()])
+    )
+    const lookedSorted = fileInfoList.sort((a, b) => sorter(a.toString(), b.toString(), cacheEditDates))
 
     let message = ''
     message += formatFiles(lookedSorted, { chalk, style: flags.style, decor: flags.decor, showSources: flags.showSources, depth: flags.depth })
@@ -238,6 +238,7 @@ export async function actionScan(flags: ScanFlags): Promise<void> {
     const fastSymbol = decorCondition(flags.decor, { ifEmoji: '⚡', ifNerd: '\udb85\udc0c' })
     message += `${chalk.green(checkSymbol)}Done in ${time < 400 ? chalk.yellow(fastSymbol) : ''}${time}ms.`
     message += '\n'
+    const bind = targetGet(flags.target)!
     const name = typeof bind.name === "string" ? bind.name : decorCondition(flags.decor, bind.name)
     message += `${fileInfoList.length} files listed for ${name} (${flags.filter}).`
     message += '\n'

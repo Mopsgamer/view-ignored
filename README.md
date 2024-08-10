@@ -32,6 +32,12 @@ view-ignored --help
 viewig scan .
 viewig scan . --target=npm
 
+# scan: plugins (space or comma)
+viewig scan . --plugins="vign-p-tsx, vign-p-jsdoc"
+viewig scan . --plugins="vign-p-tsx vign-p-jsdoc"
+viewig scan . --plugins vign-p-tsx vign-p-jsdoc
+viewig scan . --plugins vign-p-tsx, vign-p-jsdoc
+
 # config: print all
 viewig config get
 # config: print with defaults
@@ -41,60 +47,59 @@ viewig config set target=npm
 viewig scan .
 # config: always use nerd font
 viewig config set style=treeNerd
+# config: always use plugins
+viewig config set plugins=typescript-viewig,eslint-vign-plugin
 ```
 
 ### Programmatically
 
 ```js
 import * as vign from "view-ignored";
-import * as vign from "view-ignored/lib/browser"; // for web environment apps
+import * as vign from "view-ignored/out/src/browser"; // for web environment apps
 
 const fileInfoList = await vign.scanProject("git");
-const fileInfo = await vign.scanFile(filePath, "git");
+const fileInfo = await vign.scanFile("./path/to/file", "git");
 
 // options available
 const fileInfoList = await vign.scanProject("git", { cwd, ... });
 
 // use results
 if (fileInfo.ignored) {
-  superCodeEditor.explorer.colorFile(fileInfo.filePath, "gray")
+    superCodeEditor.explorer.colorFile(fileInfo.filePath, "gray")
 }
 ```
 
-#### Sorting:
+#### Sorting
 
 ```js
+const sorter = vign.Sorting.firstFolders;
 const fileInfoList = await vign.scanProject("npm");
-const sorter = vign.Sorting.firstFolders;
-fileInfoList.map(String).sort(sorter);
+const fileInfoSorted = fileInfoList.map(String).sort(sorter);
 ```
 
 ```js
-const fileInfoList = await vign.scanProject("npm")
-const sorter = vign.Sorting.firstFolders;
+const sorter = vign.Sorting.modified;
+const fileInfoList = await vign.scanProject("npm");
 
-/** @type {Map<FileInfo, Date>} */
-const cacheEditDates = new Map()
-for (const fileInfo of fileInfoList) {
-	cacheEditDates.set(fileInfo, fs.statSync(fileInfo.filePath).mtime)
-}
+/** @type {{fileInfo: FileInfo, modified: number, path: string}[]} */
+const cache = new Map(
+    fileInfoList.map((fileInfo) => ({
+        fileInfo,
+        path: fileInfo.filePath,
+        modified: fs.statSync(filePath).mtime.getTime(),
+    }))
+);
 
-const fileInfoSorted = fileInfoList.sort((a, b) => sorter(
-	a.toString(), b.toString(),
-	cacheEditDates.get(a)!, cacheEditDates.get(b)!
-))
+const fileInfoSorted = cache.sort((a, b) =>
+    sorter(a.toString(), b.toString(), cacheEditDates)
+);
 ```
 
 ### Targets
 
 - `git`
-  - Test command: `git ls-tree -r <git-branch-name> --name-only`
-  - Sources walkthrough: '.gitignore'.
 - `npm` (can be usable for PNPM and Bun)
-  - Test command: `npm pack --dry-run`
-  - Sources walkthrough: 'package.json'>"files" otherwise '.npmignore' otherwise '.gitignore'.
 - `yarn`
-  - Sources walkthrough: 'package.json'>"files" otherwise '.yarnignore' otherwise '.npmignore' otherwise '.gitignore'.
 - `vsce`
-  - Test command: `vsce ls`
-  - Sources walkthrough: '.vscodeignore'.
+- `jsr` *planned*
+- `deno` *planned*

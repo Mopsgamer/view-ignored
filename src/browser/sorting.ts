@@ -89,7 +89,7 @@ export function firstFiles(a: string, b: string): number {
  * Files and folders are sorted by last modified date in descending order.
  * Folders are displayed before files.
  */
-export function modified(a: string, b: string, aDate: Date, bDate: Date): number {
+export function modified(a: string, b: string, map: Map<string, number>): number {
 	let comp = 0;
 	let others1, others2, last1, last2;
 	for (; comp === 0;) {
@@ -97,7 +97,7 @@ export function modified(a: string, b: string, aDate: Date, bDate: Date): number
 		a = others1;
 		[, others2, last2] = slicePath(b);
 		b = others2;
-		comp = aDate.getTime() - bDate.getTime()
+		comp = (map.get(a) ?? 0) - (map.get(b) ?? 0)
 		if (last1 || last2) {
 			if (last1 === last2) {
 				break
