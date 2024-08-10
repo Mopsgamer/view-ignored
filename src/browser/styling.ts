@@ -18,21 +18,16 @@ export interface FormatFilesOptions {
 	 */
 	decor?: DecorName,
 	chalk: ChalkInstance,
-	/**
-	 * @default Infinity
-	 */
-	depth?: number
 }
 
 /**
  * @returns Prints a readable file list. Here is '\n' ending.
  */
 export function formatFiles(files: FileInfo[], options: FormatFilesOptions): string {
-	const { showSources = false, chalk, decor = "normal", style, depth = Infinity } = options ?? {};
+	const { showSources = false, chalk, decor = "normal", style } = options ?? {};
 
 	const isPaths = style === "paths"
 	const paths = files.map(f => f.toString({ fileIcon: decor, usePrefix: true, chalk: chalk, source: showSources, entire: isPaths }))
-		.filter(p => Array.from(p).filter(c => c === '/').length < depth)
 
 	if (isPaths) {
 		return paths.join('\n') + '\n'

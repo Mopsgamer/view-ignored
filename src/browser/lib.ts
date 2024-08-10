@@ -147,7 +147,7 @@ export interface ScanFileOptions {
 	 * directory.
 	 * @default Infinity
 	 */
-	deep?: number
+	maxDepth?: number
 }
 
 /**
@@ -211,7 +211,7 @@ export async function scanProject(arg1: Methodology[] | string, options: ScanFol
 			...options,
 			nodir: true,
 			dot: true,
-			posix: true
+			posix: true,
 		})
 		const cache = new Set<string>()
 

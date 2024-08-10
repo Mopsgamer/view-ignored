@@ -77,7 +77,7 @@ export interface ConfigGetFlags {
  */
 export const program = new Command()
     .version('v' + version, '-v')
-    .addOption(new Option("--no-color").default(false))
+    .addOption(new Option("--no-color", 'force disable colors').default(false))
 
 /**
  * Command-line 'scan' command.
@@ -85,7 +85,7 @@ export const program = new Command()
 export const scanProgram = program
     .command("scan")
     .aliases(['sc'])
-    .description('get ignored paths')
+    .description('get ignored/included paths')
     .action(actionScan)
 
 /**
@@ -100,28 +100,28 @@ export const cfgProgram = program
  * Init the command-line, parse arguments and invoke the program.
  */
 export function optionsInit() {
-    Config.configValueLinkCliOption(program, new Option('--plugins <modules...>').argParser(parseArgArrStr), "plugins")
-    Config.configValueLinkCliOption(program, new Option("--color <level>"), "color")
-    Config.configValueLinkCliOption(program, new Option("--decor <decor>"), "decor")
-    Config.configValueLinkCliOption(scanProgram, new Option('-p, --parsable [parsable]').argParser(parseArgBool), "parsable")
-    Config.configValueLinkCliOption(scanProgram, new Option("-t, --target <ignorer>"), "target")
-    Config.configValueLinkCliOption(scanProgram, new Option("--filter <filter>"), "filter")
-    Config.configValueLinkCliOption(scanProgram, new Option("--sort <sorter>"), "sort")
-    Config.configValueLinkCliOption(scanProgram, new Option("--style <style>"), "style")
-    Config.configValueLinkCliOption(scanProgram, new Option("--depth <depth>").argParser(parseArgInt), "depth")
-    Config.configValueLinkCliOption(scanProgram, new Option("--show-sources [show]").argParser(parseArgBool), "showSources")
+    Config.configValueLinkCliOption(program, new Option('--plugins <modules...>', 'import modules to modify behavior').argParser(parseArgArrStr), "plugins")
+    Config.configValueLinkCliOption(program, new Option("--color <level>", 'the interface color level'), "color")
+    Config.configValueLinkCliOption(program, new Option("--decor <decor>", "the interface decorations"), "decor")
+    Config.configValueLinkCliOption(scanProgram, new Option('-p, --parsable [parsable]', "print parsable text").argParser(parseArgBool), "parsable")
+    Config.configValueLinkCliOption(scanProgram, new Option("-t, --target <ignorer>", 'the scan target'), "target")
+    Config.configValueLinkCliOption(scanProgram, new Option("--filter <filter>", 'filter results'), "filter")
+    Config.configValueLinkCliOption(scanProgram, new Option("--sort <sorter>", 'sort results'), "sort")
+    Config.configValueLinkCliOption(scanProgram, new Option("--style <style>", 'results view mode'), "style")
+    Config.configValueLinkCliOption(scanProgram, new Option("--depth <depth>", 'the max results depth').argParser(parseArgInt), "depth")
+    Config.configValueLinkCliOption(scanProgram, new Option("--show-sources [show]", 'show scan sources').argParser(parseArgBool), "showSources")
 }
 
 /**
  * Command-line argument: key=value pair.
  * @see {@link parseArgKeyVal}
  */
-export const argConfigKeyVal = new Argument('[pair]', 'pair "key=value"').argParser(parseArgKeyVal)
+export const argConfigKeyVal = new Argument('[pair]', "the configuration entry key=value'").argParser(parseArgKeyVal)
 /**
  * Command-line argument: config property.
  * @see {@link Config.configKeyList}
  */
-export const argConfigKey = new Argument('[key]', 'setting').choices(Config.configKeyList)
+export const argConfigKey = new Argument('[key]', 'the configuration setting name').choices(Config.configKeyList)
 
 export const cfgGetOption = new Option('--real', 'use default value(s) as fallback').default(false)
 
@@ -129,7 +129,7 @@ cfgProgram
     .command('path').description('print the config file path')
     .action(actionCfgPath)
 cfgProgram
-    .command('set').description('set config property using syntax "key=value"')
+    .command('set').description("set config property using syntax 'key=value'")
     .addArgument(argConfigKeyVal)
     .action(actionCfgSet)
 cfgProgram
@@ -197,19 +197,11 @@ export function parseArgKeyVal(pair: string): Config.ConfigPair {
  * Command-line 'scan' command action.
  */
 export async function actionScan(flags: ScanFlags): Promise<void> {
-    if (flags.parsable) {
-        const fileInfoList = await scanProject(flags.target, { filter: flags.filter })
-        console.log(fileInfoList.map(fi => fi.filePath + '<' + fi.source.sourcePath).join('|'))
-        return
-    }
-
     const cwd = process.cwd()
     const start = Date.now()
     const chalk = getChalk(flags)
 
-    const spinner = ora({ text: cwd })
-    spinner.start()
-    const fileInfoListP = scanProject(flags.target, { filter: flags.filter })
+    const fileInfoListP = scanProject(flags.target, { filter: flags.filter, maxDepth: flags.depth })
         .catch((error) => {
             spinner.stop()
             spinner.clear()
@@ -219,6 +211,14 @@ export async function actionScan(flags: ScanFlags): Promise<void> {
             console.error(`Bad sources for ${flags.target}: ${ErrorNoSources.walk(flags.target)}`)
             process.exit(1)
         })
+
+    if (flags.parsable) {
+        console.log((await fileInfoListP).map(fi => fi.filePath + (flags.showSources ? '<' + fi.source.sourcePath : '')).join('|'))
+        return
+    }
+
+    const spinner = ora({ text: cwd, color: 'white' })
+    spinner.start()
 
     const fileInfoList = await fileInfoListP
     const filePathList = fileInfoList.map(String)
@@ -231,7 +231,7 @@ export async function actionScan(flags: ScanFlags): Promise<void> {
     const lookedSorted = fileInfoList.sort((a, b) => sorter(a.toString(), b.toString(), cacheEditDates))
 
     let message = ''
-    message += formatFiles(lookedSorted, { chalk, style: flags.style, decor: flags.decor, showSources: flags.showSources, depth: flags.depth })
+    message += formatFiles(lookedSorted, { chalk, style: flags.style, decor: flags.decor, showSources: flags.showSources })
     message += '\n'
     const time = Date.now() - start
     const checkSymbol = decorCondition(flags.decor, { ifEmoji: '✅', ifNerd: '\uf00c', postfix: ' ' })
