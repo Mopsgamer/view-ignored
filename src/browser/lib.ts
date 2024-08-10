@@ -159,7 +159,7 @@ export interface ScanFolderOptions extends ScanFileOptions {
 	 * Filter output.
 	 * @default "included"
 	 */
-	filter?: FilterName
+	filter?: FilterName | ((fileInfo: FileInfo) => boolean)
 }
 
 /**

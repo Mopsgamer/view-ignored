@@ -42,7 +42,7 @@ export function formatConfigConflicts(chalk: ChalkInstance, decor: DecorName, er
     message += badEntries.map(
         ([key, value]) => {
             const choices = configValueList(key)
-            const errorMessage = choices === undefined ? '' : decorCondition(decor, { ifNormal: `Choices: ${choices.join(', ')}.`, prefix })
+            const errorMessage = choices === undefined ? '' : decorCondition(decor, { ifNormal: typeof choices === "string" ? choices : `Choices: ${choices.join(', ')}.`, prefix })
             return '\t' + chalk.reset(`${key}=${value}`) + chalk.red(errorMessage)
         }
     ).join('\n')

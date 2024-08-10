@@ -113,10 +113,14 @@ export class FileInfo {
 	}
 
 	/**
-	 * @param filter The group name.
+	 * @param filter The group name. Default: `"all"`
 	 * @returns `true`, if the file is contained by the filter.
 	 */
-	isIncludedBy(filter: FilterName): boolean {
+	isIncludedBy(filter?: FilterName | ((fileInfo: FileInfo) => boolean)): boolean {
+		if (typeof filter === "function") {
+			return filter(this)
+		}
+		filter ??= "all"
 		const filterIgnore = (filter === "ignored") && this.isIgnored()
 		const filterInclude = (filter === "included") && !this.isIgnored()
 		const filterAll = filter === "all"

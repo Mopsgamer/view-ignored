@@ -13,97 +13,99 @@ import packageJSON from "../package.json" with {type: "json"}
 export const { version } = packageJSON;
 
 /**
- * Prepare for {@link program}.parse().
+ * Use it instead of {@link program}.parse()
  */
 export async function programInit() {
-	const flags: ProgramFlags = program.optsWithGlobals()
-	const chalk = getChalk(flags)
-	try {
-		Config.configManager.load()
-	} catch (error) {
-		formatConfigConflicts(chalk, flags.decor, error)
-		return
-	}
-	await BuiltIns
-	program.parseOptions(process.argv)
-	await loadPlugins(flags.plugin)
-	optionsInit()
-	program.parse()
+    const flags: ProgramFlags = program.optsWithGlobals()
+    const chalk = getChalk(flags)
+    try {
+        Config.configManager.load()
+    } catch (error) {
+        formatConfigConflicts(chalk, flags.decor, error)
+        return
+    }
+    await BuiltIns
+    program.parseOptions(process.argv)
+    await loadPlugins(flags.plugin)
+    optionsInit()
+    program.parse()
 }
 
 /** Chalk, but configured by view-ignored cli. */
 export function getChalk(flags: ProgramFlags): ChalkInstance {
-	const colorLevel = (flags.noColor ? 0 : Math.max(0, Math.min(Number(flags.color ?? 3), 3))) as ColorSupportLevel
-	const chalk = new Chalk({ level: colorLevel })
-	return chalk
+    const colorLevel = (flags.noColor ? 0 : Math.max(0, Math.min(Number(flags.color ?? 3), 3))) as ColorSupportLevel
+    const chalk = new Chalk({ level: colorLevel })
+    return chalk
 }
 
 /**
  * Command-line entire program flags.
  */
 export interface ProgramFlags {
-	plugin: string[]
-	noColor: boolean
-	color: string
-	decor: DecorName
+    plugin: string[]
+    noColor: boolean
+    color: string
+    decor: DecorName
 }
 
 /**
  * Command-line 'scan' command flags.
  */
 export interface ScanFlags extends ProgramFlags {
-	target: string
-	filter: FilterName
-	sort: SortName
-	style: StyleName
-	showSources: boolean
-	depth: number
+    target: string
+    filter: FilterName
+    sort: SortName
+    style: StyleName
+    showSources: boolean
+    depth: number
+    parsable: boolean
 }
 
 /**
  * Command-line 'cfg get' command flags.
  */
 export interface ConfigGetFlags {
-	defs: boolean
+    defs: boolean
 }
 
 /**
  * `view-ignored` command-line programl
  */
 export const program = new Command()
-	.version('v' + version, '-v')
-	.addOption(new Option('--plugin <modules...>'))
-	.addOption(new Option("--no-color").default(false))
+    .version('v' + version, '-v')
+    .addOption(new Option("--no-color").default(false))
 
 /**
  * Command-line 'scan' command.
  */
 export const scanProgram = program
-	.command("scan")
-	.aliases(['sc'])
-	.description('get ignored paths')
-	.action(actionScan)
+    .command("scan")
+    .aliases(['sc'])
+    .description('get ignored paths')
+    .action(actionScan)
 
 /**
 * Command-line 'config' command.
 */
 export const cfgProgram = program
-	.command("config")
-	.alias('cfg')
-	.description('cli config manipulation')
+    .command("config")
+    .alias('cfg')
+    .description('cli config manipulation')
 
 /**
  * Init the command-line, parse arguments and invoke the program.
  */
 export function optionsInit() {
-	Config.configValuePutChoices(program, new Option("--color <level>"), "color")
-	Config.configValuePutChoices(program, new Option("--decor <decor>"), "decor")
-	Config.configValuePutChoices(scanProgram, new Option("--target <ignorer>"), "target")
-	Config.configValuePutChoices(scanProgram, new Option("--filter <filter>"), "filter")
-	Config.configValuePutChoices(scanProgram, new Option("--sort <sorter>"), "sort")
-	Config.configValuePutChoices(scanProgram, new Option("--style <style>"), "style")
-	Config.configValuePutChoices(scanProgram, new Option("--depth <depth>").argParser(parseArgInt), "depth")
-	Config.configValuePutChoices(scanProgram, new Option("--show-sources [showSources]").argParser(parseArgBool), "showSources")
+    Config.configValueLinkCliOption(program, new Option('--plugins <modules...>').argParser(parseArgArrStr), "plugins")
+    Config.configValueLinkCliOption(program, new Option("--color <level>"), "color")
+    Config.configValueLinkCliOption(program, new Option("--decor <decor>"), "decor")
+    Config.configValueLinkCliOption(scanProgram, new Option('-p, --parsable [parsable]').argParser(parseArgBool), "parsable")
+    Config.configValueLinkCliOption(scanProgram, new Option("-t, --target <ignorer>"), "target")
+    Config.configValueLinkCliOption(scanProgram, new Option("--filter <filter>"), "filter")
+    Config.configValueLinkCliOption(scanProgram, new Option("--sort <sorter>"), "sort")
+    Config.configValueLinkCliOption(scanProgram, new Option("--style <style>"), "style")
+    Config.configValueLinkCliOption(scanProgram, new Option("--depth <depth>").argParser(parseArgInt), "depth")
+    Config.configValueLinkCliOption(scanProgram, new Option("--show-sources [show]").argParser(parseArgBool), "showSources")
 }
 
 /**
@@ -120,166 +122,179 @@ export const argConfigKey = new Argument('[key]', 'setting').choices(Config.conf
 export const cfgGetOption = new Option('--defs', 'use default value(s) as fallback for printing').default(false)
 
 cfgProgram
-	.command('path').description('print the config file path')
-	.action(actionCfgPath)
+    .command('path').description('print the config file path')
+    .action(actionCfgPath)
 cfgProgram
-	.command('reset').description('reset config by deleting the file. alias for no-prop unset')
-	.action(actionCfgReset)
+    .command('reset').description('reset config by deleting the file. alias for no-prop unset')
+    .action(actionCfgReset)
 cfgProgram
-	.command('set').description('set config property using syntax "key=value"')
-	.addArgument(argConfigKeyVal)
-	.action(actionCfgSet)
+    .command('set').description('set config property using syntax "key=value"')
+    .addArgument(argConfigKeyVal)
+    .action(actionCfgSet)
 cfgProgram
-	.command('unset').description("unset all configuration values or a specific one")
-	.addArgument(argConfigKey)
-	.action(actionCfgUnset)
+    .command('unset').description("unset all configuration values or a specific one")
+    .addArgument(argConfigKey)
+    .action(actionCfgUnset)
 cfgProgram
-	.command('get').description('print a list of all configuration values or a specific one')
-	.addOption(cfgGetOption)
-	.addArgument(argConfigKey)
-	.action(actionCfgGet)
+    .command('get').description('print a list of all configuration values or a specific one')
+    .addOption(cfgGetOption)
+    .addArgument(argConfigKey)
+    .action(actionCfgGet)
+
+export function parseArgArrStr(arg: string): string[] {
+    return arg.split(/[ ,|]/).filter(s => s !== "")
+}
 
 export function parseArgBool(arg: string): boolean {
-	console.log(typeof arg)
-	arg = arg.trim()
-	const trueValues: string[] = ['true', 'on', 'yes', 'y', 'enable', 'enabled', '1']
-	const falseValues: string[] = ['false', 'off', 'no', 'n', 'disable', 'disabled', '0']
-	if (![...trueValues, ...falseValues].includes(arg)) {
-		throw new InvalidArgumentError(`Got invalid value '${arg}'. Should be a boolen.`)
-	}
-	return trueValues.includes(arg)
+    if (!Config.boolValues.includes(arg)) {
+        throw new InvalidArgumentError(`Got invalid value '${arg}'. Should be a boolean.`)
+    }
+    return Config.trueValues.includes(arg)
 }
 
 export function parseArgInt(arg: string): number {
-	const num = parseInt(arg.trim())
-	if (!Number.isInteger(num)) {
-		throw new InvalidArgumentError(`Got invalid value '${num}'. Should be an integer.`)
-	}
-	return num
+    const num = parseInt(arg)
+    if (!Number.isInteger(num)) {
+        throw new InvalidArgumentError(`Got invalid value '${num}'. Should be an integer.`)
+    }
+    return num
 }
 
 export function parseArgKey(key: string): Config.ConfigKey {
-	if (!Config.isConfigKey(key)) {
-		throw new InvalidArgumentError(`Got invalid key '${key}'. Allowed config keys are ${Config.configKeyList.join(', ')}.`)
-	}
-	return key;
+    if (!Config.isConfigKey(key)) {
+        throw new InvalidArgumentError(`Got invalid key '${key}'. Allowed config keys are ${Config.configKeyList.join(', ')}.`)
+    }
+    return key;
 }
 
 export function parseArgKeyVal(pair: string): Config.ConfigPair {
-	const result = pair.split('=') as [string, unknown]
-	const r1num = Number(result[1])
-	if (!isNaN(r1num)) {
-		result[1] = r1num
-	} else if (['true', 'false'].includes(result[1] as string)) {
-		result[1] = result[1] === 'true'
-	}
-	if (result.length !== 2) {
-		throw new InvalidArgumentError(`Invalid syntax. Expected 'setting=value'.`)
-	}
-	const [key, val] = result
-	if (!Config.isConfigKey(key)) {
-		throw new InvalidArgumentError(`Got invalid key '${key}'. Allowed config keys are ${Config.configKeyList.join(', ')}.`)
-	}
-	if (!Config.isConfigValue(key, val)) {
-		const list = Config.configValueList(key)
-		if (list === undefined) {
-			throw new InvalidArgumentError(`Invalid value '${val}' for the key '${key}'.`)
-		}
-		throw new InvalidArgumentError(`Invalid value '${val}' for the key '${key}'. Allowed config values are ${list.join(', ')}`)
-	}
-	return result as [Config.ConfigKey, Config.ConfigValue]
+    const result = pair.split('=') as [string, string]
+    const [key] = result
+    if (result.length !== 2) {
+        throw new InvalidArgumentError(`Excpected 'key=value'.`)
+    }
+    if (!Config.isConfigKey(key)) {
+        throw new InvalidArgumentError(`Got invalid key '${key}'. Allowed config keys are ${Config.configKeyList.join(', ')}.`)
+    }
+    const { parseArg } = Config.configValueGetCliOption(key) ?? {}
+    const val = parseArg?.(result[1], undefined) ?? result[1]
+
+    if (!Config.isConfigValue(key, val)) {
+        const list = Config.configValueList(key)
+        if (list === undefined) {
+            throw new InvalidArgumentError(`Invalid value '${val}' for the key '${key}'.`)
+        }
+        if (Array.isArray(list)) {
+            throw new InvalidArgumentError(`Invalid value '${val}' for the key '${key}'. Allowed config values are ${list.join(', ')}`)
+        }
+        throw new InvalidArgumentError(`Invalid value '${val}' for the key '${key}'. ${list}`)
+    }
+    return [key, val] as [Config.ConfigKey, Config.ConfigValue]
 }
 
 /**
  * Command-line 'scan' command action.
  */
 export async function actionScan(flags: ScanFlags): Promise<void> {
-	const cwd = process.cwd()
-	const start = Date.now()
-	const chalk = getChalk(flags)
+    if (flags.parsable) {
+        const fileInfoList = await scanProject(flags.target, { filter: flags.filter })
+        console.log(fileInfoList.map(fi => fi.filePath + '<' + fi.source.sourcePath).join('|'))
+        return
+    }
 
-	let fileInfoList: FileInfo[]
-	const spinner = ora({ text: cwd })
-	spinner.start()
-	try {
-		fileInfoList = await scanProject(flags.target, { filter: flags.filter })
-	} catch (error) {
-		spinner.stop()
-		spinner.clear()
-		if (!(error instanceof ErrorNoSources)) {
-			throw error
-		}
-		console.error(`Bad sources for ${flags.target}: ${ErrorNoSources.walk(flags.target)}`)
-		process.exit(1)
-	}
+    const cwd = process.cwd()
+    const start = Date.now()
+    const chalk = getChalk(flags)
 
-	const sorter = Sorting[flags.sort]
-	const cacheEditDates = new Map<FileInfo, Date>()
-	for (const look of fileInfoList) {
-		cacheEditDates.set(look, fs.statSync(look.filePath).mtime)
-	}
-	const bind = targetGet(flags.target)!
-	const lookedSorted = fileInfoList.sort((a, b) => sorter(
-		a.toString(), b.toString(),
-		cacheEditDates.get(a)!, cacheEditDates.get(b)!
-	))
+    const spinner = ora({ text: cwd })
+    spinner.start()
+    const fileInfoListP = scanProject(flags.target, { filter: flags.filter })
+        .catch((error) => {
+            spinner.stop()
+            spinner.clear()
+            if (!(error instanceof ErrorNoSources)) {
+                throw error
+            }
+            console.error(`Bad sources for ${flags.target}: ${ErrorNoSources.walk(flags.target)}`)
+            process.exit(1)
+        })
 
-	const tree = formatFiles(lookedSorted, { chalk, style: flags.style, decor: flags.decor, showSources: flags.showSources, depth: flags.depth })
-	spinner.succeed()
-	console.log(tree)
-	const time = Date.now() - start
-	const checkSymbol = decorCondition(flags.decor, { ifEmoji: '✅', ifNerd: '\uf00c', postfix: ' ' })
-	const fastSymbol = decorCondition(flags.decor, { ifEmoji: '⚡', ifNerd: '\udb85\udc0c' })
-	console.log(`${chalk.green(checkSymbol)}Done in ${time < 400 ? chalk.yellow(fastSymbol) : ''}${time}ms.`)
-	const name = typeof bind.name === "string" ? bind.name : decorCondition(flags.decor, bind.name)
-	console.log(`${fileInfoList.length} files listed for ${name} (${flags.filter}).\n`)
-	const infoSymbol = decorCondition(flags.decor, { ifEmoji: 'ℹ️', ifNerd: '\ue66a', postfix: ' ' })
-	if (bind.testCommand) {
-		console.log(`${chalk.blue(infoSymbol)}You can use '${chalk.magenta(bind.testCommand)}' to check if the list is valid.\n`)
-	}
+    const fileInfoList = await fileInfoListP
+    spinner.suffixText = "Generating...";
+
+    const sorter = Sorting[flags.sort]
+    const cacheEditDates = new Map<FileInfo, Date>()
+    for (const look of fileInfoList) {
+        cacheEditDates.set(look, fs.statSync(look.filePath).mtime)
+    }
+    const bind = targetGet(flags.target)!
+    const lookedSorted = fileInfoList.sort((a, b) => sorter(
+        a.toString(), b.toString(),
+        cacheEditDates.get(a)!, cacheEditDates.get(b)!
+    ))
+
+    let message = ''
+    message += formatFiles(lookedSorted, { chalk, style: flags.style, decor: flags.decor, showSources: flags.showSources, depth: flags.depth })
+    message += '\n'
+    const time = Date.now() - start
+    const checkSymbol = decorCondition(flags.decor, { ifEmoji: '✅', ifNerd: '\uf00c', postfix: ' ' })
+    const fastSymbol = decorCondition(flags.decor, { ifEmoji: '⚡', ifNerd: '\udb85\udc0c' })
+    message += `${chalk.green(checkSymbol)}Done in ${time < 400 ? chalk.yellow(fastSymbol) : ''}${time}ms.`
+    message += '\n'
+    const name = typeof bind.name === "string" ? bind.name : decorCondition(flags.decor, bind.name)
+    message += `${fileInfoList.length} files listed for ${name} (${flags.filter}).`
+    message += '\n'
+    const infoSymbol = decorCondition(flags.decor, { ifEmoji: 'ℹ️', ifNerd: '\ue66a', postfix: ' ' })
+    if (bind.testCommand) {
+        message += '\n'
+        message += `${chalk.blue(infoSymbol)}You can use '${chalk.magenta(bind.testCommand)}' to check if the list is valid.`
+    }
+    message += '\n'
+    spinner.suffixText = '\n' + message;
+    spinner.succeed()
 }
 
 /**
  * Command-line 'config path' command action.
  */
 export function actionCfgPath(): void {
-	console.log(Config.configFilePath)
+    console.log(Config.configFilePath)
 }
 
 /**
  * Command-line 'config reset' command action
  */
 export function actionCfgReset(): void {
-	Config.configManager.unset().save()
-	console.log(Config.configManager.getPairString())
+    Config.configManager.unset().save()
+    console.log(Config.configManager.getPairString())
 }
 
 /**
  * Command-line 'config set' command action
  */
 export function actionCfgSet(pair?: Config.ConfigPair): void {
-	if (pair === undefined) {
-		console.log(`Allowed config keys are ${Config.configKeyList.join(', ')}.`)
-		return
-	}
-	const [key, val] = pair
-	Config.configManager.set(key, val).save()
-	console.log(Config.configManager.getPairString(key))
+    if (pair === undefined) {
+        console.log(`Allowed config keys are ${Config.configKeyList.join(', ')}.`)
+        return
+    }
+    const [key, val] = pair
+    Config.configManager.set(key, val).save()
+    console.log(Config.configManager.getPairString(key))
 }
 
 /**
  * Command-line 'config unset' command action
  */
 export function actionCfgUnset(key: Config.ConfigKey | undefined): void {
-	if (key !== undefined) {
-		Config.configManager.unset(key).save()
-	}
-	console.log(Config.configManager.getPairString(key))
+    if (key !== undefined) {
+        Config.configManager.unset(key).save()
+    }
+    console.log(Config.configManager.getPairString(key))
 }
 
 /**
  * Command-line 'config unset' command action
  */
 export function actionCfgGet(key: Config.ConfigKey | undefined, options: ConfigGetFlags): void {
-	console.log(Config.configManager.getPairString(key, options.defs))
+    console.log(Config.configManager.getPairString(key, options.defs))
 }

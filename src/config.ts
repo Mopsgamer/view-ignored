@@ -1,7 +1,7 @@
 import { ColorSupportLevel } from "chalk"
 import { FilterName, filterNameList, isFilterName, Plugins, Sorting, Styling } from "./browser/index.js"
 import * as os from "os";
-import propertiesFile from "properties";
+import * as yaml from "yaml";
 import path from "path"
 import { existsSync, readFileSync, rmSync, writeFileSync } from "fs"
 import { Command, Option } from "commander";
@@ -36,7 +36,7 @@ export const configFilePath = path.join(os.homedir(), configFileName)
 /**
  * Command-line configuration property list.
  */
-export const configKeyList = ["color", "target", "filter", "sort", "style", "decor", "depth", "showSources"] as const satisfies readonly (keyof Config)[]
+export const configKeyList = ["color", "target", "filter", "sort", "style", "decor", "depth", "showSources", "plugins", "parsable"] as const satisfies readonly (keyof Config)[]
 
 /**
  * Command-line configuration's key type.
@@ -63,6 +63,8 @@ export function isShowSources(value: unknown): value is ShowSourcesType {
  */
 export function isConfigValue<T extends ConfigKey>(key: T, value: unknown): value is Config[T] {
     const c: Record<ConfigKey, (value: unknown) => boolean> = {
+        parsable: v => typeof v === "boolean",
+        plugins: v => Array.isArray(v) && v.every(p => typeof p === "string"),
         color: isColorType,
         target: t => Plugins.isTargetId(t) && Plugins.targetGet(t) !== undefined,
         filter: isFilterName,
@@ -87,6 +89,8 @@ export type ConfigPair<KeyT extends ConfigKey = ConfigKey, Safe extends boolean 
  * @see {@link configKeyList} Before adding new properties.
  */
 export type Config = {
+    parsable: boolean,
+    plugins: string[],
     color: ColorType,
     target: string,
     filter: FilterName,
@@ -94,13 +98,15 @@ export type Config = {
     style: Styling.StyleName,
     decor: Styling.DecorName,
     depth: number,
-    showSources: ShowSourcesType
+    showSources: ShowSourcesType,
 }
 
 /**
  * Command-line default config values.
  */
 export const configDefault: Readonly<Config> = {
+    parsable: false,
+    plugins: [],
     color: 3,
     target: "git",
     filter: "included",
@@ -126,36 +132,56 @@ export function isConfigPartial(cfg: unknown): cfg is Partial<Config> {
     )
 }
 
+export const trueValues: string[] = ['true', 'on', 'yes', 'y', 'enable', 'enabled', '1']
+export const falseValues: string[] = ['false', 'off', 'no', 'n', 'disable', 'disabled', '0']
+export const boolValues = trueValues.concat(falseValues)
+
 /**
- * Returns available values for the specified property.
+ * @returns available values or requirement message for the specified property.
  * @param key The config property.
  * @param fallbackDefault If `true`, the default value will be used when the value is `undefined`. Default `true`.
  */
-export function configValueList<T extends ConfigKey>(key: T): readonly string[] | undefined {
+export function configValueList<T extends ConfigKey>(key: T): readonly string[] | string {
+    const msg = {
+        int: 'The value should be an integer.',
+        bool: `The value should be a boolean. Available bool literals: ${boolValues.join(', ')}`,
+        arrStr: `The value should be an array of a strings.`,
+    }
     /**
      * Represents allowed values for each config property.
      */
-    const configAvailable: Partial<Record<ConfigKey, readonly ConfigValue[] | (() => readonly ConfigValue[])>> = {
+    const configAvailable: Record<ConfigKey, readonly ConfigValue[] | string | (() => readonly ConfigValue[])> = {
         color: colorTypeList,
         filter: filterNameList,
         target: Plugins.targetList,
         sort: Sorting.sortNameList,
         style: Styling.styleNameList,
         decor: Styling.decorNameList,
+        depth: msg.int,
+        parsable: msg.bool,
+        plugins: msg.arrStr,
+        showSources: msg.bool,
     }
-    const val = configAvailable[key] as readonly string[] | (() => readonly string[]) | undefined
+    const val = configAvailable[key] as readonly string[] | string | (() => readonly string[])
     const choices = (typeof val === "function" ? val() : val)
     return choices
 }
 
-export function configValuePutChoices<T extends ConfigKey>(command: Command, option: Option, key: T): Option {
+const configCliOptMap = new Map<ConfigKey, Option>
+
+export function configValueLinkCliOption<T extends ConfigKey>(command: Command, option: Option, key: T): Option {
     const list = configValueList(key)
-    if (list !== undefined) {
+    if (Array.isArray(list)) {
         option.choices(list)
     }
     option.default(configManager.get(key))
     command.addOption(option)
+    configCliOptMap.set(key, option)
     return option
+}
+
+export function configValueGetCliOption<T extends ConfigKey>(key: T): Option | undefined {
+    return configCliOptMap.get(key)
 }
 
 /**
@@ -191,9 +217,24 @@ export class ConfigManager {
      * @returns `undefined` if the config file does not exist.
      */
     load() {
-        const parsed: unknown | undefined = existsSync(this.filePath) ? propertiesFile.parse(readFileSync(this.filePath).toString()) : undefined
+        const parsed: unknown = existsSync(this.filePath) ? yaml.parse(readFileSync(this.filePath).toString()) : undefined
         if (parsed === undefined) {
+            return parsed
+        }
+        const obj = parsed as Record<string, string>
+        if (obj?.constructor !== Object) {
             return this
+        }
+        for (const key in obj) {
+            const element = obj[key];
+            if (typeof element !== "string") {
+                continue
+            }
+            if (element.startsWith('|')) {
+                const array = element.split(',')
+                array.shift();
+                (parsed as Record<string, string[] | string>)[key] = array
+            }
         }
         if (!isConfigPartial(parsed)) {
             throw new TypeError(`Invalid config.`, { cause: parsed })
@@ -213,8 +254,7 @@ export class ConfigManager {
             return this
         }
 
-        const strmap = Object.fromEntries(Object.entries(this.data).map(([k, v]) => [k, String(v)]))
-        writeFileSync(this.filePath, propertiesFile.stringify(strmap)!)
+        writeFileSync(this.filePath, yaml.stringify(this.data))
         return this
     }
 
