@@ -198,7 +198,6 @@ export class ConfigManager {
 
     /**
      * Do not change this value directly.
-     * @todo Make private.
      * @see {@link configManager}.
      */
     private data = {} as Partial<Config>
