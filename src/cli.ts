@@ -55,7 +55,7 @@ export interface ProgramFlags {
 /**
  * Command-line 'scan' command flags.
  */
-export interface ScanFlags extends ProgramFlags {
+export interface ScanFlags {
     target: string
     filter: FilterName
     sort: SortName
@@ -76,8 +76,6 @@ export interface ConfigGetFlags {
  * `view-ignored` command-line programl
  */
 export const program = new Command()
-    .version('v' + version, '-v')
-    .addOption(new Option("--no-color", 'force disable colors').default(false))
 
 /**
  * Command-line 'scan' command.
@@ -100,6 +98,8 @@ export const cfgProgram = program
  * Init the command-line, parse arguments and invoke the program.
  */
 export function optionsInit() {
+    program.version('v' + version, '-v')
+    program.addOption(new Option("--no-color", 'force disable colors').default(false))
     Config.configValueLinkCliOption(program, new Option('--plugins <modules...>', 'import modules to modify behavior').argParser(parseArgArrStr), "plugins")
     Config.configValueLinkCliOption(program, new Option("--color <level>", 'the interface color level'), "color")
     Config.configValueLinkCliOption(program, new Option("--decor <decor>", "the interface decorations"), "decor")
@@ -197,9 +197,10 @@ export function parseArgKeyVal(pair: string): Config.ConfigPair {
  * Command-line 'scan' command action.
  */
 export async function actionScan(flags: ScanFlags): Promise<void> {
+    const flagsGlobal = program.opts()
     const cwd = process.cwd()
     const start = Date.now()
-    const chalk = getChalk(flags)
+    const chalk = getChalk(program.opts())
 
     const fileInfoListP = scanProject(flags.target, { filter: flags.filter, maxDepth: flags.depth })
         .catch((error) => {
@@ -231,18 +232,18 @@ export async function actionScan(flags: ScanFlags): Promise<void> {
     const lookedSorted = fileInfoList.sort((a, b) => sorter(a.toString(), b.toString(), cacheEditDates))
 
     let message = ''
-    message += formatFiles(lookedSorted, { chalk, style: flags.style, decor: flags.decor, showSources: flags.showSources })
+    message += formatFiles(lookedSorted, { chalk, style: flags.style, decor: flagsGlobal.decor, showSources: flags.showSources })
     message += '\n'
     const time = Date.now() - start
-    const checkSymbol = decorCondition(flags.decor, { ifEmoji: '✅', ifNerd: '\uf00c', postfix: ' ' })
-    const fastSymbol = decorCondition(flags.decor, { ifEmoji: '⚡', ifNerd: '\udb85\udc0c' })
+    const checkSymbol = decorCondition(flagsGlobal.decor, { ifEmoji: '✅', ifNerd: '\uf00c', postfix: ' ' })
+    const fastSymbol = decorCondition(flagsGlobal.decor, { ifEmoji: '⚡', ifNerd: '\udb85\udc0c' })
     message += `${chalk.green(checkSymbol)}Done in ${time < 400 ? chalk.yellow(fastSymbol) : ''}${time}ms.`
     message += '\n'
     const bind = targetGet(flags.target)!
-    const name = typeof bind.name === "string" ? bind.name : decorCondition(flags.decor, bind.name)
+    const name = typeof bind.name === "string" ? bind.name : decorCondition(flagsGlobal.decor, bind.name)
     message += `${fileInfoList.length} files listed for ${name} (${flags.filter}).`
     message += '\n'
-    const infoSymbol = decorCondition(flags.decor, { ifEmoji: 'ℹ️', ifNerd: '\ue66a', postfix: ' ' })
+    const infoSymbol = decorCondition(flagsGlobal.decor, { ifEmoji: 'ℹ️', ifNerd: '\ue66a', postfix: ' ' })
     if (bind.testCommand) {
         message += '\n'
         message += `${chalk.blue(infoSymbol)}You can use '${chalk.magenta(bind.testCommand)}' to check if the list is valid.`
