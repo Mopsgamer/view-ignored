@@ -1,6 +1,5 @@
 import { isTargetBind, TargetBind, targetSet } from "./targets.js";
 import { loadPlugin as load } from "load-plugin";
-import isInstalledGlobally from "is-installed-globally";
 
 export * from "./targets.js"
 
@@ -26,7 +25,7 @@ export interface PluginExport {
  * Checks if the value is the {@link PluginExport}.
  */
 export function isPluginExport(value: unknown): value is PluginExport {
-    if (value?.constructor === Object) {
+    if (value?.constructor !== Object) {
         return false
     }
 
@@ -52,17 +51,15 @@ export function importPlugin(exportData: PluginExport) {
  */
 export function loadPlugin(moduleName: string): Promise<PluginLoaded> {
     try {
-        return new Promise<PluginLoaded>((resolve, reject) => {
-            load(moduleName, { global: isInstalledGlobally })
+        return new Promise<PluginLoaded>((resolve) => {
+            load(moduleName)
                 .catch((reason: unknown) => {
                     const r = reason as Record<string, unknown>
                     if (r?.code === 'ERR_MODULE_NOT_FOUND') {
                         reason = r.message
                     }
-                    console.error('Unable to load \'%s\'. Reason:', moduleName)
-                    console.error(reason)
                     const fail: PluginLoaded = { moduleName, isLoaded: false, exports: reason }
-                    reject(fail)
+                    resolve(fail)
                 })
                 .then((exports: unknown) => {
                     const result: PluginLoaded = { moduleName, isLoaded: true, exports }
@@ -74,8 +71,6 @@ export function loadPlugin(moduleName: string): Promise<PluginLoaded> {
         })
     } catch (reason) {
         const fail: PluginLoaded = { moduleName, isLoaded: false, exports: reason }
-        console.error('Unable to resolve \'%s\'. Reason:', moduleName)
-        console.error(reason)
         return Promise.resolve(fail)
     }
 }

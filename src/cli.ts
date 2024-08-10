@@ -6,17 +6,34 @@ import { BuiltIns, loadPluginsQueue, targetGet } from "./browser/binds/index.js"
 import { decorCondition, DecorName, formatFiles, StyleName } from "./browser/styling.js";
 import { SortName } from "./browser/sorting.js";
 import { ErrorNoSources, FilterName, scanProject, Sorting } from "./lib.js";
-import { formatConfigConflicts } from "./styling.js";
+import { boxError, BoxOptions, formatConfigConflicts } from "./styling.js";
 import ora from "ora";
 import packageJSON from "../package.json" with {type: "json"}
+import { format } from "util";
 
 export const { version } = packageJSON;
+
+export function logError(message: string, options?: BoxOptions) {
+    console.log(boxError(message, { noColor: getColorLevel(program.opts()) === 0, ...options }))
+}
 
 /**
  * Use it instead of {@link program}.parse()
  */
 export async function programInit() {
-    optionsInit()
+    Config.configManager.load()
+    program.version('v' + version, '-v')
+    program.addOption(new Option("--no-color", 'force disable colors').default(false))
+    Config.configValueLinkCliOption("plugins", program, new Option('--plugins <modules...>', 'import modules to modify behavior'), parseArgArrStr)
+    Config.configValueLinkCliOption("color", program, new Option("--color <level>", 'the interface color level'), parseArgInt)
+    Config.configValueLinkCliOption("decor", program, new Option("--decor <decor>", "the interface decorations"))
+    Config.configValueLinkCliOption("parsable", scanProgram, new Option('-p, --parsable [parsable]', "print parsable text"), parseArgBool)
+    Config.configValueLinkCliOption("target", scanProgram, new Option("-t, --target <ignorer>", 'the scan target'))
+    Config.configValueLinkCliOption("filter", scanProgram, new Option("--filter <filter>", 'filter results'))
+    Config.configValueLinkCliOption("sort", scanProgram, new Option("--sort <sorter>", 'sort results'))
+    Config.configValueLinkCliOption("style", scanProgram, new Option("--style <style>", 'results view mode'))
+    Config.configValueLinkCliOption("depth", scanProgram, new Option("--depth <depth>", 'the max results depth'), parseArgInt)
+    Config.configValueLinkCliOption("showSources", scanProgram, new Option("--show-sources [show]", 'show scan sources'), parseArgBool)
     program.parseOptions(process.argv)
     const flags = program.opts<ProgramFlags>()
     const chalk = getChalk(flags)
@@ -28,17 +45,33 @@ export async function programInit() {
     }
     try {
         await BuiltIns
-        await loadPluginsQueue(flags.plugins)
-    } catch {
-        return
+        const configPlugins = Config.configManager.get('plugins')
+        const loaded = await loadPluginsQueue(flags.plugins)
+        for (const load of loaded) {
+            if (!load.isLoaded) {
+                logError(format(load.exports), {
+                    title: `Unable to load plugin '${load.moduleName}' ` + (configPlugins.includes(load.moduleName)
+                        ? '(imported by ' + Config.configManager.filePath + ')'
+                        : '(imported by --plugins option)')
+                })
+            }
+        }
+    } catch (reason) {
+        logError(format(reason))
+        process.exit(1)
     }
     program.parse()
 }
 
 /** Chalk, but configured by view-ignored cli. */
-export function getChalk(flags: ProgramFlags): ChalkInstance {
+export function getColorLevel(flags: ProgramFlags): ColorSupportLevel {
     const colorLevel = (flags.noColor ? 0 : Math.max(0, Math.min(Number(flags.color ?? 3), 3))) as ColorSupportLevel
-    const chalk = new Chalk({ level: colorLevel })
+    return colorLevel
+}
+
+/** Chalk, but configured by view-ignored cli. */
+export function getChalk(flags: ProgramFlags): ChalkInstance {
+    const chalk = new Chalk({ level: getColorLevel(flags) })
     return chalk
 }
 
@@ -93,24 +126,6 @@ export const cfgProgram = program
     .command("config")
     .alias('cfg')
     .description('cli config manipulation')
-
-/**
- * Init the command-line, parse arguments and invoke the program.
- */
-export function optionsInit() {
-    program.version('v' + version, '-v')
-    program.addOption(new Option("--no-color", 'force disable colors').default(false))
-    Config.configValueLinkCliOption(program, new Option('--plugins <modules...>', 'import modules to modify behavior').argParser(parseArgArrStr), "plugins")
-    Config.configValueLinkCliOption(program, new Option("--color <level>", 'the interface color level'), "color")
-    Config.configValueLinkCliOption(program, new Option("--decor <decor>", "the interface decorations"), "decor")
-    Config.configValueLinkCliOption(scanProgram, new Option('-p, --parsable [parsable]', "print parsable text").argParser(parseArgBool), "parsable")
-    Config.configValueLinkCliOption(scanProgram, new Option("-t, --target <ignorer>", 'the scan target'), "target")
-    Config.configValueLinkCliOption(scanProgram, new Option("--filter <filter>", 'filter results'), "filter")
-    Config.configValueLinkCliOption(scanProgram, new Option("--sort <sorter>", 'sort results'), "sort")
-    Config.configValueLinkCliOption(scanProgram, new Option("--style <style>", 'results view mode'), "style")
-    Config.configValueLinkCliOption(scanProgram, new Option("--depth <depth>", 'the max results depth').argParser(parseArgInt), "depth")
-    Config.configValueLinkCliOption(scanProgram, new Option("--show-sources [show]", 'show scan sources').argParser(parseArgBool), "showSources")
-}
 
 /**
  * Command-line argument: key=value pair.
@@ -172,13 +187,13 @@ export function parseArgKeyVal(pair: string): Config.ConfigPair {
     const result = pair.split('=') as [string, string]
     const [key] = result
     if (result.length !== 2) {
-        throw new InvalidArgumentError(`Excpected 'key=value'.`)
+        throw new InvalidArgumentError(`Expected 'key=value'.`)
     }
     if (!Config.isConfigKey(key)) {
         throw new InvalidArgumentError(`Got invalid key '${key}'. Allowed config keys are ${Config.configKeyList.join(', ')}.`)
     }
-    const { parseArg } = Config.configValueGetCliOption(key) ?? {}
-    const val = parseArg?.(result[1], undefined) ?? result[1]
+    const option = Config.configValueGetCliOption(key)!
+    const val = option.parseArg?.(result[1], undefined) ?? result[1]
 
     if (!Config.isConfigValue(key, val)) {
         const list = Config.configValueList(key)
@@ -196,25 +211,25 @@ export function parseArgKeyVal(pair: string): Config.ConfigPair {
 /**
  * Command-line 'scan' command action.
  */
-export async function actionScan(flags: ScanFlags): Promise<void> {
-    const flagsGlobal = program.opts()
+export async function actionScan(): Promise<void> {
+    const flagsGlobal: ProgramFlags & ScanFlags = scanProgram.optsWithGlobals()
     const cwd = process.cwd()
     const start = Date.now()
     const chalk = getChalk(program.opts())
 
-    const fileInfoListP = scanProject(flags.target, { filter: flags.filter, maxDepth: flags.depth })
+    const fileInfoListP = scanProject(flagsGlobal.target, { filter: flagsGlobal.filter, maxDepth: flagsGlobal.depth })
         .catch((error) => {
             spinner.stop()
             spinner.clear()
             if (!(error instanceof ErrorNoSources)) {
                 throw error
             }
-            console.error(`Bad sources for ${flags.target}: ${ErrorNoSources.walk(flags.target)}`)
+            console.error(`Bad sources for ${flagsGlobal.target}: ${ErrorNoSources.walk(flagsGlobal.target)}`)
             process.exit(1)
         })
 
-    if (flags.parsable) {
-        console.log((await fileInfoListP).map(fi => fi.filePath + (flags.showSources ? '<' + fi.source.sourcePath : '')).join('|'))
+    if (flagsGlobal.parsable) {
+        console.log((await fileInfoListP).map(fi => fi.filePath + (flagsGlobal.showSources ? '<' + fi.source.sourcePath : '')).join('|'))
         return
     }
 
@@ -225,23 +240,23 @@ export async function actionScan(flags: ScanFlags): Promise<void> {
     const filePathList = fileInfoList.map(String)
     spinner.suffixText = "Generating...";
 
-    const sorter = Sorting[flags.sort]
+    const sorter = Sorting[flagsGlobal.sort]
     const cacheEditDates = new Map<string, number>(filePathList.map(
         filePath => [filePath, fs.statSync(filePath).mtime.getTime()])
     )
     const lookedSorted = fileInfoList.sort((a, b) => sorter(a.toString(), b.toString(), cacheEditDates))
 
     let message = ''
-    message += formatFiles(lookedSorted, { chalk, style: flags.style, decor: flagsGlobal.decor, showSources: flags.showSources })
+    message += formatFiles(lookedSorted, { chalk, style: flagsGlobal.style, decor: flagsGlobal.decor, showSources: flagsGlobal.showSources })
     message += '\n'
     const time = Date.now() - start
     const checkSymbol = decorCondition(flagsGlobal.decor, { ifEmoji: '✅', ifNerd: '\uf00c', postfix: ' ' })
     const fastSymbol = decorCondition(flagsGlobal.decor, { ifEmoji: '⚡', ifNerd: '\udb85\udc0c' })
     message += `${chalk.green(checkSymbol)}Done in ${time < 400 ? chalk.yellow(fastSymbol) : ''}${time}ms.`
     message += '\n'
-    const bind = targetGet(flags.target)!
+    const bind = targetGet(flagsGlobal.target)!
     const name = typeof bind.name === "string" ? bind.name : decorCondition(flagsGlobal.decor, bind.name)
-    message += `${fileInfoList.length} files listed for ${name} (${flags.filter}).`
+    message += `${fileInfoList.length} files listed for ${name} (${flagsGlobal.filter}).`
     message += '\n'
     const infoSymbol = decorCondition(flagsGlobal.decor, { ifEmoji: 'ℹ️', ifNerd: '\ue66a', postfix: ' ' })
     if (bind.testCommand) {

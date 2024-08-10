@@ -3,6 +3,8 @@ import { default as tree } from "treeify";
 import jsonifyPaths from "jsonify-paths";
 import { ChalkInstance } from "chalk";
 import path from "path";
+import boxen, { Options } from "boxen";
+import { stripVTControlCharacters } from "util";
 
 export interface FormatFilesOptions {
 	/**
@@ -117,6 +119,24 @@ export function decorCondition(decor: DecorName, condition: DecorConditionOption
 
 	if (result !== '') {
 		result = (condition.prefix ?? '') + result + (condition.postfix ?? '')
+	}
+	return result
+}
+
+export interface BoxOptions extends Options {
+	noColor?: boolean
+}
+
+export function boxError(message: string, options?: BoxOptions): string {
+	let result = ('\n' + boxen(message, {
+		titleAlignment: "left",
+		padding: { left: 2, right: 2 },
+		borderColor: "redBright",
+		borderStyle: "round",
+		...options,
+	}))
+	if (options?.noColor) {
+		result = stripVTControlCharacters(result)
 	}
 	return result
 }

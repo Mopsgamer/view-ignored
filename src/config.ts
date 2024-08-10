@@ -50,7 +50,7 @@ export function isConfigKey(value: unknown): value is ConfigKey {
     return typeof value === "string" && configKeyList.includes(value as ConfigKey)
 }
 
-export type ConfigValue<KeyT extends ConfigKey = ConfigKey, Safe extends boolean = true> = Safe extends true ? Config[KeyT] : Config[KeyT] | undefined
+export type ConfigValue<KeyT extends ConfigKey = ConfigKey> = Config[KeyT]
 
 export type ShowSourcesType = boolean
 
@@ -82,7 +82,7 @@ export function isConfigValue<T extends ConfigKey>(key: T, value: unknown): valu
 /**
  * Represents array with the key nad the value.
  */
-export type ConfigPair<KeyT extends ConfigKey = ConfigKey, Safe extends boolean = true> = [key: KeyT, value: ConfigValue<KeyT, Safe>]
+export type ConfigPair<KeyT extends ConfigKey = ConfigKey> = [key: KeyT, value: ConfigValue<KeyT>]
 
 /**
  * Command-line configuration structure.
@@ -169,10 +169,13 @@ export function configValueList<T extends ConfigKey>(key: T): readonly string[] 
 
 const configCliOptMap = new Map<ConfigKey, Option>
 
-export function configValueLinkCliOption<T extends ConfigKey>(command: Command, option: Option, key: T): Option {
+export function configValueLinkCliOption<T extends ConfigKey>(key: T, command: Command, option: Option, parseArg?: (arg: string) => unknown): Option {
     const list = configValueList(key)
     if (Array.isArray(list)) {
         option.choices(list)
+    }
+    if (parseArg) {
+        option.argParser(parseArg)
     }
     option.default(configManager.get(key))
     command.addOption(option)
@@ -298,7 +301,10 @@ export class ConfigManager {
      * @param defs If `true`, the default value will be used when the value is `undefined`. Default `true`.
      * @returns The value for the specified property.
      */
-    get<KeyT extends ConfigKey>(key: KeyT, defs: boolean = true): ConfigValue<KeyT, typeof defs> {
+    get<KeyT extends ConfigKey>(key: KeyT, defs: false): ConfigValue<KeyT> | undefined
+    get<KeyT extends ConfigKey>(key: KeyT, defs?: true): ConfigValue<KeyT>
+    get<KeyT extends ConfigKey>(key: KeyT, defs: boolean): ConfigValue<KeyT> | undefined
+    get<KeyT extends ConfigKey>(key: KeyT, defs: boolean = true): ConfigValue<KeyT> | undefined {
         const value: Config[KeyT] | undefined = this.data[key]
         if (defs && value === undefined) {
             return configDefault[key]

@@ -49,14 +49,13 @@
 		{
 			"type": "node",
 			"request": "launch",
-			"name": "viewig scan --plugins t",
+			"name": "viewig scan --plugins=t",
 			"skipFiles": [
 				"<node_internals>/**"
 			],
 			"args": [
 				"scan",
-				"--plugins",
-				"t"
+				"--plugins=t",
 			],
 			"program": "${workspaceFolder}/out/src/bin.js",
 			"cwd": "${workspaceFolder}",

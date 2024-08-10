@@ -60,12 +60,12 @@
 	},
 	"dependencies": {
 		"arrify": "^3.0.0",
+		"boxen": "^8.0.1",
 		"chalk": "^5.3.0",
 		"commander": "^12.1.0",
 		"get-value": "^3.0.1",
 		"glob": "^11.0.0",
 		"ignore": "^5.3.1",
-		"is-installed-globally": "^1.0.0",
 		"jsonify-paths": "^1.1.0",
 		"load-plugin": "^6.0.3",
 		"minimatch": "^10.0.1",
