@@ -14,8 +14,8 @@
 		"build": "pnpm shx rm -rf out && pnpm tsc",
 		"build:pub": "pnpm shx rm -rf out && pnpm tsc --sourceMap false",
 		"build:watch": "pnpm tsc --watch",
-		"lint": "pnpm eslint .",
-		"lint:fix": "pnpm eslint . --fix",
+		"lint": "pnpm xo",
+		"lint:fix": "pnpm xo --fix",
 		"release:major": "pnpm release-it --increment=major",
 		"release:minor": "pnpm release-it --increment=minor",
 		"release:patch": "pnpm release-it --increment=patch"
@@ -75,21 +75,18 @@
 		"yaml": "^2.5.0"
 	},
 	"devDependencies": {
-		"@eslint/js": "^9.4.0",
 		"@release-it/keep-a-changelog": "^5.0.0",
 		"@types/get-value": "^3.0.5",
 		"@types/mocha": "^10.0.6",
 		"@types/node": "^20.14.2",
 		"@types/treeify": "^1.0.3",
-		"eslint": "^8.57.0",
-		"eslint-plugin-only-warn": "^1.1.0",
 		"fs-fixture": "^2.4.0",
 		"globals": "^15.4.0",
 		"mocha": "^10.4.0",
 		"release-it": "^17.3.0",
 		"shx": "^0.3.4",
 		"typescript": "^5.4.5",
-		"typescript-eslint": "^7.13.0"
+		"xo": "^0.59.3"
 	},
 	"keywords": [
 		"tree",

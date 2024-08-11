@@ -1,22 +1,22 @@
-import path from "path"
+import path from 'node:path';
 
 /**
  * Contains all file sort names.
  */
-export const sortNameList = ["firstFolders", "firstFiles", "type", "mixed", "modified"] as const
+export const sortNameList = ['firstFolders', 'firstFiles', 'type', 'mixed', 'modified'] as const;
 /**
  * Contains all file sort names as a type.
  */
-export type SortName = typeof sortNameList[number]
+export type SortName = typeof sortNameList[number];
 /**
  * {@link Array.prototype.sort}'s file path comparator.
  */
-export type SortFunc = (a: string, b: string) => number
+export type SortFunc = (a: string, b: string) => number;
 /**
  * Checks if the value is the {@link SortName}.
  */
 export function isSortName(value: unknown): value is SortName {
-	return typeof value === "string" && sortNameList.includes(value as SortName)
+	return typeof value === 'string' && sortNameList.includes(value as SortName);
 }
 
 /**
@@ -26,11 +26,11 @@ export function isSortName(value: unknown): value is SortName {
  * "file/" -> ["file", "", false]
  */
 function slicePath(p: string): [next: string, other: string, isLast: boolean] {
-	const slashIndex = p.indexOf('/')
-	const next = p.substring(0, slashIndex)
-	const other = p.substring(slashIndex + 1)
-	const isLast = next === '' && (p.lastIndexOf('/') === slashIndex)
-	return [slashIndex < 0 ? other : next, other, isLast]
+	const slashIndex = p.indexOf('/');
+	const next = p.slice(0, Math.max(0, slashIndex));
+	const other = p.slice(Math.max(0, slashIndex + 1));
+	const isLast = next === '' && (p.lastIndexOf('/') === slashIndex);
+	return [slashIndex < 0 ? other : next, other, isLast];
 }
 
 /**
@@ -39,7 +39,7 @@ function slicePath(p: string): [next: string, other: string, isLast: boolean] {
  */
 export function firstFolders(a: string, b: string): number {
 	let comp = 0;
-	let next1, others1, next2, others2, last1, last2;
+	let next1; let others1; let next2; let others2; let last1; let last2;
 	for (; comp === 0;) {
 		[next1, others1, last1] = slicePath(a);
 		a = others1;
@@ -48,15 +48,18 @@ export function firstFolders(a: string, b: string): number {
 		comp = mixed(next1, next2);
 		if (last1 || last2) {
 			if (last1 === last2) {
-				break
+				break;
 			}
-			if (last1 === false) {
-				return -1
+
+			if (!last1) {
+				return -1;
 			}
-			return +1
+
+			return +1;
 		}
 	}
-	return comp
+
+	return comp;
 }
 
 /**
@@ -65,7 +68,7 @@ export function firstFolders(a: string, b: string): number {
  */
 export function firstFiles(a: string, b: string): number {
 	let comp = 0;
-	let next1, others1, next2, others2, last1, last2;
+	let next1; let others1; let next2; let others2; let last1; let last2;
 	for (; comp === 0;) {
 		[next1, others1, last1] = slicePath(a);
 		a = others1;
@@ -74,15 +77,18 @@ export function firstFiles(a: string, b: string): number {
 		comp = mixed(next1, next2);
 		if (last1 || last2) {
 			if (last1 === last2) {
-				break
+				break;
 			}
-			if (last1 === true) {
-				return -1
+
+			if (last1) {
+				return -1;
 			}
-			return +1
+
+			return +1;
 		}
 	}
-	return comp
+
+	return comp;
 }
 
 /**
@@ -91,24 +97,27 @@ export function firstFiles(a: string, b: string): number {
  */
 export function modified(a: string, b: string, map: Map<string, number>): number {
 	let comp = 0;
-	let others1, others2, last1, last2;
+	let others1; let others2; let last1; let last2;
 	for (; comp === 0;) {
 		[, others1, last1] = slicePath(a);
 		a = others1;
 		[, others2, last2] = slicePath(b);
 		b = others2;
-		comp = (map.get(a) ?? 0) - (map.get(b) ?? 0)
+		comp = (map.get(a) ?? 0) - (map.get(b) ?? 0);
 		if (last1 || last2) {
 			if (last1 === last2) {
-				break
+				break;
 			}
-			if (last1 === false) {
-				return -1
+
+			if (!last1) {
+				return -1;
 			}
-			return +1
+
+			return +1;
 		}
 	}
-	return comp
+
+	return comp;
 }
 
 /**
@@ -117,26 +126,29 @@ export function modified(a: string, b: string, map: Map<string, number>): number
  */
 export function type(a: string, b: string): number {
 	let comp = 0;
-	let next1, others1, next2, others2, last1, last2;
+	let next1; let others1; let next2; let others2; let last1; let last2;
 	for (; comp === 0;) {
 		[next1, others1, last1] = slicePath(a);
 		a = others1;
 		[next2, others2, last2] = slicePath(b);
 		b = others2;
-		const ppa = path.parse(next1)
-		const ppb = path.parse(next2)
-		comp = mixed(ppa.ext, ppb.ext) || mixed(ppa.name, ppb.name)
+		const ppa = path.parse(next1);
+		const ppb = path.parse(next2);
+		comp = mixed(ppa.ext, ppb.ext) || mixed(ppa.name, ppb.name);
 		if (last1 || last2) {
 			if (last1 === last2) {
-				break
+				break;
 			}
-			if (last1 === false) {
-				return -1
+
+			if (!last1) {
+				return -1;
 			}
-			return +1
+
+			return +1;
 		}
 	}
-	return comp
+
+	return comp;
 }
 
 /**
@@ -144,5 +156,5 @@ export function type(a: string, b: string): number {
  * Files are interwoven with folders.
  */
 export function mixed(a: string, b: string): number {
-	return a.localeCompare(b, undefined, { ignorePunctuation: false })
+	return a.localeCompare(b, undefined, {ignorePunctuation: false});
 }

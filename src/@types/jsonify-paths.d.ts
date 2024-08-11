@@ -1,14 +1,14 @@
-declare module "jsonify-paths" {
-	interface Tree {
-		[key: string]: string | Tree
-	}
+declare module 'jsonify-paths' {
+	type Tree = {
+		[key: string]: string | Tree;
+	};
 	const defaults: {
-		options: Options
-	}
-	interface Options {
-		delimiter?: string,
-		ignoreSpacesAroundDelimiters?: boolean,
-		defaultValue?: unknown
-	}
-	function from(paths: string | string[], options?: Options): Record<string, Tree>
+		options: Options;
+	};
+	type Options = {
+		delimiter?: string;
+		ignoreSpacesAroundDelimiters?: boolean;
+		defaultValue?: unknown;
+	};
+	function from(paths: string | string[], options?: Options): Record<string, Tree>;
 }
