@@ -22,7 +22,7 @@
 	},
 	"author": "Mopsgamer",
 	"license": "ISC",
-	"main": "./lib/src/index.js",
+	"main": "./out/src/index.js",
 	"files": [
 		"out/src"
 	],
