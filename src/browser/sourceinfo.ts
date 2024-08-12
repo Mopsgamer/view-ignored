@@ -107,7 +107,9 @@ export class SourceInfo {
 				return scan ? scan?.(path) : true
 			})
 
-			return closestPath
+			if (closestPath) {
+				return closestPath
+			}
 		}
 	}
 
