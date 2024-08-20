@@ -171,14 +171,15 @@ export async function scanProject(argument1: Methodology[] | string, options: Sc
 		return scanProject(bind.methodology, Object.assign(options, bind.scanOptions));
 	}
 
-	// Find good source.
-	const {filter = 'included', fsa = FS, cwd = process.cwd()} = options;
 	const allFilePaths = await glob('**', {
 		...options,
 		nodir: true,
 		dot: true,
 		posix: true,
 	});
+
+	// Find good source.
+	const {filter = 'included', fsa = FS, cwd = process.cwd()} = options;
 	for (const methodology of argument1) {
 		const resultList: FileInfo[] = [];
 		// eslint-disable-next-line no-await-in-loop
