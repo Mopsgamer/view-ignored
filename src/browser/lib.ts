@@ -197,6 +197,13 @@ export async function scanProject(arg1: Methodology[] | string, options: ScanFol
 		return scanProject(bind.methodology, Object.assign(options, bind.scanOptions))
 	}
 
+	const allFilePaths = await glob("**", {
+		...options,
+		nodir: true,
+		dot: true,
+		posix: true,
+	})
+
 	// Find good source.
 	const { filter = "included", fsa = FS, cwd = process.cwd() } = options;
 	for (const methodology of arg1) {
@@ -207,12 +214,6 @@ export async function scanProject(arg1: Methodology[] | string, options: ScanFol
 			continue
 		}
 
-		const allFilePaths = await glob("**", {
-			...options,
-			nodir: true,
-			dot: true,
-			posix: true,
-		})
 		const cache = new Set<string>()
 
 		let noSource = false

@@ -8,10 +8,10 @@ import { SortName } from "./browser/sorting.js";
 import { ErrorNoSources, FilterName, scanProject, Sorting } from "./lib.js";
 import { boxError, BoxOptions, formatConfigConflicts } from "./styling.js";
 import ora from "ora";
-import packageJSON from "../package.json" with {type: "json"}
+import { createRequire } from "module";
 import { format } from "util";
 
-export const { version } = packageJSON;
+export const { version } = createRequire(import.meta.url)('../package.json') as typeof import('../package.json');
 
 export function logError(message: string, options?: BoxOptions) {
     console.log(boxError(message, { noColor: getColorLevel(program.opts()) === 0, ...options }))
@@ -23,17 +23,6 @@ export function logError(message: string, options?: BoxOptions) {
 export async function programInit() {
     Config.configManager.load()
     program.version('v' + version, '-v')
-    program.addOption(new Option("--no-color", 'force disable colors').default(false))
-    Config.configValueLinkCliOption("plugins", program, new Option('--plugins <modules...>', 'import modules to modify behavior'), parseArgArrStr)
-    Config.configValueLinkCliOption("color", program, new Option("--color <level>", 'the interface color level'), parseArgInt)
-    Config.configValueLinkCliOption("decor", program, new Option("--decor <decor>", "the interface decorations"))
-    Config.configValueLinkCliOption("parsable", scanProgram, new Option('-p, --parsable [parsable]', "print parsable text"), parseArgBool)
-    Config.configValueLinkCliOption("target", scanProgram, new Option("-t, --target <ignorer>", 'the scan target'))
-    Config.configValueLinkCliOption("filter", scanProgram, new Option("--filter <filter>", 'filter results'))
-    Config.configValueLinkCliOption("sort", scanProgram, new Option("--sort <sorter>", 'sort results'))
-    Config.configValueLinkCliOption("style", scanProgram, new Option("--style <style>", 'results view mode'))
-    Config.configValueLinkCliOption("depth", scanProgram, new Option("--depth <depth>", 'the max results depth'), parseArgInt)
-    Config.configValueLinkCliOption("showSources", scanProgram, new Option("--show-sources [show]", 'show scan sources'), parseArgBool)
     program.parseOptions(process.argv)
     const flags = program.opts<ProgramFlags>()
     const chalk = getChalk(flags)
@@ -60,6 +49,18 @@ export async function programInit() {
         logError(format(reason))
         process.exit(1)
     }
+
+    program.addOption(new Option("--no-color", 'force disable colors').default(false))
+    Config.configValueLinkCliOption("plugins", program, new Option('--plugins <modules...>', 'import modules to modify behavior'), parseArgArrStr)
+    Config.configValueLinkCliOption("color", program, new Option("--color <level>", 'the interface color level'), parseArgInt)
+    Config.configValueLinkCliOption("decor", program, new Option("--decor <decor>", "the interface decorations"))
+    Config.configValueLinkCliOption("parsable", scanProgram, new Option('-p, --parsable [parsable]', "print parsable text"), parseArgBool)
+    Config.configValueLinkCliOption("target", scanProgram, new Option("-t, --target <ignorer>", 'the scan target'))
+    Config.configValueLinkCliOption("filter", scanProgram, new Option("--filter <filter>", 'filter results'))
+    Config.configValueLinkCliOption("sort", scanProgram, new Option("--sort <sorter>", 'sort results'))
+    Config.configValueLinkCliOption("style", scanProgram, new Option("--style <style>", 'results view mode'))
+    Config.configValueLinkCliOption("depth", scanProgram, new Option("--depth <depth>", 'the max results depth'), parseArgInt)
+    Config.configValueLinkCliOption("showSources", scanProgram, new Option("--show-sources [show]", 'show scan sources'), parseArgBool)
     program.parse()
 }
 
