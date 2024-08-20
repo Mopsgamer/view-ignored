@@ -1,6 +1,7 @@
 import path from 'node:path';
 import process from 'node:process';
 import * as FS from 'node:fs';
+import {createRequire} from 'node:module';
 import {glob, type FSOption} from 'glob';
 import {Scanner, type PatternType, isPatternType} from './scanner.js';
 import {FileInfo} from './fileinfo.js';
@@ -15,6 +16,9 @@ export * from './sourceinfo.js';
 export * as Styling from './styling.js';
 export * as Sorting from './sorting.js';
 export * as Plugins from './binds/index.js';
+
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+export const package_ = createRequire(import.meta.url)('../../package.json') as typeof import('../../package.json');
 
 /**
  * Contains all filter names.

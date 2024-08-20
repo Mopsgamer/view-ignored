@@ -6,7 +6,6 @@ import {
 	Argument, InvalidArgumentError, Option, Command,
 } from 'commander';
 import ora from 'ora';
-import packageJSON from '../package.json' with {type: 'json'};
 import * as Config from './config.js';
 import {builtIns, loadPluginsQueue, targetGet} from './browser/binds/index.js';
 import {
@@ -14,11 +13,9 @@ import {
 } from './browser/styling.js';
 import {type SortName} from './browser/sorting.js';
 import {
-	ErrorNoSources, type FileInfo, type FilterName, scanProject, Sorting,
+	ErrorNoSources, type FileInfo, type FilterName, package_, scanProject, Sorting,
 } from './lib.js';
 import {boxError, type BoxOptions, formatConfigConflicts} from './styling.js';
-
-export const {version} = packageJSON;
 
 export function logError(message: string, options?: BoxOptions) {
 	console.log(boxError(message, {noColor: getColorLevel(program.opts()) === 0, ...options}));
@@ -29,7 +26,7 @@ export function logError(message: string, options?: BoxOptions) {
  */
 export async function programInit() {
 	Config.configManager.load();
-	program.version('v' + version, '-v');
+	program.version('v' + package_.version, '-v');
 	program.addOption(new Option('--no-color', 'force disable colors').default(false));
 	Config.configValueLinkCliOption('plugins', program, new Option('--plugins <modules...>', 'import modules to modify behavior'), parseArgumentArrayString);
 	Config.configValueLinkCliOption('color', program, new Option('--color <level>', 'the interface color level'), parseArgumentInt);
