@@ -14,7 +14,7 @@ export type TargetId = string;
  * @returns `true`, if the id is available for binding.
  */
 export function isTargetId(value: unknown): value is TargetId {
-	return typeof value === 'string' && (/^[-a-zA-Z\d]+$/.exec(value)) != null;
+	return typeof value === 'string' && (/^[-a-zA-Z\d]+$/.exec(value)) !== null;
 }
 
 /**
@@ -64,7 +64,7 @@ export function isTargetBind(value: unknown): value is TargetBind {
 
 	return (isTargetId(v.id))
         && (typeof v.name === 'string' || v.name?.constructor === Object)
-        && (Array.isArray(v.methodology) && v.methodology.every(isMethodology))
+        && (Array.isArray(v.methodology) && v.methodology.every(m => isMethodology(m)))
         && (v.scanOptions === undefined || v.scanOptions?.constructor === Object)
         && (v.testCommand === undefined || typeof v.testCommand === 'string');
 }
@@ -82,10 +82,6 @@ const targetBindMap = new Map<string, TargetBind>();
  * scanProject("abc") // ok
  */
 export function targetSet(bind: TargetBind): void {
-	if (!isTargetId(bind.id)) {
-		throw new TypeError(`view-ignored can not bind target with id '${bind.id}'`);
-	}
-
 	targetBindMap.set(bind.id, bind);
 }
 

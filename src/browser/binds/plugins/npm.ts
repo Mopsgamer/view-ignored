@@ -53,17 +53,17 @@ export const scanPackageJsonFiles: ScanMethod = function (data) {
 			return false;
 		}
 
-		const json = JSON.parse(pat);
+		const json: unknown = JSON.parse(pat);
 		if (json?.constructor !== Object) {
 			return false;
 		}
 
-		parsed = json;
+		parsed = json as Record<string, unknown>;
 	} catch {
 		return false;
 	}
 
-	const propertyValue = getValue(parsed, 'files');
+	const propertyValue: unknown = getValue(parsed, 'files');
 	if (!scanner.patternIsValid(propertyValue)) {
 		return false;
 	}
@@ -87,4 +87,5 @@ export const methodology: Methodology[] = [
 const bind: Plugins.TargetBind = {
 	id, name, methodology, testCommand,
 };
-export default ({viewignored: {addTargets: [bind]}} as Plugins.PluginExport);
+const npm: Plugins.PluginExport = {viewignored: {addTargets: [bind]}};
+export default npm;

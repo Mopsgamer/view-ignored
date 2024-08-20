@@ -11,7 +11,7 @@ export type SortName = typeof sortNameList[number];
 /**
  * {@link Array.prototype.sort}'s file path comparator.
  */
-export type SortFunc = (a: string, b: string) => number;
+export type SortFunction = (a: string, b: string) => number;
 /**
  * Checks if the value is the {@link SortName}.
  */
@@ -39,12 +39,11 @@ function slicePath(p: string): [next: string, other: string, isLast: boolean] {
  */
 export function firstFolders(a: string, b: string): number {
 	let comp = 0;
-	let next1; let others1; let next2; let others2; let last1; let last2;
 	for (; comp === 0;) {
-		[next1, others1, last1] = slicePath(a);
-		a = others1;
-		[next2, others2, last2] = slicePath(b);
-		b = others2;
+		const [next1, post1, last1] = slicePath(a);
+		a = post1;
+		const [next2, post2, last2] = slicePath(b);
+		b = post2;
 		comp = mixed(next1, next2);
 		if (last1 || last2) {
 			if (last1 === last2) {
@@ -68,12 +67,11 @@ export function firstFolders(a: string, b: string): number {
  */
 export function firstFiles(a: string, b: string): number {
 	let comp = 0;
-	let next1; let others1; let next2; let others2; let last1; let last2;
 	for (; comp === 0;) {
-		[next1, others1, last1] = slicePath(a);
-		a = others1;
-		[next2, others2, last2] = slicePath(b);
-		b = others2;
+		const [next1, post1, last1] = slicePath(a);
+		a = post1;
+		const [next2, post2, last2] = slicePath(b);
+		b = post2;
 		comp = mixed(next1, next2);
 		if (last1 || last2) {
 			if (last1 === last2) {
@@ -97,12 +95,11 @@ export function firstFiles(a: string, b: string): number {
  */
 export function modified(a: string, b: string, map: Map<string, number>): number {
 	let comp = 0;
-	let others1; let others2; let last1; let last2;
 	for (; comp === 0;) {
-		[, others1, last1] = slicePath(a);
-		a = others1;
-		[, others2, last2] = slicePath(b);
-		b = others2;
+		const [, post1, last1] = slicePath(a);
+		a = post1;
+		const [, post2, last2] = slicePath(b);
+		b = post2;
 		comp = (map.get(a) ?? 0) - (map.get(b) ?? 0);
 		if (last1 || last2) {
 			if (last1 === last2) {
@@ -126,12 +123,11 @@ export function modified(a: string, b: string, map: Map<string, number>): number
  */
 export function type(a: string, b: string): number {
 	let comp = 0;
-	let next1; let others1; let next2; let others2; let last1; let last2;
 	for (; comp === 0;) {
-		[next1, others1, last1] = slicePath(a);
-		a = others1;
-		[next2, others2, last2] = slicePath(b);
-		b = others2;
+		const [next1, post1, last1] = slicePath(a);
+		a = post1;
+		const [next2, post2, last2] = slicePath(b);
+		b = post2;
 		const ppa = path.parse(next1);
 		const ppb = path.parse(next2);
 		comp = mixed(ppa.ext, ppb.ext) || mixed(ppa.name, ppb.name);

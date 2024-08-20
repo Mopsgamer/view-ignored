@@ -46,6 +46,78 @@ export type ScannerPattern = string | string[];
  */
 export class Scanner {
 	/**
+	 * Checks if given pattern is valid.
+	 * @param pattern Parser pattern.
+	 */
+	static patternIsValid(pattern: unknown, options?: IsValidPatternOptions): pattern is ScannerPattern {
+		const {patternType = 'gitignore'} = options ?? {};
+
+		if (Array.isArray(pattern)) {
+			return pattern.every(p => this.patternIsValid(p, options));
+		}
+
+		if (typeof pattern !== 'string') {
+			return false;
+		}
+
+		if (patternType === 'gitignore') {
+			return ignore.default.isPathValid(pattern);
+		}
+
+		if (patternType === 'minimatch') {
+			try {
+				minimatch.makeRe(pattern);
+				return true;
+			} catch {
+				return false;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * @returns New pattern array: `!pattern` for `pattern`, and `pattern` for `!pattern`.
+	 */
+	static patternToNegated(pattern: string[]): string[];
+	/**
+	 * @returns New pattern: `!pattern` for `pattern`, and `pattern` for `!pattern`.
+	 */
+	static patternToNegated(pattern: string): string;
+	static patternToNegated(pattern: ScannerPattern): ScannerPattern {
+		if (Array.isArray(pattern)) {
+			return pattern.map(p => Scanner.patternToNegated(p));
+		}
+
+		return Scanner.patternIsNegated(pattern) ? pattern.replace(/^!/, '') : `!${pattern}`;
+	}
+
+	static patternIsNegated(pattern: string): boolean {
+		return pattern.startsWith('!');
+	}
+
+	private static matchesGitignore(path: string, ignoreInstance: Ignore) {
+		return ignoreInstance.ignores(path);
+	}
+
+	private static matchesMinimatch(path: string, patternList: string[]) {
+		return Array.from(patternList).some(pattern => minimatch(path, pattern, {dot: true}));
+	}
+
+	private static matchesReal(instance: Scanner, include: () => boolean, exclude: () => boolean, ignores: () => boolean) {
+		if (include()) {
+			return false;
+		}
+
+		if (exclude()) {
+			return true;
+		}
+
+		const ign = ignores();
+		return instance.isNegated ? !ign : ign;
+	}
+
+	/**
 	 * If `true`, when calling {@link Scanner.matches}, method will return `true` for ignored path.
 	 * @default false
 	 */
@@ -143,7 +215,7 @@ export class Scanner {
 	 */
 	matches(path: string): boolean {
 		if (this.patternType === 'gitignore') {
-			return this.matchesReal(
+			return Scanner.matchesReal(this,
 				() => Scanner.matchesGitignore(path, this.ignoreInstanceInclude),
 				() => Scanner.matchesGitignore(path, this.ignoreInstanceExclude),
 				() => Scanner.matchesGitignore(path, this.ignoreInstance),
@@ -151,32 +223,11 @@ export class Scanner {
 		}
 
 		// Minimatch
-		return this.matchesReal(
+		return Scanner.matchesReal(this,
 			() => Scanner.matchesMinimatch(path, Array.from(this.patternListInclude)),
 			() => Scanner.matchesMinimatch(path, Array.from(this.patternListExclude)),
 			() => Scanner.matchesMinimatch(path, Array.from(this.patternList)),
 		);
-	}
-
-	private matchesReal(include: () => boolean, exclude: () => boolean, ignores: () => boolean) {
-		if (include()) {
-			return false;
-		}
-
-		if (exclude()) {
-			return true;
-		}
-
-		const ign = ignores();
-		return this.isNegated ? !ign : ign;
-	}
-
-	private static matchesGitignore(path: string, ignoreInstance: Ignore) {
-		return ignoreInstance.ignores(path);
-	}
-
-	private static matchesMinimatch(path: string, patternList: string[]) {
-		return Array.from(patternList).some(pattern => minimatch(path, pattern, {dot: true}));
 	}
 
 	/**
@@ -185,56 +236,5 @@ export class Scanner {
 	 */
 	patternIsValid(pattern: unknown): pattern is ScannerPattern {
 		return Scanner.patternIsValid(pattern, {patternType: this.patternType});
-	}
-
-	/**
-	 * Checks if given pattern is valid.
-	 * @param pattern Parser pattern.
-	 */
-	static patternIsValid(pattern: unknown, options?: IsValidPatternOptions): pattern is ScannerPattern {
-		const {patternType = 'gitignore'} = options ?? {};
-
-		if (Array.isArray(pattern)) {
-			return pattern.every(p => this.patternIsValid(p, options));
-		}
-
-		if (typeof pattern !== 'string') {
-			return false;
-		}
-
-		if (patternType === 'gitignore') {
-			return ignore.default.isPathValid(pattern);
-		}
-
-		if (patternType === 'minimatch') {
-			try {
-				minimatch.makeRe(pattern);
-				return true;
-			} catch {
-				return false;
-			}
-		}
-
-		throw new TypeError(`Unknown pattern type '${patternType}'.`);
-	}
-
-	/**
-	 * @returns New pattern array: `!pattern` for `pattern`, and `pattern` for `!pattern`.
-	 */
-	static patternToNegated(pattern: string[]): string[];
-	/**
-	 * @returns New pattern: `!pattern` for `pattern`, and `pattern` for `!pattern`.
-	 */
-	static patternToNegated(pattern: string): string;
-	static patternToNegated(pattern: ScannerPattern): ScannerPattern {
-		if (Array.isArray(pattern)) {
-			return pattern.map(Scanner.patternToNegated);
-		}
-
-		return Scanner.patternIsNegated(pattern) ? pattern.replace(/^!/, '') : `!${pattern}`;
-	}
-
-	static patternIsNegated(pattern: string): boolean {
-		return pattern.startsWith('!');
 	}
 }

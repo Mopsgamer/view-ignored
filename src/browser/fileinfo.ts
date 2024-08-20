@@ -44,6 +44,22 @@ export type FileInfoToStringOptions = {
  */
 export class FileInfo {
 	/**
+	 * Creates new {@link FileInfo} from each file path.
+	 */
+	static from(filePathList: string[], sourceInfo: SourceInfo): FileInfo[];
+	/**
+	 * Creates new {@link FileInfo} from the file path.
+	 */
+	static from(filePath: string, sourceInfo: SourceInfo): FileInfo;
+	static from(argument: string | string[], sourceInfo: SourceInfo): FileInfo | FileInfo[] {
+		if (Array.isArray(argument)) {
+			return argument.map(path => FileInfo.from(path, sourceInfo));
+		}
+
+		return new FileInfo(argument, sourceInfo);
+	}
+
+	/**
 	 * The pattern parser.
 	 */
 	public readonly scanner: Scanner;
@@ -67,22 +83,6 @@ export class FileInfo {
 	 */
 	isIgnored(): boolean {
 		return this.scanner.matches(this.filePath);
-	}
-
-	/**
-	 * Creates new {@link FileInfo} from each file path.
-	 */
-	static from(filePathList: string[], sourceInfo: SourceInfo): FileInfo[];
-	/**
-	 * Creates new {@link FileInfo} from the file path.
-	 */
-	static from(filePath: string, sourceInfo: SourceInfo): FileInfo;
-	static from(argument: string | string[], sourceInfo: SourceInfo): FileInfo | FileInfo[] {
-		if (Array.isArray(argument)) {
-			return argument.map(path => FileInfo.from(path, sourceInfo));
-		}
-
-		return new FileInfo(argument, sourceInfo);
 	}
 
 	/**

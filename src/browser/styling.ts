@@ -1,6 +1,6 @@
 import path from 'node:path';
 import {stripVTControlCharacters} from 'node:util';
-import {default as tree} from 'treeify';
+import tree from 'treeify';
 import jsonifyPaths from 'jsonify-paths';
 import {type ChalkInstance} from 'chalk';
 import boxen, {type Options} from 'boxen';

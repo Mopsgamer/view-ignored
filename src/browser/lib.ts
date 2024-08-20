@@ -1,4 +1,5 @@
 import path from 'node:path';
+import process from 'node:process';
 import * as FS from 'node:fs';
 import {glob, type FSOption} from 'glob';
 import {Scanner, type PatternType, isPatternType} from './scanner.js';
@@ -115,7 +116,7 @@ export function isMethodology(value: unknown): value is Methodology {
 
 	return isPatternType(v.matcher)
 		&& (typeof v.pattern === 'string')
-		&& (v.matcherAdd === undefined || Array.isArray(v.matcherAdd) && v.matcherAdd.every(p => Scanner.patternIsValid(p, {patternType: v.matcher!})));
+		&& (v.matcherAdd === undefined || (Array.isArray(v.matcherAdd) && v.matcherAdd.every(p => Scanner.patternIsValid(p, {patternType: v.matcher!}))));
 }
 
 /**
@@ -169,6 +170,7 @@ export type ScanFolderOptions = {
 export async function scanFile(filePath: string, sources: Methodology[], options: ScanFileOptions): Promise<FileInfo> {
 	const {fsa = FS, cwd = process.cwd()} = options ?? {};
 	for (const methodology of sources) {
+		// eslint-disable-next-line no-await-in-loop
 		const sourceInfoList: SourceInfo[] = await SourceInfo.fromMethodology(methodology, options);
 
 		for (const sourceInfo of sourceInfoList) {
@@ -201,20 +203,21 @@ export async function scanProject(argument1: Methodology[] | string, options: Sc
 
 	// Find good source.
 	const {filter = 'included', fsa = FS, cwd = process.cwd()} = options;
+	const allFilePaths = await glob('**', {
+		...options,
+		nodir: true,
+		dot: true,
+		posix: true,
+	});
 	for (const methodology of argument1) {
 		const resultList: FileInfo[] = [];
+		// eslint-disable-next-line no-await-in-loop
 		const sourceInfoList: SourceInfo[] = await SourceInfo.fromMethodology(methodology, options);
 
 		if (sourceInfoList.length === 0) {
 			continue;
 		}
 
-		const allFilePaths = await glob('**', {
-			...options,
-			nodir: true,
-			dot: true,
-			posix: true,
-		});
 		const cache = new Set<string>();
 
 		let noSource = false;
@@ -244,23 +247,25 @@ export async function scanProject(argument1: Methodology[] | string, options: Sc
 			}
 
 			// Also create cache for each file in the direcotry
-			const fileDir = path.dirname(filePath);
-			const fileDirAbsolute = path.join(cwd, fileDir);
-			const entryList = (fsa?.readdirSync ?? FS.readdirSync)(fileDirAbsolute);
+			const fileDirectory = path.dirname(filePath);
+			const fileDirectoryAbsolute = path.join(cwd, fileDirectory);
+			const entryList = (fsa?.readdirSync ?? FS.readdirSync)(fileDirectoryAbsolute);
 
 			for (const entry of entryList) {
-				const entryPath = path.join(fileDir, entry);
-				const entryPathNormal = fileDir === '.' ? entry : fileDir + '/' + entry;
+				const entryPath = path.join(fileDirectory, entry);
+				const entryPathNormal = fileDirectory === '.' ? entry : fileDirectory + '/' + entry;
 				const entryPathAbsolute = path.join(cwd, entryPath);
 				const stat = (fsa?.statSync ?? FS.statSync)(entryPathAbsolute);
 				cache.add(entryPathNormal);
 
-				if (stat.isFile()) {
-					// Push new FileInfo
-					const fileInfo = FileInfo.from(entryPathNormal, sourceInfo);
-					if (fileInfo.isIncludedBy(filter)) {
-						resultList.push(fileInfo);
-					}
+				if (!stat.isFile()) {
+					continue;
+				}
+
+				// Push new FileInfo
+				const fileInfo = FileInfo.from(entryPathNormal, sourceInfo);
+				if (fileInfo.isIncludedBy(filter)) {
+					resultList.push(fileInfo);
 				}
 			}
 		} // Forend

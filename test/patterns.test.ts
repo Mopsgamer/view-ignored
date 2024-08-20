@@ -15,8 +15,9 @@ describe('Patterns', () => {
 		],
 	};
 
+	// eslint-disable-next-line guard-for-in
 	for (const patternType in testList) {
-		describe(patternType, () => {
+		describe(patternType, () => { // eslint-disable-line @typescript-eslint/no-loop-func
 			for (const [pattern, string_, shouldMatch] of testList[patternType as viewig.PatternType]) {
 				it(`'${string_}'${shouldMatch === false ? ' not' : ''} matches the pattern '${pattern}'`, () => {
 					assert.strictEqual(new viewig.Scanner({patternType: 'gitignore'}).add(pattern).matches(string_), shouldMatch ?? true, `The pattern '${pattern}' not satisfied by the string '${string_}'`);
