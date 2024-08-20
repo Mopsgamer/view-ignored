@@ -1,5 +1,6 @@
 import ignore from 'ignore';
 import {minimatch} from 'minimatch';
+import {type Scanner} from '../lib.js';
 
 export type ScannerGitignoreOptions = {
 	exclude?: string | string[];
@@ -7,7 +8,7 @@ export type ScannerGitignoreOptions = {
 	add?: string | string[];
 };
 
-export class ScannerGitignore {
+export class ScannerGitignore implements Scanner {
 	private static readonly defaultOptions: ignore.Options = {ignoreCase: true};
 	private readonly instanceInclude: ignore.Ignore;
 	private readonly instanceExclude: ignore.Ignore;
@@ -46,7 +47,7 @@ export type ScannerMinimatchOptions = {
 	exclude?: string | string[];
 	include?: string | string[];
 };
-export class ScannerMinimatch {
+export class ScannerMinimatch implements Scanner {
 	private static ignores(path: string, pattern: string | string[]): boolean {
 		if (Array.isArray(pattern)) {
 			pattern = pattern.join('\n');
