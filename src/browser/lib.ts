@@ -3,14 +3,12 @@ import process from 'node:process';
 import * as FS from 'node:fs';
 import {createRequire} from 'node:module';
 import {glob, type FSOption} from 'glob';
-import {Scanner, type PatternType, isPatternType} from './scanner.js';
 import {FileInfo} from './fileinfo.js';
 import {SourceInfo} from './sourceinfo.js';
 import {targetGet} from './binds/index.js';
 import {ErrorNoSources, ErrorTargetNotBound} from './errors.js';
 
 export * from './errors.js';
-export * from './scanner.js';
 export * from './fileinfo.js';
 export * from './sourceinfo.js';
 export * as Styling from './styling.js';
@@ -45,57 +43,25 @@ export type FileSystemAdapter = {
 	statSync?: typeof FS.statSync;
 } & FSOption;
 
-// #region looking
+// #region scanning
 /**
- * Also can write rules to the {@link Scanner}.
  * @returns `true`, if the given source is valid.
  */
-export type ScanMethod = (sourceInfo: SourceInfo) => boolean;
+export type IsValid = (sourceInfo: SourceInfo) => boolean;
+
+/**
+ * @returns `true`, if the given path is ignored.
+ */
+export type Scanner = {
+	ignores(path: string): boolean;
+};
+
+export type Read = (sourceInfo: SourceInfo) => Scanner;
 
 /**
  * Represents the methodology for reading the target's source.
  */
 export type Methodology = {
-	/**
-	 * Git configuration property.
-	 * @see {@link https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase|git-config ignorecase}.
-	 * @default false
-	 */
-	ignoreCase?: boolean;
-
-	/**
-	 * The parser for the patterns.
-	 * @default "gitignore"
-	 */
-	matcher: PatternType;
-
-	/**
-	 * Use the patterns for including instead of excluding/ignoring.
-	 * @default false
-	 */
-	matcherNegated?: boolean;
-
-	/**
-	 * Additional patterns for files, provided by the {@link pattern}.
-	 *
-	 * Example: You have the '.gitignore' file. You want to scan patterns from it and add additional patterns. Use this property.
-	 * @default []
-	 */
-	matcherAdd?: string[];
-
-	/**
-	 * Force ignore patterns.
-	 * Takes precedence over {@link matcherAdd}.
-	 * @default []
-	 */
-	matcherExclude?: string[];
-
-	/**
-	 * Force include patterns.
-	 * Takes precedence over {@link matcherExclude}.
-	 * @default []
-	 */
-	matcherInclude?: string[];
 
 	/**
 	 * First valid source will be used as {@link Scanner}.
@@ -103,9 +69,11 @@ export type Methodology = {
 	pattern: SourceInfo[] | string[] | SourceInfo | string;
 
 	/**
-	 * Scanner function. Should return `true`, if the given source is valid and also add patterns to the {@link FileInfo.scanner}.
+	 * Scanner function. Should return `true`, if the given source is valid.
 	 */
-	scan: ScanMethod;
+	isValidSource: IsValid;
+
+	read: Read;
 };
 
 /**
@@ -118,9 +86,10 @@ export function isMethodology(value: unknown): value is Methodology {
 
 	const v = value as Partial<Methodology>;
 
-	return isPatternType(v.matcher)
-		&& (typeof v.pattern === 'string')
-		&& (v.matcherAdd === undefined || (Array.isArray(v.matcherAdd) && v.matcherAdd.every(p => Scanner.patternIsValid(p, {patternType: v.matcher!}))));
+	const check: boolean = (v.isValidSource === undefined || typeof v.isValidSource === 'function')
+		&& (v.read === undefined || typeof v.read === 'function')
+		&& (v.pattern === undefined || typeof v.pattern === 'string' || v.pattern instanceof SourceInfo || (Array.isArray(v.pattern) && (v.pattern.every(p => typeof p === 'string') || v.pattern.every(p => p instanceof SourceInfo))));
+	return check;
 }
 
 /**
@@ -139,13 +108,6 @@ export type ScanFileOptions = {
 	 * @default process.cwd()
 	 */
 	cwd?: string;
-
-	/**
-	 * Specifies the maximum number of concurrent requests from a reader to read
-	 * directories.
-	 * @default os.cpus().length
-	 */
-	concurrency?: number;
 
 	/**
 	 * Specifies the maximum depth of a read directory relative to the start
@@ -172,18 +134,22 @@ export type ScanFolderOptions = {
  * @throws {ErrorNoSources} if the source is bad.
  */
 export async function scanFile(filePath: string, sources: Methodology[], options: ScanFileOptions): Promise<FileInfo> {
-	const {fsa = FS, cwd = process.cwd()} = options ?? {};
 	for (const methodology of sources) {
 		// eslint-disable-next-line no-await-in-loop
-		const sourceInfoList: SourceInfo[] = await SourceInfo.fromMethodology(methodology, options);
+		const sourceInfoList: SourceInfo[] = await SourceInfo.from(methodology, options);
 
-		for (const sourceInfo of sourceInfoList) {
-			sourceInfo.readSync(cwd, fsa.readFileSync ?? FS.readFileSync);
-			const isGoodSource = methodology.scan(sourceInfo);
-			if (isGoodSource) {
-				return FileInfo.from(filePath, sourceInfo);
-			}
+		const sourceInfo = SourceInfo.hierarcy(filePath, sourceInfoList, {
+			closest: false,
+			filter: sourceInfo => methodology.isValidSource(sourceInfo),
+		});
+
+		if (sourceInfo === undefined) {
+			continue;
 		}
+
+		const scanner = methodology.read(sourceInfo);
+
+		return new FileInfo(filePath, sourceInfo, scanner.ignores(filePath));
 	}
 
 	throw new ErrorNoSources(sources);
@@ -216,7 +182,7 @@ export async function scanProject(argument1: Methodology[] | string, options: Sc
 	for (const methodology of argument1) {
 		const resultList: FileInfo[] = [];
 		// eslint-disable-next-line no-await-in-loop
-		const sourceInfoList: SourceInfo[] = await SourceInfo.fromMethodology(methodology, options);
+		const sourceInfoList: SourceInfo[] = await SourceInfo.from(methodology, options);
 
 		if (sourceInfoList.length === 0) {
 			continue;
@@ -232,23 +198,15 @@ export async function scanProject(argument1: Methodology[] | string, options: Sc
 
 			const sourceInfo = SourceInfo.hierarcy(filePath, sourceInfoList, {
 				closest: false,
-				filter(sourceInfo) {
-					if (!(sourceInfo instanceof SourceInfo)) {
-						return true;
-					}
-
-					if (sourceInfo.content === undefined) {
-						sourceInfo.readSync(cwd, fsa.readFileSync ?? FS.readFileSync);
-					}
-
-					return methodology.scan(sourceInfo);
-				},
+				filter: sourceInfo => methodology.isValidSource(sourceInfo),
 			});
 
 			if (sourceInfo === undefined) {
 				noSource = true;
 				break;
 			}
+
+			const scanner = methodology.read(sourceInfo);
 
 			// Also create cache for each file in the direcotry
 			const fileDirectory = path.dirname(filePath);
@@ -267,7 +225,7 @@ export async function scanProject(argument1: Methodology[] | string, options: Sc
 				}
 
 				// Push new FileInfo
-				const fileInfo = FileInfo.from(entryPathNormal, sourceInfo);
+				const fileInfo = new FileInfo(entryPathNormal, sourceInfo, scanner.ignores(entryPathNormal));
 				if (fileInfo.isIncludedBy(filter)) {
 					resultList.push(fileInfo);
 				}

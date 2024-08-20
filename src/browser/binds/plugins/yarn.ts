@@ -1,5 +1,11 @@
 import getValue from 'get-value';
-import {type Plugins, type Methodology, type ScanMethod} from '../../index.js';
+import * as minimatch from 'minimatch';
+import {
+	type Plugins, type Methodology, type IsValid,
+	type Read,
+	type SourceInfo,
+} from '../../index.js';
+import {ScannerMinimatch} from '../scanner.js';
 
 export const id = 'yarn';
 export const name = 'Yarn';
@@ -39,26 +45,35 @@ export const matcherInclude = [
 	'/LICENCE.*',
 ];
 
-export const scanGit: ScanMethod = function (data) {
-	const {scanner, content} = data;
-	const pat = content?.toString();
-	if (!scanner.patternIsValid(pat)) {
-		return false;
-	}
+const scanner = new ScannerMinimatch('', {exclude: matcherExclude, include: matcherInclude});
 
-	scanner.add(pat);
-	return true;
-};
-
-export const scanPackageJsonFiles: ScanMethod = function (data) {
-	const {scanner, content} = data;
-	let parsed: Record<string, unknown>;
+function isValidPatternMinimatch(pattern: unknown): pattern is string {
 	try {
-		const pat = content?.toString();
-		if (!pat) {
+		if (typeof pattern !== 'string') {
 			return false;
 		}
 
+		minimatch.makeRe(pattern);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+export const isValidSourceMinimatch: IsValid = function (sourceInfo) {
+	const pat = (sourceInfo.content ?? sourceInfo.readSync()).toString();
+	if (!isValidPatternMinimatch(pat)) {
+		return false;
+	}
+
+	scanner.update(pat);
+	return true;
+};
+
+export const isValidSourceMinimatchPakcageJson: IsValid = function (sourceInfo) {
+	let parsed: Record<string, unknown>;
+	try {
+		const pat = (sourceInfo.content ?? sourceInfo.readSync()).toString();
 		const json: unknown = JSON.parse(pat);
 		if (json?.constructor !== Object) {
 			return false;
@@ -70,26 +85,30 @@ export const scanPackageJsonFiles: ScanMethod = function (data) {
 	}
 
 	const propertyValue: unknown = getValue(parsed, 'files');
-	if (!scanner.patternIsValid(propertyValue)) {
+	if (!isValidPatternMinimatch(propertyValue)) {
 		return false;
 	}
 
-	scanner.add(propertyValue);
 	return true;
+};
+
+const read: Read = function (sourceInfo: SourceInfo) {
+	scanner.update((sourceInfo.content ?? sourceInfo.readSync()).toString());
+	return scanner;
 };
 
 export const methodology: Methodology[] = [
 	{
-		pattern: '**/package.json', matcherNegated: true, matcher: 'gitignore', scan: scanPackageJsonFiles, matcherInclude, matcherExclude,
+		pattern: ['**/package.json'], isValidSource: isValidSourceMinimatchPakcageJson, read,
 	},
 	{
-		pattern: '**/.yarnignore', matcher: 'gitignore', scan: scanGit, matcherInclude, matcherExclude,
+		pattern: '**/.yarnignore', isValidSource: isValidSourceMinimatch, read,
 	},
 	{
-		pattern: '**/.npmignore', matcher: 'gitignore', scan: scanGit, matcherInclude, matcherExclude,
+		pattern: ['**/.npmignore'], isValidSource: isValidSourceMinimatch, read,
 	},
 	{
-		pattern: '**/.gitignore', matcher: 'gitignore', scan: scanGit, matcherInclude, matcherExclude,
+		pattern: ['**/.gitignore'], isValidSource: isValidSourceMinimatch, read,
 	},
 ];
 

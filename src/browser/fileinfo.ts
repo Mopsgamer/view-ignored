@@ -1,7 +1,7 @@
 import path from 'node:path';
 import {type ChalkInstance} from 'chalk';
 import {decorFile, type DecorName} from './styling.js';
-import {type FilterName, type Scanner, type SourceInfo} from './lib.js';
+import {type SourceInfo, type FilterName} from './lib.js';
 
 /**
  * @see {@link FileInfo.prototype.toString}
@@ -43,27 +43,6 @@ export type FileInfoToStringOptions = {
  * The result of the file path scan.
  */
 export class FileInfo {
-	/**
-	 * Creates new {@link FileInfo} from each file path.
-	 */
-	static from(filePathList: string[], sourceInfo: SourceInfo): FileInfo[];
-	/**
-	 * Creates new {@link FileInfo} from the file path.
-	 */
-	static from(filePath: string, sourceInfo: SourceInfo): FileInfo;
-	static from(argument: string | string[], sourceInfo: SourceInfo): FileInfo | FileInfo[] {
-		if (Array.isArray(argument)) {
-			return argument.map(path => FileInfo.from(path, sourceInfo));
-		}
-
-		return new FileInfo(argument, sourceInfo);
-	}
-
-	/**
-	 * The pattern parser.
-	 */
-	public readonly scanner: Scanner;
-
 	constructor(
 		/**
 		 * Relative path to the file.
@@ -74,16 +53,11 @@ export class FileInfo {
 		 * Source of patterns, used by {@link scanner}.
 		 */
 		public readonly source: SourceInfo,
-	) {
-		this.scanner = this.source.scanner;
-	}
-
-	/**
-	 * Determines if ignored file is ignored or not.
-	 */
-	isIgnored(): boolean {
-		return this.scanner.matches(this.filePath);
-	}
+		/**
+		 * Determines if ignored file is ignored or not.
+		 */
+		public readonly isIgnored: boolean,
+	) {}
 
 	/**
 	 * @param options Styling options.
@@ -93,14 +67,13 @@ export class FileInfo {
 		const {fileIcon, chalk, usePrefix = false, source: useSource = false, entire = true} = options ?? {};
 		const parsed = path.parse(this.filePath);
 		const fIcon = decorFile(fileIcon, this.filePath);
-		const ignored = this.isIgnored();
-		let prefix = usePrefix ? (ignored ? '!' : '+') : '';
+		let prefix = usePrefix ? (this.isIgnored ? '!' : '+') : '';
 		let postfix = useSource ? ' << ' + this.source.toString() : '';
 
 		if (chalk) {
 			prefix = chalk.dim(prefix);
 			postfix = chalk.dim(postfix);
-			const clr = chalk[ignored ? 'red' : 'green'];
+			const clr = chalk[this.isIgnored ? 'red' : 'green'];
 			if (entire) {
 				return fIcon + clr(prefix + this.filePath + postfix);
 			}
@@ -125,8 +98,8 @@ export class FileInfo {
 		}
 
 		filter ??= 'all';
-		const filterIgnore = (filter === 'ignored') && this.isIgnored();
-		const filterInclude = (filter === 'included') && !this.isIgnored();
+		const filterIgnore = (filter === 'ignored') && this.isIgnored;
+		const filterInclude = (filter === 'included') && !this.isIgnored;
 		const filterAll = filter === 'all';
 		const result = filterIgnore || filterInclude || filterAll;
 		return result;

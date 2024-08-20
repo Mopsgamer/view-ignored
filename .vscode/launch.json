@@ -27,7 +27,7 @@
 			"args": [
 				"scan"
 			],
-			"program": "${workspaceFolder}/out/src/bin.js",
+			"program": "${workspaceFolder}/bin/viewig",
 			"cwd": "${workspaceFolder}",
 			"sourceMaps": true,
 		},
@@ -42,7 +42,7 @@
 				"scan",
 				"--target=npm",
 			],
-			"program": "${workspaceFolder}/out/src/bin.js",
+			"program": "${workspaceFolder}/bin/viewig",
 			"cwd": "${workspaceFolder}",
 			"sourceMaps": true,
 		},
@@ -57,7 +57,7 @@
 				"scan",
 				"--plugins=t",
 			],
-			"program": "${workspaceFolder}/out/src/bin.js",
+			"program": "${workspaceFolder}/bin/viewig",
 			"cwd": "${workspaceFolder}",
 			"sourceMaps": true,
 		},

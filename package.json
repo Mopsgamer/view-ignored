@@ -24,7 +24,8 @@
 	"license": "ISC",
 	"main": "./out/src/index.js",
 	"files": [
-		"out/src"
+		"./bin",
+		"./out/src"
 	],
 	"repository": {
 		"type": "git",
@@ -34,6 +35,10 @@
 		"url": "https://github.com/Mopsgamer/view-ignored/issues"
 	},
 	"homepage": "https://github.com/Mopsgamer/view-ignored",
+	"exports": {
+		".": "./out/src/index.js",
+		"./browser": "./out/src/browser/index.js"
+	},
 	"release-it": {
 		"hooks": {
 			"before:init": "pnpm prerelease"

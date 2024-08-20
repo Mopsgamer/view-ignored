@@ -1,6 +1,9 @@
+import ignore from 'ignore';
 import {
-	type Plugins, type ScanMethod, type Methodology, type Styling, type SourceInfo,
+	type Plugins, type IsValid, type Methodology, type Styling, type SourceInfo,
+	type Read,
 } from '../../index.js';
+import {ScannerGitignore} from '../scanner.js';
 
 const id = 'git';
 const name: Styling.DecorConditionOptions = {
@@ -14,20 +17,35 @@ const matcherExclude: string[] = [
 	'.DS_Store/**',
 ];
 
-const scan: ScanMethod = function (fileInfo: SourceInfo) {
-	const {scanner, content} = fileInfo;
-	const pat = content?.toString();
-	if (!scanner.patternIsValid(pat)) {
+const scanner = new ScannerGitignore('', {exclude: matcherExclude});
+
+function isValidPatternGit(pattern: unknown): pattern is string {
+	if (typeof pattern !== 'string') {
 		return false;
 	}
 
-	scanner.add(pat);
+	return ignore.default.isPathValid(pattern);
+}
+
+const isValidSource: IsValid = function (sourceInfo: SourceInfo) {
+	const pat = (sourceInfo.content ?? sourceInfo.readSync()).toString();
+
+	if (!isValidPatternGit(pat)) {
+		return false;
+	}
+
+	scanner.update((sourceInfo.content ?? sourceInfo.readSync()).toString());
 	return true;
+};
+
+const read: Read = function (sourceInfo: SourceInfo) {
+	scanner.update((sourceInfo.content ?? sourceInfo.readSync()).toString());
+	return scanner;
 };
 
 const methodology: Methodology[] = [
 	{
-		pattern: '**/.gitignore', matcher: 'gitignore', scan, matcherExclude,
+		pattern: '**/.gitignore', read, isValidSource,
 	},
 ];
 

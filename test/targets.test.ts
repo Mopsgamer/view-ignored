@@ -143,6 +143,26 @@ const targetTestList: Plan = {
 			should: viewig.ErrorNoSources,
 			content: {},
 		},
+		'single file': {
+			should: viewig.ErrorNoSources,
+			content: {
+				'file.txt': '',
+			},
+		},
+		'.vscodeignore': {
+			should: {
+				include: [
+					'file.txt',
+					'.vscodeignore',
+				],
+				source: '.vscodeignore',
+			},
+			content: {
+				'file.txt': '',
+				'node_modules/tempdep/indexOf.js': '',
+				'.vscodeignore': 'node_modules',
+			},
+		},
 	},
 };
 

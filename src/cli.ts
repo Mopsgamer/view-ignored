@@ -26,21 +26,9 @@ export function logError(message: string, options?: BoxOptions) {
  */
 export async function programInit() {
 	Config.configManager.load();
-	program.version('v' + package_.version, '-v');
-	program.addOption(new Option('--no-color', 'force disable colors').default(false));
-	Config.configValueLinkCliOption('plugins', program, new Option('--plugins <modules...>', 'import modules to modify behavior'), parseArgumentArrayString);
-	Config.configValueLinkCliOption('color', program, new Option('--color <level>', 'the interface color level'), parseArgumentInt);
-	Config.configValueLinkCliOption('decor', program, new Option('--decor <decor>', 'the interface decorations'));
-	Config.configValueLinkCliOption('parsable', scanProgram, new Option('-p, --parsable [parsable]', 'print parsable text'), parseArgumentBool);
-	Config.configValueLinkCliOption('target', scanProgram, new Option('-t, --target <ignorer>', 'the scan target'));
-	Config.configValueLinkCliOption('filter', scanProgram, new Option('--filter <filter>', 'filter results'));
-	Config.configValueLinkCliOption('sort', scanProgram, new Option('--sort <sorter>', 'sort results'));
-	Config.configValueLinkCliOption('style', scanProgram, new Option('--style <style>', 'results view mode'));
-	Config.configValueLinkCliOption('depth', scanProgram, new Option('--depth <depth>', 'the max results depth'), parseArgumentInt);
-	Config.configValueLinkCliOption('showSources', scanProgram, new Option('--show-sources [show]', 'show scan sources'), parseArgumentBool);
 	program.parseOptions(process.argv);
 	const flags = program.opts<ProgramFlags>();
-	const chalk = getChalk(flags);
+	const chalk = getChalk(getColorLevel(flags));
 	try {
 		Config.configManager.load();
 	} catch (error) {
@@ -66,6 +54,19 @@ export async function programInit() {
 		process.exit(1); // eslint-disable-line unicorn/no-process-exit
 	}
 
+	program.version('v' + package_.version, '-v');
+	program.addOption(new Option('--no-color', 'force disable colors').default(false));
+	Config.configValueLinkCliOption('plugins', program, new Option('--plugins <modules...>', 'import modules to modify behavior'), parseArgumentArrayString);
+	Config.configValueLinkCliOption('color', program, new Option('--color <level>', 'the interface color level'), parseArgumentInt);
+	Config.configValueLinkCliOption('decor', program, new Option('--decor <decor>', 'the interface decorations'));
+	Config.configValueLinkCliOption('parsable', scanProgram, new Option('-p, --parsable [parsable]', 'print parsable text'), parseArgumentBool);
+	Config.configValueLinkCliOption('target', scanProgram, new Option('-t, --target <ignorer>', 'the scan target'));
+	Config.configValueLinkCliOption('filter', scanProgram, new Option('--filter <filter>', 'filter results'));
+	Config.configValueLinkCliOption('sort', scanProgram, new Option('--sort <sorter>', 'sort results'));
+	Config.configValueLinkCliOption('style', scanProgram, new Option('--style <style>', 'results view mode'));
+	Config.configValueLinkCliOption('depth', scanProgram, new Option('--depth <depth>', 'the max results depth'), parseArgumentInt);
+	Config.configValueLinkCliOption('showSources', scanProgram, new Option('--show-sources [show]', 'show scan sources'), parseArgumentBool);
+
 	program.parse();
 }
 
@@ -76,8 +77,8 @@ export function getColorLevel(flags: ProgramFlags): ColorSupportLevel {
 }
 
 /** Chalk, but configured by view-ignored cli. */
-export function getChalk(flags: ProgramFlags): ChalkInstance {
-	const chalk = new Chalk({level: getColorLevel(flags)});
+export function getChalk(colorLevel: ColorSupportLevel): ChalkInstance {
+	const chalk = new Chalk({level: colorLevel});
 	return chalk;
 }
 
@@ -229,7 +230,8 @@ export async function actionScan(): Promise<void> {
 	const flagsGlobal: ProgramFlags & ScanFlags = scanProgram.optsWithGlobals();
 	const cwd = process.cwd();
 	const start = Date.now();
-	const chalk = getChalk(program.opts());
+	const colorLevel = getColorLevel(program.opts());
+	const chalk = getChalk(colorLevel);
 	const spinner = ora({text: cwd, color: 'white'});
 
 	let fileInfoList: FileInfo[];
