@@ -17,17 +17,9 @@ export const matcherExclude: string[] = [
 
 const scanner = new ScannerGitignore('', {exclude: matcherExclude});
 
-function isValidPatternMinimatch(pattern: unknown): pattern is string {
-	if (typeof pattern !== 'string') {
-		return false;
-	}
-
-	return ignore.default.isPathValid(pattern);
-}
-
 export const isValidSource: IsValid = function (sourceInfo) {
 	const pat = (sourceInfo.content ?? sourceInfo.readSync()).toString();
-	if (!isValidPatternMinimatch(pat)) {
+	if (!scanner.isValid(pat)) {
 		return false;
 	}
 
@@ -36,7 +28,8 @@ export const isValidSource: IsValid = function (sourceInfo) {
 };
 
 const read: Read = function (sourceInfo: SourceInfo) {
-	scanner.update((sourceInfo.content ?? sourceInfo.readSync()).toString());
+	const content = (sourceInfo.content ?? sourceInfo.readSync()).toString();
+	scanner.update(content);
 	return scanner;
 };
 

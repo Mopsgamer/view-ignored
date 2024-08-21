@@ -258,9 +258,19 @@ export async function actionScan(): Promise<void> {
 	spinner.suffixText = 'Generating...';
 
 	const sorter = Sorting[flagsGlobal.sort];
-	const cache = new Map<string, number>(fileInfoList.map(String).map(
-		filePath => [filePath, fs.statSync(filePath).mtime.getTime()]),
-	);
+	const cache = new Map<string, number>();
+	if (flagsGlobal.sort === 'modified') {
+		for (const filePath of fileInfoList.map(String)) {
+			fs.stat(filePath, (error, fileStat) => {
+				if (error) {
+					throw error;
+				}
+
+				cache.set(filePath, fileStat.mtime.getTime());
+			});
+		}
+	}
+
 	const lookedSorted = fileInfoList.sort((a, b) => sorter(a.toString(), b.toString(), cache));
 
 	const files = formatFiles(lookedSorted, {

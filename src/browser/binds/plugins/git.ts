@@ -19,18 +19,10 @@ const matcherExclude: string[] = [
 
 const scanner = new ScannerGitignore('', {exclude: matcherExclude});
 
-function isValidPatternGit(pattern: unknown): pattern is string {
-	if (typeof pattern !== 'string') {
-		return false;
-	}
-
-	return ignore.default.isPathValid(pattern);
-}
-
 const isValidSource: IsValid = function (sourceInfo: SourceInfo) {
 	const pat = (sourceInfo.content ?? sourceInfo.readSync()).toString();
 
-	if (!isValidPatternGit(pat)) {
+	if (!scanner.isValid(pat)) {
 		return false;
 	}
 
@@ -39,7 +31,8 @@ const isValidSource: IsValid = function (sourceInfo: SourceInfo) {
 };
 
 const read: Read = function (sourceInfo: SourceInfo) {
-	scanner.update((sourceInfo.content ?? sourceInfo.readSync()).toString());
+	const content = (sourceInfo.content ?? sourceInfo.readSync()).toString();
+	scanner.update(content);
 	return scanner;
 };
 

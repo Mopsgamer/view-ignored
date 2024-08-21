@@ -23,8 +23,8 @@
 	"license": "ISC",
 	"main": "./out/src/index.js",
 	"files": [
-		"./bin",
-		"./out/src"
+		"/bin",
+		"/out/src"
 	],
 	"repository": {
 		"type": "git",
@@ -63,6 +63,7 @@
 		"lib": "out/src"
 	},
 	"dependencies": {
+		"@humanwhocodes/gitignore-to-minimatch": "^1.0.2",
 		"arrify": "^3.0.0",
 		"boxen": "^8.0.1",
 		"chalk": "^5.3.0",

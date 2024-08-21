@@ -80,7 +80,7 @@ const targetTestList: Plan = {
 				'.gitignore': 'node_modules',
 			},
 		},
-		'real project: (package.json), .npmignore, .gitignore': {
+		'(package.json), .npmignore, .gitignore': {
 			should: {
 				include: [
 					'README.md',
@@ -101,7 +101,7 @@ const targetTestList: Plan = {
 				}),
 			},
 		},
-		'real project: package.json, (.npmignore), .gitignore': {
+		'package.json, (.npmignore), .gitignore': {
 			should: {
 				include: [
 					'README.md',
@@ -170,7 +170,7 @@ function lineInfo(line: number, name?: string) {
 	return `${chalk.cyan('./test/targets.test.ts')}${chalk.white(':')}${chalk.yellow(line)}${name ? `\t- ${name}` : ''}`;
 }
 
-async function testShit(targetId: string, test: Case, testName: string, myContentLines: string[]) {
+async function testTargetSubtest(targetId: string, test: Case, testName: string, myContentLines: string[]) {
 	const {should, content} = test;
 
 	const fixture = await createFixture(content);
@@ -228,7 +228,7 @@ describe('Targets', () => {
 				}
 
 				it(testName, async () => {
-					await testShit(targetId, tests[testName], testName, myContentLines);
+					await testTargetSubtest(targetId, tests[testName], testName, myContentLines);
 				});
 			}
 		});

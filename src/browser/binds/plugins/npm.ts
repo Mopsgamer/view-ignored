@@ -41,22 +41,9 @@ export const matcherInclude = [
 
 const scanner = new ScannerMinimatch('', {exclude: matcherExclude, include: matcherInclude});
 
-function isValidPatternMinimatch(pattern: unknown): pattern is string {
-	try {
-		if (typeof pattern !== 'string') {
-			return false;
-		}
-
-		minimatch.makeRe(pattern);
-		return true;
-	} catch {
-		return false;
-	}
-}
-
 export const isValidSourceMinimatch: IsValid = function (sourceInfo) {
 	const pat = (sourceInfo.content ?? sourceInfo.readSync()).toString();
-	if (!isValidPatternMinimatch(pat)) {
+	if (!scanner.isValid(pat)) {
 		return false;
 	}
 
@@ -79,7 +66,7 @@ export const isValidSourceMinimatchPakcageJson: IsValid = function (sourceInfo) 
 	}
 
 	const propertyValue: unknown = getValue(parsed, 'files');
-	if (!isValidPatternMinimatch(propertyValue)) {
+	if (!Array.isArray(propertyValue) || !scanner.isValid(propertyValue)) {
 		return false;
 	}
 
@@ -87,13 +74,22 @@ export const isValidSourceMinimatchPakcageJson: IsValid = function (sourceInfo) 
 };
 
 const read: Read = function (sourceInfo: SourceInfo) {
-	scanner.update((sourceInfo.content ?? sourceInfo.readSync()).toString());
+	const content = (sourceInfo.content ?? sourceInfo.readSync()).toString();
+	scanner.negated = false;
+	scanner.update(content);
+	return scanner;
+};
+
+const readJson: Read = function (sourceInfo: SourceInfo) {
+	const content = (sourceInfo.content ?? sourceInfo.readSync()).toString();
+	scanner.negated = true;
+	scanner.update((JSON.parse(content) as {files: string[]}).files);
 	return scanner;
 };
 
 export const methodology: Methodology[] = [
 	{
-		pattern: ['**/package.json'], isValidSource: isValidSourceMinimatchPakcageJson, read,
+		pattern: ['**/package.json'], isValidSource: isValidSourceMinimatchPakcageJson, read: readJson,
 	},
 	{
 		pattern: ['**/.npmignore'], isValidSource: isValidSourceMinimatch, read,
