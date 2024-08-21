@@ -80,6 +80,17 @@ const targetTestList: Plan = {
 				'.gitignore': 'node_modules',
 			},
 		},
+		'.gitignore with comment': {
+			should: {
+				include: ['file.txt'],
+				source: '.gitignore',
+			},
+			content: {
+				'file.txt': '',
+				'node_modules/tempdep/indexOf.js': '',
+				'.gitignore': '#comment\nnode_modules',
+			},
+		},
 		'(package.json), .npmignore, .gitignore': {
 			should: {
 				include: [
