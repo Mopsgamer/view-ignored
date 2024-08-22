@@ -26,10 +26,10 @@ export function isSortName(value: unknown): value is SortName {
  * "file/" -> ["file", "", false]
  */
 function slicePath(p: string): [next: string, other: string, isLast: boolean] {
-	const slashIndex = p.indexOf('/');
+	const slashIndex = p.search(/[/\\]/);
 	const next = p.slice(0, Math.max(0, slashIndex));
 	const other = p.slice(Math.max(0, slashIndex + 1));
-	const isLast = next === '' && (p.lastIndexOf('/') === slashIndex);
+	const isLast = next === '';
 	return [slashIndex < 0 ? other : next, other, isLast];
 }
 

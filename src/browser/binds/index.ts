@@ -1,6 +1,7 @@
 import {loadPlugin as load} from 'load-plugin';
 import {isTargetBind, type TargetBind, targetSet} from './targets.js';
 
+export * from './scanner.js';
 export * from './targets.js';
 
 /**

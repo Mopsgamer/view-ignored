@@ -1,6 +1,9 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import assert from 'node:assert';
 import {readFileSync} from 'node:fs';
+import path from 'node:path';
+import process from 'node:process';
+import {fileURLToPath} from 'node:url';
 import {type FileTree, createFixture} from 'fs-fixture';
 import chalk from 'chalk';
 import * as viewig from '../src/index.js';
@@ -177,52 +180,11 @@ const targetTestList: Plan = {
 	},
 };
 
-function lineInfo(line: number, name?: string) {
-	return `${chalk.cyan('./test/targets.test.ts')}${chalk.white(':')}${chalk.yellow(line)}${name ? `\t- ${name}` : ''}`;
-}
-
-async function testTargetSubtest(targetId: string, test: Case, testName: string, myContentLines: string[]) {
-	const {should, content} = test;
-
-	const fixture = await createFixture(content);
-	const fileInfoListPromise = viewig.scanProject(targetId, {cwd: fixture.getPath(), filter: 'included'});
-
-	if (typeof should !== 'object') {
-		try {
-			await fileInfoListPromise;
-			assert.throws(async () => {
-				await fileInfoListPromise;
-			});
-		} catch (error) {
-			assert(error instanceof should, 'Bad SomeError prototype.');
-		}
-
-		return;
-	}
-
-	const fileInfoList = await fileInfoListPromise;
-	void fixture.rm();
-	const cmp1 = fileInfoList.map(l => l.toString()).sort();
-	const cmp2 = should.include.sort();
-	const testLine = myContentLines.findIndex(ln => ln.includes(testName)) + 1;
-	const testLineContent = testLine + myContentLines.slice(testLine).findIndex(ln => ln.includes('content')) + 1;
-	const actual = fileInfoList
-		.map(l => {
-			const testLineSource = testLineContent + myContentLines.slice(testLineContent).findIndex(ln => ln.includes(l.source.sourcePath)) + 1;
-			return chalk.red(l.toString({source: true, chalk})) + ' ' + lineInfo(testLineSource);
-		})
-		.sort().join('\n        ');
-	const info = `\n      Test location: ${lineInfo(testLine)}\n      Test name: ${chalk.magenta(testName)}\n      Results: \n        ${actual}\n`;
-	for (const fileInfo of (await fileInfoListPromise)) {
-		assert.strictEqual(fileInfo.source.sourcePath, should.source, 'The source is not right.' + chalk.white(info));
-	}
-
-	assert.deepEqual(cmp1, cmp2, 'The path list is bad.' + chalk.white(info));
-}
-
+const testFilePathJs = path.relative(process.cwd(), fileURLToPath(import.meta.url));
+const testFilePath = testFilePathJs.replace(new RegExp(`${'out'}[/\\\\]`), '').replace(/js$/, 'ts');
+const myContent = readFileSync(testFilePath).toString();
+const myContentLines = myContent.split('\n');
 describe('Targets', () => {
-	const myContent = readFileSync('./test/targets.test.ts').toString();
-	const myContentLines = myContent.split('\n');
 	before(async () => {
 		await viewig.Plugins.builtIns;
 	});
@@ -245,3 +207,48 @@ describe('Targets', () => {
 		});
 	}
 });
+
+function lineColumnInfo(filePath: string, line: number, column: number, name?: string) {
+	return `${chalk.cyan(filePath)}${chalk.white(':')}${chalk.yellow(line)}${chalk.white(':')}${chalk.yellow(column)}${name ? `\t- ${name}` : ''}`;
+}
+
+async function testTargetSubtest(targetId: string, test: Case, testName: string, myContentLines: string[]) {
+	const {should, content} = test;
+
+	const fixture = await createFixture(content);
+	const fileInfoListPromise = viewig.scanFolder('.', targetId, {cwd: fixture.getPath(), filter: 'included'});
+
+	if (typeof should !== 'object') {
+		try {
+			await fileInfoListPromise;
+			assert.throws(async () => {
+				await fileInfoListPromise;
+			});
+		} catch (error) {
+			assert(error instanceof should, 'Bad SomeError prototype.');
+		}
+
+		return;
+	}
+
+	const fileInfoList = await fileInfoListPromise;
+	void fixture.rm();
+	const cmp1 = fileInfoList.map(l => l.toString()).sort();
+	const cmp2 = should.include.map(filePath => filePath.split(path.posix.sep).join(path.sep)).sort();
+	const testLine = myContentLines.findIndex(ln => ln.includes(testName)) + 1;
+	const testLineContent = testLine + myContentLines.slice(testLine).findIndex(ln => ln.includes('content')) + 1;
+	const actual = fileInfoList
+		.map(fileInfo => {
+			const testLineSource = testLineContent + myContentLines.slice(testLineContent)
+				.findIndex(line => line.includes(fileInfo.source.sourcePath)) + 1;
+			return chalk.red(fileInfo.toString({source: true, chalk})) + ' ' + lineColumnInfo(testFilePath, testLineSource, myContentLines[testLineSource].length);
+		})
+		.sort().join('\n        ');
+	const info = `\n      Test location: ${lineColumnInfo(testFilePath, testLine, myContentLines[testLine].length)}\n      Test name: ${chalk.magenta(testName)}\n      Results: \n        ${actual}\n`;
+	for (const fileInfo of (await fileInfoListPromise)) {
+		assert.strictEqual(fileInfo.source.sourcePath, should.source, 'The source is not right.' + chalk.white(info));
+	}
+
+	assert.deepEqual(cmp1, cmp2, 'The path list is bad.' + chalk.white(info));
+}
+

@@ -8,6 +8,16 @@ import {type SourceInfo, type FilterName} from './lib.js';
  */
 export type FileInfoToStringOptions = {
 	/**
+	 * On posix systems, this has no effect.  But, on Windows, it means that
+	 * paths will be `/` delimited, and absolute paths will be their full
+	 * resolved UNC forms, eg instead of `'C:\\foo\\bar'`, it would return
+	 * `'//?/C:/foo/bar'`
+	 * @default false
+     * @returns `/` delimited paths, even on Windows.
+     */
+	posix?: boolean;
+
+	/**
 	 * The appearance behavior of the file icon.
 	 * @default undefined
 	 */
@@ -64,7 +74,8 @@ export class FileInfo {
 	 * @returns Relative file path. Optionally formatted.
 	 */
 	toString(options?: FileInfoToStringOptions): string {
-		const {fileIcon, chalk, usePrefix = false, source: useSource = false, entire = true} = options ?? {};
+		const {fileIcon, chalk, usePrefix = false, source: useSource = false, entire = true, posix = false} = options ?? {};
+		const pathx = posix ? path.posix : path;
 		const parsed = path.parse(this.filePath);
 		const fIcon = decorFile(fileIcon, this.filePath);
 		let prefix = usePrefix ? (this.isIgnored ? '!' : '+') : '';
@@ -78,14 +89,14 @@ export class FileInfo {
 				return fIcon + clr(prefix + this.filePath + postfix);
 			}
 
-			return parsed.dir + '/' + fIcon + clr(prefix + parsed.base + postfix);
+			return parsed.dir + pathx.sep + fIcon + clr(prefix + parsed.base + postfix);
 		}
 
 		if (entire) {
 			return prefix + this.filePath + postfix;
 		}
 
-		return parsed.dir + '/' + fIcon + prefix + parsed.base + postfix;
+		return parsed.dir + pathx.sep + fIcon + prefix + parsed.base + postfix;
 	}
 
 	/**

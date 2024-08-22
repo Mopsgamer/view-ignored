@@ -236,23 +236,6 @@ export class ConfigManager {
 			return this;
 		}
 
-		for (const key in object) {
-			if (!Object.hasOwn(object, key)) {
-				continue;
-			}
-
-			const element = object[key];
-			if (typeof element !== 'string') {
-				continue;
-			}
-
-			if (element.startsWith('|')) {
-				const array = element.split(',');
-				array.shift();
-				(parsed as Record<string, string[] | string>)[key] = array;
-			}
-		}
-
 		if (!isConfigPartial(parsed)) {
 			throw new TypeError('Invalid config.', {cause: parsed});
 		}

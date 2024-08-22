@@ -1,6 +1,6 @@
 import path from 'node:path';
 import process from 'node:process';
-import * as FS from 'node:fs';
+import type * as FS from 'node:fs';
 import {createRequire} from 'node:module';
 import {glob, type FSOption} from 'glob';
 import {FileInfo} from './fileinfo.js';
@@ -123,125 +123,125 @@ export type ScanFileOptions = {
  * Folder deep scanning options.
  * @see {@link ScanFileOptions}
  */
-export type ScanFolderOptions = {
+export type ScanFolderOptions = ScanFileOptions & {
+	/**
+	 * On posix systems, this has no effect.  But, on Windows, it means that
+	 * paths will be `/` delimited, and absolute paths will be their full
+	 * resolved UNC forms, eg instead of `'C:\\foo\\bar'`, it would return
+	 * `'//?/C:/foo/bar'`
+	 * @default false
+     * @returns `/` delimited paths, even on Windows.
+     */
+	posix?: boolean;
+
 	/**
 	 * Filter output.
 	 * @default "included"
 	 */
 	filter?: FilterName | ((fileInfo: FileInfo) => boolean);
-} & ScanFileOptions;
+};
 
 /**
  * Gets info about the file: it is ignored or not.
  * @throws {ErrorNoSources} if the source is bad.
  */
-export async function scanFile(filePath: string, sources: Methodology[], options: ScanFileOptions): Promise<FileInfo> {
-	for (const methodology of sources) {
-		// eslint-disable-next-line no-await-in-loop
-		const sourceInfoList: SourceInfo[] = await SourceInfo.from(methodology, options);
-
-		const sourceInfo = SourceInfo.hierarcy(filePath, sourceInfoList, {
-			closest: false,
-			filter: sourceInfo => methodology.isValidSource(sourceInfo),
-		});
-
-		if (sourceInfo === undefined) {
-			continue;
-		}
-
-		const scanner = methodology.read(sourceInfo);
-
-		return new FileInfo(filePath, sourceInfo, scanner.ignores(filePath));
-	}
-
-	throw new ErrorNoSources(sources);
+export async function scanFile(filePath: string, sources: Methodology[], options?: ScanFileOptions): Promise<FileInfo> {
+	const [fileInfo] = await scanFileList([filePath], sources, options);
+	return fileInfo;
 }
 
 /**
- * Scans project's directory paths to determine whether they are being ignored.
+ * Gets info about the each file: it is ignored or not.
  * @throws {ErrorNoSources} if the source is bad.
  */
-export async function scanProject(sources: Methodology[], options: ScanFolderOptions): Promise<FileInfo[]>;
-export async function scanProject(target: string, options: ScanFolderOptions): Promise<FileInfo[]>;
-export async function scanProject(argument1: Methodology[] | string, options: ScanFolderOptions): Promise<FileInfo[]> {
+export async function scanFileList(filePathList: string[], sources: Methodology[], options?: ScanFolderOptions): Promise<FileInfo[]>;
+export async function scanFileList(filePathList: string[], target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
+export async function scanFileList(filePathList: string[], argument1: Methodology[] | string, options?: ScanFolderOptions): Promise<FileInfo[]> {
+	options ??= {};
+	const {filter = 'included'} = options;
 	if (typeof argument1 === 'string') {
 		const bind = targetGet(argument1);
 		if (bind === undefined) {
 			throw new ErrorTargetNotBound(argument1);
 		}
 
-		return scanProject(bind.methodology, Object.assign(options, bind.scanOptions));
+		return scanFileList(filePathList, bind.methodology, Object.assign(options, bind.scanOptions));
 	}
 
-	const allFilePaths = await glob('**', {
-		...options,
-		nodir: true,
-		dot: true,
-		posix: true,
-	});
-
-	// Find good source.
-	const {filter = 'included', fsa = FS, cwd = process.cwd()} = options;
 	for (const methodology of argument1) {
-		const resultList: FileInfo[] = [];
-		// eslint-disable-next-line no-await-in-loop
-		const sourceInfoList: SourceInfo[] = await SourceInfo.from(methodology, options);
-
-		if (sourceInfoList.length === 0) {
-			continue;
-		}
-
-		const cache = new Set<string>();
-
+		const fileInfoList: FileInfo[] = [];
 		let noSource = false;
-		for (const filePath of allFilePaths) {
-			if (cache.has(filePath)) {
-				continue;
-			}
+		const cacheDirectorySource = new Map<string, SourceInfo>();
+		const cacheSourceValid = new Map<SourceInfo, boolean>();
+		// eslint-disable-next-line no-await-in-loop
+		const sourceInfoList = await SourceInfo.from(methodology, options);
 
-			const sourceInfo = SourceInfo.hierarcy(filePath, sourceInfoList, {
-				closest: false,
-				filter: sourceInfo => methodology.isValidSource(sourceInfo),
-			});
+		for (const filePath of filePathList) {
+			const fileDirectory = path.dirname(filePath);
+			const sourceInfo = cacheDirectorySource.get(fileDirectory) ?? SourceInfo.hierarchy(
+				fileDirectory,
+				sourceInfoList,
+				{
+					closest: true,
+					filter(sourceInfo) {
+						let isValid = cacheSourceValid.get(sourceInfo);
+						if (isValid === undefined) {
+							cacheSourceValid.set(sourceInfo, isValid = methodology.isValidSource(sourceInfo));
+						}
+
+						return isValid;
+					},
+				},
+			);
 
 			if (sourceInfo === undefined) {
 				noSource = true;
 				break;
 			}
 
+			cacheDirectorySource.set(fileDirectory, sourceInfo);
+
 			const scanner = methodology.read(sourceInfo);
+			const fileInfo = new FileInfo(filePath, sourceInfo, scanner.ignores(filePath));
 
-			// Also create cache for each file in the direcotry
-			const fileDirectory = path.dirname(filePath);
-			const fileDirectoryAbsolute = path.join(cwd, fileDirectory);
-			const entryList = (fsa?.readdirSync ?? FS.readdirSync)(fileDirectoryAbsolute);
-
-			for (const entry of entryList) {
-				const entryPath = path.join(fileDirectory, entry);
-				const entryPathNormal = fileDirectory === '.' ? entry : fileDirectory + '/' + entry;
-				const entryPathAbsolute = path.join(cwd, entryPath);
-				const stat = (fsa?.lstatSync ?? FS.lstatSync)(entryPathAbsolute);
-				cache.add(entryPathNormal);
-
-				if (!stat.isFile()) {
-					continue;
-				}
-
-				// Push new FileInfo
-				const fileInfo = new FileInfo(entryPathNormal, sourceInfo, scanner.ignores(entryPathNormal));
-				if (fileInfo.isIncludedBy(filter)) {
-					resultList.push(fileInfo);
-				}
+			if (fileInfo.isIncludedBy(filter)) {
+				fileInfoList.push(fileInfo);
 			}
-		} // Forend
+		}
 
 		if (noSource) {
 			continue;
 		}
 
-		return resultList;
-	} // Forend
+		return fileInfoList;
+	}
 
 	throw new ErrorNoSources(argument1);
+}
+
+/**
+ * Scans project's directory paths to determine whether they are being ignored.
+ * @throws {ErrorNoSources} if the source is bad.
+ */
+export async function scanFolder(folderPath: string, sources: Methodology[], options?: ScanFolderOptions): Promise<FileInfo[]>;
+export async function scanFolder(folderPath: string, target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
+export async function scanFolder(folderPath: string, argument1: Methodology[] | string, options?: ScanFolderOptions): Promise<FileInfo[]> {
+	options ??= {};
+	if (typeof argument1 === 'string') {
+		return scanFolder(folderPath, argument1, options);
+	}
+
+	const {fsa, cwd = process.cwd(), posix = false, maxDepth = Infinity} = options;
+
+	const allFilePaths = await glob('**', {
+		cwd,
+		posix,
+		maxDepth,
+		fs: fsa,
+		nodir: true,
+		dot: true,
+	});
+
+	return scanFileList(allFilePaths, argument1, options);
 }
 // #endregion

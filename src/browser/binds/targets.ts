@@ -1,6 +1,6 @@
 
 import {
-	type ScanFolderOptions, type Methodology, isMethodology, scanProject,
+	type ScanFolderOptions, type Methodology, isMethodology, scanFolder,
 } from '../lib.js';
 import {type DecorConditionOptions} from '../styling.js';
 
@@ -19,7 +19,7 @@ export function isTargetId(value: unknown): value is TargetId {
 
 /**
  * The bind which allows use predefined options for scan functions.
- * @see {@link scanProject}
+ * @see {@link scanFolder}
  */
 export type TargetBind = {
 	/**

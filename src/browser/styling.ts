@@ -8,17 +8,30 @@ import {type FileInfo} from '../index.js';
 
 export type FormatFilesOptions = {
 	/**
+	 * On posix systems, this has no effect.  But, on Windows, it means that
+	 * paths will be `/` delimited, and absolute paths will be their full
+	 * resolved UNC forms, eg instead of `'C:\\foo\\bar'`, it would return
+	 * `'//?/C:/foo/bar'`
+	 * @default false
+     * @returns `/` delimited paths, even on Windows.
+     */
+	posix?: boolean;
+
+	/**
 	 * @default false
 	 */
 	showSources?: boolean;
+
 	/**
 	 * @default "paths"
 	 */
 	style: StyleName;
+
 	/**
 	 * @default "paths"
 	 */
 	decor?: DecorName;
+
 	chalk: ChalkInstance;
 };
 
@@ -26,8 +39,9 @@ export type FormatFilesOptions = {
  * @returns Prints a readable file list. Here is '\n' ending.
  */
 export function formatFiles(files: FileInfo[], options: FormatFilesOptions): string {
-	const {showSources = false, chalk, decor = 'normal', style} = options ?? {};
+	const {showSources = false, chalk, decor = 'normal', style, posix = false} = options ?? {};
 
+	const pathx = posix ? path.posix : path;
 	const isPaths = style === 'paths';
 	const paths = files.map(f => f.toString({
 		fileIcon: decor, usePrefix: true, chalk, source: showSources, entire: isPaths,
@@ -38,7 +52,7 @@ export function formatFiles(files: FileInfo[], options: FormatFilesOptions): str
 	}
 
 	// IsTree
-	const pathsAsObject = jsonifyPaths.from(paths, {delimiter: '/'});
+	const pathsAsObject = jsonifyPaths.from(paths, {delimiter: pathx.sep});
 	const pathsAsTree = tree.asTree(pathsAsObject, true, true);
 	return pathsAsTree;
 }

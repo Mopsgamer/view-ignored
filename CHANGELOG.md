@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.1] - 2024-08-12
 
-- Fix hierarcy loop exit first iteration.
+- Fix hierarchy loop exit first iteration.
 - Fix main field (package.json).
 
 ## [0.2.0] - 2024-08-10

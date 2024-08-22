@@ -7,9 +7,9 @@ import {
 	type ScanFolderOptions,
 	type Methodology,
 } from './lib.js';
-import {firstFiles} from './sorting.js';
+import {mixed} from './sorting.js';
 
-export type SourceInfoHierarcyOptions<T extends {toString(): string}> = {
+export type SourceInfoHierarchyOptions<T extends {toString(): string}> = {
 	/**
 	 * @default true
 	 */
@@ -20,6 +20,8 @@ export type SourceInfoHierarcyOptions<T extends {toString(): string}> = {
 	filter?: (path: T) => boolean;
 };
 
+export type SourceInfoOptions = Pick<ScanFolderOptions, 'cwd' | 'fsa' | 'posix'>;
+
 /**
  * The source of patterns.
  */
@@ -27,18 +29,19 @@ export class SourceInfo {
 	/**
 	 * Gets sources from the methodology.
 	 */
-	static async from(methodology: Methodology, options: ScanFolderOptions): Promise<SourceInfo[]> {
+	static async from(methodology: Methodology, options?: SourceInfoOptions): Promise<SourceInfo[]> {
+		const {fsa, cwd = process.cwd(), posix = false} = options ?? {};
 		const patterns = arrify(methodology.pattern);
 		if (patterns.some(p => typeof p !== 'string')) {
 			return patterns as SourceInfo[];
 		}
 
 		const paths = await glob(patterns as string[], {
-			fs: options.fsa,
-			cwd: options.cwd,
+			cwd,
+			posix,
+			fs: fsa,
 			nodir: true,
 			dot: true,
-			posix: true,
 		});
 		const sourceInfoList = paths.map(p => new SourceInfo(p, methodology, options));
 		return sourceInfoList;
@@ -46,14 +49,16 @@ export class SourceInfo {
 
 	/**
 	 * Selects the closest or farthest siblings relative to the path.
+	 * @param targetDirectory Unix path to the directory.
+	 * @param pathList The list of sub-/parrent directories.
 	 */
-	static hierarcy<T extends {toString(): string}>(filePath: string, pathList: T[], options?: SourceInfoHierarcyOptions<T>): T | undefined {
+	static hierarchy<T extends {toString(): string}>(targetDirectory: {toString(): string}, pathList: T[], options?: SourceInfoHierarchyOptions<T>): T | undefined {
 		const {closest = true, filter} = options ?? {};
-		pathList = pathList.sort((a, b) => firstFiles(String(a), String(b)));
+		pathList = pathList.sort((a, b) => mixed(String(a), String(b)));
 
-		const checkStack: string[] = [];
+		const checkStack: string[] = [String(targetDirectory)];
 		{// Fill checkStack
-			let directory = filePath.toString();
+			let directory = String(targetDirectory);
 			for (; ;) {
 				const parent = dirname(directory);
 				if (directory === parent) {
@@ -109,7 +114,7 @@ export class SourceInfo {
 		/**
 		 * The options.
 		 */
-		public readonly options: ScanFolderOptions,
+		public readonly options?: SourceInfoOptions,
 	) {}
 
 	/**
@@ -124,8 +129,8 @@ export class SourceInfo {
 	 */
 	// eslint-disable-next-line @typescript-eslint/ban-types
 	readSync(): Buffer {
-		const cwd = this.options.cwd ?? process.cwd();
-		const readFileSync = this.options.fsa?.readFileSync ?? FS.readFileSync;
+		const {fsa, cwd = process.cwd()} = this.options ?? {};
+		const readFileSync = fsa?.readFileSync ?? FS.readFileSync;
 		this.content = readFileSync(join(cwd, this.sourcePath));
 		return this.content;
 	}

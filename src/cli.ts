@@ -6,6 +6,7 @@ import {
 	Argument, InvalidArgumentError, Option, Command,
 } from 'commander';
 import ora from 'ora';
+import {glob} from 'glob';
 import * as Config from './config.js';
 import {builtIns, loadPluginsQueue, targetGet} from './browser/binds/index.js';
 import {
@@ -13,7 +14,7 @@ import {
 } from './browser/styling.js';
 import {type SortName} from './browser/sorting.js';
 import {
-	ErrorNoSources, type FileInfo, type FilterName, package_, scanProject, Sorting,
+	ErrorNoSources, type FileInfo, type FilterName, package_, scanFileList, scanFolder, Sorting,
 } from './lib.js';
 import {boxError, type BoxOptions, formatConfigConflicts} from './styling.js';
 
@@ -56,6 +57,7 @@ export async function programInit() {
 
 	program.version('v' + package_.version, '-v');
 	program.addOption(new Option('--no-color', 'force disable colors').default(false));
+	program.addOption(new Option('--posix', 'use unix path separator').default(false));
 	Config.configValueLinkCliOption('plugins', program, new Option('--plugins <modules...>', 'import modules to modify behavior'), parseArgumentArrayString);
 	Config.configValueLinkCliOption('color', program, new Option('--color <level>', 'the interface color level'), parseArgumentInt);
 	Config.configValueLinkCliOption('decor', program, new Option('--decor <decor>', 'the interface decorations'));
@@ -86,6 +88,7 @@ export function getChalk(colorLevel: ColorSupportLevel): ChalkInstance {
  * Command-line entire program flags.
  */
 export type ProgramFlags = {
+	posix: boolean;
 	plugins: string[];
 	noColor: boolean;
 	color: string;
@@ -234,9 +237,17 @@ export async function actionScan(): Promise<void> {
 	const chalk = getChalk(colorLevel);
 	const spinner = ora({text: cwd, color: 'white'});
 
+	const allFilePaths = await glob('**', {
+		cwd: process.cwd(),
+		posix: flagsGlobal.posix,
+		maxDepth: flagsGlobal.depth,
+		nodir: true,
+		dot: true,
+	});
+
 	let fileInfoList: FileInfo[];
 	try {
-		fileInfoList = await scanProject(flagsGlobal.target, {filter: flagsGlobal.filter, maxDepth: flagsGlobal.depth});
+		fileInfoList = await scanFileList(allFilePaths, flagsGlobal.target, {filter: flagsGlobal.filter, maxDepth: flagsGlobal.depth, posix: flagsGlobal.posix});
 	} catch (error) {
 		spinner.stop();
 		spinner.clear();
@@ -249,7 +260,7 @@ export async function actionScan(): Promise<void> {
 	}
 
 	if (flagsGlobal.parsable) {
-		console.log(fileInfoList.map(fi => fi.filePath + (flagsGlobal.showSources ? '<' + fi.source.sourcePath : '')).join('|'));
+		console.log(fileInfoList.map(fi => fi.filePath + (flagsGlobal.showSources ? '<' + fi.source.sourcePath : '')).join(','));
 		return;
 	}
 
@@ -274,7 +285,11 @@ export async function actionScan(): Promise<void> {
 	const lookedSorted = fileInfoList.sort((a, b) => sorter(a.toString(), b.toString(), cache));
 
 	const files = formatFiles(lookedSorted, {
-		chalk, style: flagsGlobal.style, decor: flagsGlobal.decor, showSources: flagsGlobal.showSources,
+		chalk,
+		posix: flagsGlobal.posix,
+		style: flagsGlobal.style,
+		decor: flagsGlobal.decor,
+		showSources: flagsGlobal.showSources,
 	});
 	const checkSymbol = decorCondition(flagsGlobal.decor, {ifEmoji: '✅', ifNerd: '\uF00C', postfix: ' '});
 	const fastSymbol = decorCondition(flagsGlobal.decor, {ifEmoji: '⚡', ifNerd: '\uDB85\uDC0C'});
@@ -289,6 +304,8 @@ export async function actionScan(): Promise<void> {
 	message += `${chalk.green(checkSymbol)}Done in ${time < 400 ? chalk.yellow(fastSymbol) : ''}${time}ms.`;
 	message += '\n';
 	message += `${fileInfoList.length} files listed for ${name} (${flagsGlobal.filter}).`;
+	message += '\n';
+	message += `Processed ${allFilePaths.length} files.`;
 	message += '\n';
 	if (bind.testCommand) {
 		message += '\n';
