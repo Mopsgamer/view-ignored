@@ -40,7 +40,6 @@ export function isFilterName(value: unknown): value is FilterName {
 export type FileSystemAdapter = {
 	readFileSync?: typeof FS.readFileSync;
 	readdirSync?: typeof FS.readdirSync;
-	statSync?: typeof FS.statSync;
 } & FSOption;
 
 // #region scanning
@@ -50,9 +49,12 @@ export type FileSystemAdapter = {
 export type IsValid = (sourceInfo: SourceInfo) => boolean;
 
 /**
- * @returns `true`, if the given path is ignored.
+ * The custom scanner.
  */
 export type Scanner = {
+	/**
+	 * @returns `true`, if the given path is ignored.
+	 */
 	ignores(path: string): boolean;
 };
 
@@ -218,7 +220,7 @@ export async function scanProject(argument1: Methodology[] | string, options: Sc
 				const entryPath = path.join(fileDirectory, entry);
 				const entryPathNormal = fileDirectory === '.' ? entry : fileDirectory + '/' + entry;
 				const entryPathAbsolute = path.join(cwd, entryPath);
-				const stat = (fsa?.statSync ?? FS.statSync)(entryPathAbsolute);
+				const stat = (fsa?.lstatSync ?? FS.lstatSync)(entryPathAbsolute);
 				cache.add(entryPathNormal);
 
 				if (!stat.isFile()) {
