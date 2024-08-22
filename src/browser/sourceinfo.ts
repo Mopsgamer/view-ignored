@@ -7,6 +7,7 @@ import {
 	type ScanFolderOptions,
 	type Methodology,
 } from './lib.js';
+import {firstFiles} from './sorting.js';
 
 export type SourceInfoHierarcyOptions<T extends {toString(): string}> = {
 	/**
@@ -48,7 +49,7 @@ export class SourceInfo {
 	 */
 	static hierarcy<T extends {toString(): string}>(filePath: string, pathList: T[], options?: SourceInfoHierarcyOptions<T>): T | undefined {
 		const {closest = true, filter} = options ?? {};
-		pathList = pathList.sort((a, b) => a.toString().localeCompare(b.toString()));
+		pathList = pathList.sort((a, b) => firstFiles(String(a), String(b)));
 
 		const checkStack: string[] = [];
 		{// Fill checkStack
