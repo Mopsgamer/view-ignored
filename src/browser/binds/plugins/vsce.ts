@@ -17,8 +17,8 @@ export const matcherExclude: string[] = [
 
 const scanner = new ScannerGitignore('', {exclude: matcherExclude});
 
-export const isValidSource: IsValid = function (sourceInfo) {
-	const pat = (sourceInfo.content ?? sourceInfo.readSync()).toString();
+export const isValidSource: IsValid = function (o, sourceInfo) {
+	const pat = (sourceInfo.content ?? sourceInfo.readSync(o.fsa, o.cwd)).toString();
 	if (!scanner.isValid(pat)) {
 		return false;
 	}
@@ -27,8 +27,8 @@ export const isValidSource: IsValid = function (sourceInfo) {
 	return true;
 };
 
-const read: Read = function (sourceInfo: SourceInfo) {
-	const content = (sourceInfo.content ?? sourceInfo.readSync()).toString();
+const read: Read = function (o, sourceInfo) {
+	const content = (sourceInfo.content ?? sourceInfo.readSync(o.fsa, o.cwd)).toString();
 	scanner.update(content);
 	return scanner;
 };

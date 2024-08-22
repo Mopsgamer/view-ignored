@@ -45,7 +45,7 @@ export async function programInit() {
 			if (!load.isLoaded) {
 				logError(format(load.exports), {
 					title: `Unable to load plugin '${load.moduleName}' ` + (configPlugins.includes(load.moduleName)
-						? '(imported by ' + Config.configManager.filePath + ')'
+						? '(imported by ' + Config.configManager.path + ')'
 						: '(imported by --plugins option)'),
 				});
 			}
@@ -260,7 +260,11 @@ export async function actionScan(): Promise<void> {
 	}
 
 	if (flagsGlobal.parsable) {
-		console.log(fileInfoList.map(fi => fi.filePath + (flagsGlobal.showSources ? '<' + fi.source.sourcePath : '')).join(','));
+		console.log(fileInfoList.map(fileInfo =>
+			fileInfo.path + (
+				flagsGlobal.showSources ? '<' + fileInfo.source.path : ''
+			),
+		).join(','));
 		return;
 	}
 

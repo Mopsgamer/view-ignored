@@ -47,8 +47,8 @@ export const matcherInclude = [
 
 const scanner = new ScannerMinimatch('', {exclude: matcherExclude, include: matcherInclude});
 
-export const isValidSourceMinimatch: IsValid = function (sourceInfo) {
-	const pat = (sourceInfo.content ?? sourceInfo.readSync()).toString();
+export const isValidSourceMinimatch: IsValid = function (o, sourceInfo) {
+	const pat = (sourceInfo.content ?? sourceInfo.readSync(o.fsa, o.cwd)).toString();
 	if (!scanner.isValid(pat)) {
 		return false;
 	}
@@ -57,10 +57,10 @@ export const isValidSourceMinimatch: IsValid = function (sourceInfo) {
 	return true;
 };
 
-export const isValidSourceMinimatchPakcageJson: IsValid = function (sourceInfo) {
+export const isValidSourceMinimatchPakcageJson: IsValid = function (o, sourceInfo) {
 	let parsed: Record<string, unknown>;
 	try {
-		const pat = (sourceInfo.content ?? sourceInfo.readSync()).toString();
+		const pat = (sourceInfo.content ?? sourceInfo.readSync(o.fsa, o.cwd)).toString();
 		const json: unknown = JSON.parse(pat);
 		if (json?.constructor !== Object) {
 			return false;
@@ -79,15 +79,15 @@ export const isValidSourceMinimatchPakcageJson: IsValid = function (sourceInfo) 
 	return true;
 };
 
-const read: Read = function (sourceInfo: SourceInfo) {
-	const content = (sourceInfo.content ?? sourceInfo.readSync()).toString();
+const read: Read = function (o, sourceInfo: SourceInfo) {
+	const content = (sourceInfo.content ?? sourceInfo.readSync(o.fsa, o.cwd)).toString();
 	scanner.negated = false;
 	scanner.update(content);
 	return scanner;
 };
 
-const readJson: Read = function (sourceInfo: SourceInfo) {
-	const content = (sourceInfo.content ?? sourceInfo.readSync()).toString();
+const readJson: Read = function (o, sourceInfo: SourceInfo) {
+	const content = (sourceInfo.content ?? sourceInfo.readSync(o.fsa, o.cwd)).toString();
 	scanner.negated = true;
 	scanner.update((JSON.parse(content) as {files: string[]}).files);
 	return scanner;

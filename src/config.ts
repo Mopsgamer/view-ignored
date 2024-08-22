@@ -205,7 +205,7 @@ export class ConfigManager {
 	private data: Partial<Config> = {};
 
 	constructor(
-		public readonly filePath: string,
+		public readonly path: string,
 	) {}
 
 	dataRaw(): unknown {
@@ -226,7 +226,7 @@ export class ConfigManager {
      * @returns `undefined` if the config file does not exist.
      */
 	load() {
-		const parsed: unknown = existsSync(this.filePath) ? yaml.parse(readFileSync(this.filePath).toString()) : undefined;
+		const parsed: unknown = existsSync(this.path) ? yaml.parse(readFileSync(this.path).toString()) : undefined;
 		if (parsed === undefined) {
 			return parsed;
 		}
@@ -249,14 +249,14 @@ export class ConfigManager {
      */
 	save() {
 		if (Object.keys(this.data).length === 0) {
-			if (existsSync(this.filePath)) {
-				rmSync(this.filePath);
+			if (existsSync(this.path)) {
+				rmSync(this.path);
 			}
 
 			return this;
 		}
 
-		writeFileSync(this.filePath, yaml.stringify(this.data));
+		writeFileSync(this.path, yaml.stringify(this.data));
 		return this;
 	}
 

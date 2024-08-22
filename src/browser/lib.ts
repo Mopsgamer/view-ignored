@@ -1,16 +1,14 @@
 import path from 'node:path';
 import process from 'node:process';
-import type * as FS from 'node:fs';
+import * as FS from 'node:fs';
 import {createRequire} from 'node:module';
 import {glob, type FSOption} from 'glob';
-import {FileInfo} from './fileinfo.js';
-import {SourceInfo} from './sourceinfo.js';
+import {AbsoluteFile, FileInfo, SourceInfo} from './fs/index.js';
 import {targetGet} from './binds/index.js';
 import {ErrorNoSources, ErrorTargetNotBound} from './errors.js';
 
 export * from './errors.js';
-export * from './fileinfo.js';
-export * from './sourceinfo.js';
+export * from './fs/index.js';
 export * as Styling from './styling.js';
 export * as Sorting from './sorting.js';
 export * as Plugins from './binds/index.js';
@@ -46,7 +44,12 @@ export type FileSystemAdapter = {
 /**
  * @returns `true`, if the given source is valid.
  */
-export type IsValid = (sourceInfo: SourceInfo) => boolean;
+export type IsValid = (options: Required<ScanFolderOptions>, sourceInfo: SourceInfo) => boolean;
+
+/**
+ * @returns New scanner. The scanner should tell if the file should be ignored.
+ */
+export type Read = (options: Required<ScanFolderOptions>, sourceInfo: SourceInfo) => Scanner;
 
 /**
  * The custom scanner.
@@ -57,8 +60,6 @@ export type Scanner = {
 	 */
 	ignores(path: string): boolean;
 };
-
-export type Read = (sourceInfo: SourceInfo) => Scanner;
 
 /**
  * Represents the methodology for reading the target's source.
@@ -71,10 +72,13 @@ export type Methodology = {
 	pattern: SourceInfo[] | string[] | SourceInfo | string;
 
 	/**
-	 * Scanner function. Should return `true`, if the given source is valid.
+	 * @returns `true`, if the given source is valid.
 	 */
 	isValidSource: IsValid;
 
+	/**
+	 * @returns New source scanner. The scanner should tell if the file should be ignored.
+	 */
 	read: Read;
 };
 
@@ -95,10 +99,11 @@ export function isMethodology(value: unknown): value is Methodology {
 }
 
 /**
- * File scanning options.
- * @see {@link ScanFolderOptions}
+ * Folder deep scanning options.
+ * @see {@link ScanFileOptions}
  */
-export type ScanFileOptions = {
+export type ScanFolderOptions = {
+
 	/**
 	 * Custom implementation of methods for working with the file system.
 	 * @default import * as FS from "fs"
@@ -117,13 +122,7 @@ export type ScanFileOptions = {
 	 * @default Infinity
 	 */
 	maxDepth?: number;
-};
 
-/**
- * Folder deep scanning options.
- * @see {@link ScanFileOptions}
- */
-export type ScanFolderOptions = ScanFileOptions & {
 	/**
 	 * On posix systems, this has no effect.  But, on Windows, it means that
 	 * paths will be `/` delimited, and absolute paths will be their full
@@ -142,43 +141,44 @@ export type ScanFolderOptions = ScanFileOptions & {
 };
 
 /**
- * Gets info about the file: it is ignored or not.
- * @throws {ErrorNoSources} if the source is bad.
- */
-export async function scanFile(filePath: string, sources: Methodology[], options?: ScanFileOptions): Promise<FileInfo> {
-	const [fileInfo] = await scanFileList([filePath], sources, options);
-	return fileInfo;
-}
-
-/**
  * Gets info about the each file: it is ignored or not.
  * @throws {ErrorNoSources} if the source is bad.
+ * @todo Optimize source searching.
  */
 export async function scanFileList(filePathList: string[], sources: Methodology[], options?: ScanFolderOptions): Promise<FileInfo[]>;
 export async function scanFileList(filePathList: string[], target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
 export async function scanFileList(filePathList: string[], argument1: Methodology[] | string, options?: ScanFolderOptions): Promise<FileInfo[]> {
 	options ??= {};
-	const {filter = 'included'} = options;
+	const optionsFilled: Required<ScanFolderOptions> = {
+		...options,
+		cwd: options.cwd ?? process.cwd(),
+		filter: options.filter ?? 'included',
+		fsa: options.fsa ?? FS,
+		maxDepth: options.maxDepth ?? Infinity,
+		posix: options.posix ?? false,
+	};
+
 	if (typeof argument1 === 'string') {
 		const bind = targetGet(argument1);
 		if (bind === undefined) {
 			throw new ErrorTargetNotBound(argument1);
 		}
 
-		return scanFileList(filePathList, bind.methodology, Object.assign(options, bind.scanOptions));
+		return scanFileList(filePathList, bind.methodology, Object.assign(optionsFilled, bind.scanOptions));
 	}
 
 	for (const methodology of argument1) {
 		const fileInfoList: FileInfo[] = [];
 		let noSource = false;
+		let atLeastOneSourceFound: undefined | SourceInfo;
 		const cacheDirectorySource = new Map<string, SourceInfo>();
 		const cacheSourceValid = new Map<SourceInfo, boolean>();
 		// eslint-disable-next-line no-await-in-loop
-		const sourceInfoList = await SourceInfo.from(methodology, options);
+		const sourceInfoList = await SourceInfo.from(methodology, optionsFilled);
 
 		for (const filePath of filePathList) {
 			const fileDirectory = path.dirname(filePath);
-			const sourceInfo = cacheDirectorySource.get(fileDirectory) ?? SourceInfo.hierarchy(
+			const sourceInfo = cacheDirectorySource.get(fileDirectory) ?? AbsoluteFile.closest<SourceInfo>(
 				fileDirectory,
 				sourceInfoList,
 				{
@@ -186,7 +186,7 @@ export async function scanFileList(filePathList: string[], argument1: Methodolog
 					filter(sourceInfo) {
 						let isValid = cacheSourceValid.get(sourceInfo);
 						if (isValid === undefined) {
-							cacheSourceValid.set(sourceInfo, isValid = methodology.isValidSource(sourceInfo));
+							cacheSourceValid.set(sourceInfo, isValid = methodology.isValidSource(optionsFilled, sourceInfo));
 						}
 
 						return isValid;
@@ -195,16 +195,21 @@ export async function scanFileList(filePathList: string[], argument1: Methodolog
 			);
 
 			if (sourceInfo === undefined) {
+				if (atLeastOneSourceFound !== undefined) {
+					throw new Error(`Source not found, but expected. File path: ${filePath}. File dir: ${fileDirectory}. Choices: ${sourceInfoList.map(String).join(', ')}`);
+				}
+
 				noSource = true;
 				break;
 			}
 
-			cacheDirectorySource.set(fileDirectory, sourceInfo);
+			atLeastOneSourceFound = sourceInfo;
 
-			const scanner = methodology.read(sourceInfo);
+			cacheDirectorySource.set(fileDirectory, sourceInfo);
+			const scanner = methodology.read(optionsFilled, sourceInfo);
 			const fileInfo = new FileInfo(filePath, sourceInfo, scanner.ignores(filePath));
 
-			if (fileInfo.isIncludedBy(filter)) {
+			if (fileInfo.isIncludedBy(optionsFilled.filter)) {
 				fileInfoList.push(fileInfo);
 			}
 		}
