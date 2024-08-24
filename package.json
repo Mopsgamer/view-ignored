@@ -56,6 +56,14 @@
 			"publish": true
 		}
 	},
+	"xo": {
+		"rules": {
+			"linebreak-style": [
+				"error",
+				"unix"
+			]
+		}
+	},
 	"publishConfig": {
 		"access": "public"
 	},
