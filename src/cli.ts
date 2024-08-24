@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/no-process-exit */
 import fs from 'node:fs';
 import {format} from 'node:util';
 import * as process from 'node:process';
@@ -8,68 +9,94 @@ import {
 import ora from 'ora';
 import {glob} from 'glob';
 import * as Config from './config.js';
-import {builtIns, loadPluginsQueue, targetGet} from './browser/binds/index.js';
+import {
+	builtIns, loadPluginsQueue, targetGet, targetList,
+} from './browser/binds/index.js';
 import {
 	decorCondition, type DecorName, formatFiles, type StyleName,
 } from './browser/styling.js';
-import {type SortName} from './browser/sorting.js';
+import {sortNameList, type SortName} from './browser/sorting.js';
 import {
-	ErrorNoSources, type FileInfo, type FilterName, package_, scanFileList, scanFolder, Sorting,
+	ErrorNoSources, type FileInfo, type FilterName, filterNameList, package_, scanFileList, scanFolder, Sorting,
 } from './lib.js';
-import {boxError, type BoxOptions, formatConfigConflicts} from './styling.js';
+import {
+	boxError, decorNameList, styleNameList, type BoxOptions,
+} from './styling.js';
 
 export function logError(message: string, options?: BoxOptions) {
 	console.log(boxError(message, {noColor: getColorLevel(program.opts()) === 0, ...options}));
 }
 
 /**
- * Use it instead of {@link program}.parse()
+ * Use it instead of {@link program.parse}.
  */
 export async function programInit() {
-	Config.configManager.load();
-	program.parseOptions(process.argv);
-	const flags = program.opts<ProgramFlags>();
-	const chalk = getChalk(getColorLevel(flags));
 	try {
-		Config.configManager.load();
-	} catch (error) {
-		formatConfigConflicts(chalk, flags.decor, error);
-		return;
-	}
+		const {configManager, configDefault, configValueArray, configValueBoolean, configValueInteger, configValueString, configValueLiteral} = Config;
 
-	try {
-		await builtIns;
-		const configPlugins = Config.configManager.get('plugins');
-		const loaded = await loadPluginsQueue(flags.plugins);
-		for (const load of loaded) {
-			if (!load.isLoaded) {
-				logError(format(load.exports), {
-					title: `Unable to load plugin '${load.moduleName}' ` + (configPlugins.includes(load.moduleName)
-						? '(imported by ' + Config.configManager.path + ')'
-						: '(imported by --plugins option)'),
-				});
+		program.parseOptions(process.argv);
+		const flags = program.optsWithGlobals<ProgramFlags>();
+
+		configManager.key<'plugins'>('plugins', configDefault.plugins, configValueArray(configValueString));
+		configManager.load();
+		try {
+			await builtIns;
+			const configPlugins = configManager.get('plugins');
+			const loaded = await loadPluginsQueue(flags.plugins);
+			for (const load of loaded) {
+				if (!load.isLoaded) {
+					logError(format(load.exports), {
+						title: `Unable to load plugin '${load.moduleName}' ` + (configPlugins.includes(load.moduleName)
+							? '(imported by ' + configManager.path + ')'
+							: '(imported by --plugins option)'),
+					});
+				}
 			}
+		} catch (error) {
+			logError(format(error));
+			process.exit(1);
 		}
+
+		configManager.key<'parsable'>('parsable', configDefault.parsable, configValueBoolean);
+		configManager.key<'color'>('color', configDefault.color, configValueLiteral(Config.colorTypeList));
+		configManager.key<'target'>('target', configDefault.target, configValueLiteral(targetList()));
+		configManager.key<'filter'>('filter', configDefault.filter, configValueLiteral(filterNameList));
+		configManager.key<'sort'>('sort', configDefault.sort, configValueLiteral(sortNameList));
+		configManager.key<'style'>('style', configDefault.style, configValueLiteral(styleNameList));
+		configManager.key<'decor'>('decor', configDefault.decor, configValueLiteral(decorNameList));
+		configManager.key<'depth'>('depth', configDefault.depth, configValueInteger);
+		configManager.key<'showSources'>('showSources', configDefault.showSources, configValueBoolean);
+
+		try {
+			const errorMessageList = configManager.load();
+			if (errorMessageList.length > 0) {
+				logError(errorMessageList.join('\n'));
+				return;
+			}
+		} catch (error) {
+			logError(String(error));
+			return;
+		}
+
+		program.version('v' + package_.version, '-v');
+		program.addOption(new Option('--no-color', 'force disable colors').default(false));
+		program.addOption(new Option('--posix', 'use unix path separator').default(false));
+		configManager.setOption('plugins', program, new Option('--plugins <modules...>', 'import modules to modify behavior'), parseArgumentArrayString);
+		configManager.setOption('color', program, new Option('--color <level>', 'the interface color level'), parseArgumentInt);
+		configManager.setOption('decor', program, new Option('--decor <decor>', 'the interface decorations'));
+		configManager.setOption('parsable', scanProgram, new Option('-p, --parsable [parsable]', 'print parsable text'), parseArgumentBool);
+		configManager.setOption('target', scanProgram, new Option('-t, --target <ignorer>', 'the scan target'));
+		configManager.setOption('filter', scanProgram, new Option('--filter <filter>', 'filter results'));
+		configManager.setOption('sort', scanProgram, new Option('--sort <sorter>', 'sort results'));
+		configManager.setOption('style', scanProgram, new Option('--style <style>', 'results view mode'));
+		configManager.setOption('depth', scanProgram, new Option('--depth <depth>', 'the max results depth'), parseArgumentInt);
+		configManager.setOption('showSources', scanProgram, new Option('--show-sources [show]', 'show scan sources'), parseArgumentBool);
+
+		program.parse();
 	} catch (error) {
-		logError(format(error));
-		process.exit(1); // eslint-disable-line unicorn/no-process-exit
+		logError(String(error));
+		process.exit(1);
 	}
-
-	program.version('v' + package_.version, '-v');
-	program.addOption(new Option('--no-color', 'force disable colors').default(false));
-	program.addOption(new Option('--posix', 'use unix path separator').default(false));
-	Config.configValueLinkCliOption('plugins', program, new Option('--plugins <modules...>', 'import modules to modify behavior'), parseArgumentArrayString);
-	Config.configValueLinkCliOption('color', program, new Option('--color <level>', 'the interface color level'), parseArgumentInt);
-	Config.configValueLinkCliOption('decor', program, new Option('--decor <decor>', 'the interface decorations'));
-	Config.configValueLinkCliOption('parsable', scanProgram, new Option('-p, --parsable [parsable]', 'print parsable text'), parseArgumentBool);
-	Config.configValueLinkCliOption('target', scanProgram, new Option('-t, --target <ignorer>', 'the scan target'));
-	Config.configValueLinkCliOption('filter', scanProgram, new Option('--filter <filter>', 'filter results'));
-	Config.configValueLinkCliOption('sort', scanProgram, new Option('--sort <sorter>', 'sort results'));
-	Config.configValueLinkCliOption('style', scanProgram, new Option('--style <style>', 'results view mode'));
-	Config.configValueLinkCliOption('depth', scanProgram, new Option('--depth <depth>', 'the max results depth'), parseArgumentInt);
-	Config.configValueLinkCliOption('showSources', scanProgram, new Option('--show-sources [show]', 'show scan sources'), parseArgumentBool);
-
-	program.parse();
 }
 
 /** Chalk, but configured by view-ignored cli. */
@@ -172,25 +199,28 @@ export function parseArgumentArrayString(argument: string): string[] {
 }
 
 export function parseArgumentBool(argument: string): boolean {
-	if (!Config.boolValues.includes(argument)) {
-		throw new InvalidArgumentError(`Got invalid value '${argument}'. Should be a boolean.`);
+	const errorMessage = Config.configValueHumanBoolean(argument);
+	if (errorMessage !== undefined) {
+		throw new InvalidArgumentError(errorMessage);
 	}
 
 	return Config.trueValues.includes(argument);
 }
 
 export function parseArgumentInt(argument: string): number {
-	const number_ = Number.parseInt(argument, 10);
-	if (!Number.isInteger(number_)) {
-		throw new InvalidArgumentError(`Got invalid value '${number_}'. Should be an integer.`);
+	const value = Number.parseInt(argument, 10);
+	const errorMessage = Config.configValueInteger(value);
+	if (errorMessage !== undefined) {
+		throw new InvalidArgumentError(errorMessage);
 	}
 
-	return number_;
+	return value;
 }
 
-export function parseArgumentKey(key: string): Config.ConfigKey {
-	if (!Config.isConfigKey(key)) {
-		throw new InvalidArgumentError(`Got invalid key '${key}'. Allowed config keys are ${Config.configKeyList.join(', ')}.`);
+export function parseArgumentKey(key: string): string {
+	const errorMessage = Config.configManager.checkKey(key);
+	if (errorMessage !== undefined) {
+		throw new InvalidArgumentError(errorMessage);
 	}
 
 	return key;
@@ -203,24 +233,12 @@ export function parseArgumentKeyValue(pair: string): Config.ConfigPair {
 		throw new InvalidArgumentError('Expected \'key=value\'.');
 	}
 
-	if (!Config.isConfigKey(key)) {
-		throw new InvalidArgumentError(`Got invalid key '${key}'. Allowed config keys are ${Config.configKeyList.join(', ')}.`);
-	}
-
-	const {parseArg: parseArgument} = Config.configValueGetCliOption(key)!;
+	const {parseArg: parseArgument} = Config.configManager.getOption(key) ?? {};
 	const value = parseArgument?.<unknown>(valueString, undefined) ?? valueString;
 
-	if (!Config.isConfigValue(key, value)) {
-		const list = Config.configValueList(key);
-		if (list === undefined) {
-			throw new InvalidArgumentError(`Invalid value '${valueString}' for the key '${key}'.`);
-		}
-
-		if (typeof list !== 'string') {
-			throw new InvalidArgumentError(`Invalid value '${valueString}' for the key '${key}'. Allowed config values are ${list.join(', ')}`);
-		}
-
-		throw new InvalidArgumentError(`Invalid value '${valueString}' for the key '${key}'. ${list}`);
+	const errorMessage = Config.configManager.checkValue(key, value);
+	if (errorMessage !== undefined) {
+		throw new InvalidArgumentError(errorMessage);
 	}
 
 	return [key, value] as [Config.ConfigKey, Config.ConfigValue];
@@ -230,7 +248,7 @@ export function parseArgumentKeyValue(pair: string): Config.ConfigPair {
  * Command-line 'scan' command action.
  */
 export async function actionScan(): Promise<void> {
-	const flagsGlobal: ProgramFlags & ScanFlags = scanProgram.optsWithGlobals();
+	const flagsGlobal = scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>();
 	const cwd = process.cwd();
 	const start = Date.now();
 	const colorLevel = getColorLevel(program.opts());
@@ -251,12 +269,8 @@ export async function actionScan(): Promise<void> {
 	} catch (error) {
 		spinner.stop();
 		spinner.clear();
-		if (!(error instanceof ErrorNoSources)) {
-			throw error;
-		}
-
-		console.error(`Bad sources for ${flagsGlobal.target}: ${ErrorNoSources.walk(flagsGlobal.target)}`);
-		process.exit(1); // eslint-disable-line unicorn/no-process-exit
+		logError(String(error));
+		process.exit(1);
 	}
 
 	if (flagsGlobal.parsable) {
@@ -339,7 +353,13 @@ export function actionCfgSet(pair?: Config.ConfigPair): void {
 	}
 
 	const [key, value] = pair;
-	Config.configManager.set(key, value).save();
+	const errorMessage = Config.configManager.set(key, value);
+	if (errorMessage !== undefined) {
+		logError(errorMessage);
+		return;
+	}
+
+	Config.configManager.save();
 	console.log(Config.configManager.getPairString(key));
 }
 
