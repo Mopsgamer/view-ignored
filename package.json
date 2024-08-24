@@ -58,6 +58,7 @@
 	},
 	"xo": {
 		"rules": {
+			"n/no-unpublished-bin": "off",
 			"linebreak-style": [
 				"error",
 				"unix"
