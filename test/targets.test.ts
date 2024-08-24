@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-loop-func */
 /* eslint-disable @typescript-eslint/naming-convention */
 import assert from 'node:assert';
 import {readFileSync} from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import {fileURLToPath} from 'node:url';
-import {type FileTree, createFixture} from 'fs-fixture';
+import {type FileTree, type FsFixture, createFixture} from 'fs-fixture';
 import chalk from 'chalk';
 import * as viewig from '../src/index.js';
 
@@ -193,7 +194,7 @@ describe('Targets', () => {
 			continue;
 		}
 
-		describe(targetId, () => { // eslint-disable-line @typescript-eslint/no-loop-func
+		describe(targetId, () => {
 			const tests = targetTestList[targetId];
 			for (const testName in tests) {
 				if (!Object.hasOwn(tests, testName)) {
@@ -201,7 +202,17 @@ describe('Targets', () => {
 				}
 
 				it(testName, async () => {
-					await testTargetSubtest(targetId, tests[testName], testName, myContentLines);
+					after(async () => {
+						await fixture.rm();
+					});
+					const fixture = await createFixture(tests[testName].content);
+					await testTargetSubtest({
+						fixture,
+						targetId,
+						test: tests[testName],
+						testName,
+						myContentLines,
+					});
 				});
 			}
 		});
@@ -212,10 +223,18 @@ function lineColumnInfo(filePath: string, line: number, column: number, name?: s
 	return `${chalk.cyan(filePath)}${chalk.white(':')}${chalk.yellow(line)}${chalk.white(':')}${chalk.yellow(column)}${name ? `\t- ${name}` : ''}`;
 }
 
-async function testTargetSubtest(targetId: string, test: Case, testName: string, myContentLines: string[]) {
-	const {should, content} = test;
+type TestTargetSubtestData = {
+	fixture: FsFixture;
+	targetId: string;
+	test: Case;
+	testName: string;
+	myContentLines: string[];
+};
 
-	const fixture = await createFixture(content);
+async function testTargetSubtest(data: TestTargetSubtestData) {
+	const {fixture, myContentLines, targetId, test, testName} = data;
+	const {should} = test;
+
 	const fileInfoListPromise = viewig.scanFolder(targetId, {cwd: fixture.getPath(), filter: 'included'});
 	const testLine = myContentLines.findIndex(ln => ln.includes(testName)) + 1;
 	const testLineContent = testLine + myContentLines.slice(testLine).findIndex(ln => ln.includes('content')) + 1;
