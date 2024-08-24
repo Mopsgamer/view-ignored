@@ -148,6 +148,10 @@ export type ScanFolderOptions = {
 export async function scanFileList(filePathList: string[], sources: Methodology[], options?: ScanFolderOptions): Promise<FileInfo[]>;
 export async function scanFileList(filePathList: string[], target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
 export async function scanFileList(filePathList: string[], argument1: Methodology[] | string, options?: ScanFolderOptions): Promise<FileInfo[]> {
+	if (filePathList.length === 0) {
+		throw new ErrorNoSources(argument1);
+	}
+
 	options ??= {};
 	const optionsFilled: Required<ScanFolderOptions> = {
 		...options,
@@ -228,13 +232,10 @@ export async function scanFileList(filePathList: string[], argument1: Methodolog
  * Scans project's directory paths to determine whether they are being ignored.
  * @throws {ErrorNoSources} if the source is bad.
  */
-export async function scanFolder(folderPath: string, sources: Methodology[], options?: ScanFolderOptions): Promise<FileInfo[]>;
-export async function scanFolder(folderPath: string, target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
-export async function scanFolder(folderPath: string, argument1: Methodology[] | string, options?: ScanFolderOptions): Promise<FileInfo[]> {
+export async function scanFolder(sources: Methodology[], options?: ScanFolderOptions): Promise<FileInfo[]>;
+export async function scanFolder(target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
+export async function scanFolder(argument1: Methodology[] | string, options?: ScanFolderOptions): Promise<FileInfo[]> {
 	options ??= {};
-	if (typeof argument1 === 'string') {
-		return scanFolder(folderPath, argument1, options);
-	}
 
 	const {fsa, cwd = process.cwd(), posix = false, maxDepth = Infinity} = options;
 
@@ -246,6 +247,10 @@ export async function scanFolder(folderPath: string, argument1: Methodology[] | 
 		nodir: true,
 		dot: true,
 	});
+
+	if (typeof argument1 === 'string') {
+		return scanFileList(allFilePaths, argument1, options);
+	}
 
 	return scanFileList(allFilePaths, argument1, options);
 }
