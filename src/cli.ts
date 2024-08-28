@@ -17,7 +17,7 @@ import {
 } from './browser/styling.js';
 import {sortNameList, type SortName} from './browser/sorting.js';
 import {
-	ErrorNoSources, type FileInfo, type FilterName, filterNameList, package_, scanFileList, scanFolder, Sorting,
+	ErrorNoSources, type FileInfo, type FilterName, filterNameList, package_, readDirectorySync, realOptions, scanFileList, scanFolder, Sorting,
 } from './lib.js';
 import {
 	boxError, decorNameList, styleNameList, type BoxOptions,
@@ -74,7 +74,7 @@ export async function programInit() {
 				return;
 			}
 		} catch (error) {
-			logError(String(error));
+			logError(format(error));
 			return;
 		}
 
@@ -94,7 +94,7 @@ export async function programInit() {
 
 		program.parse();
 	} catch (error) {
-		logError(String(error));
+		logError(format(error));
 		process.exit(1);
 	}
 }
@@ -255,13 +255,7 @@ export async function actionScan(): Promise<void> {
 	const chalk = getChalk(colorLevel);
 	const spinner = ora({text: cwd, color: 'white'});
 
-	const allFilePaths = await glob('**', {
-		cwd: process.cwd(),
-		posix: flagsGlobal.posix,
-		maxDepth: flagsGlobal.depth,
-		nodir: true,
-		dot: true,
-	});
+	const allFilePaths = readDirectorySync(realOptions({posix: flagsGlobal.posix}));
 
 	let fileInfoList: FileInfo[];
 	try {
@@ -269,7 +263,7 @@ export async function actionScan(): Promise<void> {
 	} catch (error) {
 		spinner.stop();
 		spinner.clear();
-		logError(String(error));
+		logError(format(error));
 		process.exit(1);
 	}
 

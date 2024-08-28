@@ -58,6 +58,7 @@
 	},
 	"xo": {
 		"rules": {
+			"@typescript-eslint/use-unknown-in-catch-callback-variable": "off",
 			"n/no-unpublished-bin": "off",
 			"linebreak-style": [
 				"error",
@@ -73,7 +74,6 @@
 	},
 	"dependencies": {
 		"@humanwhocodes/gitignore-to-minimatch": "^1.0.2",
-		"arrify": "^3.0.0",
 		"boxen": "^8.0.1",
 		"chalk": "^5.3.0",
 		"commander": "^12.1.0",

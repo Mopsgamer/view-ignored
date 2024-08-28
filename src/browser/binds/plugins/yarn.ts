@@ -1,5 +1,4 @@
 import getValue from 'get-value';
-import * as minimatch from 'minimatch';
 import {
 	type Plugins, type Methodology, type IsValid,
 	type Read,
@@ -47,21 +46,49 @@ export const matcherInclude = [
 
 const scanner = new ScannerMinimatch('', {exclude: matcherExclude, include: matcherInclude});
 
-export const isValidSourceMinimatch: IsValid = function (o, sourceInfo) {
-	const pat = (sourceInfo.content ?? sourceInfo.readSync(o.fsa, o.cwd)).toString();
-	if (!scanner.isValid(pat)) {
+export const isValidSourceMinimatch: IsValid = function (o) {
+	const content = o.fsa.readFileSync(o.entryPath).toString();
+	if (!scanner.isValid(content)) {
 		return false;
 	}
 
-	scanner.update(pat);
+	scanner.update(content);
 	return true;
 };
 
-export const isValidSourceMinimatchPakcageJson: IsValid = function (o, sourceInfo) {
+export const isValidSourceMinimatchGitignore: IsValid = function (o) {
+	if (o.entry.name !== '.gitignore') {
+		return false;
+	}
+
+	return isValidSourceMinimatch(o);
+};
+
+export const findNpmignore: IsValid = function (o) {
+	if (o.entry.name !== '.npmignore') {
+		return false;
+	}
+
+	return isValidSourceMinimatch(o);
+};
+
+export const findYarnignore: IsValid = function (o) {
+	if (o.entry.name !== '.yarnignore') {
+		return false;
+	}
+
+	return isValidSourceMinimatch(o);
+};
+
+export const findPackageJson: IsValid = function (o) {
+	if (o.entry.name !== 'package.json') {
+		return false;
+	}
+
 	let parsed: Record<string, unknown>;
 	try {
-		const pat = (sourceInfo.content ?? sourceInfo.readSync(o.fsa, o.cwd)).toString();
-		const json: unknown = JSON.parse(pat);
+		const content = o.fsa.readFileSync(o.entryPath).toString();
+		const json: unknown = JSON.parse(content);
 		if (json?.constructor !== Object) {
 			return false;
 		}
@@ -79,15 +106,15 @@ export const isValidSourceMinimatchPakcageJson: IsValid = function (o, sourceInf
 	return true;
 };
 
-const read: Read = function (o, sourceInfo: SourceInfo) {
-	const content = (sourceInfo.content ?? sourceInfo.readSync(o.fsa, o.cwd)).toString();
+const read: Read = function (o) {
+	const content = o.fsa.readFileSync(o.sourceInfo.path).toString();
 	scanner.negated = false;
 	scanner.update(content);
 	return scanner;
 };
 
-const readJson: Read = function (o, sourceInfo: SourceInfo) {
-	const content = (sourceInfo.content ?? sourceInfo.readSync(o.fsa, o.cwd)).toString();
+const readJson: Read = function (o) {
+	const content = o.fsa.readFileSync(o.sourceInfo.path).toString();
 	scanner.negated = true;
 	scanner.update((JSON.parse(content) as {files: string[]}).files);
 	return scanner;
@@ -95,16 +122,16 @@ const readJson: Read = function (o, sourceInfo: SourceInfo) {
 
 export const methodology: Methodology[] = [
 	{
-		pattern: ['**/package.json'], isValidSource: isValidSourceMinimatchPakcageJson, read: readJson,
+		findSource: findPackageJson, readSource: readJson,
 	},
 	{
-		pattern: '**/.yarnignore', isValidSource: isValidSourceMinimatch, read,
+		findSource: findYarnignore, readSource: read,
 	},
 	{
-		pattern: ['**/.npmignore'], isValidSource: isValidSourceMinimatch, read,
+		findSource: findNpmignore, readSource: read,
 	},
 	{
-		pattern: ['**/.gitignore'], isValidSource: isValidSourceMinimatch, read,
+		findSource: findPackageJson, readSource: read,
 	},
 ];
 

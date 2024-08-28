@@ -1,9 +1,9 @@
-import path from 'node:path';
+import PATH from 'node:path';
 import process from 'node:process';
 import * as FS from 'node:fs';
 import {createRequire} from 'node:module';
 import {glob, type FSOption} from 'glob';
-import {AbsoluteFile, FileInfo, SourceInfo} from './fs/index.js';
+import {FileInfo, SourceInfo} from './fs/index.js';
 import {targetGet} from './binds/index.js';
 import {ErrorNoSources, ErrorTargetNotBound} from './errors.js';
 
@@ -41,15 +41,18 @@ export type FileSystemAdapter = {
 } & FSOption;
 
 // #region scanning
+
+export type IsValidOptions = RealScanFolderOptions & {entry: FS.Dirent; entryPath: string};
 /**
  * @returns `true`, if the given source is valid.
  */
-export type IsValid = (options: Required<ScanFolderOptions>, sourceInfo: SourceInfo) => boolean;
+export type IsValid = (options: IsValidOptions) => boolean;
 
+export type ReadOptions = RealScanFolderOptions & {sourceInfo: SourceInfo};
 /**
  * @returns New scanner. The scanner should tell if the file should be ignored.
  */
-export type Read = (options: Required<ScanFolderOptions>, sourceInfo: SourceInfo) => Scanner;
+export type Read = (options: ReadOptions) => Scanner;
 
 /**
  * The custom scanner.
@@ -67,19 +70,14 @@ export type Scanner = {
 export type Methodology = {
 
 	/**
-	 * First valid source will be used as {@link Scanner}.
-	 */
-	pattern: SourceInfo[] | string[] | SourceInfo | string;
-
-	/**
 	 * @returns `true`, if the given source is valid.
 	 */
-	isValidSource: IsValid;
+	findSource: IsValid;
 
 	/**
 	 * @returns New source scanner. The scanner should tell if the file should be ignored.
 	 */
-	read: Read;
+	readSource: Read;
 };
 
 /**
@@ -92,11 +90,12 @@ export function isMethodology(value: unknown): value is Methodology {
 
 	const v = value as Partial<Methodology>;
 
-	const check: boolean = (v.isValidSource === undefined || typeof v.isValidSource === 'function')
-		&& (v.read === undefined || typeof v.read === 'function')
-		&& (v.pattern === undefined || typeof v.pattern === 'string' || v.pattern instanceof SourceInfo || (Array.isArray(v.pattern) && (v.pattern.every(p => typeof p === 'string') || v.pattern.every(p => p instanceof SourceInfo))));
+	const check: boolean = (v.findSource === undefined || typeof v.findSource === 'function')
+		&& (v.readSource === undefined || typeof v.readSource === 'function');
 	return check;
 }
+
+export type RealScanFolderOptions = Required<ScanFolderOptions> & {fsa: Required<FileSystemAdapter>};
 
 /**
  * Folder deep scanning options.
@@ -152,15 +151,7 @@ export async function scanFileList(filePathList: string[], argument1: Methodolog
 		throw new ErrorNoSources(argument1);
 	}
 
-	options ??= {};
-	const optionsFilled: Required<ScanFolderOptions> = {
-		...options,
-		cwd: options.cwd ?? process.cwd(),
-		filter: options.filter ?? 'included',
-		fsa: options.fsa ?? FS,
-		maxDepth: options.maxDepth ?? Infinity,
-		posix: options.posix ?? false,
-	};
+	const optionsReal = realOptions(options);
 
 	if (typeof argument1 === 'string') {
 		const bind = targetGet(argument1);
@@ -168,52 +159,38 @@ export async function scanFileList(filePathList: string[], argument1: Methodolog
 			throw new ErrorTargetNotBound(argument1);
 		}
 
-		return scanFileList(filePathList, bind.methodology, Object.assign(optionsFilled, bind.scanOptions));
+		return scanFileList(filePathList, bind.methodology, Object.assign(optionsReal, bind.scanOptions));
 	}
 
 	for (const methodology of argument1) {
 		const fileInfoList: FileInfo[] = [];
 		let noSource = false;
 		let atLeastOneSourceFound: undefined | SourceInfo;
-		const cacheDirectorySource = new Map<string, SourceInfo>();
-		const cacheSourceValid = new Map<SourceInfo, boolean>();
 		// eslint-disable-next-line no-await-in-loop
-		const sourceInfoList = await SourceInfo.from(methodology, optionsFilled);
+		const cacheDirectorySource = await SourceInfo.createCache(methodology, optionsReal);
 
 		for (const filePath of filePathList) {
-			const fileDirectory = path.dirname(filePath);
-			const sourceInfo = cacheDirectorySource.get(fileDirectory) ?? AbsoluteFile.closest<SourceInfo>(
-				fileDirectory,
-				sourceInfoList,
-				{
-					closest: true,
-					filter(sourceInfo) {
-						let isValid = cacheSourceValid.get(sourceInfo);
-						if (isValid === undefined) {
-							cacheSourceValid.set(sourceInfo, isValid = methodology.isValidSource(optionsFilled, sourceInfo));
-						}
-
-						return isValid;
-					},
-				},
-			);
+			const sourceInfo = cacheDirectorySource.get(filePath);
 
 			if (sourceInfo === undefined) {
 				if (atLeastOneSourceFound !== undefined) {
-					throw new Error(`Source not found, but expected. File path: ${filePath}. File dir: ${fileDirectory}. Choices: ${sourceInfoList.map(String).join(', ')}`);
+					throw new Error(`Source not found, but expected. File path: ${filePath}. CWD: ${optionsReal.cwd}`);
 				}
 
 				noSource = true;
 				break;
 			}
 
-			atLeastOneSourceFound = sourceInfo;
+			atLeastOneSourceFound ??= sourceInfo;
 
-			cacheDirectorySource.set(fileDirectory, sourceInfo);
-			const scanner = methodology.read(optionsFilled, sourceInfo);
+			const readOptions: ReadOptions = {
+				...optionsReal,
+				sourceInfo,
+			};
+			const scanner = methodology.readSource(readOptions);
 			const fileInfo = new FileInfo(filePath, sourceInfo, scanner.ignores(filePath));
 
-			if (fileInfo.isIncludedBy(optionsFilled.filter)) {
+			if (fileInfo.isIncludedBy(optionsReal.filter)) {
 				fileInfoList.push(fileInfo);
 			}
 		}
@@ -235,23 +212,51 @@ export async function scanFileList(filePathList: string[], argument1: Methodolog
 export async function scanFolder(sources: Methodology[], options?: ScanFolderOptions): Promise<FileInfo[]>;
 export async function scanFolder(target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
 export async function scanFolder(argument1: Methodology[] | string, options?: ScanFolderOptions): Promise<FileInfo[]> {
-	options ??= {};
+	const optionsReal = realOptions(options);
 
-	const {fsa, cwd = process.cwd(), posix = false, maxDepth = Infinity} = options;
+	return scanFileList(readDirectorySync(optionsReal), argument1 as string, options);
+}
 
-	const allFilePaths = await glob('**', {
-		cwd,
-		posix,
-		maxDepth,
-		fs: fsa,
-		nodir: true,
-		dot: true,
-	});
+export function readDirectorySync(options: Pick<RealScanFolderOptions, 'cwd' | 'fsa' | 'posix'>) {
+	const allFilePaths: string[] = [];
+	const entryList = options.fsa.readdirSync(options.cwd, {withFileTypes: true});
+	const path = options.posix ? PATH.posix : PATH;
 
-	if (typeof argument1 === 'string') {
-		return scanFileList(allFilePaths, argument1, options);
+	for (const entry of entryList) {
+		const entryPathAbsolute = path.join(entry.parentPath, entry.name);
+		const entryPath = path.relative(options.cwd, entryPathAbsolute);
+		if (entry.isSymbolicLink()) {
+			continue;
+		}
+
+		if (entry.isDirectory()) {
+			const subEntryList = readDirectorySync({...options, cwd: entryPathAbsolute}).map(
+				subEntry => path.join(entryPath, subEntry),
+			);
+			allFilePaths.push(...subEntryList);
+			continue;
+		}
+
+		if (!entry.isFile()) {
+			continue;
+		}
+
+		allFilePaths.push(entryPath);
 	}
 
-	return scanFileList(allFilePaths, argument1, options);
+	return allFilePaths;
+}
+
+export function realOptions(options?: ScanFolderOptions): RealScanFolderOptions {
+	options ??= {};
+	const optionsReal: RealScanFolderOptions = {
+		...options,
+		cwd: options.cwd ?? process.cwd(),
+		filter: options.filter ?? 'included',
+		fsa: (options.fsa ?? FS) as Required<FileSystemAdapter>,
+		maxDepth: options.maxDepth ?? Infinity,
+		posix: options.posix ?? false,
+	};
+	return optionsReal;
 }
 // #endregion

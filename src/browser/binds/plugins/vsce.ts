@@ -1,4 +1,3 @@
-import ignore from 'ignore';
 import {
 	type Plugins, type IsValid, type Methodology,
 	type Read,
@@ -17,25 +16,29 @@ export const matcherExclude: string[] = [
 
 const scanner = new ScannerGitignore('', {exclude: matcherExclude});
 
-export const isValidSource: IsValid = function (o, sourceInfo) {
-	const pat = (sourceInfo.content ?? sourceInfo.readSync(o.fsa, o.cwd)).toString();
-	if (!scanner.isValid(pat)) {
+export const find: IsValid = function (o) {
+	if (o.entry.name !== '.vscodeignore') {
 		return false;
 	}
 
-	scanner.update(pat);
+	const content = o.fsa.readFileSync(o.entryPath).toString();
+	if (!scanner.isValid(content)) {
+		return false;
+	}
+
+	scanner.update(content);
 	return true;
 };
 
-const read: Read = function (o, sourceInfo) {
-	const content = (sourceInfo.content ?? sourceInfo.readSync(o.fsa, o.cwd)).toString();
+const read: Read = function (o) {
+	const content = o.fsa.readFileSync(o.sourceInfo.path).toString();
 	scanner.update(content);
 	return scanner;
 };
 
 export const methodology: Methodology[] = [
 	{
-		pattern: '**/.vscodeignore', isValidSource, read,
+		findSource: find, readSource: read,
 	},
 ];
 

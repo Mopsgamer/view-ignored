@@ -1,4 +1,3 @@
-import ignore from 'ignore';
 import {
 	type Plugins, type IsValid, type Methodology, type Styling, type SourceInfo,
 	type Read,
@@ -19,26 +18,30 @@ const matcherExclude: string[] = [
 
 const scanner = new ScannerGitignore('', {exclude: matcherExclude});
 
-const isValidSource: IsValid = function (o, sourceInfo) {
-	const pat = (sourceInfo.content ?? sourceInfo.readSync(o.fsa, o.cwd)).toString();
-
-	if (!scanner.isValid(pat)) {
+const find: IsValid = function (o) {
+	if (o.entry.name !== '.gitignore') {
 		return false;
 	}
 
-	scanner.update((sourceInfo.content ?? sourceInfo.readSync(o.fsa, o.cwd)).toString());
+	const content = o.fsa.readFileSync(o.entryPath).toString();
+
+	if (!scanner.isValid(content)) {
+		return false;
+	}
+
+	scanner.update(content);
 	return true;
 };
 
-const read: Read = function (o, sourceInfo) {
-	const content = (sourceInfo.content ?? sourceInfo.readSync(o.fsa, o.cwd)).toString();
+const read: Read = function (o) {
+	const content = o.fsa.readFileSync(o.sourceInfo.path).toString();
 	scanner.update(content);
 	return scanner;
 };
 
 const methodology: Methodology[] = [
 	{
-		pattern: '**/.gitignore', read, isValidSource,
+		readSource: read, findSource: find,
 	},
 ];
 
