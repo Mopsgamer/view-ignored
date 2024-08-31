@@ -1,6 +1,7 @@
 import PATH from 'node:path';
 import process from 'node:process';
 import * as FS from 'node:fs';
+import * as FSP from 'node:fs/promises';
 import {createRequire} from 'node:module';
 import {glob, type FSOption} from 'glob';
 import {FileInfo, SourceInfo} from './fs/index.js';
@@ -144,11 +145,11 @@ export type ScanFolderOptions = {
  * @throws {ErrorNoSources} if the source is bad.
  * @todo Optimize source searching.
  */
-export async function scanFileList(filePathList: string[], sources: Methodology[], options?: ScanFolderOptions): Promise<FileInfo[]>;
-export async function scanFileList(filePathList: string[], target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
-export async function scanFileList(filePathList: string[], argument1: Methodology[] | string, options?: ScanFolderOptions): Promise<FileInfo[]> {
+export async function scanPathList(pathList: string[], sources: Methodology[], options?: ScanFolderOptions): Promise<FileInfo[]>;
+export async function scanPathList(filePathList: string[], target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
+export async function scanPathList(filePathList: string[], argument1: Methodology[] | string, options?: ScanFolderOptions): Promise<FileInfo[]> {
 	if (filePathList.length === 0) {
-		throw new ErrorNoSources(argument1);
+		throw new ErrorNoSources();
 	}
 
 	const optionsReal = realOptions(options);
@@ -159,7 +160,7 @@ export async function scanFileList(filePathList: string[], argument1: Methodolog
 			throw new ErrorTargetNotBound(argument1);
 		}
 
-		return scanFileList(filePathList, bind.methodology, Object.assign(optionsReal, bind.scanOptions));
+		return scanPathList(filePathList, bind.methodology, Object.assign(optionsReal, bind.scanOptions));
 	}
 
 	for (const methodology of argument1) {
@@ -202,7 +203,7 @@ export async function scanFileList(filePathList: string[], argument1: Methodolog
 		return fileInfoList;
 	}
 
-	throw new ErrorNoSources(argument1);
+	throw new ErrorNoSources();
 }
 
 /**
@@ -214,12 +215,16 @@ export async function scanFolder(target: string, options?: ScanFolderOptions): P
 export async function scanFolder(argument1: Methodology[] | string, options?: ScanFolderOptions): Promise<FileInfo[]> {
 	const optionsReal = realOptions(options);
 
-	return scanFileList(readDirectorySync(optionsReal), argument1 as string, options);
+	return scanPathList(await readDirectoryDeep(optionsReal), argument1 as string, options);
 }
 
-export function readDirectorySync(options: Pick<RealScanFolderOptions, 'cwd' | 'fsa' | 'posix'>) {
+/**
+ * @returns Path list.
+ */
+export async function readDirectoryDeep(options: Pick<RealScanFolderOptions, 'cwd' | 'fsa' | 'posix'>): Promise<string[]> {
 	const allFilePaths: string[] = [];
-	const entryList = options.fsa.readdirSync(options.cwd, {withFileTypes: true});
+	const promises: Array<Promise<void>> = [];
+	const entryList = await (options.fsa.promises.readdir ?? FSP.readdir)(options.cwd, {withFileTypes: true});
 	const path = options.posix ? PATH.posix : PATH;
 
 	for (const entry of entryList) {
@@ -230,10 +235,19 @@ export function readDirectorySync(options: Pick<RealScanFolderOptions, 'cwd' | '
 		}
 
 		if (entry.isDirectory()) {
-			const subEntryList = readDirectorySync({...options, cwd: entryPathAbsolute}).map(
-				subEntry => path.join(entryPath, subEntry),
-			);
-			allFilePaths.push(...subEntryList);
+			const reader = new Promise<void>((resolve, reject) => {
+				const read = readDirectoryDeep({...options, cwd: entryPathAbsolute});
+				read.then(
+					subEntryList => {
+						subEntryList = subEntryList.map(
+							subEntry => path.join(entryPath, subEntry),
+						);
+						allFilePaths.push(...subEntryList);
+						resolve();
+					},
+				).catch(reject);
+			});
+			promises.push(reader);
 			continue;
 		}
 
@@ -244,9 +258,14 @@ export function readDirectorySync(options: Pick<RealScanFolderOptions, 'cwd' | '
 		allFilePaths.push(entryPath);
 	}
 
+	await Promise.all(promises);
+
 	return allFilePaths;
 }
 
+/**
+ * @returns Usable options object.
+ */
 export function realOptions(options?: ScanFolderOptions): RealScanFolderOptions {
 	options ??= {};
 	const optionsReal: RealScanFolderOptions = {

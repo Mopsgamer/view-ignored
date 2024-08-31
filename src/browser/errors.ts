@@ -3,13 +3,13 @@ import {type Methodology} from '../lib.js';
 export class SomeError extends Error {}
 
 export class ErrorNoSources extends SomeError {
-	constructor(sources?: (readonly Methodology[]) | string) {
-		super('No available sources.');
+	constructor(targetId?: string) {
+		super(`No available sources${typeof targetId === 'string' ? `: ${targetId}` : ''}.`);
 	}
 }
 
 export class ErrorTargetNotBound extends SomeError {
-	constructor(targetId: unknown) {
-		super(`The target has no bound: '${String(targetId)}'.`);
+	constructor(targetId: string) {
+		super(`The target has no bound: '${targetId}'.`);
 	}
 }

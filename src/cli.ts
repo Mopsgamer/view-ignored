@@ -17,7 +17,7 @@ import {
 } from './browser/styling.js';
 import {sortNameList, type SortName} from './browser/sorting.js';
 import {
-	ErrorNoSources, type FileInfo, type FilterName, filterNameList, package_, readDirectorySync, realOptions, scanFileList, scanFolder, Sorting,
+	ErrorNoSources, type FileInfo, type FilterName, filterNameList, package_, readDirectoryDeep, realOptions, scanPathList, scanFolder, Sorting,
 } from './lib.js';
 import {
 	boxError, decorNameList, styleNameList, type BoxOptions,
@@ -254,12 +254,15 @@ export async function actionScan(): Promise<void> {
 	const colorLevel = getColorLevel(program.opts());
 	const chalk = getChalk(colorLevel);
 	const spinner = ora({text: cwd, color: 'white'});
+	if (!flagsGlobal.parsable) {
+		spinner.start();
+	}
 
-	const allFilePaths = readDirectorySync(realOptions({posix: flagsGlobal.posix}));
+	const allFilePaths = await readDirectoryDeep(realOptions({posix: flagsGlobal.posix}));
 
 	let fileInfoList: FileInfo[];
 	try {
-		fileInfoList = await scanFileList(allFilePaths, flagsGlobal.target, {filter: flagsGlobal.filter, maxDepth: flagsGlobal.depth, posix: flagsGlobal.posix});
+		fileInfoList = await scanPathList(allFilePaths, flagsGlobal.target, {filter: flagsGlobal.filter, maxDepth: flagsGlobal.depth, posix: flagsGlobal.posix});
 	} catch (error) {
 		spinner.stop();
 		spinner.clear();
@@ -275,8 +278,6 @@ export async function actionScan(): Promise<void> {
 		).join(','));
 		return;
 	}
-
-	spinner.start();
 
 	spinner.suffixText = 'Generating...';
 
