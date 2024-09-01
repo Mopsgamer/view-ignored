@@ -52,7 +52,7 @@ export function importPlugin(exportData: PluginExport) {
  */
 export async function loadPlugin(moduleName: string): Promise<PluginLoaded> {
 	try {
-		return await new Promise<PluginLoaded>(resolve => {
+		const loader = async (): Promise<PluginLoaded> => {
 			try {
 				const exports = load(moduleName);
 				const result: PluginLoaded = {moduleName, isLoaded: true, exports};
@@ -60,7 +60,7 @@ export async function loadPlugin(moduleName: string): Promise<PluginLoaded> {
 					importPlugin(exports);
 				}
 
-				resolve(result);
+				return result;
 			} catch (error: unknown) {
 				const r = error as Record<string, unknown>;
 				let reason: unknown = r;
@@ -69,9 +69,11 @@ export async function loadPlugin(moduleName: string): Promise<PluginLoaded> {
 				}
 
 				const fail: PluginLoaded = {moduleName, isLoaded: false, exports: reason};
-				resolve(fail);
+				return fail;
 			}
-		});
+		};
+
+		return await loader();
 	} catch (error) {
 		const reason: unknown = error;
 		const fail: PluginLoaded = {moduleName, isLoaded: false, exports: reason};

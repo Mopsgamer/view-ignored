@@ -1,4 +1,6 @@
 import path from 'node:path';
+import {stat} from 'node:fs/promises';
+import pLimit from 'p-limit';
 
 /**
  * Contains all file sort names.
@@ -153,4 +155,20 @@ export function type(a: string, b: string): number {
  */
 export function mixed(a: string, b: string): number {
 	return a.localeCompare(b, undefined, {ignorePunctuation: false});
+}
+
+export async function makeMtimeCache(filePathList: string[]): Promise<Map<string, number>> {
+	const cache = new Map<string, number>();
+	const limit = pLimit(800);
+	const promises: Array<Promise<void>> = [];
+	for (const filePath of filePathList) {
+		promises.push(limit(async () => {
+			const fileStat = await stat(filePath);
+			cache.set(filePath, fileStat.mtime.getTime());
+		}));
+	}
+
+	await Promise.all(promises);
+
+	return cache;
 }

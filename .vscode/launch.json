@@ -36,7 +36,23 @@
 		{
 			"type": "node",
 			"request": "launch",
-			"name": "viewig scan --target npm",
+			"name": "viewig scan --sort=modified",
+			"skipFiles": [
+				"<node_internals>/**"
+			],
+			"args": [
+				"scan",
+				"--sort=modified",
+			],
+			"console": "integratedTerminal",
+			"program": "${workspaceFolder}/bin/viewig",
+			"cwd": "${workspaceFolder}",
+			"sourceMaps": true,
+		},
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "viewig scan --target=npm",
 			"skipFiles": [
 				"<node_internals>/**"
 			],

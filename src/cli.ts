@@ -7,7 +7,6 @@ import {
 	Argument, InvalidArgumentError, Option, Command,
 } from 'commander';
 import ora from 'ora';
-import {glob} from 'glob';
 import * as Config from './config.js';
 import {
 	builtIns, loadPluginsQueue, targetGet, targetList,
@@ -15,9 +14,9 @@ import {
 import {
 	decorCondition, type DecorName, formatFiles, type StyleName,
 } from './browser/styling.js';
-import {sortNameList, type SortName} from './browser/sorting.js';
+import {makeMtimeCache, sortNameList, type SortName} from './browser/sorting.js';
 import {
-	ErrorNoSources, type FileInfo, type FilterName, filterNameList, package_, readDirectoryDeep, realOptions, scanPathList, scanFolder, Sorting,
+	type FileInfo, type FilterName, filterNameList, package_, readDirectoryDeep, realOptions, scanPathList, Sorting,
 } from './lib.js';
 import {
 	boxError, decorNameList, styleNameList, type BoxOptions,
@@ -279,23 +278,14 @@ export async function actionScan(): Promise<void> {
 		return;
 	}
 
-	spinner.suffixText = 'Generating...';
-
 	const sorter = Sorting[flagsGlobal.sort];
-	const cache = new Map<string, number>();
+	let cache: Map<string, number> | undefined;
 	if (flagsGlobal.sort === 'modified') {
-		for (const filePath of fileInfoList.map(String)) {
-			fs.stat(filePath, (error, fileStat) => {
-				if (error) {
-					throw error;
-				}
-
-				cache.set(filePath, fileStat.mtime.getTime());
-			});
-		}
+		cache = await makeMtimeCache(fileInfoList.map(String));
 	}
 
-	const lookedSorted = fileInfoList.sort((a, b) => sorter(a.toString(), b.toString(), cache));
+	const time = Date.now() - start;
+	const lookedSorted = fileInfoList.sort((a, b) => sorter(a.toString(), b.toString(), cache!));
 
 	const files = formatFiles(lookedSorted, {
 		chalk,
@@ -310,7 +300,6 @@ export async function actionScan(): Promise<void> {
 	const name = typeof bind.name === 'string' ? bind.name : decorCondition(flagsGlobal.decor, bind.name);
 	const infoSymbol = decorCondition(flagsGlobal.decor, {ifEmoji: 'ℹ️', ifNerd: '\uE66A', postfix: ' '});
 
-	const time = Date.now() - start;
 	let message = '';
 	message += files;
 	message += '\n';

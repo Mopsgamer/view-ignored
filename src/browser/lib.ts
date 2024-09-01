@@ -4,7 +4,7 @@ import * as FS from 'node:fs';
 import * as FSP from 'node:fs/promises';
 import {createRequire} from 'node:module';
 import {glob, type FSOption} from 'glob';
-import {FileInfo, SourceInfo} from './fs/index.js';
+import {FileInfo, readDirectoryDeep, SourceInfo} from './fs/index.js';
 import {targetGet} from './binds/index.js';
 import {ErrorNoSources, ErrorTargetNotBound} from './errors.js';
 
@@ -216,51 +216,6 @@ export async function scanFolder(argument1: Methodology[] | string, options?: Sc
 	const optionsReal = realOptions(options);
 
 	return scanPathList(await readDirectoryDeep(optionsReal), argument1 as string, options);
-}
-
-/**
- * @returns Path list.
- */
-export async function readDirectoryDeep(options: Pick<RealScanFolderOptions, 'cwd' | 'fsa' | 'posix'>): Promise<string[]> {
-	const allFilePaths: string[] = [];
-	const promises: Array<Promise<void>> = [];
-	const entryList = await (options.fsa.promises.readdir ?? FSP.readdir)(options.cwd, {withFileTypes: true});
-	const path = options.posix ? PATH.posix : PATH;
-
-	for (const entry of entryList) {
-		const entryPathAbsolute = path.join(entry.parentPath, entry.name);
-		const entryPath = path.relative(options.cwd, entryPathAbsolute);
-		if (entry.isSymbolicLink()) {
-			continue;
-		}
-
-		if (entry.isDirectory()) {
-			const reader = new Promise<void>((resolve, reject) => {
-				const read = readDirectoryDeep({...options, cwd: entryPathAbsolute});
-				read.then(
-					subEntryList => {
-						subEntryList = subEntryList.map(
-							subEntry => path.join(entryPath, subEntry),
-						);
-						allFilePaths.push(...subEntryList);
-						resolve();
-					},
-				).catch(reject);
-			});
-			promises.push(reader);
-			continue;
-		}
-
-		if (!entry.isFile()) {
-			continue;
-		}
-
-		allFilePaths.push(entryPath);
-	}
-
-	await Promise.all(promises);
-
-	return allFilePaths;
 }
 
 /**
