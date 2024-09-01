@@ -82,11 +82,8 @@ const fileInfoSorted = fileInfoList.map(String).sort(sorter);
 ```js
 const sorter = vign.Sorting.modified;
 const fileInfoList = await vign.scanProject("npm");
-
-const cache = new Map<string, number>(fileInfoList.map(String).map(
-    filePath => [filePath, fs.statSync(filePath).mtime.getTime()])
-);
-const lookedSorted = fileInfoList.sort((a, b) => sorter(a.toString(), b.toString(), cache));
+const cache = await vign.Sorting.makeMtimeCache(fileInfoList.map(String));
+const fileInfoSorted = fileInfoList.sort((a, b) => sorter(a.toString(), b.toString(), cache));
 ```
 
 ### Targets
