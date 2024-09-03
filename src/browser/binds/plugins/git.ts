@@ -34,7 +34,7 @@ const find: IsValid = function (o) {
 };
 
 const read: Read = function (o) {
-	const content = o.fsa.readFileSync(o.sourceInfo.path).toString();
+	const content = o.fsa.readFileSync(o.sourceInfoPath).toString();
 	scanner.update(content);
 	return scanner;
 };

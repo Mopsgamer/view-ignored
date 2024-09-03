@@ -18,17 +18,12 @@ export class SourceInfo extends AbsoluteFile {
 	 * Get instance for each source file recursively.
 	 */
 	static async createCache(methodology: Methodology, options: RealScanFolderOptions): Promise<Map<string, SourceInfo>> {
-		const {cwd = process.cwd(), posix = false} = options;
 		const map = new Map<string, SourceInfo>();
 		async function readDirectoryDeep(cwd: string, rootSource?: SourceInfo): Promise<void> {
 			const promises: Array<Promise<void>> = [];
 			const entryList = await (options.fsa.promises.readdir ?? FSP.readdir)(cwd, {withFileTypes: true});
 			const path = options.posix ? PATH.posix : PATH;
-			const entryListPaths = entryList.map(entry => {
-				const entryPathAbsolute = path.join(entry.parentPath, entry.name);
-				const entryPath = path.relative(options.cwd, entryPathAbsolute);
-				return entryPath;
-			});
+			const entryPathAbsoluteList = entryList.map(entry => path.join(entry.parentPath, entry.name));
 
 			if (rootSource === undefined) {
 				const goodSourceIndex = entryList.findIndex((entry, entryIndex) => {
@@ -36,10 +31,11 @@ export class SourceInfo extends AbsoluteFile {
 						return false;
 					}
 
+					const entryPathAbsolute = entryPathAbsoluteList[entryIndex];
 					const isValidOptions: IsValidOptions = {
 						...options,
 						entry,
-						entryPath: entryListPaths[entryIndex],
+						entryPath: entryPathAbsolute,
 					};
 
 					const isValid = methodology.findSource(isValidOptions);
@@ -47,12 +43,14 @@ export class SourceInfo extends AbsoluteFile {
 				});
 
 				if (goodSourceIndex > -1) {
-					rootSource = new SourceInfo(entryListPaths[goodSourceIndex], methodology, options);
+					const goodSourcePathAbsolute = entryPathAbsoluteList[goodSourceIndex];
+					const goodSourcePath = path.relative(cwd, goodSourcePathAbsolute);
+					rootSource = new SourceInfo(goodSourcePath, methodology, options);
 				}
 			}
 
-			for (const entry of entryList) {
-				const entryPathAbsolute = path.join(entry.parentPath, entry.name);
+			for (const [entryIndex, entry] of entryList.entries()) {
+				const entryPathAbsolute = entryPathAbsoluteList[entryIndex];
 				const entryPath = path.relative(options.cwd, entryPathAbsolute);
 				if (entry.isSymbolicLink()) {
 					continue;
@@ -82,7 +80,7 @@ export class SourceInfo extends AbsoluteFile {
 			));
 		}
 
-		await readDirectoryDeep(cwd);
+		await readDirectoryDeep(options.cwd);
 
 		return map;
 	}

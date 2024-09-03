@@ -43,13 +43,19 @@ export type FileSystemAdapter = {
 
 // #region scanning
 
-export type IsValidOptions = RealScanFolderOptions & {entry: FS.Dirent; entryPath: string};
+export type IsValidOptions = RealScanFolderOptions & {
+	entry: FS.Dirent;
+	entryPath: string;
+};
 /**
  * @returns `true`, if the given source is valid.
  */
 export type IsValid = (options: IsValidOptions) => boolean;
 
-export type ReadOptions = RealScanFolderOptions & {sourceInfo: SourceInfo};
+export type ReadOptions = RealScanFolderOptions & {
+	sourceInfo: SourceInfo;
+	sourceInfoPath: string;
+};
 /**
  * @returns New scanner. The scanner should tell if the file should be ignored.
  */
@@ -152,16 +158,17 @@ export async function scanPathList(filePathList: string[], argument1: Methodolog
 		throw new ErrorNoSources();
 	}
 
-	const optionsReal = realOptions(options);
-
 	if (typeof argument1 === 'string') {
 		const bind = targetGet(argument1);
 		if (bind === undefined) {
 			throw new ErrorTargetNotBound(argument1);
 		}
 
-		return scanPathList(filePathList, bind.methodology, Object.assign(optionsReal, bind.scanOptions));
+		return scanPathList(filePathList, bind.methodology, Object.assign(options ?? {}, bind.scanOptions));
 	}
+
+	const optionsReal = realOptions(options);
+	const path = optionsReal.posix ? PATH.posix : PATH;
 
 	for (const methodology of argument1) {
 		const fileInfoList: FileInfo[] = [];
@@ -184,9 +191,11 @@ export async function scanPathList(filePathList: string[], argument1: Methodolog
 
 			atLeastOneSourceFound ??= sourceInfo;
 
+			const sourceInfoPath = path.join(optionsReal.cwd, sourceInfo.path);
 			const readOptions: ReadOptions = {
 				...optionsReal,
 				sourceInfo,
+				sourceInfoPath,
 			};
 			const scanner = methodology.readSource(readOptions);
 			const fileInfo = new FileInfo(filePath, sourceInfo, scanner.ignores(filePath));
@@ -224,7 +233,6 @@ export async function scanFolder(argument1: Methodology[] | string, options?: Sc
 export function realOptions(options?: ScanFolderOptions): RealScanFolderOptions {
 	options ??= {};
 	const optionsReal: RealScanFolderOptions = {
-		...options,
 		cwd: options.cwd ?? process.cwd(),
 		filter: options.filter ?? 'included',
 		fsa: (options.fsa ?? FS) as Required<FileSystemAdapter>,

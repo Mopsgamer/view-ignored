@@ -263,7 +263,7 @@ async function testTargetSubtest(data: TestTargetSubtestData) {
 		.map(fileInfo => {
 			const testLineSource = testLineContent + myContentLines.slice(testLineContent)
 				.findIndex(line => line.includes(fileInfo.source.path)) + 1;
-			return chalk.red(fileInfo.toString({source: true, chalk})) + ' ' + lineColumnInfo(testFilePath, testLineSource, myContentLines[testLineSource].length);
+			return `${chalk.red(fileInfo.toString({source: true, chalk}))} (${lineColumnInfo(testFilePath, testLineSource, myContentLines[testLineSource].length)})`;
 		})
 		.sort().join('\n        ');
 	info += `      Results: \n        ${actual}\n`;

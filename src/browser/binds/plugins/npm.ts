@@ -93,14 +93,14 @@ export const findPakcageJson: IsValid = function (o) {
 };
 
 const read: Read = function (o) {
-	const content = o.fsa.readFileSync(o.sourceInfo.path).toString();
+	const content = o.fsa.readFileSync(o.sourceInfoPath).toString();
 	scanner.negated = false;
 	scanner.update(content);
 	return scanner;
 };
 
 const readJson: Read = function (o) {
-	const content = o.fsa.readFileSync(o.sourceInfo.path).toString();
+	const content = o.fsa.readFileSync(o.sourceInfoPath).toString();
 	scanner.negated = true;
 	scanner.update((JSON.parse(content) as {files: string[]}).files);
 	return scanner;

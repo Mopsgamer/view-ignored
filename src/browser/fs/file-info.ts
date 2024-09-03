@@ -87,7 +87,7 @@ export class FileInfo extends AbsoluteFile {
 		if (chalk) {
 			prefix = chalk.dim(prefix);
 			postfix = chalk.dim(postfix);
-			const clr = this.isIgnored ? chalk.red : chalk.gray;
+			const clr = this.isIgnored ? chalk.gray : chalk.green;
 			if (entire) {
 				return fIcon + clr(prefix + this.path + postfix);
 			}

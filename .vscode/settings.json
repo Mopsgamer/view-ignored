@@ -9,5 +9,6 @@
     "[javascript]": {
         "editor.defaultFormatter": "samverschueren.linter-xo"
     },
-    "files.eol": "\n"
+    "files.eol": "\n",
+    "mochaExplorer.files": "./out/test/**/*.test.js"
 }

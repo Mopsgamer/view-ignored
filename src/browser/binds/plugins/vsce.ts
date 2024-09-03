@@ -1,7 +1,7 @@
+import * as PATH from 'node:path';
 import {
 	type Plugins, type IsValid, type Methodology,
 	type Read,
-	type SourceInfo,
 } from '../../index.js';
 import {ScannerGitignore} from '../scanner.js';
 
@@ -21,6 +21,7 @@ export const find: IsValid = function (o) {
 		return false;
 	}
 
+	const path = o.posix ? PATH : PATH.posix;
 	const content = o.fsa.readFileSync(o.entryPath).toString();
 	if (!scanner.isValid(content)) {
 		return false;
@@ -31,7 +32,7 @@ export const find: IsValid = function (o) {
 };
 
 const read: Read = function (o) {
-	const content = o.fsa.readFileSync(o.sourceInfo.path).toString();
+	const content = o.fsa.readFileSync(o.sourceInfoPath).toString();
 	scanner.update(content);
 	return scanner;
 };
