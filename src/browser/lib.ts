@@ -1,9 +1,7 @@
 import PATH from 'node:path';
 import process from 'node:process';
 import * as FS from 'node:fs';
-import * as FSP from 'node:fs/promises';
 import {createRequire} from 'node:module';
-import {glob, type FSOption} from 'glob';
 import {
 	type Dirent, FileInfo, readDirectoryDeep, SourceInfo,
 } from './fs/index.js';
@@ -35,13 +33,15 @@ export function isFilterName(value: unknown): value is FilterName {
 }
 
 /**
- * Uses `readFileSync` and `readFile`.
- * @extends glob.FileSystemAdapter
+ * Uses `node:fs` and `node:fs/promises` be default.
  */
 export type FileSystemAdapter = {
 	readFileSync?: typeof FS.readFileSync;
 	readdirSync?: typeof FS.readdirSync;
-} & FSOption;
+	promises?: {
+		readdir(path: string, options: {withFileTypes: true}): FS.Dirent[];
+	};
+};
 
 // #region scanning
 
