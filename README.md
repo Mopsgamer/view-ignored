@@ -73,7 +73,7 @@ const fileInfoList = await vign.scanFile("./path/to/file", "git", { cwd, ... });
 
 // use results
 if (fileInfo.ignored) {
-    superCodeEditor.explorer.colorFile(fileInfo.path, "gray");
+    superCodeEditor.explorer.colorFile(fileInfo.relativePath, "gray");
 }
 ```
 

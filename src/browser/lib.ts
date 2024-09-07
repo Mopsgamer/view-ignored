@@ -226,7 +226,14 @@ export async function scanFolder(sources: Methodology[], options?: ScanFolderOpt
 export async function scanFolder(target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
 export async function scanFolder(argument1: Methodology[] | string, options?: ScanFolderOptions): Promise<FileInfo[]> {
 	const optionsReal = realOptions(options);
-	const direntList = await readDirectoryDeep('.', optionsReal);
+	const direntTree = await readDirectoryDeep('.', optionsReal);
+	const direntList = direntTree.flatMap(dirent => {
+		if (!('children' in dirent)) {
+			return dirent;
+		}
+
+		return dirent.children;
+	});
 
 	return scanPathList(direntList.map(dirent => dirent.relativePath), argument1 as string, options);
 }
