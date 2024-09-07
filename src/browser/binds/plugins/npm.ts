@@ -1,11 +1,15 @@
 import {
 	type Plugins, type IsValid, type Methodology,
 	type Read,
+	type Styling,
 } from '../../index.js';
 import {ScannerMinimatch} from '../scanner.js';
 
 export const id = 'npm';
-export const name = 'NPM';
+export const name: Styling.DecorConditionOptions = {
+	ifNormal: 'NPM',
+	ifNerd: '\uE616 NPM',
+};
 export const testCommand = 'npm pack --dry-run';
 
 export const matcherExclude = [

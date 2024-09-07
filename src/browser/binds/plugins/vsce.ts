@@ -2,11 +2,15 @@ import * as PATH from 'node:path';
 import {
 	type Plugins, type IsValid, type Methodology,
 	type Read,
+	type Styling,
 } from '../../index.js';
 import {ScannerGitignore} from '../scanner.js';
 
 export const id = 'vsce';
-export const name = 'VSC Extension';
+export const name: Styling.DecorConditionOptions = {
+	ifNormal: 'VSCE',
+	ifNerd: '\uDB82\uDE1E VSCE',
+};
 export const testCommand = 'vsce ls';
 
 export const matcherExclude: string[] = [

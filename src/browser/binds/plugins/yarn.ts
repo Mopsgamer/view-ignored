@@ -1,11 +1,15 @@
 import {
 	type Plugins, type Methodology, type IsValid,
 	type Read,
+	type Styling,
 } from '../../index.js';
 import {ScannerMinimatch} from '../scanner.js';
 
 export const id = 'yarn';
-export const name = 'Yarn';
+export const name: Styling.DecorConditionOptions = {
+	ifNormal: 'Yarn',
+	ifNerd: '\uE6A7 Yarn',
+};
 
 /**
  * [!WARNING] All patterns copied from npm plugin, so they should be verified with yarn docs.
