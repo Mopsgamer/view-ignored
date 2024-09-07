@@ -15,6 +15,7 @@ import {
 } from './browser/styling.js';
 import {makeMtimeCache, sortNameList, type SortName} from './browser/sorting.js';
 import {
+	ErrorNoSources,
 	type FileInfo, type FilterName, filterNameList, package_, readDirectoryDeep, realOptions, scanPathList, Sorting,
 } from './lib.js';
 import {
@@ -259,6 +260,8 @@ export async function actionScan(): Promise<void> {
 
 	const fileList = await readDirectoryDeep('.', realOptions({posix: flagsGlobal.posix}));
 	const filePathList = fileList.map(dirent => dirent.relativePath);
+	const bind = targetGet(flagsGlobal.target)!;
+	const name = typeof bind.name === 'string' ? bind.name : decorCondition(flagsGlobal.decor, bind.name);
 
 	let fileInfoList: FileInfo[];
 	try {
@@ -266,7 +269,12 @@ export async function actionScan(): Promise<void> {
 	} catch (error) {
 		spinner.stop();
 		spinner.clear();
-		logError(format(error));
+		if (error instanceof ErrorNoSources) {
+			logError('There was no configuration file in the folders and subfolders that would correctly describe the ignoring.', {title: `view-ignored - No sources for the target ${name}.`});
+		} else {
+			logError(format(error), {title: 'view-ignored - Scanning unexpected error.'});
+		}
+
 		process.exit(1);
 	}
 
@@ -297,8 +305,6 @@ export async function actionScan(): Promise<void> {
 	});
 	const checkSymbol = decorCondition(flagsGlobal.decor, {ifEmoji: '✅', ifNerd: '\uF00C', postfix: ' '});
 	const fastSymbol = decorCondition(flagsGlobal.decor, {ifEmoji: '⚡', ifNerd: '\uDB85\uDC0C'});
-	const bind = targetGet(flagsGlobal.target)!;
-	const name = typeof bind.name === 'string' ? bind.name : decorCondition(flagsGlobal.decor, bind.name);
 	const infoSymbol = decorCondition(flagsGlobal.decor, {ifEmoji: 'ℹ️', ifNerd: '\uE66A', postfix: ' '});
 
 	let message = '';
