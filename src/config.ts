@@ -208,7 +208,7 @@ class ConfigManager<ConfigType extends Record<string, unknown> = Config> {
 		this.configType.set(key, type);
 		const errorMessage = type(defaultValue);
 		if (errorMessage !== undefined) {
-			throw new TypeError(`Invalid default value preset for '${key}'. ${errorMessage}`);
+			throw new TypeError(`Invalid default value preset for configuration key '${key}' - ${errorMessage}`);
 		}
 
 		this.dataDefault[key] = defaultValue;

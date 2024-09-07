@@ -4,7 +4,9 @@ import * as FS from 'node:fs';
 import * as FSP from 'node:fs/promises';
 import {createRequire} from 'node:module';
 import {glob, type FSOption} from 'glob';
-import {FileInfo, readDirectoryDeep, SourceInfo} from './fs/index.js';
+import {
+	type Dirent, FileInfo, readDirectoryDeep, SourceInfo,
+} from './fs/index.js';
 import {targetGet} from './binds/index.js';
 import {ErrorNoSources, ErrorTargetNotBound} from './errors.js';
 
@@ -43,23 +45,18 @@ export type FileSystemAdapter = {
 
 // #region scanning
 
-export type IsValidOptions = RealScanFolderOptions & {
-	entry: FS.Dirent;
-	entryPath: string;
-};
 /**
  * @returns `true`, if the given source is valid.
  */
-export type IsValid = (options: IsValidOptions) => boolean;
+export type IsValid = (options: RealScanFolderOptions, source: Dirent) => boolean;
 
-export type ReadOptions = RealScanFolderOptions & {
+export type ReadSource = Dirent & {
 	sourceInfo: SourceInfo;
-	sourceInfoPath: string;
 };
 /**
  * @returns New scanner. The scanner should tell if the file should be ignored.
  */
-export type Read = (options: ReadOptions) => Scanner;
+export type Read = (options: RealScanFolderOptions, source: ReadSource) => Scanner;
 
 /**
  * The custom scanner.
@@ -111,6 +108,12 @@ export type RealScanFolderOptions = Required<ScanFolderOptions> & {fsa: Required
 export type ScanFolderOptions = {
 
 	/**
+	 * The max concurency for file-system operations.
+	 * @default 800
+	 */
+	concurrency?: number;
+
+	/**
 	 * Custom implementation of methods for working with the file system.
 	 * @default import * as FS from "fs"
 	 */
@@ -158,13 +161,14 @@ export async function scanPathList(filePathList: string[], argument1: Methodolog
 		throw new ErrorNoSources();
 	}
 
+	options ??= {};
 	if (typeof argument1 === 'string') {
 		const bind = targetGet(argument1);
 		if (bind === undefined) {
 			throw new ErrorTargetNotBound(argument1);
 		}
 
-		return scanPathList(filePathList, bind.methodology, Object.assign(options ?? {}, bind.scanOptions));
+		return scanPathList(filePathList, bind.methodology, Object.assign(options, bind.scanOptions));
 	}
 
 	const optionsReal = realOptions(options);
@@ -175,12 +179,12 @@ export async function scanPathList(filePathList: string[], argument1: Methodolog
 		let noSource = false;
 		let atLeastOneSourceFound: undefined | SourceInfo;
 		// eslint-disable-next-line no-await-in-loop
-		const cacheDirectorySource = await SourceInfo.createCache(methodology, optionsReal);
+		const cache = await SourceInfo.createCache(methodology, optionsReal);
 
 		for (const filePath of filePathList) {
-			const sourceInfo = cacheDirectorySource.get(filePath);
+			const source = cache.get(filePath);
 
-			if (sourceInfo === undefined) {
+			if (source === undefined) {
 				if (atLeastOneSourceFound !== undefined) {
 					throw new Error(`Source not found, but expected. File path: ${filePath}. CWD: ${optionsReal.cwd}`);
 				}
@@ -189,15 +193,14 @@ export async function scanPathList(filePathList: string[], argument1: Methodolog
 				break;
 			}
 
+			const {sourceInfo} = source;
 			atLeastOneSourceFound ??= sourceInfo;
 
-			const sourceInfoPath = path.join(optionsReal.cwd, sourceInfo.path);
-			const readOptions: ReadOptions = {
-				...optionsReal,
+			const sourceToRead: ReadSource = {
+				...source,
 				sourceInfo,
-				sourceInfoPath,
 			};
-			const scanner = methodology.readSource(readOptions);
+			const scanner = methodology.readSource(optionsReal, sourceToRead);
 			const fileInfo = new FileInfo(filePath, sourceInfo, scanner.ignores(filePath));
 
 			if (fileInfo.isIncludedBy(optionsReal.filter)) {
@@ -223,8 +226,9 @@ export async function scanFolder(sources: Methodology[], options?: ScanFolderOpt
 export async function scanFolder(target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
 export async function scanFolder(argument1: Methodology[] | string, options?: ScanFolderOptions): Promise<FileInfo[]> {
 	const optionsReal = realOptions(options);
+	const direntList = await readDirectoryDeep('.', optionsReal);
 
-	return scanPathList(await readDirectoryDeep(optionsReal), argument1 as string, options);
+	return scanPathList(direntList.map(dirent => dirent.relativePath), argument1 as string, options);
 }
 
 /**
@@ -233,6 +237,7 @@ export async function scanFolder(argument1: Methodology[] | string, options?: Sc
 export function realOptions(options?: ScanFolderOptions): RealScanFolderOptions {
 	options ??= {};
 	const optionsReal: RealScanFolderOptions = {
+		concurrency: options.concurrency ?? 800,
 		cwd: options.cwd ?? process.cwd(),
 		filter: options.filter ?? 'included',
 		fsa: (options.fsa ?? FS) as Required<FileSystemAdapter>,

@@ -1,5 +1,4 @@
 /* eslint-disable unicorn/no-process-exit */
-import fs from 'node:fs';
 import {format} from 'node:util';
 import * as process from 'node:process';
 import {Chalk, type ChalkInstance, type ColorSupportLevel} from 'chalk';
@@ -9,7 +8,7 @@ import {
 import ora from 'ora';
 import * as Config from './config.js';
 import {
-	builtIns, loadPluginsQueue, targetGet, targetList,
+	targetGet, targetList, loadPlugins, loadBuiltIns,
 } from './browser/binds/index.js';
 import {
 	decorCondition, type DecorName, formatFiles, type StyleName,
@@ -38,22 +37,23 @@ export async function programInit() {
 
 		configManager.key<'plugins'>('plugins', configDefault.plugins, configValueArray(configValueString));
 		configManager.load();
-		try {
-			await builtIns;
-			const configPlugins = configManager.get('plugins');
-			const loaded = await loadPluginsQueue(flags.plugins);
-			for (const load of loaded) {
-				if (!load.isLoaded) {
-					logError(format(load.exports), {
-						title: `Unable to load plugin '${load.moduleName}' ` + (configPlugins.includes(load.moduleName)
-							? '(imported by ' + configManager.path + ')'
-							: '(imported by --plugins option)'),
-					});
-				}
+		const builtInPlugins = await loadBuiltIns();
+		const configPlugins = configManager.get('plugins');
+		const loadResultList = (flags.plugins ? await loadPlugins(flags.plugins) : []).concat(builtInPlugins);
+		for (const loadResult of loadResultList) {
+			if (loadResult.isLoaded) {
+				continue;
 			}
-		} catch (error) {
-			logError(format(error));
-			process.exit(1);
+
+			logError(format(loadResult.exports), {
+				title: `view-ignored - Plugin loading failed: '${loadResult.resource}' ${
+					builtInPlugins.includes(loadResult)
+						? '(imported from built-ins)'
+						: (configPlugins.includes(loadResult.resource)
+							? '(imported by ' + configManager.path + ')'
+							: '(imported by --plugins option)')
+				}.`,
+			});
 		}
 
 		configManager.key<'parsable'>('parsable', configDefault.parsable, configValueBoolean);
@@ -70,11 +70,11 @@ export async function programInit() {
 			const errorMessageList = configManager.load();
 			if (errorMessageList.length > 0) {
 				logError(errorMessageList.join('\n'));
-				return;
+				process.exit(1);
 			}
 		} catch (error) {
-			logError(format(error));
-			return;
+			logError(format(error), {title: 'view-ignored - Configuration loading failed.'});
+			process.exit(1);
 		}
 
 		program.version('v' + package_.version, '-v');
@@ -93,7 +93,7 @@ export async function programInit() {
 
 		program.parse();
 	} catch (error) {
-		logError(format(error));
+		logError(format(error), {title: 'view-ignored - Fatal error.'});
 		process.exit(1);
 	}
 }
@@ -257,11 +257,12 @@ export async function actionScan(): Promise<void> {
 		spinner.start();
 	}
 
-	const allFilePaths = await readDirectoryDeep(realOptions({posix: flagsGlobal.posix}));
+	const fileList = await readDirectoryDeep('.', realOptions({posix: flagsGlobal.posix}));
+	const filePathList = fileList.map(dirent => dirent.relativePath);
 
 	let fileInfoList: FileInfo[];
 	try {
-		fileInfoList = await scanPathList(allFilePaths, flagsGlobal.target, {filter: flagsGlobal.filter, maxDepth: flagsGlobal.depth, posix: flagsGlobal.posix});
+		fileInfoList = await scanPathList(filePathList, flagsGlobal.target, {filter: flagsGlobal.filter, maxDepth: flagsGlobal.depth, posix: flagsGlobal.posix});
 	} catch (error) {
 		spinner.stop();
 		spinner.clear();
@@ -271,8 +272,8 @@ export async function actionScan(): Promise<void> {
 
 	if (flagsGlobal.parsable) {
 		console.log(fileInfoList.map(fileInfo =>
-			fileInfo.path + (
-				flagsGlobal.showSources ? '<' + fileInfo.source.path : ''
+			fileInfo.relativePath + (
+				flagsGlobal.showSources ? '<' + fileInfo.source.relativePath : ''
 			),
 		).join(','));
 		return;
@@ -285,7 +286,7 @@ export async function actionScan(): Promise<void> {
 	}
 
 	const time = Date.now() - start;
-	const lookedSorted = fileInfoList.sort((a, b) => sorter(a.toString(), b.toString(), cache!));
+	const lookedSorted = fileInfoList.sort((a, b) => sorter(String(a), String(b), cache!));
 
 	const files = formatFiles(lookedSorted, {
 		chalk,
@@ -307,7 +308,7 @@ export async function actionScan(): Promise<void> {
 	message += '\n';
 	message += `${fileInfoList.length} files listed for ${name} (${flagsGlobal.filter}).`;
 	message += '\n';
-	message += `Processed ${allFilePaths.length} files.`;
+	message += `Processed ${fileList.length} files.`;
 	message += '\n';
 	if (bind.testCommand) {
 		message += '\n';

@@ -16,13 +16,13 @@ export const matcherExclude: string[] = [
 
 const scanner = new ScannerGitignore('', {exclude: matcherExclude});
 
-export const find: IsValid = function (o) {
-	if (o.entry.name !== '.vscodeignore') {
+export const find: IsValid = function (o, s) {
+	if (s.entry.name !== '.vscodeignore') {
 		return false;
 	}
 
 	const path = o.posix ? PATH : PATH.posix;
-	const content = o.fsa.readFileSync(o.entryPath).toString();
+	const content = o.fsa.readFileSync(s.absolutePath).toString();
 	if (!scanner.isValid(content)) {
 		return false;
 	}
@@ -31,8 +31,8 @@ export const find: IsValid = function (o) {
 	return true;
 };
 
-const read: Read = function (o) {
-	const content = o.fsa.readFileSync(o.sourceInfoPath).toString();
+const read: Read = function (o, s) {
+	const content = o.fsa.readFileSync(s.absolutePath).toString();
 	scanner.update(content);
 	return scanner;
 };

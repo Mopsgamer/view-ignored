@@ -1,8 +1,6 @@
-import getValue from 'get-value';
 import {
 	type Plugins, type IsValid, type Methodology,
 	type Read,
-	type SourceInfo,
 } from '../../index.js';
 import {ScannerMinimatch} from '../scanner.js';
 
@@ -40,8 +38,8 @@ export const matcherInclude = [
 
 const scanner = new ScannerMinimatch('', {exclude: matcherExclude, include: matcherInclude});
 
-export const isValidSourceMinimatch: IsValid = function (o) {
-	const content = o.fsa.readFileSync(o.entryPath).toString();
+export const isValidSourceMinimatch: IsValid = function (o, s) {
+	const content = o.fsa.readFileSync(s.absolutePath).toString();
 	if (!scanner.isValid(content)) {
 		return false;
 	}
@@ -50,30 +48,30 @@ export const isValidSourceMinimatch: IsValid = function (o) {
 	return true;
 };
 
-export const findGitignore: IsValid = function (o) {
-	if (o.entry.name !== '.gitignore') {
+export const findGitignore: IsValid = function (o, s) {
+	if (s.entry.name !== '.gitignore') {
 		return false;
 	}
 
-	return isValidSourceMinimatch(o);
+	return isValidSourceMinimatch(o, s);
 };
 
-export const findNpmignore: IsValid = function (o) {
-	if (o.entry.name !== '.npmignore') {
+export const findNpmignore: IsValid = function (o, s) {
+	if (s.entry.name !== '.npmignore') {
 		return false;
 	}
 
-	return isValidSourceMinimatch(o);
+	return isValidSourceMinimatch(o, s);
 };
 
-export const findPakcageJson: IsValid = function (o) {
-	if (o.entry.name !== 'package.json') {
+export const findPackageJson: IsValid = function (o, s) {
+	if (s.entry.name !== 'package.json') {
 		return false;
 	}
 
 	let parsed: Record<string, unknown>;
 	try {
-		const content = o.fsa.readFileSync(o.entryPath).toString();
+		const content = o.fsa.readFileSync(s.absolutePath).toString();
 		const json: unknown = JSON.parse(content);
 		if (json?.constructor !== Object) {
 			return false;
@@ -84,7 +82,7 @@ export const findPakcageJson: IsValid = function (o) {
 		return false;
 	}
 
-	const propertyValue: unknown = getValue(parsed, 'files');
+	const propertyValue: unknown = parsed.files;
 	if (!Array.isArray(propertyValue) || !scanner.isValid(propertyValue)) {
 		return false;
 	}
@@ -92,15 +90,15 @@ export const findPakcageJson: IsValid = function (o) {
 	return true;
 };
 
-const read: Read = function (o) {
-	const content = o.fsa.readFileSync(o.sourceInfoPath).toString();
+const read: Read = function (o, s) {
+	const content = o.fsa.readFileSync(s.absolutePath).toString();
 	scanner.negated = false;
 	scanner.update(content);
 	return scanner;
 };
 
-const readJson: Read = function (o) {
-	const content = o.fsa.readFileSync(o.sourceInfoPath).toString();
+const readJson: Read = function (o, s) {
+	const content = o.fsa.readFileSync(s.absolutePath).toString();
 	scanner.negated = true;
 	scanner.update((JSON.parse(content) as {files: string[]}).files);
 	return scanner;
@@ -108,7 +106,7 @@ const readJson: Read = function (o) {
 
 export const methodology: Methodology[] = [
 	{
-		findSource: findPakcageJson, readSource: readJson,
+		findSource: findPackageJson, readSource: readJson,
 	},
 	{
 		findSource: findNpmignore, readSource: read,

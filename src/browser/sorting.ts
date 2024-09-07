@@ -157,18 +157,13 @@ export function mixed(a: string, b: string): number {
 	return a.localeCompare(b, undefined, {ignorePunctuation: false});
 }
 
-export async function makeMtimeCache(filePathList: string[]): Promise<Map<string, number>> {
+export async function makeMtimeCache(filePathList: string[], concurrency = 800): Promise<Map<string, number>> {
 	const cache = new Map<string, number>();
-	const limit = pLimit(800);
-	const promises: Array<Promise<void>> = [];
-	for (const filePath of filePathList) {
-		promises.push(limit(async () => {
-			const fileStat = await stat(filePath);
-			cache.set(filePath, fileStat.mtime.getTime());
-		}));
-	}
-
-	await Promise.all(promises);
+	const limit = pLimit(concurrency);
+	await Promise.all(filePathList.map(filePath => limit(async () => {
+		const fileStat = await stat(filePath);
+		cache.set(filePath, fileStat.mtime.getTime());
+	})));
 
 	return cache;
 }

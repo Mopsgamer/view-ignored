@@ -1,4 +1,5 @@
 import {loadPlugin as load} from 'load-plugin';
+import pLimit from 'p-limit';
 import {isTargetBind, type TargetBind, targetSet} from './targets.js';
 
 export * from './scanner.js';
@@ -8,7 +9,7 @@ export * from './targets.js';
  * The result of loading.
  */
 export type PluginLoaded = {
-	moduleName: string;
+	resource: string;
 	isLoaded: boolean;
 	exports: unknown;
 };
@@ -46,67 +47,60 @@ export function importPlugin(exportData: PluginExport) {
 }
 
 /**
- * No rejects.
- * @param moduleName Plugin name.
- * @returns Import result for the module.
+ * @param modulePath The plugin name.
+ * @returns The import result for the module.
  */
-export async function loadPlugin(moduleName: string): Promise<PluginLoaded> {
+export async function loadPlugin(modulePath: string, useImport = false): Promise<PluginLoaded> {
 	try {
-		const loader = async (): Promise<PluginLoaded> => {
-			try {
-				const exports = load(moduleName);
-				const result: PluginLoaded = {moduleName, isLoaded: true, exports};
-				if (isPluginExport(exports)) {
-					importPlugin(exports);
-				}
+		const exports: unknown = useImport ? Object.getOwnPropertyDescriptor(await import(modulePath), 'default')?.value : await load(modulePath);
+		const result: PluginLoaded = {resource: modulePath, isLoaded: true, exports};
+		if (isPluginExport(exports)) {
+			importPlugin(exports);
+		}
 
-				return result;
-			} catch (error: unknown) {
-				const r = error as Record<string, unknown>;
-				let reason: unknown = r;
-				if (r?.code === 'ERR_MODULE_NOT_FOUND') {
-					reason = r.message;
-				}
+		return result;
+	} catch (error: unknown) {
+		const r = error as Record<string, unknown>;
+		let reason: unknown = r;
+		if (r?.code === 'ERR_MODULE_NOT_FOUND') {
+			reason = r.message;
+		}
 
-				const fail: PluginLoaded = {moduleName, isLoaded: false, exports: reason};
-				return fail;
-			}
-		};
-
-		return await loader();
-	} catch (error) {
-		const reason: unknown = error;
-		const fail: PluginLoaded = {moduleName, isLoaded: false, exports: reason};
+		const fail: PluginLoaded = {resource: modulePath, isLoaded: false, exports: reason};
 		return fail;
 	}
 }
 
 /**
- * Loads plugins one by one using {@link loadPlugin}.
- * @param moduleNameList The list of plugins.
+ * @param modulePathList The plugin name list.
+ * @returns The import result for the list of modules.
  */
-export async function loadPluginsQueue(moduleNameList?: string[]): Promise<PluginLoaded[]> {
-	const resultList: PluginLoaded[] = [];
-	for (const module of moduleNameList ?? []) {
-		const result = await loadPlugin(module); // eslint-disable-line no-await-in-loop
-		resultList.push(result);
-	}
-
-	return resultList;
+export async function loadPlugins(modulePathList: string[]): Promise<PluginLoaded[]> {
+	const limit = pLimit(5);
+	const allLoaded = await Promise.all(modulePathList.map(modulePath => limit(() => loadPlugin(modulePath))));
+	return allLoaded;
 }
 
-export const builtInGit = import('./plugins/git.js');
-void builtInGit.then(exp => exp.default).then(importPlugin); // eslint-disable-line unicorn/prefer-top-level-await
-export const builtInVsce = import('./plugins/vsce.js');
-void builtInVsce.then(exp => exp.default).then(importPlugin);// eslint-disable-line unicorn/prefer-top-level-await
-export const builtInNpm = import('./plugins/npm.js');
-void builtInNpm.then(exp => exp.default).then(importPlugin);// eslint-disable-line unicorn/prefer-top-level-await
-export const builtInYarn = import('./plugins/yarn.js');
-void builtInYarn.then(exp => exp.default).then(importPlugin);// eslint-disable-line unicorn/prefer-top-level-await
+export const importMap: Record<BuiltInName, string> = {
+	git: './plugins/git.js',
+	npm: './plugins/npm.js',
+	vsce: './plugins/vsce.js',
+	yarn: './plugins/yarn.js',
+};
+
+export const builtInNameList = ['git', 'npm', 'vsce', 'yarn'] as const;
+export type BuiltInName = typeof builtInNameList[number];
+
+export function loadBuiltIn(builtIn: BuiltInName): Promise<PluginLoaded> {
+	return loadPlugin(importMap[builtIn], true);
+}
 
 /**
- * Built-in plugins loading queue.
+ * @param modulePathList The plugin name list.
+ * @returns The import result for the list of modules.
  */
-export const builtIns = Promise.allSettled(
-	[builtInGit, builtInVsce, builtInNpm, builtInYarn],
-);
+export async function loadBuiltIns(builtInList: BuiltInName[] = Array.from(builtInNameList)): Promise<PluginLoaded[]> {
+	const limit = pLimit(5);
+	const allLoaded = await Promise.all(builtInList.map(modulePath => limit(() => loadBuiltIn(modulePath))));
+	return allLoaded;
+}

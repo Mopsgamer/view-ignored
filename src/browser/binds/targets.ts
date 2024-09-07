@@ -77,9 +77,9 @@ const targetBindMap = new Map<string, TargetBind>();
 /**
  * Allows to create targets for view-ignored scan* functions.
  * @example
- * scanProject("abc") // error
+ * scanFolder("abc") // error
  * Bindings.targetSet("abc", {...})
- * scanProject("abc") // ok
+ * scanFolder("abc") // ok
  */
 export function targetSet(bind: TargetBind): void {
 	targetBindMap.set(bind.id, bind);

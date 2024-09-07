@@ -34,10 +34,11 @@ viewig scan . --target=npm
 viewig scan . --parsable
 
 # scan: plugins (space, comma or pipe separated)
-viewig scan . --plugins="vign-p-tsx, vign-p-jsdoc"
-viewig scan . --plugins="vign-p-tsx vign-p-jsdoc"
-viewig scan . --plugins vign-p-tsx vign-p-jsdoc
-viewig scan . --plugins vign-p-tsx, vign-p-jsdoc
+# all built-in plugins loaded automatically
+viewig scan . --plugins="plugin1, example2"
+viewig scan . --plugins="plugin1 example2"
+viewig scan . --plugins plugin1 example2
+viewig scan . --plugins plugin1, example2
 
 # config: print configuration entries
 viewig config get
@@ -57,13 +58,18 @@ viewig config set plugins=typescript-viewig,eslint-vign-plugin
 
 ```js
 import * as vign from "view-ignored";
-import * as vign from "view-ignored/out/src/browser"; // for web environment apps
+import * as vign from "view-ignored/browser"; // for web environment apps
 
-const fileInfoList = await vign.scanProject("git");
+await vign.Plugins.loadBuiltIns(["git", "npm"]); // load built-in plugins
+await vign.Plugins.loadBuiltIns(); // load all built-in plugins
+await vign.Plugins.loadPlugins(["example"]); // load third-party plugins
+
+const fileInfoList = await vign.scanFolder("git");
 const fileInfo = await vign.scanFile("./path/to/file", "git");
 
 // options available
-const fileInfoList = await vign.scanProject("git", { cwd, ... });
+const fileInfoList = await vign.scanFolder("git", { cwd, ... });
+const fileInfoList = await vign.scanFile("./path/to/file", "git", { cwd, ... });
 
 // use results
 if (fileInfo.ignored) {
@@ -75,15 +81,15 @@ if (fileInfo.ignored) {
 
 ```js
 const sorter = vign.Sorting.firstFolders;
-const fileInfoList = await vign.scanProject("npm");
-const fileInfoSorted = fileInfoList.map(String).sort(sorter);
+const fileInfoList = await vign.scanFolder("npm");
+const fileInfoSorted = fileInfoList.sort((a, b) => sorter(String(a), String(b)));
 ```
 
 ```js
 const sorter = vign.Sorting.modified;
-const fileInfoList = await vign.scanProject("npm");
+const fileInfoList = await vign.scanFolder("npm");
 const cache = await vign.Sorting.makeMtimeCache(fileInfoList.map(String));
-const fileInfoSorted = fileInfoList.sort((a, b) => sorter(a.toString(), b.toString(), cache));
+const fileInfoSorted = fileInfoList.sort((a, b) => sorter(String(a), String(b), cache));
 ```
 
 ### Targets

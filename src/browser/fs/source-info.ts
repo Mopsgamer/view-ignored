@@ -1,63 +1,58 @@
-import * as process from 'node:process';
+import type * as FS from 'node:fs';
 import * as FSP from 'node:fs/promises';
 import * as PATH from 'node:path';
 import pLimit from 'p-limit';
 import {
 	type ScanFolderOptions,
 	type Methodology,
-	AbsoluteFile,
-	type IsValidOptions,
+	File,
 	type RealScanFolderOptions,
 } from '../lib.js';
+
+export type CacheRecord = Dirent & {sourceInfo: SourceInfo};
 
 /**
  * The source of patterns.
  */
-export class SourceInfo extends AbsoluteFile {
+export class SourceInfo extends File {
 	/**
 	 * Get instance for each source file recursively.
 	 */
-	static async createCache(methodology: Methodology, options: RealScanFolderOptions): Promise<Map<string, SourceInfo>> {
-		const map = new Map<string, SourceInfo>();
-		async function readDirectoryDeep(cwd: string, rootSource?: SourceInfo): Promise<void> {
+	static async createCache(methodology: Methodology, optionsReal: RealScanFolderOptions): Promise<Map<string, CacheRecord>> {
+		const map = new Map<string, CacheRecord>();
+		async function readDirectoryDeep(cwd: string, rootSource?: CacheRecord): Promise<void> {
 			const promises: Array<Promise<void>> = [];
-			const entryList = await (options.fsa.promises.readdir ?? FSP.readdir)(cwd, {withFileTypes: true});
-			const path = options.posix ? PATH.posix : PATH;
-			const entryPathAbsoluteList = entryList.map(entry => path.join(entry.parentPath, entry.name));
+			const path = optionsReal.posix ? PATH.posix : PATH;
+			const nativeEntryList = (await (optionsReal.fsa.promises.readdir ?? FSP.readdir)(cwd, {withFileTypes: true}));
+			const direntList = nativeEntryList.map(p => direntFrom(p, path, optionsReal.cwd));
 
 			if (rootSource === undefined) {
-				const goodSourceIndex = entryList.findIndex((entry, entryIndex) => {
+				const goodSource = direntList.find(dirent => {
+					const {entry} = dirent;
 					if (!entry.isFile()) {
 						return false;
 					}
 
-					const entryPathAbsolute = entryPathAbsoluteList[entryIndex];
-					const isValidOptions: IsValidOptions = {
-						...options,
-						entry,
-						entryPath: entryPathAbsolute,
-					};
-
-					const isValid = methodology.findSource(isValidOptions);
+					const isValid = methodology.findSource(optionsReal, dirent);
 					return isValid;
 				});
 
-				if (goodSourceIndex > -1) {
-					const goodSourcePathAbsolute = entryPathAbsoluteList[goodSourceIndex];
-					const goodSourcePath = path.relative(cwd, goodSourcePathAbsolute);
-					rootSource = new SourceInfo(goodSourcePath, methodology, options);
+				if (goodSource !== undefined) {
+					rootSource = {
+						...goodSource,
+						sourceInfo: new SourceInfo(goodSource.relativePath, methodology, optionsReal),
+					};
 				}
 			}
 
-			for (const [entryIndex, entry] of entryList.entries()) {
-				const entryPathAbsolute = entryPathAbsoluteList[entryIndex];
-				const entryPath = path.relative(options.cwd, entryPathAbsolute);
+			for (const dirent of direntList) {
+				const {entry, absolutePath, relativePath} = dirent;
 				if (entry.isSymbolicLink()) {
 					continue;
 				}
 
 				if (entry.isDirectory()) {
-					promises.push(readDirectoryDeep(entryPathAbsolute, rootSource));
+					promises.push(readDirectoryDeep(absolutePath, rootSource));
 					continue;
 				}
 
@@ -69,18 +64,14 @@ export class SourceInfo extends AbsoluteFile {
 					continue;
 				}
 
-				map.set(entryPath, rootSource);
+				map.set(relativePath, rootSource);
 			}
 
-			const limit = pLimit(800);
-			await Promise.all(promises.map(async p =>
-				limit(async () => {
-					await p;
-				}),
-			));
+			const limit = pLimit(optionsReal.concurrency);
+			await Promise.all(promises.map(p => limit(() => p)));
 		}
 
-		await readDirectoryDeep(options.cwd);
+		await readDirectoryDeep(optionsReal.cwd);
 
 		return map;
 	}
@@ -89,7 +80,7 @@ export class SourceInfo extends AbsoluteFile {
 		/**
 		 * The relative path to the file.
 		 */
-		public readonly path: string,
+		public readonly relativePath: string,
 
 		/**
 		 * The pattern parser.
@@ -101,37 +92,51 @@ export class SourceInfo extends AbsoluteFile {
 		 */
 		public readonly options?: Required<ScanFolderOptions>,
 	) {
-		super(path);
+		super(relativePath);
 	}
 }
 
-/**
- * @returns Relative path list.
- */
-export async function readDirectoryDeep(options: Pick<RealScanFolderOptions, 'cwd' | 'fsa' | 'posix'>): Promise<string[]> {
-	const allFilePaths: string[] = [];
-	const promises: Array<Promise<void>> = [];
-	const entryList = await (options.fsa.promises.readdir ?? FSP.readdir)(options.cwd, {withFileTypes: true});
-	const path = options.posix ? PATH.posix : PATH;
+export type Dirent = {
+	entry: FS.Dirent;
+	absolutePath: string;
+	relativePath: string;
+};
 
-	const reader = async (entryPath: string, entryPathAbsolute: string) => {
-		const readDeep = readDirectoryDeep({...options, cwd: entryPathAbsolute});
-		const subEntryList = await readDeep;
-		const pathList = subEntryList.map(
-			subEntry => path.join(entryPath, subEntry),
-		);
-		allFilePaths.push(...pathList);
+export function direntFrom(entry: FS.Dirent, path: typeof PATH, cwd: string): Dirent {
+	const absolutePath = path.join(entry.parentPath, entry.name);
+	const relativePath = path.relative(cwd, absolutePath);
+	return {
+		entry,
+		absolutePath,
+		relativePath,
+	};
+}
+
+/**
+ * @returns Path list.
+ */
+export async function readDirectoryDeep(directoryPath: string, optionsReal: Pick<RealScanFolderOptions, 'cwd' | 'fsa' | 'posix' | 'concurrency'>): Promise<Dirent[]> {
+	const entryPaths: Dirent[] = [];
+	const promises: Array<Promise<void>> = [];
+	const path = optionsReal.posix ? PATH.posix : PATH;
+	const entryList = await (optionsReal.fsa.promises.readdir ?? FSP.readdir)(path.join(optionsReal.cwd, directoryPath), {withFileTypes: true});
+
+	const reader = async (entry: Dirent) => {
+		const subEntryList = await readDirectoryDeep(entry.relativePath, optionsReal);
+		for (const subEntry of subEntryList) {
+			entryPaths.push(subEntry);
+		}
 	};
 
-	for (const entry of entryList) {
-		const entryPathAbsolute = path.join(entry.parentPath, entry.name);
-		const entryPath = path.relative(options.cwd, entryPathAbsolute);
+	for (const nativeEntry of entryList) {
+		const dirent = direntFrom(nativeEntry, path, optionsReal.cwd);
+		const {entry} = dirent;
 		if (entry.isSymbolicLink()) {
 			continue;
 		}
 
 		if (entry.isDirectory()) {
-			promises.push(reader(entryPath, entryPathAbsolute));
+			promises.push(reader(dirent));
 			continue;
 		}
 
@@ -139,15 +144,11 @@ export async function readDirectoryDeep(options: Pick<RealScanFolderOptions, 'cw
 			continue;
 		}
 
-		allFilePaths.push(entryPath);
+		entryPaths.push(dirent);
 	}
 
-	const limit = pLimit(800);
-	await Promise.all(promises.map(async p =>
-		limit(async () => {
-			await p;
-		}),
-	));
+	const limit = pLimit(optionsReal.concurrency);
+	await Promise.all(promises.map(p => limit(() => p)));
 
-	return allFilePaths;
+	return entryPaths;
 }

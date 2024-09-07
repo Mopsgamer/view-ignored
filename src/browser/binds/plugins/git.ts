@@ -18,12 +18,12 @@ const matcherExclude: string[] = [
 
 const scanner = new ScannerGitignore('', {exclude: matcherExclude});
 
-const find: IsValid = function (o) {
-	if (o.entry.name !== '.gitignore') {
+const find: IsValid = function (o, s) {
+	if (s.entry.name !== '.gitignore') {
 		return false;
 	}
 
-	const content = o.fsa.readFileSync(o.entryPath).toString();
+	const content = o.fsa.readFileSync(s.absolutePath).toString();
 
 	if (!scanner.isValid(content)) {
 		return false;
@@ -33,8 +33,8 @@ const find: IsValid = function (o) {
 	return true;
 };
 
-const read: Read = function (o) {
-	const content = o.fsa.readFileSync(o.sourceInfoPath).toString();
+const read: Read = function (o, s) {
+	const content = o.fsa.readFileSync(s.absolutePath).toString();
 	scanner.update(content);
 	return scanner;
 };
