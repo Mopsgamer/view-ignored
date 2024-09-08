@@ -1,4 +1,4 @@
-import path from 'node:path';
+import PATH from 'node:path';
 import {type ChalkInstance} from 'chalk';
 import {decorFile, type DecorName} from '../styling.js';
 import {type SourceInfo, type FilterName} from '../lib.js';
@@ -58,7 +58,12 @@ export class FileInfo extends File {
 		/**
 		 * The relative path to the file.
 		 */
-		public readonly relativePath: string,
+		relativePath: string,
+
+		/**
+		 * The absolute path to the file.
+		 */
+		absolutePath: string,
 
 		/**
 		 * The source of patterns.
@@ -69,7 +74,7 @@ export class FileInfo extends File {
 		 */
 		public readonly isIgnored: boolean,
 	) {
-		super(relativePath);
+		super(relativePath, absolutePath);
 	}
 
 	/**
@@ -78,8 +83,8 @@ export class FileInfo extends File {
 	 */
 	toString(options?: FileInfoToStringOptions): string {
 		const {fileIcon, chalk, usePrefix = false, source: useSource = false, entire = true, posix = false} = options ?? {};
-		const pathx = posix ? path.posix : path;
-		const parsed = path.parse(this.relativePath);
+		const patha = posix ? PATH.posix : PATH;
+		const parsed = PATH.parse(this.relativePath);
 		const fIcon = decorFile(fileIcon, this.relativePath);
 		let prefix = usePrefix ? (this.isIgnored ? '!' : '+') : '';
 		let postfix = useSource ? ' << ' + this.source.toString() : '';
@@ -92,14 +97,14 @@ export class FileInfo extends File {
 				return fIcon + clr(prefix + this.relativePath + postfix);
 			}
 
-			return parsed.dir + pathx.sep + fIcon + clr(prefix + parsed.base + postfix);
+			return parsed.dir + patha.sep + fIcon + clr(prefix + parsed.base + postfix);
 		}
 
 		if (entire) {
 			return prefix + this.relativePath + postfix;
 		}
 
-		return parsed.dir + pathx.sep + fIcon + prefix + parsed.base + postfix;
+		return parsed.dir + patha.sep + fIcon + prefix + parsed.base + postfix;
 	}
 
 	/**

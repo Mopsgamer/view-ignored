@@ -59,7 +59,7 @@ export const isValidSourceMinimatch: IsValid = function (o, s) {
 };
 
 export const isValidSourceMinimatchGitignore: IsValid = function (o, s) {
-	if (s.entry.name !== '.gitignore') {
+	if (s.base !== '.gitignore') {
 		return false;
 	}
 
@@ -67,7 +67,7 @@ export const isValidSourceMinimatchGitignore: IsValid = function (o, s) {
 };
 
 export const findNpmignore: IsValid = function (o, s) {
-	if (s.entry.name !== '.npmignore') {
+	if (s.base !== '.npmignore') {
 		return false;
 	}
 
@@ -75,7 +75,7 @@ export const findNpmignore: IsValid = function (o, s) {
 };
 
 export const findYarnignore: IsValid = function (o, s) {
-	if (s.entry.name !== '.yarnignore') {
+	if (s.base !== '.yarnignore') {
 		return false;
 	}
 
@@ -83,7 +83,7 @@ export const findYarnignore: IsValid = function (o, s) {
 };
 
 export const findPackageJson: IsValid = function (o, s) {
-	if (s.entry.name !== 'package.json') {
+	if (s.base !== 'package.json') {
 		return false;
 	}
 

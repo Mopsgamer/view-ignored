@@ -1,5 +1,3 @@
-import {type Methodology} from '../lib.js';
-
 export class SomeError extends Error {}
 
 export class ErrorNoSources extends SomeError {

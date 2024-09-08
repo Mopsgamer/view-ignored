@@ -1,4 +1,3 @@
-import * as PATH from 'node:path';
 import {
 	type Plugins, type IsValid, type Methodology,
 	type Read,
@@ -21,11 +20,10 @@ export const matcherExclude: string[] = [
 const scanner = new ScannerGitignore('', {exclude: matcherExclude});
 
 export const find: IsValid = function (o, s) {
-	if (s.entry.name !== '.vscodeignore') {
+	if (s.base !== '.vscodeignore') {
 		return false;
 	}
 
-	const path = o.posix ? PATH : PATH.posix;
 	const content = o.fsa.readFileSync(s.absolutePath).toString();
 	if (!scanner.isValid(content)) {
 		return false;

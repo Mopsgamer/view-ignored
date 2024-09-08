@@ -1,6 +1,6 @@
 
 import {
-	type ScanFolderOptions, type Methodology, isMethodology, scanFolder,
+	type ScanFolderOptions, type Methodology, isMethodology,
 } from '../lib.js';
 import {type DecorConditionOptions} from '../styling.js';
 

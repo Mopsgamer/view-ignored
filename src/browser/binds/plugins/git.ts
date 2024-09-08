@@ -1,5 +1,5 @@
 import {
-	type Plugins, type IsValid, type Methodology, type Styling, type SourceInfo,
+	type Plugins, type IsValid, type Methodology, type Styling,
 	type Read,
 } from '../../index.js';
 import {ScannerGitignore} from '../scanner.js';
@@ -19,7 +19,7 @@ const matcherExclude: string[] = [
 const scanner = new ScannerGitignore('', {exclude: matcherExclude});
 
 const find: IsValid = function (o, s) {
-	if (s.entry.name !== '.gitignore') {
+	if (s.base !== '.gitignore') {
 		return false;
 	}
 

@@ -53,7 +53,7 @@ export const isValidSourceMinimatch: IsValid = function (o, s) {
 };
 
 export const findGitignore: IsValid = function (o, s) {
-	if (s.entry.name !== '.gitignore') {
+	if (s.base !== '.gitignore') {
 		return false;
 	}
 
@@ -61,7 +61,7 @@ export const findGitignore: IsValid = function (o, s) {
 };
 
 export const findNpmignore: IsValid = function (o, s) {
-	if (s.entry.name !== '.npmignore') {
+	if (s.base !== '.npmignore') {
 		return false;
 	}
 
@@ -69,7 +69,7 @@ export const findNpmignore: IsValid = function (o, s) {
 };
 
 export const findPackageJson: IsValid = function (o, s) {
-	if (s.entry.name !== 'package.json') {
+	if (s.base !== 'package.json') {
 		return false;
 	}
 

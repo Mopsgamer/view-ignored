@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/naming-convention */
 import assert from 'node:assert';
 import {readFileSync} from 'node:fs';
-import path from 'node:path';
+import PATH from 'node:path';
 import process from 'node:process';
 import {fileURLToPath} from 'node:url';
 import {type FileTree, type FsFixture, createFixture} from 'fs-fixture';
@@ -181,7 +181,7 @@ const targetTestList: Plan = {
 	},
 };
 
-const testFilePathJs = path.relative(process.cwd(), fileURLToPath(import.meta.url));
+const testFilePathJs = PATH.relative(process.cwd(), fileURLToPath(import.meta.url));
 const testFilePath = testFilePathJs.replace(new RegExp(`${'out'}[/\\\\]`), '').replace(/js$/, 'ts');
 const myContent = readFileSync(testFilePath).toString();
 const myContentLines = myContent.split('\n');
@@ -258,7 +258,7 @@ async function testTargetSubtest(data: TestTargetSubtestData) {
 	}, chalk.white(info));
 	const fileInfoList = await fileInfoListPromise;
 	const cmp1 = fileInfoList.map(l => l.toString()).sort();
-	const cmp2 = should.include.map(filePath => filePath.split(path.posix.sep).join(path.sep)).sort();
+	const cmp2 = should.include.map(filePath => filePath.split(PATH.posix.sep).join(PATH.sep)).sort();
 	const actual = fileInfoList
 		.map(fileInfo => {
 			const testLineSource = testLineContent + myContentLines.slice(testLineContent)

@@ -1,4 +1,4 @@
-import path from 'node:path';
+import PATH from 'node:path';
 import {stripVTControlCharacters} from 'node:util';
 import tree from 'treeify';
 import jsonifyPaths from 'jsonify-paths';
@@ -41,7 +41,7 @@ export type FormatFilesOptions = {
 export function formatFiles(files: FileInfo[], options: FormatFilesOptions): string {
 	const {showSources = false, chalk, decor = 'normal', style, posix = false} = options ?? {};
 
-	const pathx = posix ? path.posix : path;
+	const patha = posix ? PATH.posix : PATH;
 	const isPaths = style === 'paths';
 	const paths = files.map(f => f.toString({
 		fileIcon: decor, usePrefix: true, chalk, source: showSources, entire: isPaths,
@@ -52,7 +52,7 @@ export function formatFiles(files: FileInfo[], options: FormatFilesOptions): str
 	}
 
 	// IsTree
-	const pathsAsObject = jsonifyPaths.from(paths, {delimiter: pathx.sep});
+	const pathsAsObject = jsonifyPaths.from(paths, {delimiter: patha.sep});
 	const pathsAsTree = tree.asTree(pathsAsObject, true, true);
 	return pathsAsTree;
 }
@@ -165,7 +165,7 @@ export function boxError(message: string, options?: BoxOptions): string {
  * @param filePath The full file path.
  */
 export function decorFile(decor: DecorName | undefined, filePath: string): string {
-	const parsed = path.parse(filePath);
+	const parsed = PATH.parse(filePath);
 	let icon = '';
 	switch (parsed.ext.toLocaleLowerCase()) {
 		case '.js':
