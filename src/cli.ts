@@ -102,6 +102,7 @@ export async function programInit() {
 		configManager.setOption('style', scanProgram, new Option('--style <style>', 'results view mode'));
 		configManager.setOption('depth', scanProgram, new Option('--depth <depth>', 'the max results depth'), parseArgumentInt);
 		configManager.setOption('showSources', scanProgram, new Option('--show-sources [show]', 'show scan sources'), parseArgumentBool);
+		configManager.setOption('concurrency', scanProgram, new Option('--concurrency [limit]', 'the limit for the parallel directory reading per single directory'), parseArgumentBool);
 
 		program.parse();
 	} catch (error) {
@@ -144,6 +145,7 @@ export type ScanFlags = {
 	showSources: boolean;
 	depth: number;
 	parsable: boolean;
+	concurrency: number;
 };
 
 /**
@@ -267,24 +269,24 @@ export function parseArgumentKeyValue(pair: string): Config.ConfigPair {
  * Command-line 'scan' command action.
  */
 export async function actionScan(): Promise<void> {
-	const flagsGlobal = scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>();
+	const flags = scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>();
 	const cwd = process.cwd();
 	const start = Date.now();
 	const colorLevel = getColorLevel(program.opts());
 	const chalk = getChalk(colorLevel);
 	const spinner = ora({text: cwd, color: 'white'});
-	if (!flagsGlobal.parsable) {
+	if (!flags.parsable) {
 		spinner.start();
 	}
 
-	const direntTree = await readDirectoryDeep('.', realOptions({posix: flagsGlobal.posix}));
+	const direntTree = await readDirectoryDeep('.', realOptions({posix: flags.posix, concurrency: flags.concurrency}));
 	const direntPaths = direntTree.flat().map(String);
-	const bind = targetGet(flagsGlobal.target)!;
-	const name = typeof bind.name === 'string' ? bind.name : decorCondition(flagsGlobal.decor, bind.name);
+	const bind = targetGet(flags.target)!;
+	const name = typeof bind.name === 'string' ? bind.name : decorCondition(flags.decor, bind.name);
 
 	let fileInfoList: FileInfo[];
 	try {
-		fileInfoList = await scanPathList(direntPaths, flagsGlobal.target, {filter: flagsGlobal.filter, maxDepth: flagsGlobal.depth, posix: flagsGlobal.posix});
+		fileInfoList = await scanPathList(direntPaths, flags.target, {filter: flags.filter, maxDepth: flags.depth, posix: flags.posix});
 	} catch (error) {
 		spinner.stop();
 		spinner.clear();
@@ -297,19 +299,19 @@ export async function actionScan(): Promise<void> {
 		process.exit(1);
 	}
 
-	if (flagsGlobal.parsable) {
+	if (flags.parsable) {
 		console.log(fileInfoList.map(fileInfo =>
 			fileInfo.relativePath + (
-				flagsGlobal.showSources ? '<' + fileInfo.source.relativePath : ''
+				flags.showSources ? '<' + fileInfo.source.relativePath : ''
 			),
 		).join(','));
 		return;
 	}
 
-	const sorter = Sorting[flagsGlobal.sort];
+	const sorter = Sorting[flags.sort];
 	let cache: Map<string, number> | undefined;
-	if (flagsGlobal.sort === 'modified') {
-		cache = await makeMtimeCache(fileInfoList.map(String));
+	if (flags.sort === 'modified') {
+		cache = await makeMtimeCache(fileInfoList.map(String), flags.concurrency);
 	}
 
 	const time = Date.now() - start;
@@ -317,21 +319,21 @@ export async function actionScan(): Promise<void> {
 
 	const files = formatFiles(lookedSorted, {
 		chalk,
-		posix: flagsGlobal.posix,
-		style: flagsGlobal.style,
-		decor: flagsGlobal.decor,
-		showSources: flagsGlobal.showSources,
+		posix: flags.posix,
+		style: flags.style,
+		decor: flags.decor,
+		showSources: flags.showSources,
 	});
-	const checkSymbol = decorCondition(flagsGlobal.decor, {ifEmoji: '✅', ifNerd: '\uF00C', postfix: ' '});
-	const fastSymbol = decorCondition(flagsGlobal.decor, {ifEmoji: '⚡', ifNerd: '\uDB85\uDC0C'});
-	const infoSymbol = decorCondition(flagsGlobal.decor, {ifEmoji: 'ℹ️', ifNerd: '\uE66A', postfix: ' '});
+	const checkSymbol = decorCondition(flags.decor, {ifEmoji: '✅', ifNerd: '\uF00C', postfix: ' '});
+	const fastSymbol = decorCondition(flags.decor, {ifEmoji: '⚡', ifNerd: '\uDB85\uDC0C'});
+	const infoSymbol = decorCondition(flags.decor, {ifEmoji: 'ℹ️', ifNerd: '\uE66A', postfix: ' '});
 
 	let message = '';
 	message += files;
 	message += '\n';
 	message += `${chalk.green(checkSymbol)}Done in ${time < 400 ? chalk.yellow(fastSymbol) : ''}${time}ms.`;
 	message += '\n';
-	message += `${fileInfoList.length} files listed for ${name} (${flagsGlobal.filter}).`;
+	message += `${fileInfoList.length} files listed for ${name} (${flags.filter}).`;
 	message += '\n';
 	message += `Processed ${direntPaths.length} files.`;
 	message += '\n';
