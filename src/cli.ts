@@ -36,7 +36,7 @@ export async function programInit() {
 		program.parseOptions(process.argv);
 		const flags = program.optsWithGlobals<ProgramFlags>();
 
-		configManager.key<'plugins'>('plugins', configDefault.plugins, configValueArray(configValueString));
+		configManager.keySetValidator<'plugins'>('plugins', configDefault.plugins, configValueArray(configValueString()));
 		configManager.load();
 		const builtInPlugins = await loadBuiltIns();
 		const configPlugins = configManager.get('plugins');
@@ -57,15 +57,15 @@ export async function programInit() {
 			});
 		}
 
-		configManager.key<'parsable'>('parsable', configDefault.parsable, configValueBoolean);
-		configManager.key<'color'>('color', configDefault.color, configValueLiteral(Config.colorTypeList));
-		configManager.key<'target'>('target', configDefault.target, configValueLiteral(targetList()));
-		configManager.key<'filter'>('filter', configDefault.filter, configValueLiteral(filterNameList));
-		configManager.key<'sort'>('sort', configDefault.sort, configValueLiteral(sortNameList));
-		configManager.key<'style'>('style', configDefault.style, configValueLiteral(styleNameList));
-		configManager.key<'decor'>('decor', configDefault.decor, configValueLiteral(decorNameList));
-		configManager.key<'depth'>('depth', configDefault.depth, configValueInteger);
-		configManager.key<'showSources'>('showSources', configDefault.showSources, configValueBoolean);
+		configManager.keySetValidator<'parsable'>('parsable', configDefault.parsable, configValueBoolean());
+		configManager.keySetValidator<'color'>('color', configDefault.color, configValueLiteral(Config.colorTypeList));
+		configManager.keySetValidator<'target'>('target', configDefault.target, configValueLiteral(targetList()));
+		configManager.keySetValidator<'filter'>('filter', configDefault.filter, configValueLiteral(filterNameList));
+		configManager.keySetValidator<'sort'>('sort', configDefault.sort, configValueLiteral(sortNameList));
+		configManager.keySetValidator<'style'>('style', configDefault.style, configValueLiteral(styleNameList));
+		configManager.keySetValidator<'decor'>('decor', configDefault.decor, configValueLiteral(decorNameList));
+		configManager.keySetValidator<'depth'>('depth', configDefault.depth, configValueInteger());
+		configManager.keySetValidator<'showSources'>('showSources', configDefault.showSources, configValueBoolean());
 
 		try {
 			const errorMessageList = configManager.load();
@@ -199,7 +199,7 @@ export function parseArgumentArrayString(argument: string): string[] {
 }
 
 export function parseArgumentBool(argument: string): boolean {
-	const errorMessage = Config.configValueHumanBoolean(argument);
+	const errorMessage = Config.configValueSwitch()(argument);
 	if (errorMessage !== undefined) {
 		throw new InvalidArgumentError(errorMessage);
 	}
@@ -209,7 +209,7 @@ export function parseArgumentBool(argument: string): boolean {
 
 export function parseArgumentInt(argument: string): number {
 	const value = Number.parseInt(argument, 10);
-	const errorMessage = Config.configValueInteger(value);
+	const errorMessage = Config.configValueInteger()(value);
 	if (errorMessage !== undefined) {
 		throw new InvalidArgumentError(errorMessage);
 	}
@@ -218,7 +218,7 @@ export function parseArgumentInt(argument: string): number {
 }
 
 export function parseArgumentKey(key: string): string {
-	const errorMessage = Config.configManager.checkKey(key);
+	const errorMessage = Config.configManager.keyCheckValidator(key);
 	if (errorMessage !== undefined) {
 		throw new InvalidArgumentError(errorMessage);
 	}
@@ -350,8 +350,9 @@ export function actionCfgSet(pair?: Config.ConfigPair): void {
 		return;
 	}
 
+	const chalk = getChalk(getColorLevel(scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>()));
 	Config.configManager.save();
-	console.log(Config.configManager.getPairString(key));
+	console.log(Config.configManager.getPairString(key, chalk, false));
 }
 
 /**
@@ -362,13 +363,15 @@ export function actionCfgUnset(key: Config.ConfigKey | undefined): void {
 		console.log('Configuration file has been completely deleted.');
 	}
 
+	const chalk = getChalk(getColorLevel(scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>()));
 	Config.configManager.unset(key).save();
-	console.log(Config.configManager.getPairString(key));
+	console.log(Config.configManager.getPairString(key, chalk, false));
 }
 
 /**
  * Command-line 'config unset' command action
  */
 export function actionCfgGet(key: Config.ConfigKey | undefined, options: ConfigGetFlags): void {
-	console.log(Config.configManager.getPairString(key, options.real));
+	const chalk = getChalk(getColorLevel(scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>()));
+	console.log(Config.configManager.getPairString(key, chalk, options.real));
 }

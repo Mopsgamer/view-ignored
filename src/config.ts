@@ -3,8 +3,9 @@ import path from 'node:path';
 import {
 	existsSync, readFileSync, rmSync, writeFileSync,
 } from 'node:fs';
+import {format} from 'node:util';
 import * as yaml from 'yaml';
-import {type ColorSupportLevel} from 'chalk';
+import {type ChalkInstance, type ColorSupportLevel} from 'chalk';
 import {type Command, type Option} from 'commander';
 import {
 	type FilterName, type Sorting, type Styling,
@@ -96,83 +97,128 @@ export const configDefault: Readonly<Config> = {
 /**
  * @returns Error message and parsed value.
  */
-export type ConfigValueValidator = ((value: unknown) => string | undefined);
+export type ConfigValidator = ((value: unknown) => string | undefined) & {
+	typeName: string;
+};
 
-export const configValueArray = <T extends ConfigValueValidator>(type?: T) => ((value => {
-	if (Array.isArray(value)) {
-		if (type === undefined) {
+export const configValueArray = <T extends ConfigValidator>(type?: T) => {
+	const validator: ConfigValidator = value => {
+		if (Array.isArray(value)) {
+			if (type === undefined) {
+				return;
+			}
+
+			const badElementList = value.map(element => type(element)).filter(element => element !== undefined);
+			if (badElementList.length > 0) {
+				const list = badElementList.map((element, index) => `${index}: ${element}`).join('\n');
+				return `The value should be a typed array. Found bad elements:\n${list}`;
+			}
+
 			return;
 		}
 
-		const badElementList = value.map(element => type(element)).filter(element => element !== undefined);
-		if (badElementList.length > 0) {
-			const list = badElementList.map((element, index) => `${index}: ${element}`).join('\n');
-			return `The value should be a typed array. Found bad elements:\n${list}`;
+		return 'The value should be an array.';
+	};
+
+	validator.typeName = `${type?.typeName ?? 'any'}[]`;
+
+	return validator;
+};
+
+export const configValueLiteral = (choices: readonly unknown[]): ConfigValidator => {
+	const validator: ConfigValidator = value => {
+		if (choices.includes(value)) {
+			return;
 		}
 
-		return;
-	}
+		return `The value is invalid. Choices: ${choices.map(String).join(', ')}.`;
+	};
 
-	return 'The value should be an array.';
-}) as ConfigValueValidator);
+	validator.typeName = choices.map(choice => format('%o', choice)).join('|');
 
-export const configValueLiteral = (choices: readonly unknown[]) => ((value => {
-	if (choices.includes(value)) {
-		return;
-	}
-
-	return `The value is invalid. Choices: ${choices.map(String).join(', ')}.`;
-}) as ConfigValueValidator);
+	return validator;
+};
 
 export const trueValues = ['true', 'on', 'yes', 'y', 'enable', 'enabled', '1'];
 export const falseValues = ['false', 'off', 'no', 'n', 'disable', 'disabled', '0'];
 export const booleanValues = trueValues.concat(falseValues);
-export const configValueHumanBoolean: ConfigValueValidator = value => {
-	if (booleanValues.includes(value as string)) {
-		return;
-	}
+export const configValueSwitch = (): ConfigValidator => {
+	const validator: ConfigValidator = value => {
+		if (booleanValues.includes(value as string)) {
+			return;
+		}
 
-	return `The value should be a boolean. Available boolean literals: ${booleanValues.join(', ')}.`;
+		return `The value should be a boolean. Available boolean literals: ${booleanValues.join(', ')}.`;
+	};
+
+	validator.typeName = 'switch';
+
+	return validator;
 };
 
-export const configValueBoolean: ConfigValueValidator = value => {
-	if (typeof value === 'boolean') {
-		return;
-	}
+export const configValueBoolean = (): ConfigValidator => {
+	const validator: ConfigValidator = value => {
+		if (typeof value === 'boolean') {
+			return;
+		}
 
-	return 'The value should be a boolean.';
+		return 'The value should be a boolean.';
+	};
+
+	validator.typeName = 'boolean';
+	return validator;
 };
 
-export const configValueObject: ConfigValueValidator = value => {
-	if (value?.constructor === Object) {
-		return;
-	}
+export const configValueObject = (): ConfigValidator => {
+	const validator: ConfigValidator = value => {
+		if (value?.constructor === Object) {
+			return;
+		}
 
-	return 'The value should be an object.';
+		return 'The value should be an object.';
+	};
+
+	validator.typeName = 'object';
+	return validator;
 };
 
-export const configValueString: ConfigValueValidator = value => {
-	if (typeof value === 'string') {
-		return;
-	}
+export const configValueString = (): ConfigValidator => {
+	const validator: ConfigValidator = value => {
+		if (typeof value === 'string') {
+			return;
+		}
 
-	return 'The value should be a string.';
+		return 'The value should be a string.';
+	};
+
+	validator.typeName = 'string';
+	return validator;
 };
 
-export const configValueNumber: ConfigValueValidator = value => {
-	if (typeof value === 'number') {
-		return;
-	}
+export const configValueNumber = (): ConfigValidator => {
+	const validator: ConfigValidator = value => {
+		if (typeof value === 'number') {
+			return;
+		}
 
-	return 'The value should be a number.';
+		return 'The value should be a number.';
+	};
+
+	validator.typeName = 'number';
+	return validator;
 };
 
-export const configValueInteger: ConfigValueValidator = value => {
-	if (typeof value === 'number' && (Number.isSafeInteger(value) || Math.abs(value) === Infinity)) {
-		return;
-	}
+export const configValueInteger = (): ConfigValidator => {
+	const validator: ConfigValidator = value => {
+		if (typeof value === 'number' && (Number.isSafeInteger(value) || Math.abs(value) === Infinity)) {
+			return;
+		}
 
-	return 'The value should be an integer.';
+		return 'The value should be an integer.';
+	};
+
+	validator.typeName = 'integer';
+	return validator;
 };
 
 /**
@@ -184,7 +230,7 @@ class ConfigManager<ConfigType extends Record<string, unknown> = Config> {
 	 * @see {@link configManager}.
 	 */
 	private data: Record<string, unknown> = {};
-	private readonly configType = new Map<string, ConfigValueValidator>();
+	private readonly configValidation = new Map<string, ConfigValidator>();
 	private readonly cliOptionLinkMap = new Map<string, Option>();
 	private readonly dataDefault: Record<string, unknown> = {};
 
@@ -200,12 +246,30 @@ class ConfigManager<ConfigType extends Record<string, unknown> = Config> {
 	}
 
 	/**
-	 * Define type check for the key.
+	 * Get type name for the key.
 	 */
-	key<T extends keyof ConfigType>(key: T, defaultValue: ConfigType[T], type: ConfigValueValidator): this;
-	key(key: string, defaultValue: unknown, type: ConfigValueValidator): this;
-	key(key: string, defaultValue: unknown, type: ConfigValueValidator): this {
-		this.configType.set(key, type);
+	keyTypeName<T extends keyof ConfigType>(key: T): string;
+	keyTypeName(key: string): string;
+	keyTypeName(key: string): string {
+		return this.configValidation.get(key)?.typeName ?? 'any';
+	}
+
+	/**
+	 * Get type checker for the key.
+	 */
+	keyGetValidator<T extends keyof ConfigType>(key: T): ConfigValidator | undefined;
+	keyGetValidator(key: string): ConfigValidator | undefined;
+	keyGetValidator(key: string): ConfigValidator | undefined {
+		return this.configValidation.get(key);
+	}
+
+	/**
+	 * Define type checker for the key.
+	 */
+	keySetValidator<T extends keyof ConfigType>(key: T, defaultValue: ConfigType[T], type: ConfigValidator): this;
+	keySetValidator(key: string, defaultValue: unknown, type: ConfigValidator): this;
+	keySetValidator(key: string, defaultValue: unknown, type: ConfigValidator): this {
+		this.configValidation.set(key, type);
 		const errorMessage = type(defaultValue);
 		if (errorMessage !== undefined) {
 			throw new TypeError(`Invalid default value preset for configuration key '${key}' - ${errorMessage}`);
@@ -215,12 +279,16 @@ class ConfigManager<ConfigType extends Record<string, unknown> = Config> {
 		return this;
 	}
 
-	checkKey(key: string) {
-		if (this.configType.has(key)) {
+	/**
+	 * Checks if the key is defined.
+	 * @returns Error message if the key is not defined.
+	 */
+	keyCheckValidator(key: string): string | undefined {
+		if (this.configValidation.has(key)) {
 			return;
 		}
 
-		return `Unknown config key '${key}'. Choices: ${Array.from(this.configType.keys()).join(', ')}`;
+		return `Unknown config key '${key}'. Choices: ${Array.from(this.configValidation.keys()).join(', ')}`;
 	}
 
 	/**
@@ -229,7 +297,7 @@ class ConfigManager<ConfigType extends Record<string, unknown> = Config> {
 	checkValue(key: keyof ConfigType, value: unknown): string | undefined;
 	checkValue(key: string, value: unknown): string | undefined;
 	checkValue(key: string, value: unknown): string | undefined {
-		const validate = this.configType.get(key);
+		const validate = this.configValidation.get(key);
 		if (validate === undefined) {
 			return;
 		}
@@ -276,7 +344,7 @@ class ConfigManager<ConfigType extends Record<string, unknown> = Config> {
 
 		const object = parsed as Record<string, string>;
 		if (object?.constructor !== Object) {
-			errorMessageList.push(configValueObject(object)!);
+			errorMessageList.push(configValueObject()(object)!);
 			return errorMessageList;
 		}
 
@@ -363,9 +431,9 @@ class ConfigManager<ConfigType extends Record<string, unknown> = Config> {
 	/**
      * @returns An array of properties which defined in the configuration file.
      */
-	definedKeys(): string[] {
-		const keys = Object.keys(this.data);
-		return keys.filter(k => this.data[k] !== undefined);
+	keyList(real = true): string[] {
+		const keys = real ? Array.from(this.configValidation.keys()) : Object.keys(this.data);
+		return keys;
 	}
 
 	/**
@@ -373,38 +441,52 @@ class ConfigManager<ConfigType extends Record<string, unknown> = Config> {
      * @param real If `true`, the default value will be used when the value is `undefined`. Default `true`.
      * @returns The value for the specified property.
      */
-	get<T extends keyof ConfigType>(key: T, real: false | boolean): ConfigType[T] | undefined;
+	get<T extends keyof ConfigType>(key: T, real?: false | boolean): ConfigType[T] | undefined;
 	get<T extends keyof ConfigType>(key: T, real?: true): ConfigType[T];
 	get(key: string, real?: boolean): unknown;
 	get(key: string, real = true): unknown {
-		const value = this.data[key];
+		let value: unknown = this.data[key];
 		if (real && value === undefined) {
-			const value = this.dataDefault[key];
+			value = this.dataDefault[key];
 			if (value === undefined) {
 				throw new Error(`Excpected default value for config property '${key}'.`);
 			}
-
-			return value;
 		}
 
 		return value;
 	}
 
-	/**
-     * @param key The config property.
-     * @param real If `true`, the default value will be used when the value is `undefined`. Default `true`.
-     * @returns A string in the `"key=value"` format, if the property is specified.
-     * Otherwise in format `"key=value\nkey=value\n..."` without the '\n' ending.
-     */
-	getPairString<T extends keyof ConfigType>(key?: T, real?: boolean): string;
-	getPairString(key?: string, real?: boolean): string;
-	getPairString(key?: string, real = true): string {
-		if (key === undefined) {
-			return configKeyList.map(key => this.getPairString(key, real)).filter(Boolean).join('\n');
+	getPairString<T extends keyof ConfigType>(keys?: T | T[], chalk?: ChalkInstance, real?: boolean): string;
+	getPairString(keys?: string | string[], chalk?: ChalkInstance, real?: boolean): string;
+	getPairString(keys?: string | string[], chalk?: ChalkInstance, real = true): string {
+		if (keys === undefined) {
+			return this.getPairString(this.keyList(real), chalk, real);
 		}
 
-		const value = this.get(key as keyof ConfigType, real);
-		return value === undefined ? '' : `${key}=${String(value)}`;
+		if (typeof keys === 'string') {
+			return this.getPairString([keys], chalk, real);
+		}
+
+		// eslint-disable-next-line unicorn/no-array-reduce
+		const pad: number = keys.reduce((maxLength, key) => Math.max(maxLength, key.length), 0);
+		return keys.map((key: string): string => {
+			const string = format(
+				'%s = %o: %s',
+				key.padStart(pad),
+				this.get(key, real),
+				this.keyTypeName(key),
+			);
+			if (chalk) {
+				const colored = string
+					.replaceAll(/(Infinity|NaN|\d+\b)/g, chalk.green('$&'))
+					.replaceAll(/(true|false)/g, chalk.blue('$&'))
+					.replaceAll(/(\||=|:|,|\.|\(|\)|{|}|\[(?!\d+m)|]|-)/g, chalk.red('$&'))
+					.replaceAll(/'.+'/g, chalk.yellow('$&'));
+				return colored;
+			}
+
+			return string;
+		}).join('\n');
 	}
 }
 
