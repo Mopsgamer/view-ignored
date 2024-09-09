@@ -153,6 +153,7 @@ export type ScanFlags = {
  */
 export type ConfigGetFlags = {
 	real: boolean;
+	types: boolean;
 };
 
 /**
@@ -188,7 +189,8 @@ export const argumentConfigKeyValue = new Argument('[pair]', 'the configuration 
  */
 export const argumentConfigKey = new Argument('[key]', 'the configuration setting name').choices(Config.configKeyList);
 
-export const cfgGetOption = new Option('--real', 'use default value(s) as fallback').default(false);
+export const cfgRealOption = new Option('--real', 'use default value(s) as fallback').default(false);
+export const cfgTypesOption = new Option('--types', 'use default value(s) as fallback').default(false);
 
 cfgProgram
 	.command('path').description('print the config file path')
@@ -196,14 +198,19 @@ cfgProgram
 cfgProgram
 	.command('set').description('set config property using syntax \'key=value\'')
 	.addArgument(argumentConfigKeyValue)
+	.addOption(cfgRealOption)
+	.addOption(cfgTypesOption)
 	.action(actionCfgSet);
 cfgProgram
 	.command('unset').description('delete configuration value if cpecified, otherwise delete entire config')
 	.addArgument(argumentConfigKey)
+	.addOption(cfgRealOption)
+	.addOption(cfgTypesOption)
 	.action(actionCfgUnset);
 cfgProgram
 	.command('get').description('print configuration value(s). You can use --real option to view real values')
-	.addOption(cfgGetOption)
+	.addOption(cfgRealOption)
+	.addOption(cfgTypesOption)
 	.addArgument(argumentConfigKey)
 	.action(actionCfgGet);
 
@@ -358,7 +365,7 @@ export function actionCfgPath(): void {
 /**
  * Command-line 'config set' command action
  */
-export function actionCfgSet(pair?: Config.ConfigPair): void {
+export function actionCfgSet(pair: Config.ConfigPair | undefined, options: ConfigGetFlags): void {
 	if (pair === undefined) {
 		console.log(`Allowed config keys are ${Config.configKeyList.join(', ')}.`);
 		return;
@@ -373,20 +380,20 @@ export function actionCfgSet(pair?: Config.ConfigPair): void {
 
 	const chalk = getChalk(getColorLevel(scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>()));
 	Config.configManager.save();
-	console.log(Config.configManager.getPairString(key, {chalk, real: false}));
+	console.log(Config.configManager.getPairString(key, {chalk, real: options.real, types: options.types}));
 }
 
 /**
  * Command-line 'config unset' command action
  */
-export function actionCfgUnset(key: Config.ConfigKey | undefined): void {
+export function actionCfgUnset(key: Config.ConfigKey | undefined, options: ConfigGetFlags): void {
 	if (key === undefined) {
 		console.log('Configuration file has been completely deleted.');
 	}
 
 	const chalk = getChalk(getColorLevel(scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>()));
 	Config.configManager.unset(key).save();
-	console.log(Config.configManager.getPairString(key, {chalk, real: false}));
+	console.log(Config.configManager.getPairString(key, {chalk, real: options.real, types: options.types}));
 }
 
 /**
@@ -394,5 +401,5 @@ export function actionCfgUnset(key: Config.ConfigKey | undefined): void {
  */
 export function actionCfgGet(key: Config.ConfigKey | undefined, options: ConfigGetFlags): void {
 	const chalk = getChalk(getColorLevel(scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>()));
-	console.log(Config.configManager.getPairString(key, {chalk, real: options.real}));
+	console.log(Config.configManager.getPairString(key, {chalk, real: options.real, types: options.types}));
 }
