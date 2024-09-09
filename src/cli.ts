@@ -33,16 +33,15 @@ export async function programInit() {
 	try {
 		const {configManager, configDefault, configValueArray, configValueBoolean, configValueInteger, configValueString, configValueLiteral} = Config;
 
-		program.parseOptions(process.argv);
 		const flags = program.optsWithGlobals<ProgramFlags>();
 		const chalk = getChalk(getColorLevel(flags));
 
 		configManager.keySetValidator<'plugins'>('plugins', configDefault.plugins, configValueArray(configValueString()));
-		configManager.load();
+		const loadResultConfig = configManager.load();
 		const builtInPlugins = await loadBuiltIns();
 		const configPlugins = configManager.get<'plugins'>('plugins');
-		const loadResultList = (flags.plugins ? await loadPlugins(flags.plugins) : []).concat(builtInPlugins);
-		for (const loadResult of loadResultList) {
+		const loadResultPlugins = (flags.plugins ? await loadPlugins(flags.plugins) : []).concat(builtInPlugins);
+		for (const loadResult of loadResultPlugins) {
 			if (loadResult.isLoaded) {
 				continue;
 			}
@@ -69,27 +68,23 @@ export async function programInit() {
 		configManager.keySetValidator<'showSources'>('showSources', configDefault.showSources, configValueBoolean());
 
 		{
+			const title = 'view-ignored - Configuration loading failed.';
 			const infoSymbol = decorCondition(flags.decor, {ifEmoji: 'ℹ️', ifNerd: '\uE66A', postfix: ' '});
 			const errorIcon = decorCondition(flags.decor, {
 				ifNerd: '\uE654', ifEmoji: '⚠️', postfix: ' ',
 			});
 			const footer = `\n\n${chalk.blue(infoSymbol)}Configuration path: ${Config.configManager.path}`;
-			try {
-				const loadResult = configManager.load();
-				if (loadResult !== undefined) {
-					if (typeof loadResult === 'string') {
-						logError(loadResult + footer, {title: 'view-ignored - Configuration loading failed.'});
-					} else {
-						const propertiesErrors = Array.from(loadResult.entries()).map(
-							([key, message]) => `${Config.configManager.getPairString(key, {chalk, types: false, real: true})} - ${chalk.red(errorIcon)}${message}`,
-						).join('\n');
-						logError(`Invalid properties:\n${propertiesErrors}${footer}`, {title: 'view-ignored - Configuration loading failed.'});
-					}
+			if (typeof loadResultConfig === 'string') {
+				logError(loadResultConfig + footer, {title});
+				process.exit(1);
+			}
 
-					process.exit(1);
-				}
-			} catch (error) {
-				logError(format(error) + footer, {title: 'view-ignored - Configuration loading failed.'});
+			if (loadResultConfig && loadResultConfig?.size > 0) {
+				const propertiesErrors = Array.from(loadResultConfig.entries()).map(
+					([key, message]) => `${Config.configManager.getPairString(key, {chalk, types: false, real: true})} - ${chalk.red(errorIcon)}${message}`,
+				).join('\n');
+				logError(`Invalid properties:\n${propertiesErrors}${footer}`, {title});
+
 				process.exit(1);
 			}
 		}

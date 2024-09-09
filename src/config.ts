@@ -246,13 +246,6 @@ export class ConfigManager<ConfigType extends Record<string, unknown> = Config> 
 		public readonly path: string,
 	) {}
 
-	/**
-	 * @returns Data object clone.
-	 */
-	dataRaw(): unknown {
-		return structuredClone(this.data);
-	}
-
 	dataCheck(data: unknown): ConfigCheckMap | string {
 		const propertyStack: ConfigCheckMap = new Map();
 		const object = data as Record<string, unknown>;
@@ -463,7 +456,7 @@ export class ConfigManager<ConfigType extends Record<string, unknown> = Config> 
 	get<T extends keyof ConfigType>(key: T, options?: ConfigManagerGetOptions & {real: true}): ConfigType[T];
 	get(key: string, options?: ConfigManagerGetOptions): unknown;
 	get(key: string, options?: ConfigManagerGetOptions): unknown {
-		const {real} = options ?? {};
+		const {real = true} = options ?? {};
 		let value: unknown = this.data[key];
 		if (real && value === undefined) {
 			value = this.dataDefault[key];
@@ -502,7 +495,7 @@ export class ConfigManager<ConfigType extends Record<string, unknown> = Config> 
 			);
 			if (chalk) {
 				const colored = string
-					.replaceAll(/^(?<=(\s*))\w+(?=(\s+=))/g, chalk.cyan('$&'))
+					.replaceAll(/(?<=(\s*))\w+(?=(\s+=))/g, chalk.cyan('$&'))
 					.replaceAll(/(Infinity|NaN|\d+\b)/g, chalk.green('$&'))
 					.replaceAll(/(true|false|undefined|null)/g, chalk.blue('$&'))
 					.replaceAll(/(\||=|:|,|\.|\(|\)|{|}|\[(?!\d+m)|]|-)/g, chalk.red('$&'))
