@@ -19,7 +19,7 @@ import {
 	type FileInfo, type FilterName, filterNameList, package_, readDirectoryDeep, realOptions, scanPathList, Sorting,
 } from './lib.js';
 import {
-	boxError, decorNameList, styleNameList, type BoxOptions,
+	boxError, colorTypeList, decorNameList, styleNameList, type BoxOptions,
 } from './styling.js';
 
 export function logError(message: string, options?: BoxOptions) {
@@ -35,11 +35,12 @@ export async function programInit() {
 
 		program.parseOptions(process.argv);
 		const flags = program.optsWithGlobals<ProgramFlags>();
+		const chalk = getChalk(getColorLevel(flags));
 
 		configManager.keySetValidator<'plugins'>('plugins', configDefault.plugins, configValueArray(configValueString()));
 		configManager.load();
 		const builtInPlugins = await loadBuiltIns();
-		const configPlugins = configManager.get('plugins');
+		const configPlugins = configManager.get<'plugins'>('plugins');
 		const loadResultList = (flags.plugins ? await loadPlugins(flags.plugins) : []).concat(builtInPlugins);
 		for (const loadResult of loadResultList) {
 			if (loadResult.isLoaded) {
@@ -58,7 +59,7 @@ export async function programInit() {
 		}
 
 		configManager.keySetValidator<'parsable'>('parsable', configDefault.parsable, configValueBoolean());
-		configManager.keySetValidator<'color'>('color', configDefault.color, configValueLiteral(Config.colorTypeList));
+		configManager.keySetValidator<'color'>('color', configDefault.color, configValueLiteral(colorTypeList));
 		configManager.keySetValidator<'target'>('target', configDefault.target, configValueLiteral(targetList()));
 		configManager.keySetValidator<'filter'>('filter', configDefault.filter, configValueLiteral(filterNameList));
 		configManager.keySetValidator<'sort'>('sort', configDefault.sort, configValueLiteral(sortNameList));
@@ -67,15 +68,30 @@ export async function programInit() {
 		configManager.keySetValidator<'depth'>('depth', configDefault.depth, configValueInteger());
 		configManager.keySetValidator<'showSources'>('showSources', configDefault.showSources, configValueBoolean());
 
-		try {
-			const errorMessageList = configManager.load();
-			if (errorMessageList.length > 0) {
-				logError(errorMessageList.join('\n'));
+		{
+			const infoSymbol = decorCondition(flags.decor, {ifEmoji: 'ℹ️', ifNerd: '\uE66A', postfix: ' '});
+			const errorIcon = decorCondition(flags.decor, {
+				ifNerd: '\uE654', ifEmoji: '⚠️', postfix: ' ',
+			});
+			const footer = `\n\n${chalk.blue(infoSymbol)}Configuration path: ${Config.configManager.path}`;
+			try {
+				const loadResult = configManager.load();
+				if (loadResult !== undefined) {
+					if (typeof loadResult === 'string') {
+						logError(loadResult + footer, {title: 'view-ignored - Configuration loading failed.'});
+					} else {
+						const propertiesErrors = Array.from(loadResult.entries()).map(
+							([key, message]) => `${Config.configManager.getPairString(key, {chalk, types: false, real: true})} - ${chalk.red(errorIcon)}${message}`,
+						).join('\n');
+						logError(`Invalid properties:\n${propertiesErrors}${footer}`, {title: 'view-ignored - Configuration loading failed.'});
+					}
+
+					process.exit(1);
+				}
+			} catch (error) {
+				logError(format(error) + footer, {title: 'view-ignored - Configuration loading failed.'});
 				process.exit(1);
 			}
-		} catch (error) {
-			logError(format(error), {title: 'view-ignored - Configuration loading failed.'});
-			process.exit(1);
 		}
 
 		program.version('v' + package_.version, '-v');
@@ -331,7 +347,7 @@ export async function actionScan(): Promise<void> {
  * Command-line 'config path' command action.
  */
 export function actionCfgPath(): void {
-	console.log(Config.configFilePath);
+	console.log(Config.configManager.path);
 }
 
 /**
@@ -352,7 +368,7 @@ export function actionCfgSet(pair?: Config.ConfigPair): void {
 
 	const chalk = getChalk(getColorLevel(scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>()));
 	Config.configManager.save();
-	console.log(Config.configManager.getPairString(key, chalk, false));
+	console.log(Config.configManager.getPairString(key, {chalk, real: false}));
 }
 
 /**
@@ -365,7 +381,7 @@ export function actionCfgUnset(key: Config.ConfigKey | undefined): void {
 
 	const chalk = getChalk(getColorLevel(scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>()));
 	Config.configManager.unset(key).save();
-	console.log(Config.configManager.getPairString(key, chalk, false));
+	console.log(Config.configManager.getPairString(key, {chalk, real: false}));
 }
 
 /**
@@ -373,5 +389,5 @@ export function actionCfgUnset(key: Config.ConfigKey | undefined): void {
  */
 export function actionCfgGet(key: Config.ConfigKey | undefined, options: ConfigGetFlags): void {
 	const chalk = getChalk(getColorLevel(scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>()));
-	console.log(Config.configManager.getPairString(key, chalk, options.real));
+	console.log(Config.configManager.getPairString(key, {chalk, real: options.real}));
 }

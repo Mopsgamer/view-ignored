@@ -5,27 +5,13 @@ import {
 } from 'node:fs';
 import {format} from 'node:util';
 import * as yaml from 'yaml';
-import {type ChalkInstance, type ColorSupportLevel} from 'chalk';
+import {type ChalkInstance} from 'chalk';
 import {type Command, type Option} from 'commander';
 import {
 	type FilterName, type Sorting, type Styling,
 } from './browser/index.js';
-
-/**
- * Contains all color level names.
- */
-export const colorTypeList = [0, 1, 2, 3] as const;
-/**
- * Contains all color level names as a type.
- */
-export type ColorType = ColorSupportLevel;
-/**
- * Checks if the value is the {@link ColorType}.
- */
-export function isColorType(value: unknown): value is ColorType {
-	const number_ = Number(value);
-	return Number.isFinite(number_) && colorTypeList.includes(number_ as ColorType);
-}
+import {type ColorType} from './styling.js';
+import {type ConfigCheckMap} from './errors.js';
 
 /**
  * The full config file name - `".view-ignored"`.
@@ -36,7 +22,7 @@ export const configFileName = '.view-ignored';
  * The user's home directory + the config file name.
  * @see {@link os.homedir}
  */
-export const configFilePath = path.join(os.homedir(), configFileName);
+const configFilePath = path.join(os.homedir(), configFileName);
 
 /**
  * Command-line configuration property list.
@@ -221,10 +207,32 @@ export const configValueInteger = (): ConfigValidator => {
 	return validator;
 };
 
+export type ConfigManagerGetOptions = {
+	/**
+	 * Use default value as fallback.
+	 * @default true
+	 */
+	real?: boolean;
+};
+
+export type ConfigManagerGetPairStringOptions = ConfigManagerGetOptions & {
+	/**
+	 * Add the type postfix.
+	 * @default true
+	 */
+	types?: boolean;
+
+	/**
+	 * Determine the colors behavior.
+	 * @default undefined
+	 */
+	chalk?: ChalkInstance;
+};
+
 /**
  * File-specific actions container.
  */
-class ConfigManager<ConfigType extends Record<string, unknown> = Config> {
+export class ConfigManager<ConfigType extends Record<string, unknown> = Config> {
 	/**
 	 * Do not change this value directly.
 	 * @see {@link configManager}.
@@ -243,6 +251,31 @@ class ConfigManager<ConfigType extends Record<string, unknown> = Config> {
 	 */
 	dataRaw(): unknown {
 		return structuredClone(this.data);
+	}
+
+	dataCheck(data: unknown): ConfigCheckMap | string {
+		const propertyStack: ConfigCheckMap = new Map();
+		const object = data as Record<string, unknown>;
+		if (object?.constructor !== Object) {
+			return configValueObject()(object)!;
+		}
+
+		for (const key in object) {
+			if (!Object.hasOwn(object, key)) {
+				continue;
+			}
+
+			const value = object[key];
+
+			const message = this.checkValue(key, value);
+			if (message === undefined) {
+				continue;
+			}
+
+			propertyStack.set(key, message);
+		}
+
+		return propertyStack;
 	}
 
 	/**
@@ -332,47 +365,32 @@ class ConfigManager<ConfigType extends Record<string, unknown> = Config> {
 	}
 
 	/**
-     * Loads the config from the file to {@link configManager.data}. If the data is not valid, throws an error without loading.
-     * @returns Array of error messages if the config file contains invalid properties.
+     * Loads the config from the file to {@link configManager.data}.
+     * @returns The error message for each invalid property.
      */
-	load(): string[] {
-		const errorMessageList: string[] = [];
+	load(): ConfigCheckMap | string | undefined {
 		const parsed: unknown = existsSync(this.path) ? yaml.parse(readFileSync(this.path).toString()) : undefined;
 		if (parsed === undefined) {
-			return errorMessageList;
+			return;
 		}
 
-		const object = parsed as Record<string, string>;
-		if (object?.constructor !== Object) {
-			errorMessageList.push(configValueObject()(object)!);
-			return errorMessageList;
+		const message = this.dataCheck(parsed);
+
+		if (typeof message === 'string') {
+			return message;
 		}
 
+		const object = parsed as Record<string, unknown>;
 		for (const key in object) {
-			if (!Object.hasOwn(object, key)) {
+			if (!Object.hasOwn(object, key) || message.has(key)) {
 				continue;
 			}
 
 			const element = object[key];
-
-			let errorMessage = this.checkValue(key, element);
-			if (errorMessage === undefined) {
-				continue;
-			}
-
-			if (errorMessageList.length > 0) {
-				errorMessage = '\n' + errorMessage;
-			}
-
-			errorMessageList.push(errorMessage);
+			this.data[key] = element;
 		}
 
-		if (errorMessageList.length > 0) {
-			return errorMessageList;
-		}
-
-		Object.assign(this.data, parsed);
-		return errorMessageList;
+		return message;
 	}
 
 	/**
@@ -441,10 +459,11 @@ class ConfigManager<ConfigType extends Record<string, unknown> = Config> {
      * @param real If `true`, the default value will be used when the value is `undefined`. Default `true`.
      * @returns The value for the specified property.
      */
-	get<T extends keyof ConfigType>(key: T, real?: false | boolean): ConfigType[T] | undefined;
-	get<T extends keyof ConfigType>(key: T, real?: true): ConfigType[T];
-	get(key: string, real?: boolean): unknown;
-	get(key: string, real = true): unknown {
+	get<T extends keyof ConfigType>(key: T, options: ConfigManagerGetOptions & {real?: false}): ConfigType[T] | undefined;
+	get<T extends keyof ConfigType>(key: T, options?: ConfigManagerGetOptions & {real: true}): ConfigType[T];
+	get(key: string, options?: ConfigManagerGetOptions): unknown;
+	get(key: string, options?: ConfigManagerGetOptions): unknown {
+		const {real} = options ?? {};
 		let value: unknown = this.data[key];
 		if (real && value === undefined) {
 			value = this.dataDefault[key];
@@ -456,30 +475,36 @@ class ConfigManager<ConfigType extends Record<string, unknown> = Config> {
 		return value;
 	}
 
-	getPairString<T extends keyof ConfigType>(keys?: T | T[], chalk?: ChalkInstance, real?: boolean): string;
-	getPairString(keys?: string | string[], chalk?: ChalkInstance, real?: boolean): string;
-	getPairString(keys?: string | string[], chalk?: ChalkInstance, real = true): string {
+	getPairString<T extends keyof ConfigType>(keys?: T | T[], options?: ConfigManagerGetPairStringOptions): string;
+	getPairString(keys?: string | string[], options?: ConfigManagerGetPairStringOptions): string;
+	getPairString(keys?: string | string[], options?: ConfigManagerGetPairStringOptions): string {
+		const {real = true, chalk, types = true} = options ?? {};
 		if (keys === undefined) {
-			return this.getPairString(this.keyList(real), chalk, real);
+			return this.getPairString(this.keyList(real), options);
 		}
 
 		if (typeof keys === 'string') {
-			return this.getPairString([keys], chalk, real);
+			return this.getPairString([keys], options);
 		}
 
 		// eslint-disable-next-line unicorn/no-array-reduce
 		const pad: number = keys.reduce((maxLength, key) => Math.max(maxLength, key.length), 0);
 		return keys.map((key: string): string => {
-			const string = format(
+			const string = types ? format(
 				'%s = %o: %s',
 				key.padStart(pad),
-				this.get(key, real),
+				this.get(key, options),
 				this.keyTypeName(key),
+			) : format(
+				'%s = %o',
+				key.padStart(pad),
+				this.get(key, options),
 			);
 			if (chalk) {
 				const colored = string
+					.replaceAll(/^(?<=(\s*))\w+(?=(\s+=))/g, chalk.cyan('$&'))
 					.replaceAll(/(Infinity|NaN|\d+\b)/g, chalk.green('$&'))
-					.replaceAll(/(true|false)/g, chalk.blue('$&'))
+					.replaceAll(/(true|false|undefined|null)/g, chalk.blue('$&'))
 					.replaceAll(/(\||=|:|,|\.|\(|\)|{|}|\[(?!\d+m)|]|-)/g, chalk.red('$&'))
 					.replaceAll(/'.+'/g, chalk.yellow('$&'));
 				return colored;
