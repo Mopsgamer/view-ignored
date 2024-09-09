@@ -8,10 +8,14 @@ import * as yaml from 'yaml';
 import {type ChalkInstance} from 'chalk';
 import {type Command, type Option} from 'commander';
 import {
+	filterNameList,
 	type FilterName, type Sorting, type Styling,
 } from './browser/index.js';
-import {type ColorType} from './styling.js';
+import {
+	colorTypeList, decorNameList, styleNameList, type ColorType,
+} from './styling.js';
 import {type ConfigCheckMap} from './errors.js';
+import {sortNameList} from './browser/sorting.js';
 
 /**
  * The full config file name - `".view-ignored"`.
@@ -27,7 +31,7 @@ const configFilePath = path.join(os.homedir(), configFileName);
 /**
  * Command-line configuration property list.
  */
-export const configKeyList = ['color', 'target', 'filter', 'sort', 'style', 'decor', 'depth', 'showSources', 'plugins', 'parsable'] as const satisfies ReadonlyArray<keyof Config>;
+export const configKeyList = ['color', 'target', 'filter', 'sort', 'style', 'decor', 'depth', 'showSources', 'plugins', 'parsable', 'concurrency'] as const satisfies ReadonlyArray<keyof Config>;
 
 /**
  * Command-line configuration's key type.
@@ -62,6 +66,7 @@ export type Config = {
 	decor: Styling.DecorName;
 	depth: number;
 	showSources: ShowSourcesType;
+	concurrency: number;
 };
 
 /**
@@ -78,6 +83,7 @@ export const configDefault: Readonly<Config> = {
 	decor: 'normal',
 	depth: Infinity,
 	showSources: false,
+	concurrency: 4,
 };
 
 /**
@@ -244,7 +250,17 @@ export class ConfigManager<ConfigType extends Record<string, unknown> = Config> 
 
 	constructor(
 		public readonly path: string,
-	) {}
+	) {
+		this.keySetValidator('parsable', configDefault.parsable, configValueBoolean());
+		this.keySetValidator('color', configDefault.color, configValueLiteral(colorTypeList));
+		this.keySetValidator('filter', configDefault.filter, configValueLiteral(filterNameList));
+		this.keySetValidator('sort', configDefault.sort, configValueLiteral(sortNameList));
+		this.keySetValidator('style', configDefault.style, configValueLiteral(styleNameList));
+		this.keySetValidator('decor', configDefault.decor, configValueLiteral(decorNameList));
+		this.keySetValidator('depth', configDefault.depth, configValueInteger());
+		this.keySetValidator('showSources', configDefault.showSources, configValueBoolean());
+		this.keySetValidator('concurrency', configDefault.concurrency, configValueInteger());
+	}
 
 	dataCheck(data: unknown): ConfigCheckMap | string {
 		const propertyStack: ConfigCheckMap = new Map();

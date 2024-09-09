@@ -85,13 +85,6 @@ const fileInfoList = await vign.scanFolder("npm");
 const fileInfoSorted = fileInfoList.sort((a, b) => sorter(String(a), String(b)));
 ```
 
-```js
-const sorter = vign.Sorting.modified;
-const fileInfoList = await vign.scanFolder("npm");
-const cache = await vign.Sorting.makeMtimeCache(fileInfoList.map(String));
-const fileInfoSorted = fileInfoList.sort((a, b) => sorter(String(a), String(b), cache));
-```
-
 ### Targets
 
 - `git`

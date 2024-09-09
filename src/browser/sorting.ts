@@ -1,6 +1,7 @@
 import path from 'node:path';
 import {stat} from 'node:fs/promises';
 import pLimit from 'p-limit';
+import {Directory, type RealScanFolderOptions, type File} from '../lib.js';
 
 /**
  * Contains all file sort names.
@@ -94,8 +95,9 @@ export function firstFiles(a: string, b: string): number {
 /**
  * Files and folders are sorted by last modified date in descending order.
  * Folders are displayed before files.
+ * @see {@link makeMtimeCache}
  */
-export function modified(a: string, b: string, map: Map<string, number>): number {
+export function modified(a: string, b: string, map: Map<{toString(): string}, number>): number {
 	let comp = 0;
 	for (; comp === 0;) {
 		const [, post1, last1] = slicePath(a);
@@ -157,13 +159,22 @@ export function mixed(a: string, b: string): number {
 	return a.localeCompare(b, undefined, {ignorePunctuation: false});
 }
 
-export async function makeMtimeCache(filePathList: string[], concurrency = 3000): Promise<Map<string, number>> {
-	const cache = new Map<string, number>();
+/**
+ * @see Makes the cache for {@link modified}.
+ */
+export async function makeMtimeCache(out: Map<File, number>, directory: Directory, options?: Pick<RealScanFolderOptions, 'concurrency'>): Promise<Map<File, number>> {
+	const {concurrency = 4} = options ?? {};
 	const limit = pLimit(concurrency);
-	await Promise.all(filePathList.map(filePath => limit(async () => {
-		const fileStat = await stat(filePath);
-		cache.set(filePath, fileStat.mtime.getTime());
-	})));
+	await Promise.all(directory.children.map(entry => {
+		if (entry instanceof Directory) {
+			return makeMtimeCache(out, entry, options);
+		}
 
-	return cache;
+		return limit(async () => {
+			const fileStat = await stat(entry.absolutePath);
+			out.set(entry, fileStat.mtime.getTime());
+		});
+	}));
+
+	return out;
 }

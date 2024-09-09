@@ -1,4 +1,5 @@
 import * as FSP from 'node:fs/promises';
+import pLimit from 'p-limit';
 import {
 	Directory,
 	type ScanFolderOptions,
@@ -79,14 +80,15 @@ export class SourceInfo extends File {
 /**
  * @returns Path list.
  */
-export async function readDirectoryDeep(directoryPath: string, optionsReal: Pick<RealScanFolderOptions, 'cwd' | 'fsa' | 'patha' | 'pLimit'>): Promise<Directory> {
-	const {fsa, patha, cwd, pLimit} = optionsReal;
+export async function readDirectoryDeep(directoryPath: string, optionsReal: Pick<RealScanFolderOptions, 'cwd' | 'fsa' | 'patha' | 'concurrency'>): Promise<Directory> {
+	const {fsa, patha, cwd, concurrency} = optionsReal;
+	const limit = pLimit(concurrency);
 	const readdir = fsa.promises.readdir ?? FSP.readdir;
 	const absolutePath = patha.join(cwd, directoryPath);
 	const relativePath = patha.relative(cwd, absolutePath);
 	const entryList = await readdir(absolutePath, {withFileTypes: true});
 
-	const promises = entryList.map(entry => (pLimit(async () => {
+	const promises = entryList.map(entry => (limit(async () => {
 		const absolutePath = patha.join(entry.parentPath, entry.name);
 		const relativePath = patha.relative(cwd, absolutePath);
 

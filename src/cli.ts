@@ -8,18 +8,20 @@ import {
 import ora from 'ora';
 import * as Config from './config.js';
 import {
-	targetGet, targetList, loadPlugins, loadBuiltIns,
+	targetGet, loadPlugins, loadBuiltIns,
+	targetList,
 } from './browser/binds/index.js';
 import {
 	decorCondition, type DecorName, formatFiles, type StyleName,
 } from './browser/styling.js';
-import {makeMtimeCache, sortNameList, type SortName} from './browser/sorting.js';
+import {makeMtimeCache, type SortName} from './browser/sorting.js';
 import {
 	ErrorNoSources,
-	type FileInfo, type FilterName, filterNameList, package_, readDirectoryDeep, realOptions, scanPathList, Sorting,
+	type File,
+	type FileInfo, type FilterName, package_, readDirectoryDeep, realOptions, scanPathList, Sorting,
 } from './lib.js';
 import {
-	boxError, colorTypeList, decorNameList, styleNameList, type BoxOptions,
+	boxError, type BoxOptions,
 } from './styling.js';
 
 export function logError(message: string, options?: BoxOptions) {
@@ -31,7 +33,7 @@ export function logError(message: string, options?: BoxOptions) {
  */
 export async function programInit() {
 	try {
-		const {configManager, configDefault, configValueArray, configValueBoolean, configValueInteger, configValueString, configValueLiteral} = Config;
+		const {configManager, configDefault, configValueArray, configValueString, configValueLiteral} = Config;
 
 		const flags = program.optsWithGlobals<ProgramFlags>();
 		const chalk = getChalk(getColorLevel(flags));
@@ -57,15 +59,7 @@ export async function programInit() {
 			});
 		}
 
-		configManager.keySetValidator<'parsable'>('parsable', configDefault.parsable, configValueBoolean());
-		configManager.keySetValidator<'color'>('color', configDefault.color, configValueLiteral(colorTypeList));
-		configManager.keySetValidator<'target'>('target', configDefault.target, configValueLiteral(targetList()));
-		configManager.keySetValidator<'filter'>('filter', configDefault.filter, configValueLiteral(filterNameList));
-		configManager.keySetValidator<'sort'>('sort', configDefault.sort, configValueLiteral(sortNameList));
-		configManager.keySetValidator<'style'>('style', configDefault.style, configValueLiteral(styleNameList));
-		configManager.keySetValidator<'decor'>('decor', configDefault.decor, configValueLiteral(decorNameList));
-		configManager.keySetValidator<'depth'>('depth', configDefault.depth, configValueInteger());
-		configManager.keySetValidator<'showSources'>('showSources', configDefault.showSources, configValueBoolean());
+		configManager.keySetValidator('target', configDefault.target, configValueLiteral(targetList()));
 
 		{
 			const title = 'view-ignored - Configuration loading failed.';
@@ -102,7 +96,7 @@ export async function programInit() {
 		configManager.setOption('style', scanProgram, new Option('--style <style>', 'results view mode'));
 		configManager.setOption('depth', scanProgram, new Option('--depth <depth>', 'the max results depth'), parseArgumentInt);
 		configManager.setOption('showSources', scanProgram, new Option('--show-sources [show]', 'show scan sources'), parseArgumentBool);
-		configManager.setOption('concurrency', scanProgram, new Option('--concurrency [limit]', 'the limit for the parallel directory reading per single directory'), parseArgumentBool);
+		configManager.setOption('concurrency', scanProgram, new Option('--concurrency [limit]', 'the limit for the signgle directory operations'), parseArgumentInt);
 
 		program.parse();
 	} catch (error) {
@@ -316,13 +310,13 @@ export async function actionScan(): Promise<void> {
 	}
 
 	const sorter = Sorting[flags.sort];
-	let cache: Map<string, number> | undefined;
+	const cache = new Map<File, number>();
 	if (flags.sort === 'modified') {
-		cache = await makeMtimeCache(fileInfoList.map(String), flags.concurrency);
+		await makeMtimeCache(cache, direntTree, {concurrency: flags.concurrency});
 	}
 
 	const time = Date.now() - start;
-	const lookedSorted = fileInfoList.sort((a, b) => sorter(String(a), String(b), cache!));
+	const lookedSorted = fileInfoList.sort((a, b) => sorter(String(a), String(b), cache));
 
 	const files = formatFiles(lookedSorted, {
 		chalk,

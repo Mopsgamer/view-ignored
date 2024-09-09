@@ -2,7 +2,6 @@ import * as PATH from 'node:path';
 import process from 'node:process';
 import * as FS from 'node:fs';
 import {createRequire} from 'node:module';
-import pLimit, {type LimitFunction} from 'p-limit';
 import {
 	type File, FileInfo, readDirectoryDeep, SourceInfo,
 } from './fs/index.js';
@@ -100,7 +99,6 @@ export function isMethodology(value: unknown): value is Methodology {
 export type RealScanFolderOptions = Required<ScanFolderOptions> & {
 	fsa: Required<FileSystemAdapter>;
 	patha: PATH.PlatformPath;
-	pLimit: LimitFunction;
 };
 
 /**
@@ -111,7 +109,7 @@ export type ScanFolderOptions = {
 
 	/**
 	 * The max concurrency for file-system operations.
-	 * @default 3000
+	 * @default 4
 	 */
 	concurrency?: number;
 
@@ -243,14 +241,13 @@ export async function scanFolder(argument1: Methodology[] | string, options?: Sc
 export function realOptions(options?: ScanFolderOptions): RealScanFolderOptions {
 	options ??= {};
 	const posix = options.posix ?? false;
-	const concurrency = options.concurrency ?? 3000;
+	const concurrency = options.concurrency ?? 4;
 	const optionsReal: RealScanFolderOptions = {
 		concurrency,
 		cwd: options.cwd ?? process.cwd(),
 		filter: options.filter ?? 'included',
 		fsa: (options.fsa ?? FS) as Required<FileSystemAdapter>,
 		patha: posix ? PATH.posix : PATH,
-		pLimit: pLimit(concurrency),
 		maxDepth: options.maxDepth ?? Infinity,
 		posix,
 	};
