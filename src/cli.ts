@@ -229,7 +229,7 @@ export function parseArgumentInt(argument: string): number {
 }
 
 export function parseArgumentKey(key: string): string {
-	const errorMessage = Config.configManager.keyCheckValidator(key);
+	const errorMessage = Config.configManager.checkKey(key);
 	if (errorMessage !== undefined) {
 		throw new InvalidArgumentError(errorMessage);
 	}
@@ -238,18 +238,26 @@ export function parseArgumentKey(key: string): string {
 }
 
 export function parseArgumentKeyValue(pair: string): Config.ConfigPair {
-	const result = pair.split('=') as [string, string];
-	const [key, valueString] = result;
-	if (result.length !== 2) {
+	const result = pair.split('=') as [string] | [string, string];
+	if (result.length > 2) {
 		throw new InvalidArgumentError('Expected \'key=value\'.');
 	}
 
+	if (result.length !== 2) {
+		const [key] = result;
+		const message = Config.configManager.checkKey(key);
+		if (message !== undefined) {
+			throw new InvalidArgumentError(`Expected 'key=value'. ${message}`);
+		}
+	}
+
+	const [key, valueString] = result as [string, string];
 	const {parseArg: parseArgument} = Config.configManager.getOption(key) ?? {};
 	const value = parseArgument?.<unknown>(valueString, undefined) ?? valueString;
 
-	const errorMessage = Config.configManager.checkValue(key, value);
-	if (errorMessage !== undefined) {
-		throw new InvalidArgumentError(errorMessage);
+	const message = Config.configManager.checkValue(key, value);
+	if (message !== undefined) {
+		throw new InvalidArgumentError(`Expected 'key=value'. ${message}`);
 	}
 
 	return [key, value] as [Config.ConfigKey, Config.ConfigValue];

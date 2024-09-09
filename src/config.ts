@@ -309,7 +309,7 @@ export class ConfigManager<ConfigType extends Record<string, unknown> = Config> 
 	 * Checks if the key is defined.
 	 * @returns Error message if the key is not defined.
 	 */
-	keyCheckValidator(key: string): string | undefined {
+	checkKey(key: string): string | undefined {
 		if (this.configValidation.has(key)) {
 			return;
 		}
@@ -318,7 +318,7 @@ export class ConfigManager<ConfigType extends Record<string, unknown> = Config> 
 	}
 
 	/**
-	 * Define type check for the key.
+	 * Call the type checker for the key.
 	 */
 	checkValue(key: keyof ConfigType, value: unknown): string | undefined;
 	checkValue(key: string, value: unknown): string | undefined;
