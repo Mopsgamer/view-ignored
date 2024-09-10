@@ -299,7 +299,12 @@ export async function actionScan(): Promise<void> {
 
 	const direntTree = await readDirectoryDeep(stream);
 	const direntFlat = direntTree.flat();
-	const bind = targetGet(flags.target)!;
+	const bind = targetGet(flags.target);
+	if (bind === undefined) {
+		logError(format(`Bad target '${flags.target}'. Registered targets: ${targetList().join(', ')}.`), {title: 'view-ignored - Fatal error.'});
+		process.exit(1);
+	}
+
 	const name = typeof bind.name === 'string' ? bind.name : decorCondition(flags.decor, bind.name);
 
 	let fileInfoList: FileInfo[];
