@@ -21,6 +21,22 @@
 		{
 			"type": "node",
 			"request": "launch",
+			"name": "viewig scan --parsable",
+			"skipFiles": [
+				"<node_internals>/**"
+			],
+			"args": [
+				"scan",
+				"--parsable"
+			],
+			"console": "integratedTerminal",
+			"program": "${workspaceFolder}/bin/viewig",
+			"cwd": "${workspaceFolder}",
+			"sourceMaps": true,
+		},
+		{
+			"type": "node",
+			"request": "launch",
 			"name": "viewig scan",
 			"skipFiles": [
 				"<node_internals>/**"

@@ -277,7 +277,8 @@ export async function actionScan(): Promise<void> {
 	const colorLevel = getColorLevel(program.opts());
 	const chalk = getChalk(colorLevel);
 
-	const stream = streamDirectoryDeep('.', realOptions({posix: flags.posix, concurrency: flags.concurrency}));
+	const options = realOptions({posix: flags.posix || flags.parsable, concurrency: flags.concurrency});
+	const stream = streamDirectoryDeep('.', options);
 	const bar = new ProgressBar({
 		width: 8, color: 'red', bgColor: 'gray', prefix: process.cwd(),
 	});
@@ -303,7 +304,7 @@ export async function actionScan(): Promise<void> {
 
 	let fileInfoList: FileInfo[];
 	try {
-		fileInfoList = await scanPathList(direntFlat, flags.target, {filter: flags.filter, maxDepth: flags.depth, posix: flags.posix || flags.parsable});
+		fileInfoList = await scanPathList(direntFlat, flags.target, {...options, filter: flags.filter, maxDepth: flags.depth});
 		if (!flags.parsable) {
 			bar.stop();
 		}
