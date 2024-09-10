@@ -5,7 +5,7 @@ import {Chalk, type ChalkInstance, type ColorSupportLevel} from 'chalk';
 import {
 	Argument, InvalidArgumentError, Option, Command,
 } from 'commander';
-import ora from 'ora';
+import {ProgressBar} from '@opentf/cli-pbar';
 import * as Config from './config.js';
 import {
 	targetGet, loadPlugins, loadBuiltIns,
@@ -19,6 +19,7 @@ import {
 	ErrorNoSources,
 	type File,
 	type FileInfo, type FilterName, package_, readDirectoryDeep, realOptions, scanPathList, Sorting,
+	streamDirectoryDeep,
 } from './lib.js';
 import {
 	boxError, type BoxOptions,
@@ -275,12 +276,27 @@ export async function actionScan(): Promise<void> {
 	const start = Date.now();
 	const colorLevel = getColorLevel(program.opts());
 	const chalk = getChalk(colorLevel);
-	const spinner = ora({text: cwd, color: 'white'});
+
+	const stream = streamDirectoryDeep('.', realOptions({posix: flags.posix, concurrency: flags.concurrency}));
+	const bar = new ProgressBar({
+		width: 8, color: 'red', bgColor: 'gray', prefix: process.cwd(),
+	});
 	if (!flags.parsable) {
-		spinner.start();
+		bar.start({total: 1});
+		let perc = -1;
+		stream.on('progress', progress => {
+			const {current, total} = progress;
+			const newPerc = Math.floor(current / total * 100);
+			if (newPerc <= perc) {
+				return;
+			}
+
+			perc = newPerc;
+			bar.update({value: current, total});
+		});
 	}
 
-	const direntTree = await readDirectoryDeep('.', realOptions({posix: flags.posix, concurrency: flags.concurrency}));
+	const direntTree = await readDirectoryDeep(stream);
 	const direntFlat = direntTree.flat();
 	const bind = targetGet(flags.target)!;
 	const name = typeof bind.name === 'string' ? bind.name : decorCondition(flags.decor, bind.name);
@@ -288,9 +304,14 @@ export async function actionScan(): Promise<void> {
 	let fileInfoList: FileInfo[];
 	try {
 		fileInfoList = await scanPathList(direntFlat, flags.target, {filter: flags.filter, maxDepth: flags.depth, posix: flags.posix});
+		if (!flags.parsable) {
+			bar.stop();
+		}
 	} catch (error) {
-		spinner.stop();
-		spinner.clear();
+		if (!flags.parsable) {
+			bar.stop();
+		}
+
 		if (error instanceof ErrorNoSources) {
 			logError('There was no configuration file in the folders and subfolders that would correctly describe the ignoring.', {title: `view-ignored - No sources for the target ${name}.`});
 		} else {
@@ -344,8 +365,6 @@ export async function actionScan(): Promise<void> {
 	}
 
 	message += '\n';
-	spinner.stop();
-	spinner.clear();
 	console.log(cwd + '\n' + message);
 }
 

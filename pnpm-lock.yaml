@@ -11,6 +11,9 @@ importers:
       '@humanwhocodes/gitignore-to-minimatch':
         specifier: ^1.0.2
         version: 1.0.2
+      '@opentf/cli-pbar':
+        specifier: ^0.7.2
+        version: 0.7.2
       boxen:
         specifier: ^8.0.1
         version: 8.0.1
@@ -29,9 +32,6 @@ importers:
       minimatch:
         specifier: ^10.0.1
         version: 10.0.1
-      ora:
-        specifier: ^8.0.1
-        version: 8.0.1
       p-limit:
         specifier: ^6.1.0
         version: 6.1.0
@@ -254,6 +254,18 @@ packages:
 
   '@octokit/types@13.5.0':
     resolution: {integrity: sha512-HdqWTf5Z3qwDVlzCrP8UJquMwunpDiMPt5er+QjGzL4hqr/vBVY/MauQgS1xWxCDT1oMx1EULyqxncdCY/NVSQ==}
+
+  '@opentf/cli-pbar@0.7.2':
+    resolution: {integrity: sha512-1367ENsch7Ybs0dFMhTkPU3cQNETl/F9bETgJc1TeKUaZG61Fhs+rsIlm8eVtEd2qC3z0bYaZ3b5Bpehcr7C1Q==}
+
+  '@opentf/cli-styles@0.15.0':
+    resolution: {integrity: sha512-7eETZJLNCyOq6sX4W5up8l1IdTu0sf1qDdsBJ2KHx9u4rh3drFmMgF1ZoZ92K9oCiqzKAGqpCCjuasnRWbNLOw==}
+
+  '@opentf/std@0.3.0':
+    resolution: {integrity: sha512-8Dtm0NqgoRi30FAUORo74SEruw2t2YlICxUy9nRpozzpbORCu4drpcAUq4stLsUY0bGHmFSZfZGpdA3wFamcwg==}
+
+  '@opentf/std@0.5.1':
+    resolution: {integrity: sha512-WIK/3Zwg8t6XeI3CJEEbK6wrC/uPkR7dk2DNWAhXqfql7NBCPjTb4NdXNSyChqMRY1qk+6E4/l32MaXk9x7+zA==}
 
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
@@ -3298,6 +3310,19 @@ snapshots:
   '@octokit/types@13.5.0':
     dependencies:
       '@octokit/openapi-types': 22.2.0
+
+  '@opentf/cli-pbar@0.7.2':
+    dependencies:
+      '@opentf/cli-styles': 0.15.0
+      '@opentf/std': 0.5.1
+
+  '@opentf/cli-styles@0.15.0':
+    dependencies:
+      '@opentf/std': 0.3.0
+
+  '@opentf/std@0.3.0': {}
+
+  '@opentf/std@0.5.1': {}
 
   '@pkgjs/parseargs@0.11.0':
     optional: true

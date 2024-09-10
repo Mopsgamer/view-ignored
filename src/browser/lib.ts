@@ -2,6 +2,7 @@ import * as PATH from 'node:path';
 import process from 'node:process';
 import * as FS from 'node:fs';
 import {createRequire} from 'node:module';
+import {configDefault} from '../config.js';
 import {
 	File, FileInfo, readDirectoryDeep, SourceInfo,
 } from './fs/index.js';
@@ -109,7 +110,7 @@ export type ScanFolderOptions = {
 
 	/**
 	 * The max concurrency for file-system operations.
-	 * @default 4
+	 * @default 8
 	 */
 	concurrency?: number;
 
@@ -243,14 +244,14 @@ export async function scanFolder(argument1: Methodology[] | string, options?: Sc
 export function realOptions(options?: ScanFolderOptions): RealScanFolderOptions {
 	options ??= {};
 	const posix = options.posix ?? false;
-	const concurrency = options.concurrency ?? 4;
+	const concurrency = options.concurrency ?? configDefault.concurrency;
 	const optionsReal: RealScanFolderOptions = {
 		concurrency,
 		cwd: options.cwd ?? process.cwd(),
-		filter: options.filter ?? 'included',
+		filter: options.filter ?? configDefault.filter,
 		fsa: (options.fsa ?? FS) as Required<FileSystemAdapter>,
 		patha: posix ? PATH.posix : PATH,
-		maxDepth: options.maxDepth ?? Infinity,
+		maxDepth: options.maxDepth ?? configDefault.depth,
 		posix,
 	};
 	return optionsReal;

@@ -72,7 +72,7 @@ export type Config = {
 /**
  * Command-line default config values.
  */
-export const configDefault: Readonly<Config> = {
+export const configDefault = {
 	parsable: false,
 	plugins: [],
 	color: 3,
@@ -83,8 +83,8 @@ export const configDefault: Readonly<Config> = {
 	decor: 'normal',
 	depth: Infinity,
 	showSources: false,
-	concurrency: 4,
-};
+	concurrency: 8,
+} as const satisfies Config;
 
 /**
  * @returns Error message and parsed value.

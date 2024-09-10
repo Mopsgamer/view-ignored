@@ -17,11 +17,6 @@ export class Directory implements ParsedPath {
 		 * The absolute path to the file.
 		 */
 		public readonly absolutePath: string,
-
-		/**
-         * The content of the directory.
-         */
-		public readonly children: Array<Directory | File>,
 	) {
 		const parsed = parse(absolutePath);
 		this.base = parsed.base;
@@ -29,6 +24,34 @@ export class Directory implements ParsedPath {
 		this.ext = parsed.ext;
 		this.name = parsed.name;
 		this.root = parsed.root;
+	}
+
+	/**
+	 * @returns The relative path to the directory.
+	 */
+	toString(): string {
+		return this.relativePath;
+	}
+}
+
+export class DirectoryTree extends Directory {
+	constructor(
+		/**
+         * The relative path to the directory.
+         */
+		public readonly relativePath: string,
+
+		/**
+		 * The absolute path to the file.
+		 */
+		public readonly absolutePath: string,
+
+		/**
+         * The content of the directory.
+         */
+		public readonly children: Array<DirectoryTree | File>,
+	) {
+		super(relativePath, absolutePath);
 	}
 
 	flat(): File[] {
@@ -40,12 +63,5 @@ export class Directory implements ParsedPath {
 			return dirent.flat();
 		});
 		return direntList;
-	}
-
-	/**
-	 * @returns The relative path to the directory.
-	 */
-	toString(): string {
-		return this.relativePath;
 	}
 }

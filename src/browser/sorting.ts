@@ -1,7 +1,8 @@
 import path from 'node:path';
 import {stat} from 'node:fs/promises';
 import pLimit from 'p-limit';
-import {Directory, type RealScanFolderOptions, type File} from '../lib.js';
+import {DirectoryTree, type RealScanFolderOptions, type File} from '../lib.js';
+import {configDefault} from '../config.js';
 
 /**
  * Contains all file sort names.
@@ -162,11 +163,11 @@ export function mixed(a: string, b: string): number {
 /**
  * @see Makes the cache for {@link modified}.
  */
-export async function makeMtimeCache(out: Map<File, number>, directory: Directory, options?: Pick<RealScanFolderOptions, 'concurrency'>): Promise<Map<File, number>> {
-	const {concurrency = 4} = options ?? {};
+export async function makeMtimeCache(out: Map<File, number>, directory: DirectoryTree, options?: Pick<RealScanFolderOptions, 'concurrency'>): Promise<Map<File, number>> {
+	const {concurrency = configDefault.concurrency} = options ?? {};
 	const limit = pLimit(concurrency);
 	await Promise.all(directory.children.map(entry => {
-		if (entry instanceof Directory) {
+		if (entry instanceof DirectoryTree) {
 			return makeMtimeCache(out, entry, options);
 		}
 
