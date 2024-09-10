@@ -14,15 +14,15 @@ import {
 import {
 	decorCondition, type DecorName, formatFiles, type StyleName,
 } from './browser/styling.js';
-import {makeMtimeCache, type SortName} from './browser/sorting.js';
+import {makeMtimeCache, sortNameList, type SortName} from './browser/sorting.js';
 import {
 	ErrorNoSources,
 	type File,
-	type FileInfo, type FilterName, package_, readDirectoryDeep, realOptions, scanPathList, Sorting,
+	type FileInfo, type FilterName, filterNameList, package_, readDirectoryDeep, realOptions, scanPathList, Sorting,
 	streamDirectoryDeep,
 } from './lib.js';
 import {
-	boxError, type BoxOptions,
+	boxError, decorNameList, styleNameList, type BoxOptions,
 } from './styling.js';
 
 export function logError(message: string, options?: BoxOptions) {
@@ -60,7 +60,8 @@ export async function programInit() {
 			});
 		}
 
-		configManager.keySetValidator('target', configDefault.target, configValueLiteral(targetList()));
+		const targets = targetList();
+		configManager.keySetValidator('target', configDefault.target, configValueLiteral(targets));
 
 		{
 			const title = 'view-ignored - Configuration loading failed.';
@@ -88,16 +89,16 @@ export async function programInit() {
 		program.addOption(new Option('--no-color', 'force disable colors').default(false));
 		program.addOption(new Option('--posix', 'use unix path separator').default(false));
 		configManager.setOption('plugins', program, new Option('--plugins <modules...>', 'import modules to modify behavior'), parseArgumentArrayString);
-		configManager.setOption('color', program, new Option('--color <level>', 'the interface color level'), parseArgumentInt);
-		configManager.setOption('decor', program, new Option('--decor <decor>', 'the interface decorations'));
-		configManager.setOption('parsable', scanProgram, new Option('-p, --parsable [parsable]', 'print parsable text'), parseArgumentBool);
-		configManager.setOption('target', scanProgram, new Option('-t, --target <ignorer>', 'the scan target'));
-		configManager.setOption('filter', scanProgram, new Option('--filter <filter>', 'filter results'));
-		configManager.setOption('sort', scanProgram, new Option('--sort <sorter>', 'sort results'));
-		configManager.setOption('style', scanProgram, new Option('--style <style>', 'results view mode'));
-		configManager.setOption('depth', scanProgram, new Option('--depth <depth>', 'the max results depth'), parseArgumentInt);
-		configManager.setOption('showSources', scanProgram, new Option('--show-sources [show]', 'show scan sources'), parseArgumentBool);
-		configManager.setOption('concurrency', scanProgram, new Option('--concurrency [limit]', 'the limit for the signgle directory operations'), parseArgumentInt);
+		configManager.setOption('color', program, new Option('--color <level>', 'the interface color level'), parseArgumentInteger);
+		configManager.setOption('decor', program, new Option('--decor <decor>', 'the interface decorations'), createArgumentParserStringLiteral([...decorNameList]));
+		configManager.setOption('parsable', scanProgram, new Option('-p, --parsable [parsable]', 'print parsable text'), parseArgumentBoolean);
+		configManager.setOption('target', scanProgram, new Option('-t, --target <ignorer>', 'the scan target'), createArgumentParserStringLiteral(targets));
+		configManager.setOption('filter', scanProgram, new Option('--filter <filter>', 'filter results'), createArgumentParserStringLiteral([...filterNameList]));
+		configManager.setOption('sort', scanProgram, new Option('--sort <sorter>', 'sort results'), createArgumentParserStringLiteral([...sortNameList]));
+		configManager.setOption('style', scanProgram, new Option('--style <style>', 'results view mode'), createArgumentParserStringLiteral([...styleNameList]));
+		configManager.setOption('depth', scanProgram, new Option('--depth <depth>', 'the max results depth'), parseArgumentInteger);
+		configManager.setOption('showSources', scanProgram, new Option('--show-sources [show]', 'show scan sources'), parseArgumentBoolean);
+		configManager.setOption('concurrency', scanProgram, new Option('--concurrency [limit]', 'the limit for the signgle directory operations'), parseArgumentInteger);
 
 		program.parse();
 	} catch (error) {
@@ -213,7 +214,7 @@ export function parseArgumentArrayString(argument: string): string[] {
 	return argument.split(/[ ,|]/).filter(Boolean);
 }
 
-export function parseArgumentBool(argument: string): boolean {
+export function parseArgumentBoolean(argument: string): boolean {
 	const errorMessage = Config.configValueSwitch()(argument);
 	if (errorMessage !== undefined) {
 		throw new InvalidArgumentError(errorMessage);
@@ -222,7 +223,7 @@ export function parseArgumentBool(argument: string): boolean {
 	return Config.trueValues.includes(argument);
 }
 
-export function parseArgumentInt(argument: string): number {
+export function parseArgumentInteger(argument: string): number {
 	const value = Number.parseInt(argument, 10);
 	const errorMessage = Config.configValueInteger()(value);
 	if (errorMessage !== undefined) {
@@ -230,6 +231,17 @@ export function parseArgumentInt(argument: string): number {
 	}
 
 	return value;
+}
+
+export function createArgumentParserStringLiteral(choices: string[]) {
+	return function (argument: string): string {
+		const errorMessage = Config.configValueLiteral(choices)(argument);
+		if (errorMessage !== undefined) {
+			throw new InvalidArgumentError(errorMessage);
+		}
+
+		return argument;
+	};
 }
 
 export function parseArgumentKey(key: string): string {
