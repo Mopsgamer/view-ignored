@@ -487,7 +487,7 @@ export class ConfigManager<ConfigType extends Record<string, unknown> = Config> 
 	getPairString<T extends keyof ConfigType>(keys?: T | T[], options?: ConfigManagerGetPairStringOptions): string;
 	getPairString(keys?: string | string[], options?: ConfigManagerGetPairStringOptions): string;
 	getPairString(keys?: string | string[], options?: ConfigManagerGetPairStringOptions): string {
-		const {real = true, chalk, types = true} = options ?? {};
+		const {real = true, types = true, chalk} = options ?? {};
 		if (keys === undefined) {
 			return this.getPairString(this.keyList(real), options);
 		}
@@ -509,13 +509,42 @@ export class ConfigManager<ConfigType extends Record<string, unknown> = Config> 
 				key.padStart(pad),
 				this.get(key, options),
 			);
+
 			if (chalk) {
-				const colored = string
-					.replaceAll(/(?<=(\s*))\w+(?=(\s+=))/g, chalk.cyan('$&'))
-					.replaceAll(/(Infinity|NaN|\d+\b)/g, chalk.green('$&'))
-					.replaceAll(/(true|false|undefined|null)/g, chalk.blue('$&'))
-					.replaceAll(/(\||=|:|,|\.|\(|\)|{|}|\[(?!\d+m)|]|-)/g, chalk.red('$&'))
-					.replaceAll(/'.+'/g, chalk.yellow('$&'));
+				const rprop = /[A-z]+(\s+=)/g;
+				const rtype = /(string|boolean|object|number|integer|\[])/g;
+				const rchar = /([,.:='"|-])/g;
+				const rbrackets = /(\[|])/g;
+				const rnumber = /\d+/g;
+				const rspecial = /(true|false|null|Infinity)/g;
+				const a = new RegExp(`${[rprop, rtype, rchar, rbrackets, rnumber, rspecial].map(r => `(${r.source})`).join('|')}`, 'g');
+				const colored = string.replaceAll(a, match => {
+					if (match.match(rprop) !== null) {
+						return match.replace(/[A-z]+/, chalk.cyan('$&')).replace('=', chalk.red('$&'));
+					}
+
+					if (match.match(rtype) !== null) {
+						return chalk.dim(match);
+					}
+
+					if (match.match(rchar) !== null) {
+						return chalk.red(match);
+					}
+
+					if (match.match(rbrackets) !== null) {
+						return chalk.magenta(match);
+					}
+
+					if (match.match(rnumber) !== null) {
+						return chalk.green(match);
+					}
+
+					if (match.match(rspecial) !== null) {
+						return chalk.blue(match);
+					}
+
+					return match;
+				});
 				return colored;
 			}
 
@@ -523,7 +552,6 @@ export class ConfigManager<ConfigType extends Record<string, unknown> = Config> 
 		}).join('\n');
 	}
 }
-
 /**
  * File-specific actions container. Contains get, set, unset, save, load and other configuration actions.
  */
