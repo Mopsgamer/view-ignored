@@ -303,7 +303,7 @@ export async function actionScan(): Promise<void> {
 
 	let fileInfoList: FileInfo[];
 	try {
-		fileInfoList = await scanPathList(direntFlat, flags.target, {filter: flags.filter, maxDepth: flags.depth, posix: flags.posix});
+		fileInfoList = await scanPathList(direntFlat, flags.target, {filter: flags.filter, maxDepth: flags.depth, posix: flags.posix || flags.parsable});
 		if (!flags.parsable) {
 			bar.stop();
 		}
