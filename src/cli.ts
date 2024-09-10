@@ -281,13 +281,13 @@ export async function actionScan(): Promise<void> {
 	}
 
 	const direntTree = await readDirectoryDeep('.', realOptions({posix: flags.posix, concurrency: flags.concurrency}));
-	const direntPaths = direntTree.flat().map(String);
+	const direntFlat = direntTree.flat();
 	const bind = targetGet(flags.target)!;
 	const name = typeof bind.name === 'string' ? bind.name : decorCondition(flags.decor, bind.name);
 
 	let fileInfoList: FileInfo[];
 	try {
-		fileInfoList = await scanPathList(direntPaths, flags.target, {filter: flags.filter, maxDepth: flags.depth, posix: flags.posix});
+		fileInfoList = await scanPathList(direntFlat, flags.target, {filter: flags.filter, maxDepth: flags.depth, posix: flags.posix});
 	} catch (error) {
 		spinner.stop();
 		spinner.clear();
@@ -336,7 +336,7 @@ export async function actionScan(): Promise<void> {
 	message += '\n';
 	message += `${fileInfoList.length} files listed for ${name} (${flags.filter}).`;
 	message += '\n';
-	message += `Processed ${direntPaths.length} files.`;
+	message += `Processed ${direntFlat.length} files.`;
 	message += '\n';
 	if (bind.testCommand) {
 		message += '\n';

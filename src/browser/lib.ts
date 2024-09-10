@@ -3,7 +3,7 @@ import process from 'node:process';
 import * as FS from 'node:fs';
 import {createRequire} from 'node:module';
 import {
-	type File, FileInfo, readDirectoryDeep, SourceInfo,
+	File, FileInfo, readDirectoryDeep, SourceInfo,
 } from './fs/index.js';
 import {targetGet} from './binds/index.js';
 import {ErrorNoSources, ErrorTargetNotBound} from './errors.js';
@@ -151,13 +151,14 @@ export type ScanFolderOptions = {
 
 /**
  * Gets info about the each file: it is ignored or not.
+ * @param pathList The list of relative paths. The should be relative to the current working directory.
  * @throws {ErrorNoSources} if the source is bad.
  * @todo Optimize source searching.
  */
-export async function scanPathList(pathList: string[], sources: Methodology[], options?: ScanFolderOptions): Promise<FileInfo[]>;
-export async function scanPathList(filePathList: string[], target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
-export async function scanPathList(filePathList: string[], argument1: Methodology[] | string, options?: ScanFolderOptions): Promise<FileInfo[]> {
-	if (filePathList.length === 0) {
+export async function scanPathList(pathList: Array<{toString(): string}>, sources: Methodology[], options?: ScanFolderOptions): Promise<FileInfo[]>;
+export async function scanPathList(pathList: Array<{toString(): string}>, target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
+export async function scanPathList(pathList: Array<{toString(): string}>, argument1: Methodology[] | string, options?: ScanFolderOptions): Promise<FileInfo[]> {
+	if (pathList.length === 0) {
 		throw new ErrorNoSources();
 	}
 
@@ -168,7 +169,7 @@ export async function scanPathList(filePathList: string[], argument1: Methodolog
 			throw new ErrorTargetNotBound(argument1);
 		}
 
-		return scanPathList(filePathList, bind.methodology, Object.assign(options, bind.scanOptions));
+		return scanPathList(pathList, bind.methodology, Object.assign(options, bind.scanOptions));
 	}
 
 	const optionsReal = realOptions(options);
@@ -181,8 +182,9 @@ export async function scanPathList(filePathList: string[], argument1: Methodolog
 		const cache = await SourceInfo.createCache(methodology, optionsReal);
 		const cacheRead = new Map<SourceInfo, Scanner>();
 
-		for (const relativePath of filePathList) {
-			const absolutePath = optionsReal.patha.join(optionsReal.cwd, relativePath);
+		for (const pathItem of pathList) {
+			const relativePath = String(pathItem);
+			const absolutePath = pathItem instanceof File ? pathItem.absolutePath : optionsReal.patha.join(optionsReal.cwd, relativePath);
 			const sourceInfo = cache.get(relativePath);
 
 			if (sourceInfo === undefined) {
