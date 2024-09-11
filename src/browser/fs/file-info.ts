@@ -1,8 +1,9 @@
 import PATH from 'node:path';
 import {type ChalkInstance} from 'chalk';
 import {decorFile, type DecorName} from '../styling.js';
-import {type SourceInfo, type FilterName} from '../lib.js';
+import {type FilterName} from '../filtering.js';
 import {File} from './file.js';
+import {type SourceInfo} from './source-info.js';
 
 /**
  * @see {@link FileInfo.prototype.toString}

@@ -8,14 +8,11 @@ import * as yaml from 'yaml';
 import {type ChalkInstance} from 'chalk';
 import {type Command, type Option} from 'commander';
 import {
-	filterNameList,
-	type FilterName, type Sorting, type Styling,
-} from './browser/index.js';
-import {
-	colorTypeList, decorNameList, highlight, styleNameList, type ColorType,
+	colorTypeList, type DecorName, decorNameList, highlight, type StyleName, styleNameList, type ColorType,
 } from './styling.js';
 import {type ConfigCheckMap} from './errors.js';
-import {sortNameList} from './browser/sorting.js';
+import {type SortName, sortNameList} from './browser/sorting.js';
+import {filterNameList, type FilterName} from './browser/filtering.js';
 
 /**
  * The full config file name - `".view-ignored"`.
@@ -61,9 +58,9 @@ export type Config = {
 	color: ColorType;
 	target: string;
 	filter: FilterName;
-	sort: Sorting.SortName;
-	style: Styling.StyleName;
-	decor: Styling.DecorName;
+	sort: SortName;
+	style: StyleName;
+	decor: DecorName;
 	depth: number;
 	showSources: ShowSourcesType;
 	concurrency: number;

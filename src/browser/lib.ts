@@ -8,30 +8,17 @@ import {
 } from './fs/index.js';
 import {targetGet} from './binds/index.js';
 import {ErrorNoSources, ErrorTargetNotBound} from './errors.js';
+import {type FilterName} from './filtering.js';
 
 export * from './errors.js';
 export * from './fs/index.js';
+export * as Filtering from './filtering.js';
 export * as Styling from './styling.js';
 export * as Sorting from './sorting.js';
 export * as Plugins from './binds/index.js';
 
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 export const package_ = createRequire(import.meta.url)('../../package.json') as typeof import('../../package.json');
-
-/**
- * Contains all filter names.
- */
-export const filterNameList = ['ignored', 'included', 'all'] as const;
-/**
- * Contains all filter names as a type.
- */
-export type FilterName = typeof filterNameList[number];
-/**
- * Checks if the value is the {@link FilterName}.
- */
-export function isFilterName(value: unknown): value is FilterName {
-	return typeof value === 'string' && filterNameList.includes(value as FilterName);
-}
 
 /**
  * Uses `node:fs` and `node:fs/promises` be default.

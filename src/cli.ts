@@ -16,14 +16,12 @@ import {
 } from './browser/styling.js';
 import {makeMtimeCache, sortNameList, type SortName} from './browser/sorting.js';
 import {
-	ErrorNoSources,
-	type File,
-	type FileInfo, type FilterName, filterNameList, package_, readDirectoryDeep, realOptions, scanPathList, Sorting,
-	streamDirectoryDeep,
-} from './lib.js';
-import {
 	boxError, decorNameList, styleNameList, type BoxOptions,
 } from './styling.js';
+import {
+	ErrorNoSources, type File, type FileInfo, package_, readDirectoryDeep, realOptions, scanPathList, Sorting, streamDirectoryDeep,
+} from './lib.js';
+import {filterNameList, type FilterName} from './browser/filtering.js';
 
 export function logError(message: string, options?: BoxOptions) {
 	console.log(boxError(message, {noColor: getColorLevel(program.opts()) === 0, ...options}));
