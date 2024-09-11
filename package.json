@@ -86,20 +86,20 @@
 		"minimatch": "^10.0.1",
 		"p-limit": "^6.1.0",
 		"treeify": "^1.1.0",
-		"tslib": "^2.6.3",
-		"yaml": "^2.5.0"
+		"tslib": "^2.7.0",
+		"yaml": "^2.5.1"
 	},
 	"devDependencies": {
 		"@release-it/keep-a-changelog": "^5.0.0",
-		"@types/mocha": "^10.0.6",
-		"@types/node": "^20.14.2",
+		"@types/mocha": "^10.0.7",
+		"@types/node": "^20.16.5",
 		"@types/treeify": "^1.0.3",
 		"fs-fixture": "^2.4.0",
-		"globals": "^15.4.0",
-		"mocha": "^10.4.0",
-		"release-it": "^17.3.0",
+		"globals": "^15.9.0",
+		"mocha": "^10.7.3",
+		"release-it": "^17.6.0",
 		"shx": "^0.3.4",
-		"typescript": "^5.4.5",
+		"typescript": "^5.6.2",
 		"xo": "^0.59.3"
 	},
 	"keywords": [
