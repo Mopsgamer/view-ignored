@@ -91,7 +91,7 @@ export async function programInit() {
 		configManager.setOption('plugins', program, new Option('--plugins <modules...>', 'import modules to modify behavior'), parseArgumentArrayString);
 		configManager.setOption('color', program, new Option('--color <level>', 'the interface color level'), parseArgumentInteger);
 		configManager.setOption('decor', program, new Option('--decor <decor>', 'the interface decorations'), createArgumentParserStringLiteral([...decorNameList]));
-		configManager.setOption('parsable', scanProgram, new Option('-p, --parsable [parsable]', 'print parsable text'), parseArgumentBoolean);
+		configManager.setOption('parsable', program, new Option('-p, --parsable [parsable]', 'print parsable text'), parseArgumentBoolean);
 		configManager.setOption('target', scanProgram, new Option('-t, --target <ignorer>', 'the scan target'), createArgumentParserStringLiteral(targets));
 		configManager.setOption('filter', scanProgram, new Option('--filter <filter>', 'filter results'), createArgumentParserStringLiteral([...filterNameList]));
 		configManager.setOption('sort', scanProgram, new Option('--sort <sorter>', 'sort results'), createArgumentParserStringLiteral([...sortNameList]));
@@ -128,6 +128,7 @@ export type ProgramFlags = {
 	noColor: boolean;
 	color: string;
 	decor: DecorName;
+	parsable: boolean;
 };
 
 /**
@@ -140,7 +141,6 @@ export type ScanFlags = {
 	style: StyleName;
 	showSources: boolean;
 	depth: number;
-	parsable: boolean;
 	concurrency: number;
 };
 
@@ -409,9 +409,12 @@ export function actionCfgSet(pair: Config.ConfigPair | undefined, options: Confi
 		return;
 	}
 
-	const chalk = getChalk(getColorLevel(scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>()));
+	const flags = scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>();
+	const chalk = getChalk(getColorLevel(flags));
 	Config.configManager.save();
-	console.log(Config.configManager.getPairString(key, {chalk, real: options.real, types: options.types}));
+	console.log(Config.configManager.getPairString(key, {
+		chalk, real: options.real, types: options.types, parsable: flags.parsable,
+	}));
 }
 
 /**
@@ -422,15 +425,21 @@ export function actionCfgUnset(key: Config.ConfigKey | undefined, options: Confi
 		console.log('Configuration file has been completely deleted.');
 	}
 
-	const chalk = getChalk(getColorLevel(scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>()));
+	const flags = scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>();
+	const chalk = getChalk(getColorLevel(flags));
 	Config.configManager.unset(key).save();
-	console.log(Config.configManager.getPairString(key, {chalk, real: options.real, types: options.types}));
+	console.log(Config.configManager.getPairString(key, {
+		chalk, real: options.real, types: options.types, parsable: flags.parsable,
+	}));
 }
 
 /**
  * Command-line 'config unset' command action
  */
 export function actionCfgGet(key: Config.ConfigKey | undefined, options: ConfigGetFlags): void {
-	const chalk = getChalk(getColorLevel(scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>()));
-	console.log(Config.configManager.getPairString(key, {chalk, real: options.real, types: options.types}));
+	const flags = scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>();
+	const chalk = getChalk(getColorLevel(flags));
+	console.log(Config.configManager.getPairString(key, {
+		chalk, real: options.real, types: options.types, parsable: flags.parsable,
+	}));
 }

@@ -233,6 +233,12 @@ export type ConfigManagerGetPairStringOptions = ConfigManagerGetOptions & {
 	 * @default undefined
 	 */
 	chalk?: ChalkInstance;
+
+	/**
+	 * Use parsable format. If enabled, `chalk` option ignored.
+	 * @default false
+	 */
+	parsable?: boolean;
 };
 
 /**
@@ -487,7 +493,7 @@ export class ConfigManager<ConfigType extends Record<string, unknown> = Config> 
 	getPairString<T extends keyof ConfigType>(keys?: T | T[], options?: ConfigManagerGetPairStringOptions): string;
 	getPairString(keys?: string | string[], options?: ConfigManagerGetPairStringOptions): string;
 	getPairString(keys?: string | string[], options?: ConfigManagerGetPairStringOptions): string {
-		const {real = true, types = true, chalk} = options ?? {};
+		const {real = true, types = true, chalk, parsable} = options ?? {};
 		if (keys === undefined) {
 			return this.getPairString(this.keyList(real), options);
 		}
@@ -496,15 +502,27 @@ export class ConfigManager<ConfigType extends Record<string, unknown> = Config> 
 			return this.getPairString([keys], options);
 		}
 
+		if (parsable) {
+			return keys.map((key: string) => {
+				const value = format('%o', this.get(key, options));
+				if (types) {
+					const type = this.getType(key);
+					return `${key}\n${value}\n${type}`;
+				}
+
+				return `${key}\n${value}`;
+			}).join('\n');
+		}
+
 		// eslint-disable-next-line unicorn/no-array-reduce
 		const pad: number = keys.reduce((maxLength, key) => Math.max(maxLength, key.length), 0);
 		return keys.map((key: string): string => {
-			const keyAligned = key.padStart(pad);
 			const value = format('%o', this.get(key, options));
 			const type = this.getType(key);
 			const line = format(
-				types ? '%s = %s: %s' : '%s = %s',
-				(chalk ? chalk.cyan(keyAligned) : keyAligned),
+				types ? '%s%s = %s: %s' : '%s%s = %s',
+				' '.repeat(pad),
+				(chalk ? chalk.cyan(key) : key),
 				chalk ? highlight(value, chalk) : value,
 				(chalk ? chalk.dim(highlight(type, chalk)) : type),
 			);
