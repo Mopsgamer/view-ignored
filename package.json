@@ -78,6 +78,7 @@
 	"dependencies": {
 		"@humanwhocodes/gitignore-to-minimatch": "^1.0.2",
 		"@opentf/cli-pbar": "^0.7.2",
+		"ansi-regex": "^6.1.0",
 		"boxen": "^8.0.1",
 		"chalk": "^5.3.0",
 		"commander": "^12.1.0",

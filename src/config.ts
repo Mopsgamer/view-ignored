@@ -12,7 +12,7 @@ import {
 	type FilterName, type Sorting, type Styling,
 } from './browser/index.js';
 import {
-	colorTypeList, decorNameList, styleNameList, type ColorType,
+	colorTypeList, decorNameList, highlight, styleNameList, type ColorType,
 } from './styling.js';
 import {type ConfigCheckMap} from './errors.js';
 import {sortNameList} from './browser/sorting.js';
@@ -290,9 +290,9 @@ export class ConfigManager<ConfigType extends Record<string, unknown> = Config> 
 	/**
 	 * Get type name for the key.
 	 */
-	keyTypeName<T extends keyof ConfigType>(key: T): string;
-	keyTypeName(key: string): string;
-	keyTypeName(key: string): string {
+	getType<T extends keyof ConfigType>(key: T): string;
+	getType(key: string): string;
+	getType(key: string): string {
 		return this.configValidation.get(key)?.typeName ?? 'any';
 	}
 
@@ -499,56 +499,17 @@ export class ConfigManager<ConfigType extends Record<string, unknown> = Config> 
 		// eslint-disable-next-line unicorn/no-array-reduce
 		const pad: number = keys.reduce((maxLength, key) => Math.max(maxLength, key.length), 0);
 		return keys.map((key: string): string => {
-			const string = types ? format(
-				'%s = %o: %s',
-				key.padStart(pad),
-				this.get(key, options),
-				this.keyTypeName(key),
-			) : format(
-				'%s = %o',
-				key.padStart(pad),
-				this.get(key, options),
+			const keyAligned = key.padStart(pad);
+			const value = format('%o', this.get(key, options));
+			const type = this.getType(key);
+			const line = format(
+				types ? '%s = %s: %s' : '%s = %s',
+				(chalk ? chalk.cyan(keyAligned) : keyAligned),
+				chalk ? highlight(value, chalk) : value,
+				(chalk ? chalk.dim(highlight(type, chalk)) : type),
 			);
 
-			if (chalk) {
-				const rprop = /[A-z]+(\s+=)/g;
-				const rtype = /(string|boolean|object|number|integer|\[])/g;
-				const rchar = /([,.:='"|-])/g;
-				const rbrackets = /(\[|])/g;
-				const rnumber = /\d+/g;
-				const rspecial = /(true|false|null|Infinity)/g;
-				const a = new RegExp(`${[rprop, rtype, rchar, rbrackets, rnumber, rspecial].map(r => `(${r.source})`).join('|')}`, 'g');
-				const colored = string.replaceAll(a, match => {
-					if (match.match(rprop) !== null) {
-						return match.replace(/[A-z]+/, chalk.cyan('$&')).replace('=', chalk.red('$&'));
-					}
-
-					if (match.match(rtype) !== null) {
-						return chalk.dim(match);
-					}
-
-					if (match.match(rchar) !== null) {
-						return chalk.red(match);
-					}
-
-					if (match.match(rbrackets) !== null) {
-						return chalk.magenta(match);
-					}
-
-					if (match.match(rnumber) !== null) {
-						return chalk.green(match);
-					}
-
-					if (match.match(rspecial) !== null) {
-						return chalk.blue(match);
-					}
-
-					return match;
-				});
-				return colored;
-			}
-
-			return string;
+			return line;
 		}).join('\n');
 	}
 }
