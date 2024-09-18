@@ -1,6 +1,7 @@
 import PATH from 'node:path';
 import {type ChalkInstance} from 'chalk';
-import {decorFile, type DecorName} from '../styling.js';
+import nf from '@m234/nerd-fonts';
+import {decorCondition, type DecorName} from '../styling.js';
 import {type FilterName} from '../filtering.js';
 import {File} from './file.js';
 import {type SourceInfo} from './source-info.js';
@@ -86,7 +87,12 @@ export class FileInfo extends File {
 		const {fileIcon, chalk, usePrefix = false, source: useSource = false, entire = true, posix = false} = options ?? {};
 		const patha = posix ? PATH.posix : PATH;
 		const parsed = PATH.parse(this.relativePath);
-		const fIcon = decorFile(fileIcon, this.relativePath);
+		const glyph = nf.FSC.fromPath(parsed, nf.FSC.mappings.seti);
+		const fIcon = fileIcon ? decorCondition(fileIcon, {
+			ifEmoji: '📄',
+			ifNerd: chalk && glyph.color !== undefined ? chalk.hex(glyph.color.toString(16))(glyph.char) : glyph.char,
+			postfix: ' ',
+		}) : '';
 		let prefix = usePrefix ? (this.isIgnored ? '!' : '+') : '';
 		let postfix = useSource ? ' << ' + this.source.toString() : '';
 
