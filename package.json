@@ -77,7 +77,7 @@
 	},
 	"dependencies": {
 		"@humanwhocodes/gitignore-to-minimatch": "^1.0.2",
-		"@m234/nerd-fonts": "^0.0.2",
+		"@m234/nerd-fonts": "^0.1.0",
 		"@opentf/cli-pbar": "^0.7.2",
 		"ansi-regex": "^6.1.0",
 		"boxen": "^8.0.1",
@@ -93,7 +93,7 @@
 	},
 	"devDependencies": {
 		"@release-it/keep-a-changelog": "^5.0.0",
-		"@types/mocha": "^10.0.7",
+		"@types/mocha": "^10.0.8",
 		"@types/node": "^20.16.5",
 		"@types/treeify": "^1.0.3",
 		"fs-fixture": "^2.4.0",
