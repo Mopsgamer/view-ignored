@@ -12,8 +12,8 @@ importers:
         specifier: ^1.0.2
         version: 1.0.2
       '@m234/nerd-fonts':
-        specifier: ^0.1.0
-        version: 0.1.0
+        specifier: ^0.1.1
+        version: 0.1.1
       '@opentf/cli-pbar':
         specifier: ^0.7.2
         version: 0.7.2
@@ -169,8 +169,8 @@ packages:
   '@jridgewell/trace-mapping@0.3.25':
     resolution: {integrity: sha512-vNk6aEwybGtawWmy/PzwnGDOjCkLWSD2wqvjGGAgOAwCGWySYXfYoxt00IJkTF+8Lb57DwOb3Aa0o9CApepiYQ==}
 
-  '@m234/nerd-fonts@0.1.0':
-    resolution: {integrity: sha512-94e4j/y4d/KX+F1HO9FTHc87/aDrsIf9Icv8IN28CMuAEZNWCPG86C/Zan1Y0c73jpG5UHkK49rTZZcJPcad2Q==}
+  '@m234/nerd-fonts@0.1.1':
+    resolution: {integrity: sha512-EVAyA+7Mq/PHon+kV8m1QuXFfTEBBYmAvEfEcal99FPWbWEdAJuG7H2M1qh9wGdPquhOUiSLfoJQH4aIWKUp6Q==}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -3130,7 +3130,7 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.0
 
-  '@m234/nerd-fonts@0.1.0':
+  '@m234/nerd-fonts@0.1.1':
     dependencies:
       tslib: 2.7.0
 
