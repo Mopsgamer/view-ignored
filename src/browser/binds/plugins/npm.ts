@@ -1,3 +1,4 @@
+import {icons} from '@m234/nerd-fonts';
 import {
 	type Plugins, type IsValid, type Methodology,
 	type Read,
@@ -8,7 +9,7 @@ import {ScannerMinimatch} from '../scanner.js';
 export const id = 'npm';
 export const name: Styling.DecorConditionOptions = {
 	ifNormal: 'NPM',
-	ifNerd: '\uE616 NPM',
+	ifNerd: icons['nf-seti-npm'].char + ' NPM',
 };
 export const testCommand = 'npm pack --dry-run';
 

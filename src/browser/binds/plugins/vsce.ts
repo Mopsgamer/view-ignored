@@ -1,3 +1,4 @@
+import {icons} from '@m234/nerd-fonts';
 import {
 	type Plugins, type IsValid, type Methodology,
 	type Read,
@@ -8,7 +9,7 @@ import {ScannerGitignore} from '../scanner.js';
 export const id = 'vsce';
 export const name: Styling.DecorConditionOptions = {
 	ifNormal: 'VSCE',
-	ifNerd: '\uDB82\uDE1E VSCE',
+	ifNerd: icons['nf-md-microsoft_visual_studio_code'].char + ' VSCE',
 };
 export const testCommand = 'vsce ls';
 

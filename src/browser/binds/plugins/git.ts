@@ -1,3 +1,4 @@
+import {icons} from '@m234/nerd-fonts';
 import {
 	type Plugins, type IsValid, type Methodology, type Styling,
 	type Read,
@@ -7,7 +8,7 @@ import {ScannerGitignore} from '../scanner.js';
 const id = 'git';
 const name: Styling.DecorConditionOptions = {
 	ifNormal: 'Git',
-	ifNerd: '\uE65D Git',
+	ifNerd: icons['nf-seti-git'].char + ' Git',
 };
 const testCommand = 'git ls-tree -r <git-branch-name> --name-only';
 

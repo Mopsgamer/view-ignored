@@ -1,3 +1,4 @@
+import {icons} from '@m234/nerd-fonts';
 import {
 	type Plugins, type Methodology, type IsValid,
 	type Read,
@@ -8,7 +9,7 @@ import {ScannerMinimatch} from '../scanner.js';
 export const id = 'yarn';
 export const name: Styling.DecorConditionOptions = {
 	ifNormal: 'Yarn',
-	ifNerd: '\uE6A7 Yarn',
+	ifNerd: icons['nf-seti-yarn'].char + '\uE6A7 Yarn',
 };
 
 /**

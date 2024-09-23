@@ -1,6 +1,7 @@
 /* eslint-disable unicorn/no-process-exit */
 import {format} from 'node:util';
 import * as process from 'node:process';
+import {icons} from '@m234/nerd-fonts';
 import {Chalk, type ChalkInstance, type ColorSupportLevel} from 'chalk';
 import {
 	Argument, InvalidArgumentError, Option, Command,
@@ -63,9 +64,9 @@ export async function programInit() {
 
 		{
 			const title = 'view-ignored - Configuration loading failed.';
-			const infoSymbol = decorCondition(flags.decor, {ifEmoji: 'ℹ️', ifNerd: '\uE66A', postfix: ' '});
+			const infoSymbol = decorCondition(flags.decor, {ifEmoji: 'ℹ️', ifNerd: icons['nf-seti-info'].char, postfix: ' '});
 			const errorIcon = decorCondition(flags.decor, {
-				ifNerd: '\uE654', ifEmoji: '⚠️', postfix: ' ',
+				ifNerd: icons['nf-seti-error'].char, ifEmoji: '⚠️', postfix: ' ',
 			});
 			const footer = `\n\n${chalk.blue(infoSymbol)}Configuration path: ${Config.configManager.path}`;
 			if (typeof loadResultConfig === 'string') {
@@ -362,9 +363,9 @@ export async function actionScan(): Promise<void> {
 		decor: flags.decor,
 		showSources: flags.showSources,
 	});
-	const checkSymbol = decorCondition(flags.decor, {ifEmoji: '✅', ifNerd: '\uF00C', postfix: ' '});
-	const fastSymbol = decorCondition(flags.decor, {ifEmoji: '⚡', ifNerd: '\uDB85\uDC0C'});
-	const infoSymbol = decorCondition(flags.decor, {ifEmoji: 'ℹ️', ifNerd: '\uE66A', postfix: ' '});
+	const checkSymbol = decorCondition(flags.decor, {ifEmoji: '✅', ifNerd: icons['nf-fa-check'].char, postfix: ' '});
+	const fastSymbol = decorCondition(flags.decor, {ifEmoji: '⚡', ifNerd: icons['nf-md-lightning_bolt'].char});
+	const infoSymbol = decorCondition(flags.decor, {ifEmoji: 'ℹ️', ifNerd: icons['nf-seti-info'].char, postfix: ' '});
 
 	let message = '';
 	message += files;
