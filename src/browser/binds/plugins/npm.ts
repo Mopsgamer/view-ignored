@@ -8,7 +8,7 @@ import {type TargetIcon, type TargetName} from '../targets.js';
 
 const id = 'npm';
 const name: TargetName = 'NPM';
-const icon: TargetIcon = icons['nf-seti-npm'];
+const icon: TargetIcon = {...icons['nf-seti-npm'], color: 0xCA_04_04};
 const testCommand = 'npm pack --dry-run';
 
 const matcherExclude = [

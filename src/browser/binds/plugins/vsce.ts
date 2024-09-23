@@ -8,7 +8,7 @@ import {type TargetIcon, type TargetName} from '../targets.js';
 
 const id = 'vsce';
 const name: TargetName = 'VSCE';
-const icon: TargetIcon = icons['nf-md-microsoft_visual_studio_code'];
+const icon: TargetIcon = {...icons['nf-md-microsoft_visual_studio_code'], color: 0x23_A9_F1};
 const testCommand = 'vsce ls';
 
 const matcherExclude: string[] = [

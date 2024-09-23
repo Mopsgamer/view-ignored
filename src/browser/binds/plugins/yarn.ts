@@ -8,7 +8,7 @@ import {type TargetIcon, type TargetName} from '../targets.js';
 
 const id = 'yarn';
 const name: TargetName = 'Yarn';
-const icon: TargetIcon = icons['nf-seti-yarn'];
+const icon: TargetIcon = {...icons['nf-seti-yarn'], color: 0x2E_2A_65};
 
 /**
  * [!WARNING] All patterns copied from npm plugin, so they should be verified with yarn docs.
