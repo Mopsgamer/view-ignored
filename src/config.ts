@@ -512,22 +512,23 @@ export class ConfigManager<ConfigType extends Record<string, unknown> = Config> 
 		}
 
 		// eslint-disable-next-line unicorn/no-array-reduce
-		const pad: number = keys.reduce((maxLength, key) => Math.max(maxLength, key.length), 0);
+		const keyMaxLength: number = keys.reduce((maxLength, key) => Math.max(maxLength, key.length), 0);
 		return keys.map((key: string): string => {
 			const value = format('%o', this.get(key, options));
 			const type = this.getType(key);
+			const pad = keyMaxLength - key.length;
 			const line = types ? format(
 				'%s = %s: %s',
-				(chalk ? chalk.cyan(key) : key),
+				' '.repeat(pad) + (chalk ? chalk.cyan(key) : key),
 				chalk ? highlight(value, chalk) : value,
 				(chalk ? chalk.dim(highlight(type, chalk)) : type),
 			) : format(
 				'%s = %s',
-				(chalk ? chalk.cyan(key) : key),
+				' '.repeat(pad) + (chalk ? chalk.cyan(key) : key),
 				chalk ? highlight(value, chalk) : value,
 			);
 
-			return ' '.repeat(pad) + line;
+			return line;
 		}).join('\n');
 	}
 }
