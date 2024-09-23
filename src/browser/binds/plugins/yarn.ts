@@ -2,20 +2,18 @@ import {icons} from '@m234/nerd-fonts';
 import {
 	type Plugins, type Methodology, type IsValid,
 	type Read,
-	type Styling,
 } from '../../index.js';
 import {ScannerMinimatch} from '../scanner.js';
+import {type TargetIcon, type TargetName} from '../targets.js';
 
-export const id = 'yarn';
-export const name: Styling.DecorConditionOptions = {
-	ifNormal: 'Yarn',
-	ifNerd: icons['nf-seti-yarn'].char + '\uE6A7 Yarn',
-};
+const id = 'yarn';
+const name: TargetName = 'Yarn';
+const icon: TargetIcon = icons['nf-seti-yarn'];
 
 /**
  * [!WARNING] All patterns copied from npm plugin, so they should be verified with yarn docs.
  */
-export const matcherExclude = [
+const matcherExclude = [
 	'node_modules/**',
 	'.*.swp',
 	'._*',
@@ -36,7 +34,7 @@ export const matcherExclude = [
 /**
  * [!WARNING] All patterns copied from npm plugin, so they should be verified with yarn docs.
  */
-export const matcherInclude = [
+const matcherInclude = [
 	'/bin/',
 	'/package.json',
 	'/README',
@@ -49,7 +47,7 @@ export const matcherInclude = [
 
 const scanner = new ScannerMinimatch('', {exclude: matcherExclude, include: matcherInclude});
 
-export const isValidSourceMinimatch: IsValid = function (o, s) {
+const isValidSourceMinimatch: IsValid = function (o, s) {
 	const content = o.fsa.readFileSync(s.absolutePath).toString();
 	if (!scanner.isValid(content)) {
 		return false;
@@ -59,7 +57,7 @@ export const isValidSourceMinimatch: IsValid = function (o, s) {
 	return true;
 };
 
-export const isValidSourceMinimatchGitignore: IsValid = function (o, s) {
+const findGitignore: IsValid = function (o, s) {
 	if (s.base !== '.gitignore') {
 		return false;
 	}
@@ -67,7 +65,7 @@ export const isValidSourceMinimatchGitignore: IsValid = function (o, s) {
 	return isValidSourceMinimatch(o, s);
 };
 
-export const findNpmignore: IsValid = function (o, s) {
+const findNpmignore: IsValid = function (o, s) {
 	if (s.base !== '.npmignore') {
 		return false;
 	}
@@ -75,7 +73,7 @@ export const findNpmignore: IsValid = function (o, s) {
 	return isValidSourceMinimatch(o, s);
 };
 
-export const findYarnignore: IsValid = function (o, s) {
+const findYarnignore: IsValid = function (o, s) {
 	if (s.base !== '.yarnignore') {
 		return false;
 	}
@@ -83,7 +81,7 @@ export const findYarnignore: IsValid = function (o, s) {
 	return isValidSourceMinimatch(o, s);
 };
 
-export const findPackageJson: IsValid = function (o, s) {
+const findPackageJson: IsValid = function (o, s) {
 	if (s.base !== 'package.json') {
 		return false;
 	}
@@ -123,7 +121,7 @@ const readJson: Read = function (o, s) {
 	return scanner;
 };
 
-export const methodology: Methodology[] = [
+const methodology: Methodology[] = [
 	{
 		findSource: findPackageJson, readSource: readJson,
 	},
@@ -134,10 +132,12 @@ export const methodology: Methodology[] = [
 		findSource: findNpmignore, readSource: read,
 	},
 	{
-		findSource: findPackageJson, readSource: read,
+		findSource: findGitignore, readSource: read,
 	},
 ];
 
-const bind: Plugins.TargetBind = {id, name, methodology};
+const bind: Plugins.TargetBind = {
+	id, icon, name, methodology,
+};
 const yarn: Plugins.PluginExport = {viewignored: {addTargets: [bind]}};
 export default yarn;

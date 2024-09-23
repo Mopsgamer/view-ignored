@@ -2,7 +2,22 @@
 import {
 	type ScanFolderOptions, type Methodology, isMethodology,
 } from '../lib.js';
-import {type DecorConditionOptions} from '../styling.js';
+
+/**
+ * The target icon/logo as a NF icon.
+ */
+export type TargetIcon = {
+	/**
+     * Glyph character.
+     */
+	char: string;
+	/**
+     * The icon's color.
+     */
+	color?: number;
+};
+
+export type TargetName = string;
 
 /**
  * Should satisfy RegExp: `/^[-a-zA-Z0-9]+$/`.
@@ -31,7 +46,12 @@ export type TargetBind = {
 	/**
      * Readable name.
      */
-	name: string | DecorConditionOptions;
+	name: TargetName;
+
+	/**
+     * Optional icon/logo.
+     */
+	icon?: TargetIcon;
 
 	/**
      * The walkthrough. Files including patterns.

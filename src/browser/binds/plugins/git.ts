@@ -1,15 +1,14 @@
 import {icons} from '@m234/nerd-fonts';
 import {
-	type Plugins, type IsValid, type Methodology, type Styling,
+	type Plugins, type IsValid, type Methodology,
 	type Read,
 } from '../../index.js';
 import {ScannerGitignore} from '../scanner.js';
+import {type TargetIcon, type TargetName} from '../targets.js';
 
 const id = 'git';
-const name: Styling.DecorConditionOptions = {
-	ifNormal: 'Git',
-	ifNerd: icons['nf-seti-git'].char + ' Git',
-};
+const name: TargetName = 'Git';
+const icon: TargetIcon = icons['nf-seti-git'];
 const testCommand = 'git ls-tree -r <git-branch-name> --name-only';
 
 const matcherExclude: string[] = [
@@ -47,7 +46,7 @@ const methodology: Methodology[] = [
 ];
 
 const bind: Plugins.TargetBind = {
-	id, name, methodology, testCommand,
+	id, icon, name, methodology, testCommand,
 };
 const git: Plugins.PluginExport = {viewignored: {addTargets: [bind]}};
 export default git;

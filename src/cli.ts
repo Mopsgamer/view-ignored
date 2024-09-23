@@ -316,7 +316,10 @@ export async function actionScan(): Promise<void> {
 		process.exit(1);
 	}
 
-	const name = typeof bind.name === 'string' ? bind.name : decorCondition(flags.decor, bind.name);
+	let name: string = decorCondition(flags.decor, {ifNerd: bind.icon?.char, postfix: ' '}) + bind.name;
+	if (bind.icon?.color !== undefined) {
+		name = chalk.hex('#' + bind.icon.color.toString(16))(name);
+	}
 
 	let fileInfoList: FileInfo[];
 	try {

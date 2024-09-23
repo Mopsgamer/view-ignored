@@ -2,18 +2,16 @@ import {icons} from '@m234/nerd-fonts';
 import {
 	type Plugins, type IsValid, type Methodology,
 	type Read,
-	type Styling,
 } from '../../index.js';
 import {ScannerMinimatch} from '../scanner.js';
+import {type TargetIcon, type TargetName} from '../targets.js';
 
-export const id = 'npm';
-export const name: Styling.DecorConditionOptions = {
-	ifNormal: 'NPM',
-	ifNerd: icons['nf-seti-npm'].char + ' NPM',
-};
-export const testCommand = 'npm pack --dry-run';
+const id = 'npm';
+const name: TargetName = 'NPM';
+const icon: TargetIcon = icons['nf-seti-npm'];
+const testCommand = 'npm pack --dry-run';
 
-export const matcherExclude = [
+const matcherExclude = [
 	'node_modules/**',
 	'.*.swp',
 	'._*',
@@ -30,7 +28,7 @@ export const matcherExclude = [
 	'CVS/**',
 	'npm-debug.log',
 ];
-export const matcherInclude = [
+const matcherInclude = [
 	'/bin/',
 	'/package.json',
 	'/README',
@@ -43,7 +41,7 @@ export const matcherInclude = [
 
 const scanner = new ScannerMinimatch('', {exclude: matcherExclude, include: matcherInclude});
 
-export const isValidSourceMinimatch: IsValid = function (o, s) {
+const isValidSourceMinimatch: IsValid = function (o, s) {
 	const content = o.fsa.readFileSync(s.absolutePath).toString();
 	if (!scanner.isValid(content)) {
 		return false;
@@ -53,7 +51,7 @@ export const isValidSourceMinimatch: IsValid = function (o, s) {
 	return true;
 };
 
-export const findGitignore: IsValid = function (o, s) {
+const findGitignore: IsValid = function (o, s) {
 	if (s.base !== '.gitignore') {
 		return false;
 	}
@@ -61,7 +59,7 @@ export const findGitignore: IsValid = function (o, s) {
 	return isValidSourceMinimatch(o, s);
 };
 
-export const findNpmignore: IsValid = function (o, s) {
+const findNpmignore: IsValid = function (o, s) {
 	if (s.base !== '.npmignore') {
 		return false;
 	}
@@ -69,7 +67,7 @@ export const findNpmignore: IsValid = function (o, s) {
 	return isValidSourceMinimatch(o, s);
 };
 
-export const findPackageJson: IsValid = function (o, s) {
+const findPackageJson: IsValid = function (o, s) {
 	if (s.base !== 'package.json') {
 		return false;
 	}
@@ -109,7 +107,7 @@ const readJson: Read = function (o, s) {
 	return scanner;
 };
 
-export const methodology: Methodology[] = [
+const methodology: Methodology[] = [
 	{
 		findSource: findPackageJson, readSource: readJson,
 	},
@@ -122,7 +120,7 @@ export const methodology: Methodology[] = [
 ];
 
 const bind: Plugins.TargetBind = {
-	id, name, methodology, testCommand,
+	id, icon, name, methodology, testCommand,
 };
 const npm: Plugins.PluginExport = {viewignored: {addTargets: [bind]}};
 export default npm;
