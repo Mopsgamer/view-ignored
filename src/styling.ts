@@ -19,15 +19,24 @@ export function isColorType(value: unknown): value is ColorType {
 	return Number.isFinite(numberValue) && colorTypeList.includes(numberValue as ColorType);
 }
 
-export function highlight(text: string, chalk: ChalkInstance): string {
-	const rchar = /([,.\-:="|])/g;
-	const rstring = /'[A-Za-z]+'/g;
-	const rbrackets = /(\[|])/g;
+export function highlight(text: string, chalk?: ChalkInstance): string {
+	if (chalk === undefined) {
+		return text;
+	}
+
+	const rtype = /^(?<=\s*)(switch|boolean|object|string|number|integer)(\[])*(?=\s*)$/;
+	if (rtype.test(text)) {
+		return chalk.hex('#9999ff')(text);
+	}
+
+	const rseparator = /([,.\-:="|])/g;
+	const rstring = /'[^']+'/g;
+	const rbracketsSquare = /(\[|])/g;
 	const rnumber = /\d+/g;
 	const rspecial = /(true|false|null|Infinity)/g;
 
 	const rall = new RegExp(`${
-		[ansiRegex(), rchar, rstring, rbrackets, rnumber, rspecial]
+		[ansiRegex(), rstring, rseparator, rbracketsSquare, rnumber, rspecial]
 			.map(r => `(${typeof r === 'string' ? r : r.source})`)
 			.join('|')
 	}`, 'g');
@@ -37,24 +46,24 @@ export function highlight(text: string, chalk: ChalkInstance): string {
 			return match;
 		}
 
-		if (match.match(rchar) !== null) {
-			return chalk.red(match);
-		}
-
 		if (match.match(rstring) !== null) {
-			return match.replace(/^'[A-Za-z]+'$/, chalk.yellow('$&'));
+			return match.replace(/^'[^']*'$/, chalk.hex('#A2D2FF')('$&'));
 		}
 
-		if (match.match(rbrackets) !== null) {
-			return chalk.magenta(match);
+		if (match.match(rseparator) !== null) {
+			return chalk.hex('#D81159')(match);
+		}
+
+		if (match.match(rbracketsSquare) !== null) {
+			return chalk.hex('#B171D9')(match);
 		}
 
 		if (match.match(rnumber) !== null) {
-			return chalk.green(match);
+			return chalk.hex('#73DEA7')(match.replaceAll(/\B(?=(\d{3})+(?!\d))/g, ','));
 		}
 
 		if (match.match(rspecial) !== null) {
-			return chalk.blue(match);
+			return chalk.hex('#73DEA7')(match);
 		}
 
 		return match;

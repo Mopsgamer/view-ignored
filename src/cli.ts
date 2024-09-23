@@ -17,9 +17,10 @@ import {
 } from './browser/styling.js';
 import {makeMtimeCache, sortNameList, type SortName} from './browser/sorting.js';
 import {
-	boxError, decorNameList, styleNameList, type BoxOptions,
+	boxError, decorNameList, highlight, styleNameList, type BoxOptions,
 } from './styling.js';
 import {
+	DirectoryTree,
 	ErrorNoSources, type File, type FileInfo, package_, readDirectoryDeep, realOptions, scanPathList, Sorting, streamDirectoryDeep,
 } from './lib.js';
 import {filterNameList, type FilterName} from './browser/filtering.js';
@@ -293,10 +294,19 @@ export async function actionScan(): Promise<void> {
 	const bar = new ProgressBar({
 		width: 8, color: 'red', bgColor: 'gray', prefix: process.cwd(),
 	});
+	const count = {files: 0, directories: 0};
 	if (!flags.parsable) {
 		bar.start({total: 1});
 		let perc = -1;
-		stream.on('progress', progress => {
+		stream.on('data', async entry => {
+			if (entry.target instanceof DirectoryTree) {
+				++count.directories;
+				return;
+			}
+
+			++count.files;
+		});
+		stream.on('progress', async progress => {
 			const {current, total} = progress;
 			const newPerc = Math.floor(current / total * 100);
 			if (newPerc <= perc) {
@@ -373,15 +383,15 @@ export async function actionScan(): Promise<void> {
 	let message = '';
 	message += files;
 	message += '\n';
-	message += `${chalk.green(checkSymbol)}Done in ${time < 400 ? chalk.yellow(fastSymbol) : ''}${time}ms.`;
+	message += `${chalk.green(checkSymbol)}Done in ${time < 400 ? chalk.yellow(fastSymbol) : ''}${highlight(String(time), chalk)}ms.`;
+	message += '\n';
+	message += `Processed ${highlight(String(count.files), chalk)} files and ${highlight(String(count.directories), chalk)} directories.`;
 	message += '\n';
 	message += `${fileInfoList.length} files listed for ${name} (${flags.filter}).`;
 	message += '\n';
-	message += `Processed ${direntFlat.length} files.`;
-	message += '\n';
 	if (bind.testCommand) {
 		message += '\n';
-		message += `${chalk.blue(infoSymbol)}You can use '${chalk.magenta(bind.testCommand)}' to check if the list is valid.`;
+		message += `${chalk.blue(infoSymbol)}You can use ${highlight(`'${bind.testCommand}'`, chalk)} to check if the list is valid.`;
 	}
 
 	message += '\n';

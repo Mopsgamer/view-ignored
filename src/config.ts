@@ -518,13 +518,13 @@ export class ConfigManager<ConfigType extends Record<string, unknown> = Config> 
 			const type = this.getType(key);
 			const pad = keyMaxLength - key.length;
 			const line = types ? format(
-				'%s = %s: %s',
-				' '.repeat(pad) + (chalk ? chalk.cyan(key) : key),
+				`${' '.repeat(pad)}%s ${highlight('=', chalk)} %s${highlight(':', chalk)} %s`,
+				(chalk ? chalk.hex('#FFBC42')(key) : key),
 				chalk ? highlight(value, chalk) : value,
 				(chalk ? chalk.dim(highlight(type, chalk)) : type),
 			) : format(
-				'%s = %s',
-				' '.repeat(pad) + (chalk ? chalk.cyan(key) : key),
+				`${' '.repeat(pad)}%s ${highlight('=', chalk)} %s`,
+				(chalk ? chalk.hex('#FFBC42')(key) : key),
 				chalk ? highlight(value, chalk) : value,
 			);
 
