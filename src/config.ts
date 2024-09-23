@@ -516,15 +516,18 @@ export class ConfigManager<ConfigType extends Record<string, unknown> = Config> 
 		return keys.map((key: string): string => {
 			const value = format('%o', this.get(key, options));
 			const type = this.getType(key);
-			const line = format(
-				types ? '%s%s = %s: %s' : '%s%s = %s',
-				' '.repeat(pad),
+			const line = types ? format(
+				'%s = %s: %s',
 				(chalk ? chalk.cyan(key) : key),
 				chalk ? highlight(value, chalk) : value,
 				(chalk ? chalk.dim(highlight(type, chalk)) : type),
+			) : format(
+				'%s = %s',
+				(chalk ? chalk.cyan(key) : key),
+				chalk ? highlight(value, chalk) : value,
 			);
 
-			return line;
+			return ' '.repeat(pad) + line;
 		}).join('\n');
 	}
 }
