@@ -148,6 +148,101 @@ const targetTestList: Plan = {
 			should: viewig.ErrorNoSources,
 			content: {},
 		},
+		'single file': {
+			should: viewig.ErrorNoSources,
+			content: {
+				'file.txt': '',
+			},
+		},
+		'.gitignore': {
+			should: {
+				include: ['file.txt'],
+				source: '.gitignore',
+			},
+			content: {
+				'file.txt': '',
+				'node_modules/tempdep/indexOf.js': '',
+				'.gitignore': 'node_modules',
+			},
+		},
+		'.gitignore with comment': {
+			should: {
+				include: ['file.txt'],
+				source: '.gitignore',
+			},
+			content: {
+				'file.txt': '',
+				'node_modules/tempdep/indexOf.js': '',
+				'.gitignore': '#comment\nnode_modules',
+			},
+		},
+		'(package.json), .yarnignore, .npmignore, .gitignore': {
+			should: {
+				include: [
+					'README.md',
+					'bin/app',
+					'package.json',
+				],
+				source: 'package.json',
+			},
+			content: {
+				...realProject,
+				'.yarnignore': 'node_modules\nconfig*.json\ntest\n.github\nREADME*',
+				'.npmignore': 'node_modules\nconfig*.json\ntest\n.github',
+				'.gitignore': 'node_modules\nconfig.json',
+				'package.json': JSON.stringify({
+					files: [],
+					main: './lib/index.js',
+					name: 'app',
+					version: '0.0.1',
+				}),
+			},
+		},
+		'package.json, (.yarnignore), .npmignore, .gitignore': {
+			should: {
+				include: [
+					'README.md',
+					'bin/app',
+					'lib/cli.js',
+					'lib/index.js',
+					'package.json',
+				],
+				source: '.yarnignore',
+			},
+			content: {
+				...realProject,
+				'.yarnignore': 'node_modules\nconfig*.json\ntest\n.github\nREADME*',
+				'.npmignore': 'node_modules\nconfig*.json\ntest\n.github',
+				'.gitignore': 'node_modules\nconfig.json',
+				'package.json': JSON.stringify({
+					main: './lib/index.js',
+					name: 'app',
+					version: '0.0.1',
+				}),
+			},
+		},
+		'package.json, .yarnignore, (.npmignore), .gitignore': {
+			should: {
+				include: [
+					'README.md',
+					'bin/app',
+					'lib/cli.js',
+					'lib/index.js',
+					'package.json',
+				],
+				source: '.npmignore',
+			},
+			content: {
+				...realProject,
+				'.npmignore': 'node_modules\nconfig*.json\ntest\n.github',
+				'.gitignore': 'node_modules\nconfig.json',
+				'package.json': JSON.stringify({
+					main: './lib/index.js',
+					name: 'app',
+					version: '0.0.1',
+				}),
+			},
+		},
 	},
 
 	/**
