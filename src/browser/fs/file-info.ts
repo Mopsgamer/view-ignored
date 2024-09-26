@@ -3,8 +3,9 @@ import {type ChalkInstance} from 'chalk';
 import nf from '@m234/nerd-fonts';
 import {decorCondition, type DecorName} from '../styling.js';
 import {type FilterName} from '../filtering.js';
+import {type Scanner} from '../lib.js';
 import {File} from './file.js';
-import {type SourceInfo} from './source-info.js';
+import {SourceInfo} from './source-info.js';
 
 /**
  * @see {@link FileInfo.prototype.toString}
@@ -70,7 +71,7 @@ export class FileInfo extends File {
 		/**
 		 * The source of patterns.
 		 */
-		public readonly source: SourceInfo,
+		public readonly source: SourceInfo | Scanner,
 		/**
 		 * Determines if ignored file is ignored or not.
 		 */
@@ -94,7 +95,7 @@ export class FileInfo extends File {
 			postfix: ' ',
 		}) : '';
 		let prefix = usePrefix ? (this.isIgnored ? '!' : '+') : '';
-		let postfix = useSource ? ' << ' + this.source.toString() : '';
+		let postfix = useSource ? ' << ' + (this.source instanceof SourceInfo ? this.source.toString() : '(default)') : '';
 
 		if (chalk) {
 			prefix = chalk.dim(prefix);

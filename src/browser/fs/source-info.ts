@@ -4,7 +4,6 @@ import EventEmitter from 'node:events';
 import pLimit from 'p-limit';
 import {
 	DirectoryTree,
-	type ScanFolderOptions,
 	type Methodology,
 	File,
 	type RealScanFolderOptions,
@@ -74,7 +73,7 @@ export class SourceInfo extends File {
 		/**
 		 * The options.
 		 */
-		public readonly options?: Required<ScanFolderOptions>,
+		public readonly options?: RealScanFolderOptions,
 	) {
 		super(relativePath, absolutePath);
 	}

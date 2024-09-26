@@ -120,7 +120,7 @@ const methodology: Methodology[] = [
 ];
 
 const bind: Plugins.TargetBind = {
-	id, icon, name, methodology, testCommand,
+	id, icon, name, methodology, testCommand, scanOptions: {defaultScanner: scanner},
 };
 const npm: Plugins.PluginExport = {viewignored: {addTargets: [bind]}};
 export default npm;

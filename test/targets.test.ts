@@ -34,11 +34,17 @@ const realProject = {
 const targetTestList: Plan = {
 	git: {
 		'empty project': {
-			should: viewig.ErrorNoSources,
+			should: {
+				include: [],
+				source: '(default)',
+			},
 			content: {},
 		},
 		'single file': {
-			should: viewig.ErrorNoSources,
+			should: {
+				include: ['file.txt'],
+				source: '(default)',
+			},
 			content: {
 				'file.txt': '',
 			},
@@ -64,11 +70,17 @@ const targetTestList: Plan = {
 	 */
 	npm: {
 		'empty project': {
-			should: viewig.ErrorNoSources,
+			should: {
+				include: [],
+				source: '(default)',
+			},
 			content: {},
 		},
 		'single file': {
-			should: viewig.ErrorNoSources,
+			should: {
+				include: ['file.txt'],
+				source: '(default)',
+			},
 			content: {
 				'file.txt': '',
 			},
@@ -145,11 +157,17 @@ const targetTestList: Plan = {
 	 */
 	yarn: {
 		'empty project': {
-			should: viewig.ErrorNoSources,
+			should: {
+				include: [],
+				source: '(default)',
+			},
 			content: {},
 		},
 		'single file': {
-			should: viewig.ErrorNoSources,
+			should: {
+				include: ['file.txt'],
+				source: '(default)',
+			},
 			content: {
 				'file.txt': '',
 			},
@@ -250,11 +268,17 @@ const targetTestList: Plan = {
 	 */
 	vsce: {
 		'empty project': {
-			should: viewig.ErrorNoSources,
+			should: {
+				include: [],
+				source: '(default)',
+			},
 			content: {},
 		},
 		'single file': {
-			should: viewig.ErrorNoSources,
+			should: {
+				include: ['file.txt'],
+				source: '(default)',
+			},
 			content: {
 				'file.txt': '',
 			},
@@ -357,13 +381,14 @@ async function testTargetSubtest(data: TestTargetSubtestData) {
 	const actual = fileInfoList
 		.map(fileInfo => {
 			const testLineSource = testLineContent + myContentLines.slice(testLineContent)
-				.findIndex(line => line.includes(fileInfo.source.relativePath)) + 1;
+				.findIndex(line => line.includes(fileInfo.source instanceof viewig.SourceInfo ? fileInfo.source.relativePath : '(default)')) + 1;
 			return `${chalk.red(fileInfo.toString({source: true, chalk}))} (${lineColumnInfo(testFilePath, testLineSource, myContentLines[testLineSource].length)})`;
 		})
 		.sort().join('\n        ');
 	info += `      Results: \n        ${actual}\n`;
 	for (const fileInfo of (await fileInfoListPromise)) {
-		assert.strictEqual(fileInfo.source.relativePath, should.source, 'The source is not right.' + chalk.white(info));
+		const sourceString = fileInfo.source instanceof viewig.SourceInfo ? fileInfo.source.relativePath : '(default)';
+		assert.strictEqual(sourceString, should.source, 'The source is not right.' + chalk.white(info));
 	}
 
 	assert.deepEqual(cmp1, cmp2, 'The path list is bad.' + chalk.white(info));

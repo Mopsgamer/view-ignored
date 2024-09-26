@@ -76,7 +76,8 @@ export function isMethodology(value: unknown): value is Methodology {
 	return value?.constructor === Object;
 }
 
-export type RealScanFolderOptions = Required<ScanFolderOptions> & {
+export type RealScanFolderOptions = Required<Omit<ScanFolderOptions, 'defaultScanner'>> & {
+	defaultScanner?: Scanner | undefined;
 	fsa: Required<FileSystemAdapter>;
 	patha: PATH.PlatformPath;
 };
@@ -86,6 +87,12 @@ export type RealScanFolderOptions = Required<ScanFolderOptions> & {
  * @see {@link ScanFileOptions}
  */
 export type ScanFolderOptions = {
+
+	/**
+	 * The default scanner if the methodology could not find any sources.
+	 * @default undefined
+	 */
+	defaultScanner?: Scanner;
 
 	/**
 	 * The max concurrency for file-system operations.
@@ -132,16 +139,12 @@ export type ScanFolderOptions = {
 /**
  * Gets info about the each file: it is ignored or not.
  * @param pathList The list of relative paths. The should be relative to the current working directory.
- * @throws {ErrorNoSources} if the source is bad.
+ * @throws {ErrorNoSources} if no sources found.
  * @todo Optimize source searching.
  */
 export async function scanPathList(pathList: Array<{toString(): string}>, sources: Methodology[], options?: ScanFolderOptions): Promise<FileInfo[]>;
 export async function scanPathList(pathList: Array<{toString(): string}>, target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
 export async function scanPathList(pathList: Array<{toString(): string}>, argument1: Methodology[] | string, options?: ScanFolderOptions): Promise<FileInfo[]> {
-	if (pathList.length === 0) {
-		throw new ErrorNoSources();
-	}
-
 	options ??= {};
 	if (typeof argument1 === 'string') {
 		const bind = targetGet(argument1);
@@ -200,6 +203,24 @@ export async function scanPathList(pathList: Array<{toString(): string}>, argume
 		return fileInfoList;
 	}
 
+	if (optionsReal.defaultScanner !== undefined) {
+		const fileInfoList: FileInfo[] = [];
+		for (const pathItem of pathList) {
+			const relativePath = String(pathItem);
+			const absolutePath = pathItem instanceof File ? pathItem.absolutePath : optionsReal.patha.join(optionsReal.cwd, relativePath);
+			const fileInfo = new FileInfo(relativePath, absolutePath, optionsReal.defaultScanner, optionsReal.defaultScanner.ignores(relativePath));
+			const ignored = !fileInfo.isIncludedBy(optionsReal.filter);
+
+			if (ignored) {
+				continue;
+			}
+
+			fileInfoList.push(fileInfo);
+		}
+
+		return fileInfoList;
+	}
+
 	throw new ErrorNoSources();
 }
 
@@ -226,6 +247,7 @@ export function realOptions(options?: ScanFolderOptions): RealScanFolderOptions 
 	const concurrency = options.concurrency ?? configDefault.concurrency;
 	const optionsReal: RealScanFolderOptions = {
 		concurrency,
+		defaultScanner: options.defaultScanner,
 		cwd: options.cwd ?? process.cwd(),
 		filter: options.filter ?? configDefault.filter,
 		fsa: (options.fsa ?? FS) as Required<FileSystemAdapter>,

@@ -21,7 +21,7 @@ import {
 } from './styling.js';
 import {
 	DirectoryTree,
-	ErrorNoSources, type File, type FileInfo, package_, readDirectoryDeep, realOptions, scanPathList, Sorting, streamDirectoryDeep,
+	ErrorNoSources, type File, type FileInfo, package_, readDirectoryDeep, realOptions, scanPathList, Sorting, SourceInfo, streamDirectoryDeep,
 } from './lib.js';
 import {filterNameList, type FilterName} from './browser/filtering.js';
 
@@ -354,7 +354,7 @@ export async function actionScan(): Promise<void> {
 	if (flags.parsable) {
 		console.log(fileInfoList.map(fileInfo =>
 			fileInfo.relativePath + (
-				flags.showSources ? '<' + fileInfo.source.relativePath : ''
+				flags.showSources ? '<' + (fileInfo.source instanceof SourceInfo ? fileInfo.source.relativePath : '(default)') : ''
 			),
 		).join(','));
 		return;

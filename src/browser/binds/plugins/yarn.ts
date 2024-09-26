@@ -137,7 +137,7 @@ const methodology: Methodology[] = [
 ];
 
 const bind: Plugins.TargetBind = {
-	id, icon, name, methodology,
+	id, icon, name, methodology, scanOptions: {defaultScanner: scanner},
 };
 const yarn: Plugins.PluginExport = {viewignored: {addTargets: [bind]}};
 export default yarn;
