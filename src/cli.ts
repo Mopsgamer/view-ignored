@@ -385,9 +385,9 @@ export async function actionScan(): Promise<void> {
 	message += '\n';
 	message += `${chalk.green(checkSymbol)}Done in ${time < 400 ? chalk.yellow(fastSymbol) : ''}${highlight(String(time), chalk)}ms.`;
 	message += '\n';
-	message += `Processed ${highlight(String(count.files), chalk)} files and ${highlight(String(count.directories), chalk)} directories.`;
+	message += `Listed ${highlight(String(fileInfoList.length), chalk)} files for ${name} (${flags.filter}).`;
 	message += '\n';
-	message += `${fileInfoList.length} files listed for ${name} (${flags.filter}).`;
+	message += `Processed ${highlight(String(count.files), chalk)} files and ${highlight(String(count.directories), chalk)} directories.`;
 	message += '\n';
 	if (bind.testCommand) {
 		message += '\n';
