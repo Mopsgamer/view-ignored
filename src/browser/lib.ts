@@ -36,12 +36,12 @@ export type FileSystemAdapter = {
 /**
  * @returns `true`, if the given source is valid.
  */
-export type IsValid = (options: RealScanFolderOptions, source: File) => boolean;
+export type FindSource = (options: RealScanFolderOptions, source: File) => boolean;
 
 /**
  * @returns New scanner. The scanner should tell if the file should be ignored.
  */
-export type Read = (options: RealScanFolderOptions, source: SourceInfo) => Scanner;
+export type ReadSource = (options: RealScanFolderOptions, source: SourceInfo) => Scanner;
 
 /**
  * The custom scanner.
@@ -61,12 +61,12 @@ export type Methodology = {
 	/**
 	 * @returns `true`, if the given source is valid.
 	 */
-	findSource: IsValid;
+	findSource: FindSource;
 
 	/**
 	 * @returns New source scanner. The scanner should tell if the file should be ignored.
 	 */
-	readSource: Read;
+	readSource: ReadSource;
 };
 
 /**

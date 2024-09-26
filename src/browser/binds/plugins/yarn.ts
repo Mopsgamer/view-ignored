@@ -1,7 +1,7 @@
 import {icons} from '@m234/nerd-fonts';
 import {
-	type Plugins, type Methodology, type IsValid,
-	type Read,
+	type Plugins, type Methodology, type FindSource,
+	type ReadSource,
 } from '../../index.js';
 import {ScannerMinimatch} from '../scanner.js';
 import {type TargetIcon, type TargetName} from '../targets.js';
@@ -47,7 +47,7 @@ const matcherInclude = [
 
 const scanner = new ScannerMinimatch('', {exclude: matcherExclude, include: matcherInclude});
 
-const isValidSourceMinimatch: IsValid = function (o, s) {
+const isValidSourceMinimatch: FindSource = function (o, s) {
 	const content = o.fsa.readFileSync(s.absolutePath).toString();
 	if (!scanner.isValid(content)) {
 		return false;
@@ -57,7 +57,7 @@ const isValidSourceMinimatch: IsValid = function (o, s) {
 	return true;
 };
 
-const findGitignore: IsValid = function (o, s) {
+const findGitignore: FindSource = function (o, s) {
 	if (s.base !== '.gitignore') {
 		return false;
 	}
@@ -65,7 +65,7 @@ const findGitignore: IsValid = function (o, s) {
 	return isValidSourceMinimatch(o, s);
 };
 
-const findNpmignore: IsValid = function (o, s) {
+const findNpmignore: FindSource = function (o, s) {
 	if (s.base !== '.npmignore') {
 		return false;
 	}
@@ -73,7 +73,7 @@ const findNpmignore: IsValid = function (o, s) {
 	return isValidSourceMinimatch(o, s);
 };
 
-const findYarnignore: IsValid = function (o, s) {
+const findYarnignore: FindSource = function (o, s) {
 	if (s.base !== '.yarnignore') {
 		return false;
 	}
@@ -81,7 +81,7 @@ const findYarnignore: IsValid = function (o, s) {
 	return isValidSourceMinimatch(o, s);
 };
 
-const findPackageJson: IsValid = function (o, s) {
+const findPackageJson: FindSource = function (o, s) {
 	if (s.base !== 'package.json') {
 		return false;
 	}
@@ -107,14 +107,14 @@ const findPackageJson: IsValid = function (o, s) {
 	return true;
 };
 
-const read: Read = function (o, s) {
+const read: ReadSource = function (o, s) {
 	const content = o.fsa.readFileSync(s.absolutePath).toString();
 	scanner.negated = false;
 	scanner.update(content);
 	return scanner;
 };
 
-const readJson: Read = function (o, s) {
+const readJson: ReadSource = function (o, s) {
 	const content = o.fsa.readFileSync(s.absolutePath).toString();
 	scanner.negated = true;
 	scanner.update((JSON.parse(content) as {files: string[]}).files);

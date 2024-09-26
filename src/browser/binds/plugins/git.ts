@@ -1,7 +1,7 @@
 import {icons} from '@m234/nerd-fonts';
 import {
-	type Plugins, type IsValid, type Methodology,
-	type Read,
+	type Plugins, type FindSource, type Methodology,
+	type ReadSource,
 } from '../../index.js';
 import {ScannerGitignore} from '../scanner.js';
 import {type TargetIcon, type TargetName} from '../targets.js';
@@ -18,7 +18,7 @@ const matcherExclude: string[] = [
 
 const scanner = new ScannerGitignore('', {exclude: matcherExclude});
 
-const find: IsValid = function (o, s) {
+const find: FindSource = function (o, s) {
 	if (s.base !== '.gitignore') {
 		return false;
 	}
@@ -33,7 +33,7 @@ const find: IsValid = function (o, s) {
 	return true;
 };
 
-const read: Read = function (o, s) {
+const read: ReadSource = function (o, s) {
 	const content = o.fsa.readFileSync(s.absolutePath).toString();
 	scanner.update(content);
 	return scanner;
