@@ -1,6 +1,6 @@
 
 import {
-	type ScanFolderOptions, type Methodology, isMethodology,
+	type ScanFolderOptions, type Methodology,
 } from '../lib.js';
 
 /**
@@ -76,17 +76,7 @@ export type TargetBind = {
  * Checks if the value is the {@link TargetBind}.
  */
 export function isTargetBind(value: unknown): value is TargetBind {
-	if (value?.constructor !== Object) {
-		return false;
-	}
-
-	const v = value as Record<string, unknown>;
-
-	return (isTargetId(v.id))
-        && (typeof v.name === 'string' || v.name?.constructor === Object)
-        && (Array.isArray(v.methodology) && v.methodology.every(m => isMethodology(m)))
-        && (v.scanOptions === undefined || v.scanOptions?.constructor === Object)
-        && (v.testCommand === undefined || typeof v.testCommand === 'string');
+	return value?.constructor === Object;
 }
 
 /**

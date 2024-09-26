@@ -73,15 +73,7 @@ export type Methodology = {
  * Checks if the value is the {@link Methodology}.
  */
 export function isMethodology(value: unknown): value is Methodology {
-	if (value?.constructor !== Object) {
-		return false;
-	}
-
-	const v = value as Partial<Methodology>;
-
-	const check: boolean = (v.findSource === undefined || typeof v.findSource === 'function')
-		&& (v.readSource === undefined || typeof v.readSource === 'function');
-	return check;
+	return value?.constructor === Object;
 }
 
 export type RealScanFolderOptions = Required<ScanFolderOptions> & {
