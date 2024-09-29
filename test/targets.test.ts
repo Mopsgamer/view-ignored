@@ -28,6 +28,7 @@ const realProject = {
 	'lib/index.js': '',
 	'test/app.test.js': '',
 	'README.md': '',
+	LICENSE: '',
 	'config.json': '',
 };
 
@@ -110,6 +111,7 @@ const targetTestList: Plan = {
 		'(package.json), .npmignore, .gitignore': {
 			should: {
 				include: [
+					'LICENSE',
 					'README.md',
 					'bin/app',
 					'package.json',
@@ -131,6 +133,7 @@ const targetTestList: Plan = {
 		'package.json, (.npmignore), .gitignore': {
 			should: {
 				include: [
+					'LICENSE',
 					'README.md',
 					'bin/app',
 					'lib/cli.js',
@@ -197,6 +200,7 @@ const targetTestList: Plan = {
 		'(package.json), .yarnignore, .npmignore, .gitignore': {
 			should: {
 				include: [
+					'LICENSE',
 					'README.md',
 					'bin/app',
 					'package.json',
@@ -219,6 +223,7 @@ const targetTestList: Plan = {
 		'package.json, (.yarnignore), .npmignore, .gitignore': {
 			should: {
 				include: [
+					'LICENSE',
 					'README.md',
 					'bin/app',
 					'lib/cli.js',
@@ -242,6 +247,7 @@ const targetTestList: Plan = {
 		'package.json, .yarnignore, (.npmignore), .gitignore': {
 			should: {
 				include: [
+					'LICENSE',
 					'README.md',
 					'bin/app',
 					'lib/cli.js',
