@@ -8,7 +8,7 @@ import * as yaml from 'yaml';
 import {type ChalkInstance} from 'chalk';
 import {type Command, type Option} from 'commander';
 import {
-	colorTypeList, type DecorName, decorNameList, highlight, type StyleName, styleNameList, type ColorType,
+	type DecorName, decorNameList, highlight, type StyleName, styleNameList,
 } from './styling.js';
 import {type ConfigCheckMap} from './errors.js';
 import {type SortName, sortNameList} from './browser/sorting.js';
@@ -28,7 +28,7 @@ const configFilePath = path.join(os.homedir(), configFileName);
 /**
  * Command-line configuration property list.
  */
-export const configKeyList = ['color', 'target', 'filter', 'sort', 'style', 'decor', 'depth', 'showSources', 'plugins', 'parsable', 'concurrency'] as const satisfies ReadonlyArray<keyof Config>;
+export const configKeyList = ['posix', 'noColor', 'target', 'filter', 'sort', 'style', 'decor', 'depth', 'showSources', 'plugins', 'parsable', 'concurrency'] as const satisfies ReadonlyArray<keyof Config>;
 
 /**
  * Command-line configuration's key type.
@@ -53,9 +53,11 @@ export type ConfigPair<KeyT extends ConfigKey = ConfigKey> = [key: KeyT, value: 
  * @see {@link configKeyList} Before adding new properties.
  */
 export type Config = {
+	[key: string]: unknown;
 	parsable: boolean;
+	noColor: boolean;
+	posix: boolean;
 	plugins: string[];
-	color: ColorType;
 	target: string;
 	filter: FilterName;
 	sort: SortName;
@@ -69,10 +71,11 @@ export type Config = {
 /**
  * Command-line default config values.
  */
-export const configDefault = {
+export const configDefault: Readonly<Config> = {
 	parsable: false,
+	noColor: false,
+	posix: false,
 	plugins: [],
-	color: 3,
 	target: 'git',
 	filter: 'included',
 	sort: 'firstFolders',
@@ -81,7 +84,7 @@ export const configDefault = {
 	depth: Infinity,
 	showSources: false,
 	concurrency: 8,
-} as const satisfies Config;
+};
 
 /**
  * @returns Error message and parsed value.
@@ -241,13 +244,13 @@ export type ConfigManagerGetPairStringOptions = ConfigManagerGetOptions & {
 /**
  * File-specific actions container.
  */
-export class ConfigManager<ConfigType extends Record<string, unknown> = Config> {
+export class ConfigManager<ConfigType extends Config = Config> {
 	/**
 	 * Do not change this value directly.
 	 * @see {@link configManager}.
 	 */
 	private data: Record<string, unknown> = {};
-	private readonly configValidation = new Map<string, ConfigValidator>();
+	private readonly configValidation = new Map<keyof ConfigType, ConfigValidator>();
 	private readonly cliOptionLinkMap = new Map<string, Option>();
 	private readonly dataDefault: Record<string, unknown> = {};
 
@@ -255,7 +258,8 @@ export class ConfigManager<ConfigType extends Record<string, unknown> = Config> 
 		public readonly path: string,
 	) {
 		this.keySetValidator('parsable', configDefault.parsable, configValueBoolean());
-		this.keySetValidator('color', configDefault.color, configValueLiteral(colorTypeList));
+		this.keySetValidator('noColor', configDefault.noColor, configValueBoolean());
+		this.keySetValidator('posix', configDefault.posix, configValueBoolean());
 		this.keySetValidator('filter', configDefault.filter, configValueLiteral(filterNameList));
 		this.keySetValidator('sort', configDefault.sort, configValueLiteral(sortNameList));
 		this.keySetValidator('style', configDefault.style, configValueLiteral(styleNameList));
@@ -279,7 +283,7 @@ export class ConfigManager<ConfigType extends Record<string, unknown> = Config> 
 
 			const value = object[key];
 
-			const message = this.checkValue(key, value);
+			const message = this.checkValue<string>(key, value);
 			if (message === undefined) {
 				continue;
 			}
@@ -303,7 +307,6 @@ export class ConfigManager<ConfigType extends Record<string, unknown> = Config> 
 	 * Get type checker for the key.
 	 */
 	keyGetValidator<T extends keyof ConfigType>(key: T): ConfigValidator | undefined;
-	keyGetValidator(key: string): ConfigValidator | undefined;
 	keyGetValidator(key: string): ConfigValidator | undefined {
 		return this.configValidation.get(key);
 	}
@@ -311,13 +314,11 @@ export class ConfigManager<ConfigType extends Record<string, unknown> = Config> 
 	/**
 	 * Define type checker for the key.
 	 */
-	keySetValidator<T extends keyof ConfigType>(key: T, defaultValue: ConfigType[T], type: ConfigValidator): this;
-	keySetValidator(key: string, defaultValue: unknown, type: ConfigValidator): this;
-	keySetValidator(key: string, defaultValue: unknown, type: ConfigValidator): this {
+	keySetValidator<T extends keyof ConfigType & string>(key: T, defaultValue: ConfigType[T], type: ConfigValidator): this {
 		this.configValidation.set(key, type);
 		const errorMessage = type(defaultValue);
 		if (errorMessage !== undefined) {
-			throw new TypeError(`Invalid default value preset for configuration key '${key}' - ${errorMessage}`);
+			throw new TypeError(`Invalid default value preset for configuration key ${format(key)} - ${errorMessage}`);
 		}
 
 		this.dataDefault[key] = defaultValue;
@@ -339,8 +340,7 @@ export class ConfigManager<ConfigType extends Record<string, unknown> = Config> 
 	/**
 	 * Call the type checker for the key.
 	 */
-	checkValue(key: keyof ConfigType, value: unknown): string | undefined;
-	checkValue(key: string, value: unknown): string | undefined;
+	checkValue<T extends keyof ConfigType>(key: T, value: unknown): string | undefined;
 	checkValue(key: string, value: unknown): string | undefined {
 		const validate = this.configValidation.get(key);
 		if (validate === undefined) {
@@ -353,7 +353,6 @@ export class ConfigManager<ConfigType extends Record<string, unknown> = Config> 
 	/**
 	 * Link a configuration property with a command-line option.
 	 */
-	setOption(key: string, command: Command, option: Option, parseArgument?: (argument: string) => unknown): this;
 	setOption<T extends keyof ConfigType>(key: T, command: Command, option: Option, parseArgument?: (argument: string) => unknown): this;
 	setOption(key: string, command: Command, option: Option, parseArgument?: (argument: string) => unknown): this {
 		if (parseArgument) {
@@ -461,7 +460,7 @@ export class ConfigManager<ConfigType extends Record<string, unknown> = Config> 
 	/**
      * @returns An array of properties which defined in the configuration file.
      */
-	keyList(real = true): string[] {
+	keyList(real = true): Array<keyof ConfigType> {
 		const keys = real ? Array.from(this.configValidation.keys()) : Object.keys(this.data);
 		return keys;
 	}

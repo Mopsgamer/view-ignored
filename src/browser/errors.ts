@@ -1,8 +1,8 @@
 export class SomeError extends Error {}
 
 export class ErrorNoSources extends SomeError {
-	constructor(targetId?: string) {
-		super(`No available sources${typeof targetId === 'string' ? `: ${targetId}` : ''}.`);
+	constructor() {
+		super(`There was no configuration file in the folders and subfolders that would correctly describe the ignoring.`);
 	}
 }
 

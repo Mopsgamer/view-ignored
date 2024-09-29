@@ -78,12 +78,12 @@
 	"dependencies": {
 		"@humanwhocodes/gitignore-to-minimatch": "^1.0.2",
 		"@m234/nerd-fonts": "^0.1.1",
-		"@opentf/cli-pbar": "^0.7.2",
 		"ansi-regex": "^6.1.0",
 		"boxen": "^8.0.1",
 		"chalk": "^5.3.0",
 		"commander": "^12.1.0",
 		"jsonify-paths": "^1.1.0",
+		"listr2": "^8.2.4",
 		"load-plugin": "^6.0.3",
 		"minimatch": "^10.0.1",
 		"p-limit": "^6.1.0",

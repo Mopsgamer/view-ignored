@@ -2,11 +2,11 @@
 import {format} from 'node:util';
 import * as process from 'node:process';
 import {icons} from '@m234/nerd-fonts';
-import {Chalk, type ChalkInstance, type ColorSupportLevel} from 'chalk';
+import {Chalk} from 'chalk';
 import {
 	Argument, InvalidArgumentError, Option, Command,
 } from 'commander';
-import {ProgressBar} from '@opentf/cli-pbar';
+import {Listr} from 'listr2';
 import * as Config from './config.js';
 import {
 	targetGet, loadPlugins, loadBuiltIns,
@@ -21,12 +21,12 @@ import {
 } from './styling.js';
 import {
 	DirectoryTree,
-	ErrorNoSources, type File, type FileInfo, package_, readDirectoryDeep, realOptions, scanPathList, Sorting, SourceInfo, streamDirectoryDeep,
+	type File, type FileInfo, package_, readDirectoryDeep, type ReadDirectoryEventEmitter, type ReadDirectoryProgress, realOptions, scanPathList, Sorting, SourceInfo, streamDirectoryDeep,
 } from './lib.js';
 import {filterNameList, type FilterName} from './browser/filtering.js';
 
 export function logError(message: string, options?: BoxOptions) {
-	console.log(boxError(message, {noColor: getColorLevel(program.opts()) === 0, ...options}));
+	console.log(boxError(message, {...options}));
 }
 
 /**
@@ -37,7 +37,7 @@ export async function programInit() {
 		const {configManager, configDefault, configValueArray, configValueString, configValueLiteral} = Config;
 
 		const flags = program.optsWithGlobals<ProgramFlags>();
-		const chalk = getChalk(getColorLevel(flags));
+		const chalk = new Chalk();
 
 		configManager.keySetValidator<'plugins'>('plugins', configDefault.plugins, configValueArray(configValueString()));
 		const loadResultConfig = configManager.load();
@@ -86,10 +86,9 @@ export async function programInit() {
 		}
 
 		program.version('v' + package_.version, '-v');
-		program.addOption(new Option('--no-color', 'force disable colors').default(false));
-		program.addOption(new Option('--posix', 'use unix path separator').default(false));
+		configManager.setOption('noColor', program, new Option('--no-color', 'force disable colors'), parseArgumentBoolean);
+		configManager.setOption('posix', program, new Option('--posix', 'use unix path separator'), parseArgumentBoolean);
 		configManager.setOption('plugins', program, new Option('--plugins <modules...>', 'import modules to modify behavior'), parseArgumentArrayString);
-		configManager.setOption('color', program, new Option('--color <level>', 'the interface color level'), parseArgumentInteger);
 		configManager.setOption('decor', program, new Option('--decor <decor>', 'the interface decorations'), createArgumentParserStringLiteral([...decorNameList]));
 		configManager.setOption('parsable', program, new Option('-p, --parsable [parsable]', 'print parsable text'), parseArgumentBoolean);
 		configManager.setOption('target', scanProgram, new Option('-t, --target <ignorer>', 'the scan target'), createArgumentParserStringLiteral(targets));
@@ -107,18 +106,6 @@ export async function programInit() {
 	}
 }
 
-/** Chalk, but configured by view-ignored cli. */
-export function getColorLevel(flags: ProgramFlags): ColorSupportLevel {
-	const colorLevel = (flags.noColor ? 0 : Math.max(0, Math.min(Number(flags.color ?? 3), 3))) as ColorSupportLevel;
-	return colorLevel;
-}
-
-/** Chalk, but configured by view-ignored cli. */
-export function getChalk(colorLevel: ColorSupportLevel): ChalkInstance {
-	const chalk = new Chalk({level: colorLevel});
-	return chalk;
-}
-
 /**
  * Command-line entire program flags.
  */
@@ -126,7 +113,6 @@ export type ProgramFlags = {
 	posix: boolean;
 	plugins: string[];
 	noColor: boolean;
-	color: string;
 	decor: DecorName;
 	parsable: boolean;
 };
@@ -279,6 +265,15 @@ export function parseArgumentKeyValue(pair: string): Config.ConfigPair {
 	return [key, value] as [Config.ConfigKey, Config.ConfigValue];
 }
 
+type ScanContext = {
+	message: string;
+	count: ReadDirectoryProgress;
+	stream: ReadDirectoryEventEmitter;
+	fileInfoList: FileInfo[];
+	direntTree: DirectoryTree;
+	direntFlat: File[];
+};
+
 /**
  * Command-line 'scan' command action.
  */
@@ -286,116 +281,134 @@ export async function actionScan(): Promise<void> {
 	const flags = scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>();
 	const cwd = process.cwd();
 	const start = Date.now();
-	const colorLevel = getColorLevel(program.opts());
-	const chalk = getChalk(colorLevel);
+	const chalk = new Chalk();
 
-	const options = realOptions({posix: flags.posix || flags.parsable, concurrency: flags.concurrency});
-	const stream = streamDirectoryDeep('.', options);
-	const bar = new ProgressBar({
-		width: 8, color: 'red', bgColor: 'gray', prefix: process.cwd(),
-	});
-	const count = {files: 0, directories: 0};
-	if (!flags.parsable) {
-		bar.start({total: 1});
-		let perc = -1;
-		stream.on('data', async entry => {
-			if (entry.target instanceof DirectoryTree) {
-				++count.directories;
-				return;
-			}
-
-			++count.files;
-		});
-		stream.on('progress', async progress => {
-			const {current, total} = progress;
-			const newPerc = Math.floor(current / total * 100);
-			if (newPerc <= perc) {
-				return;
-			}
-
-			perc = newPerc;
-			bar.update({value: current, total});
-		});
-	}
-
-	const direntTree = await readDirectoryDeep(stream);
-	const direntFlat = direntTree.flat();
 	const bind = targetGet(flags.target);
 	if (bind === undefined) {
 		logError(format(`Bad target '${flags.target}'. Registered targets: ${targetList().join(', ')}.`), {title: 'view-ignored - Fatal error.'});
 		process.exit(1);
 	}
 
-	let name: string = decorCondition(flags.decor, {ifNerd: bind.icon?.char, postfix: ' '}) + bind.name;
-	if (bind.icon?.color !== undefined) {
-		name = chalk.hex('#' + bind.icon.color.toString(16))(name);
-	}
-
-	let fileInfoList: FileInfo[];
-	try {
-		fileInfoList = await scanPathList(direntFlat, flags.target, {...options, filter: flags.filter, maxDepth: flags.depth});
-		if (!flags.parsable) {
-			bar.stop();
-		}
-	} catch (error) {
-		if (!flags.parsable) {
-			bar.stop();
-		}
-
-		if (error instanceof ErrorNoSources) {
-			logError('There was no configuration file in the folders and subfolders that would correctly describe the ignoring.', {title: `view-ignored - No sources for the target ${name}.`});
-		} else {
-			logError(format(error), {title: 'view-ignored - Scanning unexpected error.'});
-		}
-
-		process.exit(1);
-	}
-
+	const options = realOptions({posix: flags.posix || flags.parsable, concurrency: flags.concurrency});
 	if (flags.parsable) {
+		const stream = streamDirectoryDeep('.', options);
+		const direntTree = await readDirectoryDeep(stream);
+		const direntFlat = direntTree.flat();
+		const fileInfoList: FileInfo[] = await scanPathList(direntFlat, flags.target, {...options, filter: flags.filter, maxDepth: flags.depth});
 		console.log(fileInfoList.map(fileInfo =>
 			fileInfo.relativePath + (
 				flags.showSources ? '<' + (fileInfo.source instanceof SourceInfo ? fileInfo.source.relativePath : '(default)') : ''
 			),
 		).join(','));
-		return;
+	} else {
+		let name: string = decorCondition(flags.decor, {ifNerd: bind.icon?.char, postfix: ' '}) + bind.name;
+		if (bind.icon?.color !== undefined) {
+			name = chalk.hex('#' + bind.icon.color.toString(16))(name);
+		}
+
+		const context: ScanContext = {
+			count: {
+				files: 0, directories: 0, current: 0, total: 0,
+			},
+			direntFlat: [],
+			direntTree: new DirectoryTree('', '', []),
+			fileInfoList: [],
+			stream: streamDirectoryDeep('.', options),
+			message: '',
+		};
+		const progress = new Listr([
+			{
+				title: `${name} ${chalk.hex('#73A7DE')(flags.filter)} ${cwd}`,
+				async task(context, task) {
+					return task.newListr([
+						{
+							title: 'Preparing',
+							async task() {
+								const progressRead = new Promise<void>(resolve => {
+									context.stream.on('end', ({progress, tree}) => {
+										Object.assign(context.count, progress);
+										context.direntTree = tree;
+										context.direntFlat = tree.flat();
+										resolve();
+									});
+								});
+								await progressRead;
+							},
+						},
+						{
+							title: 'Scanning',
+							async task(context) {
+								context.fileInfoList = await scanPathList(
+									context.direntFlat,
+									flags.target,
+									{
+										...options,
+										filter: flags.filter,
+										maxDepth: flags.depth,
+									},
+								);
+							},
+						},
+						{
+							title: 'Printing',
+							async task(context) {
+								const sorter = Sorting[flags.sort];
+								const cache = new Map<File, number>();
+								if (flags.sort === 'modified') {
+									await makeMtimeCache(cache, context.direntTree, {concurrency: flags.concurrency});
+								}
+
+								const time = Date.now() - start;
+								const fileInfoListSorted = context.fileInfoList.sort((a, b) => sorter(String(a), String(b), cache));
+
+								const files = formatFiles(
+									fileInfoListSorted,
+									{
+										chalk,
+										posix: flags.posix,
+										style: flags.style,
+										decor: flags.decor,
+										showSources: flags.showSources,
+									});
+								const checkSymbol = decorCondition(flags.decor, {ifEmoji: '✅', ifNerd: icons['nf-fa-check'].char, postfix: ' '});
+								const fastSymbol = decorCondition(flags.decor, {ifEmoji: '⚡', ifNerd: icons['nf-md-lightning_bolt'].char});
+								const infoSymbol = decorCondition(flags.decor, {ifEmoji: 'ℹ️', ifNerd: icons['nf-seti-info'].char, postfix: ' '});
+
+								let message = '';
+								message += files;
+								message += '\n';
+								message += `${chalk.green(checkSymbol)}Done in ${time < 2000 ? chalk.yellow(fastSymbol) : ''}${highlight(String(time), chalk)}ms.`;
+								message += '\n';
+								message += `Listed ${highlight(String(context.fileInfoList.length), chalk)} files.`;
+								message += '\n';
+								message += `Processed ${highlight(String(context.count.files), chalk)} files and ${highlight(String(context.count.directories), chalk)} directories.`;
+								message += '\n';
+								if (bind.testCommand) {
+									message += '\n';
+									message += `${chalk.blue(infoSymbol)}You can use ${highlight(`'${bind.testCommand}'`, chalk)} to check if the list is valid.`;
+								}
+
+								message += '\n';
+
+								context.message = message;
+							},
+						},
+					]);
+				},
+			},
+		],
+		{
+			ctx: context,
+			exitOnError: true,
+		});
+		try {
+			await progress.run();
+		} catch (error) {
+			logError(format(error), {title: 'view-ignored - Error while scan.'});
+		}
+
+		console.log(context.message);
 	}
-
-	const sorter = Sorting[flags.sort];
-	const cache = new Map<File, number>();
-	if (flags.sort === 'modified') {
-		await makeMtimeCache(cache, direntTree, {concurrency: flags.concurrency});
-	}
-
-	const time = Date.now() - start;
-	const lookedSorted = fileInfoList.sort((a, b) => sorter(String(a), String(b), cache));
-
-	const files = formatFiles(lookedSorted, {
-		chalk,
-		posix: flags.posix,
-		style: flags.style,
-		decor: flags.decor,
-		showSources: flags.showSources,
-	});
-	const checkSymbol = decorCondition(flags.decor, {ifEmoji: '✅', ifNerd: icons['nf-fa-check'].char, postfix: ' '});
-	const fastSymbol = decorCondition(flags.decor, {ifEmoji: '⚡', ifNerd: icons['nf-md-lightning_bolt'].char});
-	const infoSymbol = decorCondition(flags.decor, {ifEmoji: 'ℹ️', ifNerd: icons['nf-seti-info'].char, postfix: ' '});
-
-	let message = '';
-	message += files;
-	message += '\n';
-	message += `${chalk.green(checkSymbol)}Done in ${time < 400 ? chalk.yellow(fastSymbol) : ''}${highlight(String(time), chalk)}ms.`;
-	message += '\n';
-	message += `Listed ${highlight(String(fileInfoList.length), chalk)} files for ${name} (${flags.filter}).`;
-	message += '\n';
-	message += `Processed ${highlight(String(count.files), chalk)} files and ${highlight(String(count.directories), chalk)} directories.`;
-	message += '\n';
-	if (bind.testCommand) {
-		message += '\n';
-		message += `${chalk.blue(infoSymbol)}You can use ${highlight(`'${bind.testCommand}'`, chalk)} to check if the list is valid.`;
-	}
-
-	message += '\n';
-	console.log(cwd + '\n' + message);
 }
 
 /**
@@ -422,7 +435,7 @@ export function actionCfgSet(pair: Config.ConfigPair | undefined, options: Confi
 	}
 
 	const flags = scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>();
-	const chalk = getChalk(getColorLevel(flags));
+	const chalk = new Chalk();
 	Config.configManager.save();
 	console.log(Config.configManager.getPairString(key, {
 		chalk, real: options.real, types: options.types, parsable: flags.parsable,
@@ -438,7 +451,7 @@ export function actionCfgUnset(key: Config.ConfigKey | undefined, options: Confi
 	}
 
 	const flags = scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>();
-	const chalk = getChalk(getColorLevel(flags));
+	const chalk = new Chalk();
 	Config.configManager.unset(key).save();
 	console.log(Config.configManager.getPairString(key, {
 		chalk, real: options.real, types: options.types, parsable: flags.parsable,
@@ -450,7 +463,7 @@ export function actionCfgUnset(key: Config.ConfigKey | undefined, options: Confi
  */
 export function actionCfgGet(key: Config.ConfigKey | undefined, options: ConfigGetFlags): void {
 	const flags = scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>();
-	const chalk = getChalk(getColorLevel(flags));
+	const chalk = new Chalk();
 	console.log(Config.configManager.getPairString(key, {
 		chalk, real: options.real, types: options.types, parsable: flags.parsable,
 	}));

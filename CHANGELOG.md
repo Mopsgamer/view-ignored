@@ -8,7 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - Code linting: move from eslint to xo.
-- Now it's possible to use own scanner.
+- Changed cli output.
+- API Changes.
+- New configuration properties: posix, noColor. Remove color property (color level).
 
 ## [0.2.2] - 2024-08-20
 
