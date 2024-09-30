@@ -79,7 +79,9 @@ export class SourceInfo extends File {
 	}
 }
 
-export type ReadDirectoryEventEmitter = EventEmitter<ReadDirectoryEventMap>;
+export type ReadDirectoryEventEmitter = EventEmitter<ReadDirectoryEventMap> & {
+	run(): Promise<ReadDeepStreamDataRoot>;
+};
 
 export type ReadDeepStreamDataRoot = {
 	tree: DirectoryTree;
@@ -141,7 +143,8 @@ export async function directoryDeepCount(directoryPath: {toString(): string}, op
 }
 
 export async function streamDirectoryDeepRecursion(directoryPath: {toString(): string}, options: ReadDeepStreamOptions): Promise<ReadDeepStreamData> {
-	const {fsa, patha, cwd, concurrency, parent, controller = new EventEmitter()} = options;
+	const {fsa, patha, cwd, concurrency, parent} = options;
+	const controller = options.controller ?? new EventEmitter() as ReadDirectoryEventEmitter;
 	const progress = options.progress ?? await directoryDeepCount(directoryPath, options);
 	controller.emit('progress', progress);
 	const limit = pLimit(concurrency);
@@ -184,11 +187,15 @@ export async function streamDirectoryDeepRecursion(directoryPath: {toString(): s
 export type ReadDirectoryOptions = Pick<RealScanFolderOptions, 'cwd' | 'fsa' | 'patha' | 'concurrency'>;
 
 export function streamDirectoryDeep(directoryPath: string, optionsReal: ReadDirectoryOptions): ReadDirectoryEventEmitter {
-	const controller: ReadDirectoryEventEmitter = new EventEmitter();
-	void streamDirectoryDeepRecursion(directoryPath, {...optionsReal, controller})
-		.then(({progress, target}) => {
-			controller.emit('end', {progress, tree: target as DirectoryTree});
-		});
+	const controller = new EventEmitter() as ReadDirectoryEventEmitter;
+	controller.run = async function (): Promise<ReadDeepStreamDataRoot> {
+		const data = await streamDirectoryDeepRecursion(directoryPath, {...optionsReal, controller});
+		const {progress, target} = data;
+		const dataRoot: ReadDeepStreamDataRoot = {progress, tree: target as DirectoryTree};
+		controller.emit('end', dataRoot);
+		return dataRoot;
+	};
+
 	return controller;
 }
 
@@ -197,11 +204,17 @@ export function streamDirectoryDeep(directoryPath: string, optionsReal: ReadDire
  */
 export function readDirectoryDeep(stream: ReadDirectoryEventEmitter): Promise<DirectoryTree>;
 export function readDirectoryDeep(directoryPath: string, optionsReal: ReadDirectoryOptions): Promise<DirectoryTree>;
-export function readDirectoryDeep(argument1: string | ReadDirectoryEventEmitter, optionsReal?: ReadDirectoryOptions): Promise<DirectoryTree> {
-	return new Promise(resolve => {
-		const controller = argument1 instanceof EventEmitter ? argument1 : streamDirectoryDeep(argument1, optionsReal!);
+export async function readDirectoryDeep(argument1: string | ReadDirectoryEventEmitter, optionsReal?: ReadDirectoryOptions): Promise<DirectoryTree> {
+	const controller = argument1 instanceof EventEmitter ? argument1 : streamDirectoryDeep(argument1, optionsReal!);
+	if (typeof argument1 === 'string') {
+		const {tree} = await controller.run();
+		return tree;
+	}
+
+	const tree = await new Promise<DirectoryTree>(resolve => {
 		controller.once('end', data => {
 			resolve(data.tree);
 		});
 	});
+	return tree;
 }

@@ -467,7 +467,7 @@ export class ConfigManager<ConfigType extends Config = Config> {
 
 	/**
      * @param key The config property.
-     * @param real If `true`, the default value will be used when the value is `undefined`. Default `true`.
+     * @param real The options.
      * @returns The value for the specified property.
      */
 	get<T extends keyof ConfigType>(key: T, options: ConfigManagerGetOptions & {real?: false}): ConfigType[T] | undefined;

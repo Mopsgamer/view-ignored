@@ -21,7 +21,7 @@ import {
 } from './styling.js';
 import {
 	DirectoryTree,
-	type File, type FileInfo, package_, readDirectoryDeep, type ReadDirectoryEventEmitter, type ReadDirectoryProgress, realOptions, scanPathList, Sorting, SourceInfo, streamDirectoryDeep,
+	type File, type FileInfo, package_, type ReadDeepStreamDataRoot, readDirectoryDeep, type ReadDirectoryEventEmitter, type ReadDirectoryProgress, realOptions, scanPathList, Sorting, SourceInfo, streamDirectoryDeep,
 } from './lib.js';
 import {filterNameList, type FilterName} from './browser/filtering.js';
 
@@ -272,6 +272,7 @@ type ScanContext = {
 	fileInfoList: FileInfo[];
 	direntTree: DirectoryTree;
 	direntFlat: File[];
+	reading: Promise<ReadDeepStreamDataRoot>;
 };
 
 /**
@@ -306,6 +307,7 @@ export async function actionScan(): Promise<void> {
 			name = chalk.hex('#' + bind.icon.color.toString(16))(name);
 		}
 
+		const stream = streamDirectoryDeep('.', options);
 		const context: ScanContext = {
 			count: {
 				files: 0, directories: 0, current: 0, total: 0,
@@ -313,8 +315,13 @@ export async function actionScan(): Promise<void> {
 			direntFlat: [],
 			direntTree: new DirectoryTree('', '', []),
 			fileInfoList: [],
-			stream: streamDirectoryDeep('.', options),
+			stream,
 			message: '',
+			reading: new Promise<ReadDeepStreamDataRoot>(resolve => {
+				stream.on('end', data => {
+					resolve(data);
+				});
+			}),
 		};
 		const progress = new Listr([
 			{
@@ -324,15 +331,10 @@ export async function actionScan(): Promise<void> {
 						{
 							title: 'Preparing',
 							async task() {
-								const progressRead = new Promise<void>(resolve => {
-									context.stream.on('end', ({progress, tree}) => {
-										Object.assign(context.count, progress);
-										context.direntTree = tree;
-										context.direntFlat = tree.flat();
-										resolve();
-									});
-								});
-								await progressRead;
+								const {tree, progress} = await context.reading;
+								Object.assign(context.count, progress);
+								context.direntTree = tree;
+								context.direntFlat = tree.flat();
 							},
 						},
 						{
@@ -402,6 +404,7 @@ export async function actionScan(): Promise<void> {
 			exitOnError: true,
 		});
 		try {
+			await context.stream.run();
 			await progress.run();
 		} catch (error) {
 			logError(format(error), {title: 'view-ignored - Error while scan.'});
