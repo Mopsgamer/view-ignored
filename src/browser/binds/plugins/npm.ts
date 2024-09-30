@@ -3,7 +3,7 @@ import {
 	type Plugins, type FindSource, type Methodology,
 	type ReadSource,
 } from '../../index.js';
-import {ScannerMinimatch} from '../scanner.js';
+import {ScannerGitignore} from '../scanner.js';
 import {type TargetIcon, type TargetName} from '../targets.js';
 
 const id = 'npm';
@@ -11,35 +11,32 @@ const name: TargetName = 'NPM';
 const icon: TargetIcon = {...icons['nf-seti-npm'], color: 0xCA_04_04};
 const testCommand = 'npm pack --dry-run';
 
-const matcherExclude = [
-	'node_modules/**',
-	'.*.swp',
-	'._*',
-	'.DS_Store/**',
-	'.git/**',
-	'.gitignore',
-	'.hg/**',
-	'.npmignore',
-	'.npmrc',
-	'.lock-wscript',
-	'.svn/**',
-	'.wafpickle-*',
-	'config.gypi',
-	'CVS/**',
-	'npm-debug.log',
+export const matcherExclude = [
+	'**/node_modules/**',
+	'**/.*.swp',
+	'**/._*',
+	'**/.DS_Store/**',
+	'**/.git/**',
+	'**/.gitignore',
+	'**/.hg/**',
+	'**/.npmignore',
+	'**/.npmrc',
+	'**/.lock-wscript',
+	'**/.svn/**',
+	'**/.wafpickle-*',
+	'**/config.gypi',
+	'**/CVS/**',
+	'**/npm-debug.log',
 ];
-const matcherInclude = [
-	'/bin/',
-	'/package.json',
-	'/README',
-	'/README.*',
-	'/LICENSE',
-	'/LICENSE.*',
-	'/LICENCE',
-	'/LICENCE.*',
+export const matcherInclude = [
+	'bin/**',
+	'package.json',
+	'README*',
+	'LICENSE*',
+	'LICENCE*',
 ];
 
-const scanner = new ScannerMinimatch('', {exclude: matcherExclude, include: matcherInclude});
+const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude});
 
 const isValidSourceMinimatch: FindSource = function (o, s) {
 	const content = o.fsa.readFileSync(s.absolutePath).toString();
@@ -47,7 +44,7 @@ const isValidSourceMinimatch: FindSource = function (o, s) {
 		return false;
 	}
 
-	scanner.update(content);
+	scanner.pattern = content;
 	return true;
 };
 
@@ -96,14 +93,14 @@ const findPackageJson: FindSource = function (o, s) {
 const read: ReadSource = function (o, s) {
 	const content = o.fsa.readFileSync(s.absolutePath).toString();
 	scanner.negated = false;
-	scanner.update(content);
+	scanner.pattern = content;
 	return scanner;
 };
 
 const readJson: ReadSource = function (o, s) {
 	const content = o.fsa.readFileSync(s.absolutePath).toString();
 	scanner.negated = true;
-	scanner.update((JSON.parse(content) as {files: string[]}).files);
+	scanner.pattern = (JSON.parse(content) as {files: string[]}).files;
 	return scanner;
 };
 

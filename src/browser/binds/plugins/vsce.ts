@@ -16,7 +16,7 @@ const matcherExclude: string[] = [
 	'.DS_Store/**',
 ];
 
-const scanner = new ScannerGitignore('', {exclude: matcherExclude});
+const scanner = new ScannerGitignore({exclude: matcherExclude});
 
 const find: FindSource = function (o, s) {
 	if (s.base !== '.vscodeignore') {
@@ -28,13 +28,13 @@ const find: FindSource = function (o, s) {
 		return false;
 	}
 
-	scanner.update(content);
+	scanner.pattern = content;
 	return true;
 };
 
 const read: ReadSource = function (o, s) {
 	const content = o.fsa.readFileSync(s.absolutePath).toString();
-	scanner.update(content);
+	scanner.pattern = content;
 	return scanner;
 };
 

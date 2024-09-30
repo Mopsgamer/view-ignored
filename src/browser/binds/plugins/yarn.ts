@@ -3,8 +3,9 @@ import {
 	type Plugins, type Methodology, type FindSource,
 	type ReadSource,
 } from '../../index.js';
-import {ScannerMinimatch} from '../scanner.js';
+import {ScannerGitignore} from '../scanner.js';
 import {type TargetIcon, type TargetName} from '../targets.js';
+import * as npm from './npm.js';
 
 const id = 'yarn';
 const name: TargetName = 'Yarn';
@@ -14,38 +15,18 @@ const icon: TargetIcon = {...icons['nf-seti-yarn'], color: 0x2E_2A_65};
  * [!WARNING] All patterns copied from npm plugin, so they should be verified with yarn docs.
  */
 const matcherExclude = [
-	'node_modules/**',
-	'.*.swp',
-	'._*',
-	'.DS_Store/**',
-	'.git/**',
-	'.gitignore',
-	'.hg/**',
+	...npm.matcherExclude,
 	'.yarnignore',
-	'.npmignore',
-	'.npmrc',
-	'.lock-wscript',
-	'.svn/**',
-	'.wafpickle-*',
-	'config.gypi',
-	'CVS/**',
-	'npm-debug.log',
+	'.yarnrc',
 ];
 /**
  * [!WARNING] All patterns copied from npm plugin, so they should be verified with yarn docs.
  */
 const matcherInclude = [
-	'/bin/',
-	'/package.json',
-	'/README',
-	'/README.*',
-	'/LICENSE',
-	'/LICENSE.*',
-	'/LICENCE',
-	'/LICENCE.*',
+	...npm.matcherInclude,
 ];
 
-const scanner = new ScannerMinimatch('', {exclude: matcherExclude, include: matcherInclude});
+const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude});
 
 const isValidSourceMinimatch: FindSource = function (o, s) {
 	const content = o.fsa.readFileSync(s.absolutePath).toString();
@@ -53,7 +34,7 @@ const isValidSourceMinimatch: FindSource = function (o, s) {
 		return false;
 	}
 
-	scanner.update(content);
+	scanner.pattern = content;
 	return true;
 };
 
@@ -110,14 +91,14 @@ const findPackageJson: FindSource = function (o, s) {
 const read: ReadSource = function (o, s) {
 	const content = o.fsa.readFileSync(s.absolutePath).toString();
 	scanner.negated = false;
-	scanner.update(content);
+	scanner.pattern = content;
 	return scanner;
 };
 
 const readJson: ReadSource = function (o, s) {
 	const content = o.fsa.readFileSync(s.absolutePath).toString();
 	scanner.negated = true;
-	scanner.update((JSON.parse(content) as {files: string[]}).files);
+	scanner.pattern = (JSON.parse(content) as {files: string[]}).files;
 	return scanner;
 };
 

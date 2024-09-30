@@ -3,36 +3,48 @@ import {gitignoreToMinimatch} from '@humanwhocodes/gitignore-to-minimatch';
 import {type Scanner} from '../lib.js';
 
 export type ScannerMinimatchOptions = {
+	pattern?: string | string[];
 	exclude?: string | string[];
 	include?: string | string[];
 	negated?: boolean;
 };
 
 export class ScannerMinimatch implements Scanner {
-	private static ignores(path: string, pattern: string | string[]): boolean {
-		if (Array.isArray(pattern)) {
-			pattern = pattern.join('\n');
-		}
-
-		const patternList = pattern.split(/\r?\n/);
-
-		return patternList.some(pattern => {
-			const gipattern = gitignoreToMinimatch(pattern);
-			return minimatch(path, gipattern, {dot: true, matchBase: true});
-		});
+	public negated: boolean;
+	protected _pattern: string | string[];
+	get pattern() {
+		return this.pattern;
 	}
 
-	public negated: boolean;
-	private readonly exclude: string | string[];
-	private readonly include: string | string[];
+	set pattern(value: string | string[]) {
+		this._pattern = value;
+	}
+
+	protected _exclude: string | string[];
+	get exclude(): string | string[] {
+		return this._exclude;
+	}
+
+	set exclude(value: string | string[]) {
+		this._exclude = value;
+	}
+
+	protected _include: string | string[];
+	get include(): string | string[] {
+		return this._include;
+	}
+
+	set include(value: string | string[]) {
+		this._include = value;
+	}
 
 	constructor(
-		private patterns: string | string[],
 		options?: ScannerMinimatchOptions,
 	) {
+		this._pattern = options?.pattern ?? [];
+		this._exclude = options?.exclude ?? [];
+		this._include = options?.include ?? [];
 		this.negated = options?.negated ?? false;
-		this.exclude = options?.exclude ?? [];
-		this.include = options?.include ?? [];
 	}
 
 	isValid(pattern: string | string[]): boolean {
@@ -48,47 +60,87 @@ export class ScannerMinimatch implements Scanner {
 		}
 	}
 
-	update(patterns: string | string[]) {
-		this.patterns = patterns;
-	}
+	ignores(path: string, pattern: string | string[]): boolean;
+	ignores(path: string, options?: ScannerGitignoreOptions): boolean;
+	ignores(path: string, argument?: ScannerGitignoreOptions | string | string[]): boolean {
+		if (Array.isArray(argument)) {
+			argument = argument.join('\n');
+		}
 
-	ignores(path: string): boolean {
+		if (typeof argument === 'string') {
+			const patternList = argument.split(/\r?\n/);
+
+			return patternList.some(pattern => minimatch(path, pattern, {dot: true, matchBase: true}));
+		}
+
 		let check: boolean;
-		check = ScannerMinimatch.ignores(path, this.exclude);
+		check = this.ignores(path, argument?.exclude ?? this.exclude);
 		if (check) {
 			return true;
 		}
 
-		check = ScannerMinimatch.ignores(path, this.include);
+		check = this.ignores(path, argument?.include ?? this.include);
 		if (check) {
 			return false;
 		}
 
-		check = ScannerMinimatch.ignores(path, this.patterns);
-		return this.negated ? !check : check;
+		check = this.ignores(path, argument?.pattern ?? this._pattern);
+		return (argument?.negated ?? this.negated) ? !check : check;
 	}
 }
 
-export type ScannerGitignoreOptions = {
-	exclude?: string | string[];
-	include?: string | string[];
-	negated?: boolean;
-};
+export type ScannerGitignoreOptions = ScannerMinimatchOptions;
 
 export class ScannerGitignore extends ScannerMinimatch implements Scanner {
 	private static gitignoreToMinimatch(argument: string | string[]): string | string[] {
-		if (Array.isArray(argument)) {
-			return argument.map(p => gitignoreToMinimatch(p));
+		if (typeof argument === 'string') {
+			argument = argument.split(/\r?\n/);
 		}
 
-		return gitignoreToMinimatch(argument);
+		return argument.map(p => gitignoreToMinimatch(p));
 	}
 
 	constructor(
-		patterns: string | string[],
 		options?: ScannerGitignoreOptions,
 	) {
-		const patternsMinimatch = ScannerGitignore.gitignoreToMinimatch(patterns);
-		super(patternsMinimatch, options);
+		const newOptions = {...options};
+		for (const key of ['pattern', 'exclude', 'include'] as const) {
+			const value = newOptions[key];
+			if (!Object.hasOwn(newOptions, key) || value === undefined) {
+				continue;
+			}
+
+			const newPattern = ScannerGitignore.gitignoreToMinimatch(value);
+			newOptions[key] = newPattern;
+		}
+
+		super(options);
+	}
+
+	get pattern() {
+		return this._pattern;
+	}
+
+	set pattern(value: string | string[]) {
+		const newPattern = ScannerGitignore.gitignoreToMinimatch(value);
+		this._pattern = newPattern;
+	}
+
+	get include() {
+		return this._include;
+	}
+
+	set include(value: string | string[]) {
+		const newPattern = ScannerGitignore.gitignoreToMinimatch(value);
+		this._include = newPattern;
+	}
+
+	get exclude() {
+		return this._exclude;
+	}
+
+	set exclude(value: string | string[]) {
+		const newPattern = ScannerGitignore.gitignoreToMinimatch(value);
+		this._exclude = newPattern;
 	}
 }
