@@ -372,14 +372,13 @@ export async function actionScan(): Promise<void> {
 										decor: flags.decor,
 										showSources: flags.showSources,
 									});
-								const checkSymbol = decorCondition(flags.decor, {ifEmoji: '✅', ifNerd: icons['nf-fa-check'].char, postfix: ' '});
 								const fastSymbol = decorCondition(flags.decor, {ifEmoji: '⚡', ifNerd: icons['nf-md-lightning_bolt'].char});
 								const infoSymbol = decorCondition(flags.decor, {ifEmoji: 'ℹ️', ifNerd: icons['nf-seti-info'].char, postfix: ' '});
 
 								let message = '';
 								message += files;
 								message += '\n';
-								message += `${chalk.green(checkSymbol)}Done in ${time < 2000 ? chalk.yellow(fastSymbol) : ''}${highlight(String(time), chalk)}ms.`;
+								message += `Done in ${time < 2000 ? chalk.yellow(fastSymbol) : ''}${highlight(String(time), chalk)}ms.`;
 								message += '\n';
 								message += `Listed ${highlight(String(context.fileInfoList.length), chalk)} files.`;
 								message += '\n';
