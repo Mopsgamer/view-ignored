@@ -337,7 +337,7 @@ export async function actionScan(): Promise<void> {
 						},
 						{
 							title: 'Scanning',
-							async task(context) {
+							async task() {
 								context.fileInfoList = await scanPathList(
 									context.direntFlat,
 									flags.target,
@@ -351,7 +351,7 @@ export async function actionScan(): Promise<void> {
 						},
 						{
 							title: 'Printing',
-							async task(context) {
+							async task() {
 								const sorter = Sorting[flags.sort];
 								const cache = new Map<File, number>();
 								if (flags.sort === 'modified') {

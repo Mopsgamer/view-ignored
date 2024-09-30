@@ -32,6 +32,28 @@ const realProject = {
 	'config.json': '',
 };
 
+const symlinksTest: Case = {
+	should: {
+		include: [
+			'awesomefile',
+			'awesomefolder/folded',
+			'awesomefile.lnk',
+			'awesomefolder.lnk',
+		],
+		source: '(default)',
+	},
+	content: {
+		emptyfolder: {},
+		awesomefolder: {
+			emptyfolder: {},
+			folded: '',
+		},
+		awesomefile: '',
+		'awesomefile.lnk': ({symlink}) => symlink('./awesomefile'),
+		'awesomefolder.lnk': ({symlink}) => symlink('./awesomefolder'),
+	},
+};
+
 const targetTestList: Plan = {
 	git: {
 		'empty project': {
@@ -64,6 +86,7 @@ const targetTestList: Plan = {
 				'.gitignore': 'node_modules',
 			},
 		},
+		symlinks: symlinksTest,
 	},
 
 	/**
@@ -153,6 +176,7 @@ const targetTestList: Plan = {
 				}),
 			},
 		},
+		symlinks: symlinksTest,
 	},
 
 	/**
@@ -267,6 +291,7 @@ const targetTestList: Plan = {
 				}),
 			},
 		},
+		symlinks: symlinksTest,
 	},
 
 	/**
@@ -303,6 +328,7 @@ const targetTestList: Plan = {
 				'.vscodeignore': 'node_modules',
 			},
 		},
+		symlinks: symlinksTest,
 	},
 };
 
