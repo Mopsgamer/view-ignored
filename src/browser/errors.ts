@@ -2,7 +2,7 @@ export class SomeError extends Error {}
 
 export class ErrorNoSources extends SomeError {
 	constructor() {
-		super(`There was no configuration file in the folders and subfolders that would correctly describe the ignoring.`);
+		super('There was no configuration file in the folders and subfolders that would correctly describe the ignoring.');
 	}
 }
 
