@@ -29,7 +29,7 @@ export function isSortName(value: unknown): value is SortName {
  * "file" -> ["file", "file", true]
  * "file/" -> ["file", "", false]
  */
-function slicePath(p: string): [next: string, other: string, isLast: boolean] {
+export function shiftPath(p: string): [next: string, other: string, isLast: boolean] {
 	const slashIndex = p.search(/[/\\]/);
 	const next = p.slice(0, Math.max(0, slashIndex));
 	const other = p.slice(Math.max(0, slashIndex + 1));
@@ -44,9 +44,9 @@ function slicePath(p: string): [next: string, other: string, isLast: boolean] {
 export function firstFolders(a: string, b: string): number {
 	let comp = 0;
 	for (; comp === 0;) {
-		const [next1, post1, last1] = slicePath(a);
+		const [next1, post1, last1] = shiftPath(a);
 		a = post1;
-		const [next2, post2, last2] = slicePath(b);
+		const [next2, post2, last2] = shiftPath(b);
 		b = post2;
 		comp = mixed(next1, next2);
 		if (last1 || last2) {
@@ -72,9 +72,9 @@ export function firstFolders(a: string, b: string): number {
 export function firstFiles(a: string, b: string): number {
 	let comp = 0;
 	for (; comp === 0;) {
-		const [next1, post1, last1] = slicePath(a);
+		const [next1, post1, last1] = shiftPath(a);
 		a = post1;
-		const [next2, post2, last2] = slicePath(b);
+		const [next2, post2, last2] = shiftPath(b);
 		b = post2;
 		comp = mixed(next1, next2);
 		if (last1 || last2) {
@@ -101,9 +101,9 @@ export function firstFiles(a: string, b: string): number {
 export function modified(a: string, b: string, map: Map<{toString(): string}, number>): number {
 	let comp = 0;
 	for (; comp === 0;) {
-		const [, post1, last1] = slicePath(a);
+		const [, post1, last1] = shiftPath(a);
 		a = post1;
-		const [, post2, last2] = slicePath(b);
+		const [, post2, last2] = shiftPath(b);
 		b = post2;
 		comp = (map.get(a) ?? 0) - (map.get(b) ?? 0);
 		if (last1 || last2) {
@@ -129,9 +129,9 @@ export function modified(a: string, b: string, map: Map<{toString(): string}, nu
 export function type(a: string, b: string): number {
 	let comp = 0;
 	for (; comp === 0;) {
-		const [next1, post1, last1] = slicePath(a);
+		const [next1, post1, last1] = shiftPath(a);
 		a = post1;
-		const [next2, post2, last2] = slicePath(b);
+		const [next2, post2, last2] = shiftPath(b);
 		b = post2;
 		const ppa = path.parse(next1);
 		const ppb = path.parse(next2);

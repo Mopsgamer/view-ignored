@@ -271,7 +271,6 @@ type ScanContext = {
 	stream: ReadDirectoryEventEmitter;
 	fileInfoList: FileInfo[];
 	direntTree: DirectoryTree;
-	direntFlat: File[];
 	reading: Promise<ReadDeepStreamDataRoot>;
 };
 
@@ -294,8 +293,7 @@ export async function actionScan(): Promise<void> {
 	if (flags.parsable) {
 		const stream = streamDirectoryDeep('.', options);
 		const direntTree = await readDirectoryDeep(stream);
-		const direntFlat = direntTree.flat();
-		const fileInfoList: FileInfo[] = await scanPathList(direntFlat, flags.target, {...options, filter: flags.filter, maxDepth: flags.depth});
+		const fileInfoList: FileInfo[] = await scanPathList(direntTree, flags.target, {...options, filter: flags.filter, maxDepth: flags.depth});
 		console.log(fileInfoList.map(fileInfo =>
 			fileInfo.relativePath + (
 				flags.showSources ? '<' + (fileInfo.source instanceof SourceInfo ? fileInfo.source.relativePath : '(default)') : ''
@@ -312,7 +310,6 @@ export async function actionScan(): Promise<void> {
 			count: {
 				files: 0, directories: 0, current: 0, total: 0,
 			},
-			direntFlat: [],
 			direntTree: new DirectoryTree('', '', []),
 			fileInfoList: [],
 			stream,
@@ -334,14 +331,13 @@ export async function actionScan(): Promise<void> {
 								const {tree, progress} = await context.reading;
 								Object.assign(context.count, progress);
 								context.direntTree = tree;
-								context.direntFlat = tree.flat();
 							},
 						},
 						{
 							title: 'Scanning',
 							async task() {
 								context.fileInfoList = await scanPathList(
-									context.direntFlat,
+									context.direntTree,
 									flags.target,
 									{
 										...options,

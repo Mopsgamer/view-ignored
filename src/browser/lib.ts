@@ -4,6 +4,7 @@ import * as FS from 'node:fs';
 import {createRequire} from 'node:module';
 import {configDefault} from '../config.js';
 import {
+	DirectoryTree,
 	File, FileInfo, readDirectoryDeep, SourceInfo,
 } from './fs/index.js';
 import {targetGet} from './binds/index.js';
@@ -142,37 +143,44 @@ export type ScanFolderOptions = {
  * @throws {ErrorNoSources} if no sources found.
  * @todo Optimize source searching.
  */
+export async function scanPathList(tree: DirectoryTree, sources: Methodology[], options?: ScanFolderOptions): Promise<FileInfo[]>;
+export async function scanPathList(tree: DirectoryTree, target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
 export async function scanPathList(pathList: Array<{toString(): string}>, sources: Methodology[], options?: ScanFolderOptions): Promise<FileInfo[]>;
 export async function scanPathList(pathList: Array<{toString(): string}>, target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
-export async function scanPathList(pathList: Array<{toString(): string}>, argument1: Methodology[] | string, options?: ScanFolderOptions): Promise<FileInfo[]> {
+export async function scanPathList(argument0: Array<{toString(): string}> | DirectoryTree, argument1: Methodology[] | string, options?: ScanFolderOptions): Promise<FileInfo[]> {
 	options ??= {};
+
 	if (typeof argument1 === 'string') {
 		const bind = targetGet(argument1);
 		if (bind === undefined) {
 			throw new ErrorTargetNotBound(argument1);
 		}
 
-		return scanPathList(pathList, bind.methodology, Object.assign(options, bind.scanOptions));
+		return scanPathList(argument0 as DirectoryTree, bind.methodology, Object.assign(options, bind.scanOptions));
 	}
 
 	const optionsReal = realOptions(options);
+	if (Array.isArray(argument0)) {
+		const tree: DirectoryTree = DirectoryTree.from(argument0, optionsReal.cwd);
+		return scanPathList(tree, argument1, options);
+	}
+
+	const fileList = argument0.flat();
 
 	for (const methodology of argument1) {
 		const fileInfoList: FileInfo[] = [];
 		let noSource = false;
 		let atLeastOneSourceFound: undefined | SourceInfo;
 		// eslint-disable-next-line no-await-in-loop
-		const cache = await SourceInfo.createCache(methodology, optionsReal);
+		const cache = await SourceInfo.createCache(argument0, methodology, optionsReal);
 		const cacheRead = new Map<SourceInfo, Scanner>();
 
-		for (const pathItem of pathList) {
-			const relativePath = String(pathItem);
-			const absolutePath = pathItem instanceof File ? pathItem.absolutePath : optionsReal.patha.join(optionsReal.cwd, relativePath);
-			const sourceInfo = cache.get(relativePath);
+		for (const entry of fileList) {
+			const sourceInfo = cache.get(entry.relativePath);
 
 			if (sourceInfo === undefined) {
 				if (atLeastOneSourceFound !== undefined) {
-					throw new Error(`Source not found, but expected. File path: ${relativePath}. CWD: ${optionsReal.cwd}`);
+					throw new Error(`Source not found, but expected. File path: ${entry.relativePath}. CWD: ${optionsReal.cwd}`);
 				}
 
 				noSource = true;
@@ -186,7 +194,7 @@ export async function scanPathList(pathList: Array<{toString(): string}>, argume
 				cacheRead.set(sourceInfo, scanner = methodology.readSource(optionsReal, sourceInfo));
 			}
 
-			const fileInfo = new FileInfo(relativePath, absolutePath, sourceInfo, scanner.ignores(relativePath));
+			const fileInfo = new FileInfo(entry.relativePath, entry.absolutePath, sourceInfo, scanner.ignores(entry.relativePath));
 			const ignored = !fileInfo.isIncludedBy(optionsReal.filter);
 
 			if (ignored) {
@@ -205,9 +213,9 @@ export async function scanPathList(pathList: Array<{toString(): string}>, argume
 
 	if (optionsReal.defaultScanner !== undefined) {
 		const fileInfoList: FileInfo[] = [];
-		for (const pathItem of pathList) {
-			const relativePath = String(pathItem);
-			const absolutePath = pathItem instanceof File ? pathItem.absolutePath : optionsReal.patha.join(optionsReal.cwd, relativePath);
+		for (const entry of fileList) {
+			const relativePath = String(entry);
+			const absolutePath = entry instanceof File ? entry.absolutePath : optionsReal.patha.join(optionsReal.cwd, relativePath);
 			const fileInfo = new FileInfo(relativePath, absolutePath, optionsReal.defaultScanner, optionsReal.defaultScanner.ignores(relativePath));
 			const ignored = !fileInfo.isIncludedBy(optionsReal.filter);
 
@@ -233,9 +241,8 @@ export async function scanFolder(target: string, options?: ScanFolderOptions): P
 export async function scanFolder(argument1: Methodology[] | string, options?: ScanFolderOptions): Promise<FileInfo[]> {
 	const optionsReal = realOptions(options);
 	const direntTree = await readDirectoryDeep('.', optionsReal);
-	const direntPaths = direntTree.flat().map(String);
 
-	return scanPathList(direntPaths, argument1 as string, options);
+	return scanPathList(direntTree, argument1 as string, options);
 }
 
 /**

@@ -17,10 +17,8 @@ export class SourceInfo extends File {
 	/**
 	 * Get instance for each source file recursively.
 	 */
-	static async createCache(methodology: Methodology, optionsReal: RealScanFolderOptions): Promise<Map<string, SourceInfo>> {
+	static async createCache(tree: DirectoryTree, methodology: Methodology, optionsReal: RealScanFolderOptions): Promise<Map<string, SourceInfo>> {
 		const map = new Map<string, SourceInfo>();
-
-		const direntTree = await readDirectoryDeep('.', optionsReal);
 
 		function processDirentTree(direntTree: DirectoryTree, rootSource?: SourceInfo) {
 			if (rootSource === undefined) {
@@ -49,7 +47,7 @@ export class SourceInfo extends File {
 			}
 		}
 
-		processDirentTree(direntTree);
+		processDirentTree(tree);
 
 		return map;
 	}
