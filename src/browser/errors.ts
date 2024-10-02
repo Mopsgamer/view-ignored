@@ -6,6 +6,12 @@ export class ErrorNoSources extends SomeError {
 	}
 }
 
+export class ErrorInvalidPattern extends SomeError {
+	constructor() {
+		super('Got invalid pattern.');
+	}
+}
+
 export class ErrorTargetNotBound extends SomeError {
 	constructor(targetId: string) {
 		super(`The target has no bound: '${targetId}'.`);

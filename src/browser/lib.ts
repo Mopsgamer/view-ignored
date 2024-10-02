@@ -5,10 +5,10 @@ import {createRequire} from 'node:module';
 import {configDefault} from '../config.js';
 import {
 	DirectoryTree,
-	File, FileInfo, readDirectoryDeep, SourceInfo,
+	type File, FileInfo, readDirectoryDeep, SourceInfo,
 } from './fs/index.js';
 import {targetGet} from './binds/index.js';
-import {ErrorNoSources, ErrorTargetNotBound} from './errors.js';
+import {ErrorTargetNotBound, SomeError} from './errors.js';
 import {type FilterName} from './filtering.js';
 
 export * from './errors.js';
@@ -35,16 +35,6 @@ export type FileSystemAdapter = {
 // #region scanning
 
 /**
- * @returns `true`, if the given source is valid.
- */
-export type FindSource = (options: RealScanFolderOptions, source: File) => boolean;
-
-/**
- * @returns New scanner. The scanner should tell if the file should be ignored.
- */
-export type ReadSource = (options: RealScanFolderOptions, source: SourceInfo) => Scanner;
-
-/**
  * The custom scanner.
  */
 export type Scanner = {
@@ -55,27 +45,13 @@ export type Scanner = {
 };
 
 /**
- * Represents the methodology for reading the target's source.
+ * Recursively creates a cache scanner for each file.
+ * @throws If the target does not allow the current ignore configurations: {@link SomeError}.
+ * For example, {@link https://www.npmjs.com/package/@vscode/vsce vsce} considers it invalid if your manifest is missing the 'engines' field.
+ * Similarly, npm will raise an error if you attempt to publish a package without a basic 'package.json'.
+ * This exception can be ignored if the {@link ScanFolderOptions.defaultScanner} option is specified.
  */
-export type Methodology = {
-
-	/**
-	 * @returns `true`, if the given source is valid.
-	 */
-	findSource: FindSource;
-
-	/**
-	 * @returns New source scanner. The scanner should tell if the file should be ignored.
-	 */
-	readSource: ReadSource;
-};
-
-/**
- * Checks if the value is the {@link Methodology}.
- */
-export function isMethodology(value: unknown): value is Methodology {
-	return value?.constructor === Object;
-}
+export type Methodology = (tree: DirectoryTree, realOptions: RealScanFolderOptions) => Map<File, SourceInfo>;
 
 export type RealScanFolderOptions = Required<Omit<ScanFolderOptions, 'defaultScanner'>> & {
 	defaultScanner?: Scanner | undefined;
@@ -140,14 +116,14 @@ export type ScanFolderOptions = {
 /**
  * Gets info about the each file: it is ignored or not.
  * @param pathList The list of relative paths. The should be relative to the current working directory.
- * @throws {ErrorNoSources} if no sources found.
- * @todo Optimize source searching.
+ * @throws If no valid sources: {@link ErrorNoSources}.
+ * This exception can be ignored if the {@link ScanFolderOptions.defaultScanner} option is specified.
  */
-export async function scanPathList(tree: DirectoryTree, sources: Methodology[], options?: ScanFolderOptions): Promise<FileInfo[]>;
+export async function scanPathList(tree: DirectoryTree, sources: Methodology, options?: ScanFolderOptions): Promise<FileInfo[]>;
 export async function scanPathList(tree: DirectoryTree, target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
-export async function scanPathList(pathList: Array<{toString(): string}>, sources: Methodology[], options?: ScanFolderOptions): Promise<FileInfo[]>;
-export async function scanPathList(pathList: Array<{toString(): string}>, target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
-export async function scanPathList(argument0: Array<{toString(): string}> | DirectoryTree, argument1: Methodology[] | string, options?: ScanFolderOptions): Promise<FileInfo[]> {
+export async function scanPathList(pathList: string[], sources: Methodology, options?: ScanFolderOptions): Promise<FileInfo[]>;
+export async function scanPathList(pathList: string[], target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
+export async function scanPathList(argument0: string[] | DirectoryTree, argument1: Methodology | string, options?: ScanFolderOptions): Promise<FileInfo[]> {
 	options ??= {};
 
 	if (typeof argument1 === 'string') {
@@ -159,42 +135,25 @@ export async function scanPathList(argument0: Array<{toString(): string}> | Dire
 		return scanPathList(argument0 as DirectoryTree, bind.methodology, Object.assign(options, bind.scanOptions));
 	}
 
-	const optionsReal = realOptions(options);
+	const optionsReal = makeOptionsReal(options);
 	if (Array.isArray(argument0)) {
 		const tree: DirectoryTree = DirectoryTree.from(argument0, optionsReal.cwd);
 		return scanPathList(tree, argument1, options);
 	}
 
 	const fileList = argument0.flat();
+	let cache: Map<File, SourceInfo>;
+	try {
+		cache = argument1(argument0, optionsReal);
+	} catch (error) {
+		if (!(error instanceof SomeError) || optionsReal.defaultScanner === undefined) {
+			throw error;
+		}
 
-	for (const methodology of argument1) {
 		const fileInfoList: FileInfo[] = [];
-		let noSource = false;
-		let atLeastOneSourceFound: undefined | SourceInfo;
-		// eslint-disable-next-line no-await-in-loop
-		const cache = await SourceInfo.createCache(argument0, methodology, optionsReal);
-		const cacheRead = new Map<SourceInfo, Scanner>();
-
 		for (const entry of fileList) {
-			const sourceInfo = cache.get(entry.relativePath);
-
-			if (sourceInfo === undefined) {
-				if (atLeastOneSourceFound !== undefined) {
-					throw new Error(`Source not found, but expected. File path: ${entry.relativePath}. CWD: ${optionsReal.cwd}`);
-				}
-
-				noSource = true;
-				break;
-			}
-
-			atLeastOneSourceFound ??= sourceInfo;
-
-			let scanner = cacheRead.get(sourceInfo);
-			if (!scanner) {
-				cacheRead.set(sourceInfo, scanner = methodology.readSource(optionsReal, sourceInfo));
-			}
-
-			const fileInfo = new FileInfo(entry.relativePath, entry.absolutePath, sourceInfo, scanner.ignores(entry.relativePath));
+			const defaultSourceInfo = new SourceInfo(argument0, '(default)', '(default)', optionsReal.defaultScanner);
+			const fileInfo = FileInfo.from(entry, defaultSourceInfo);
 			const ignored = !fileInfo.isIncludedBy(optionsReal.filter);
 
 			if (ignored) {
@@ -204,42 +163,39 @@ export async function scanPathList(argument0: Array<{toString(): string}> | Dire
 			fileInfoList.push(fileInfo);
 		}
 
-		if (noSource) {
+		return fileInfoList;
+	}
+
+	const fileInfoList: FileInfo[] = [];
+	for (const entry of fileList) {
+		const sourceInfo = cache.get(entry);
+
+		if (sourceInfo === undefined) {
+			throw new SomeError(`Invalid methodology. Cannot get scanner for ${entry.relativePath}`);
+		}
+
+		const fileInfo = FileInfo.from(entry, sourceInfo);
+		const ignored = !fileInfo.isIncludedBy(optionsReal.filter);
+
+		if (ignored) {
 			continue;
 		}
 
-		return fileInfoList;
+		fileInfoList.push(fileInfo);
 	}
 
-	if (optionsReal.defaultScanner !== undefined) {
-		const fileInfoList: FileInfo[] = [];
-		for (const entry of fileList) {
-			const relativePath = String(entry);
-			const absolutePath = entry instanceof File ? entry.absolutePath : optionsReal.patha.join(optionsReal.cwd, relativePath);
-			const fileInfo = new FileInfo(relativePath, absolutePath, optionsReal.defaultScanner, optionsReal.defaultScanner.ignores(relativePath));
-			const ignored = !fileInfo.isIncludedBy(optionsReal.filter);
-
-			if (ignored) {
-				continue;
-			}
-
-			fileInfoList.push(fileInfo);
-		}
-
-		return fileInfoList;
-	}
-
-	throw new ErrorNoSources();
+	return fileInfoList;
 }
 
 /**
  * Scans project's directory paths to determine whether they are being ignored.
- * @throws {ErrorNoSources} if the source is bad.
+ * @throws If no valid sources: {@link ErrorNoSources}.
+ * This exception can be ignored if the {@link ScanFolderOptions.defaultScanner} option is specified.
  */
 export async function scanFolder(sources: Methodology[], options?: ScanFolderOptions): Promise<FileInfo[]>;
 export async function scanFolder(target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
 export async function scanFolder(argument1: Methodology[] | string, options?: ScanFolderOptions): Promise<FileInfo[]> {
-	const optionsReal = realOptions(options);
+	const optionsReal = makeOptionsReal(options);
 	const direntTree = await readDirectoryDeep('.', optionsReal);
 
 	return scanPathList(direntTree, argument1 as string, options);
@@ -248,7 +204,7 @@ export async function scanFolder(argument1: Methodology[] | string, options?: Sc
 /**
  * @returns Usable options object.
  */
-export function realOptions(options?: ScanFolderOptions): RealScanFolderOptions {
+export function makeOptionsReal(options?: ScanFolderOptions): RealScanFolderOptions {
 	options ??= {};
 	const posix = options.posix ?? false;
 	const concurrency = options.concurrency ?? configDefault.concurrency;

@@ -3,9 +3,9 @@ import {type ChalkInstance} from 'chalk';
 import nf from '@m234/nerd-fonts';
 import {decorCondition, type DecorName} from '../styling.js';
 import {type FilterName} from '../filtering.js';
-import {type Scanner} from '../lib.js';
 import {File} from './file.js';
-import {SourceInfo} from './source-info.js';
+import {type SourceInfo} from './source-info.js';
+import {type DirectoryTree} from './directory.js';
 
 /**
  * @see {@link FileInfo.prototype.toString}
@@ -57,7 +57,21 @@ export type FileInfoToStringOptions = {
  * The result of the file path scan.
  */
 export class FileInfo extends File {
+	static from(file: File, source: SourceInfo) {
+		return new FileInfo(file.parent, file.relativePath, file.absolutePath, source);
+	}
+
+	/**
+	 * Determines if ignored file is ignored or not.
+	*/
+	public readonly isIgnored: boolean;
+
 	constructor(
+		/**
+         * The parent of the file.
+         */
+		parent: DirectoryTree,
+
 		/**
 		 * The relative path to the file.
 		 */
@@ -71,13 +85,10 @@ export class FileInfo extends File {
 		/**
 		 * The source of patterns.
 		 */
-		public readonly source: SourceInfo | Scanner,
-		/**
-		 * Determines if ignored file is ignored or not.
-		 */
-		public readonly isIgnored: boolean,
+		public readonly source: SourceInfo,
 	) {
-		super(relativePath, absolutePath);
+		super(parent, relativePath, absolutePath);
+		this.isIgnored = source.scanner.ignores(relativePath);
 	}
 
 	/**
@@ -95,7 +106,7 @@ export class FileInfo extends File {
 			postfix: ' ',
 		}) : '';
 		let prefix = usePrefix ? (this.isIgnored ? '!' : '+') : '';
-		let postfix = useSource ? ' << ' + (this.source instanceof SourceInfo ? this.source.toString() : '(default)') : '';
+		let postfix = useSource ? ' << ' + this.source.toString() : '';
 
 		if (chalk) {
 			prefix = chalk.dim(prefix);

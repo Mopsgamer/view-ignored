@@ -1,7 +1,11 @@
 import {icons} from '@m234/nerd-fonts';
 import {
-	type Plugins, type FindSource, type Methodology,
-	type ReadSource,
+	type Plugins, type Methodology,
+	File,
+	ErrorNoSources,
+	SourceInfo,
+	type Scanner,
+	ErrorInvalidPattern,
 } from '../../index.js';
 import {ScannerGitignore} from '../scanner.js';
 import {type TargetIcon, type TargetName} from '../targets.js';
@@ -18,32 +22,33 @@ const matcherExclude: string[] = [
 
 const scanner = new ScannerGitignore({exclude: matcherExclude});
 
-const find: FindSource = function (o, s) {
-	if (s.base !== '.gitignore') {
-		return false;
+export function useSourceFile(sourceFile: File, scanner: Scanner & {pattern: string | string[]}): Map<File, SourceInfo> {
+	const map = new Map<File, SourceInfo>();
+	const fileList = sourceFile.parent.flat();
+	const sourceInfo = SourceInfo.from(sourceFile, scanner);
+	for (const file of fileList) {
+		map.set(file, sourceInfo);
 	}
 
-	const content = o.fsa.readFileSync(s.absolutePath).toString();
+	return map;
+}
 
-	if (!scanner.isValid(content)) {
-		return false;
+const methodology: Methodology = function (tree, o) {
+	const sourceFile = tree.findRecursive<File>(dirent => dirent instanceof File && dirent.base === '.gitignore');
+
+	if (sourceFile === undefined) {
+		throw new ErrorNoSources();
 	}
 
-	scanner.pattern = content;
-	return true;
-};
+	const content = o.fsa.readFileSync(sourceFile.absolutePath).toString();
+	const pattern = content;
+	if (!scanner.isValid(pattern)) {
+		throw new ErrorInvalidPattern();
+	}
 
-const read: ReadSource = function (o, s) {
-	const content = o.fsa.readFileSync(s.absolutePath).toString();
-	scanner.pattern = content;
-	return scanner;
+	scanner.pattern = pattern;
+	return useSourceFile(sourceFile, scanner);
 };
-
-const methodology: Methodology[] = [
-	{
-		readSource: read, findSource: find,
-	},
-];
 
 const bind: Plugins.TargetBind = {
 	id, icon, name, methodology, testCommand, scanOptions: {defaultScanner: scanner},

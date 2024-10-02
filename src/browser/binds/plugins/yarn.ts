@@ -1,11 +1,14 @@
 import {icons} from '@m234/nerd-fonts';
 import {
-	type Plugins, type Methodology, type FindSource,
-	type ReadSource,
+	type Plugins, type Methodology,
+	File,
+	ErrorNoSources,
+	ErrorInvalidPattern,
 } from '../../index.js';
 import {ScannerGitignore} from '../scanner.js';
 import {type TargetIcon, type TargetName} from '../targets.js';
 import * as npm from './npm.js';
+import {useSourceFile} from './git.js';
 
 const id = 'yarn';
 const name: TargetName = 'Yarn';
@@ -26,99 +29,88 @@ const matcherInclude = [
 	...npm.matcherInclude,
 ];
 
-const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude});
+const methodologyGitignore: Methodology = function (tree, o) {
+	const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude});
+	const sourceFile = tree.findRecursive<File>(dirent => dirent instanceof File && dirent.base === '.gitignore');
 
-const isValidSourceMinimatch: FindSource = function (o, s) {
-	const content = o.fsa.readFileSync(s.absolutePath).toString();
-	if (!scanner.isValid(content)) {
-		return false;
+	if (sourceFile === undefined) {
+		throw new ErrorNoSources();
 	}
 
-	scanner.pattern = content;
-	return true;
-};
-
-const findGitignore: FindSource = function (o, s) {
-	if (s.base !== '.gitignore') {
-		return false;
+	const content = o.fsa.readFileSync(sourceFile.absolutePath).toString();
+	// TODO: .gitignore can contain comments. Does code below actually work in this situations?
+	const pattern = content;
+	if (!scanner.isValid(pattern)) {
+		throw new ErrorInvalidPattern();
 	}
 
-	return isValidSourceMinimatch(o, s);
+	scanner.pattern = pattern;
+	return useSourceFile(sourceFile, scanner);
 };
 
-const findNpmignore: FindSource = function (o, s) {
-	if (s.base !== '.npmignore') {
-		return false;
+const methodologyNpmignore: Methodology = function (tree, o) {
+	const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude});
+	const sourceFile = tree.findRecursive<File>(dirent => dirent instanceof File && dirent.base === '.npmignore');
+
+	if (sourceFile === undefined) {
+		return methodologyGitignore(tree, o);
 	}
 
-	return isValidSourceMinimatch(o, s);
-};
-
-const findYarnignore: FindSource = function (o, s) {
-	if (s.base !== '.yarnignore') {
-		return false;
+	const content = o.fsa.readFileSync(sourceFile.absolutePath).toString();
+	// TODO: .gitignore can contain comments. Does code below actually work in this situations?
+	const pattern = content;
+	if (!scanner.isValid(pattern)) {
+		return methodologyGitignore(tree, o);
 	}
 
-	return isValidSourceMinimatch(o, s);
+	scanner.pattern = pattern;
+	return useSourceFile(sourceFile, scanner);
 };
 
-const findPackageJson: FindSource = function (o, s) {
-	if (s.base !== 'package.json') {
-		return false;
+const methodologyYarnignore: Methodology = function (tree, o) {
+	const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude});
+	const sourceFile = tree.findRecursive<File>(dirent => dirent instanceof File && dirent.base === '.yarnignore');
+
+	if (sourceFile === undefined) {
+		return methodologyNpmignore(tree, o);
 	}
 
-	let parsed: Record<string, unknown>;
-	try {
-		const content = o.fsa.readFileSync(s.absolutePath).toString();
-		const json: unknown = JSON.parse(content);
-		if (json?.constructor !== Object) {
-			return false;
-		}
-
-		parsed = json as Record<string, unknown>;
-	} catch {
-		return false;
+	const content = o.fsa.readFileSync(sourceFile.absolutePath).toString();
+	// TODO: .gitignore can contain comments. Does code below actually work in this situations?
+	const pattern = content;
+	if (!scanner.isValid(pattern)) {
+		return methodologyNpmignore(tree, o);
 	}
 
-	const propertyValue: unknown = parsed.files;
-	if (!Array.isArray(propertyValue) || !scanner.isValid(propertyValue)) {
-		return false;
+	scanner.pattern = pattern;
+	return useSourceFile(sourceFile, scanner);
+};
+
+const methodologyManifest: Methodology = function (tree, o) {
+	const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude, negated: true});
+	const sourceFile = tree.findRecursive<File>(dirent => dirent instanceof File && dirent.base === 'package.json');
+
+	if (sourceFile === undefined) {
+		return methodologyYarnignore(tree, o);
 	}
 
-	return true;
-};
+	const content = o.fsa.readFileSync(sourceFile.absolutePath).toString();
+	// TODO: We should throw own error instead of JSON.parse's exception.
+	// TODO: What happens if 'files' field is not a string array? What if this strings are comments?
+	// TODO: The manifest can be invalid for publishing like no name no version.
+	const pattern = (JSON.parse(content) as {files: unknown}).files;
+	if (!scanner.isValid(pattern)) {
+		return methodologyYarnignore(tree, o);
+	}
 
-const read: ReadSource = function (o, s) {
-	const content = o.fsa.readFileSync(s.absolutePath).toString();
-	scanner.negated = false;
-	scanner.pattern = content;
-	return scanner;
+	scanner.pattern = pattern;
+	return useSourceFile(sourceFile, scanner);
 };
-
-const readJson: ReadSource = function (o, s) {
-	const content = o.fsa.readFileSync(s.absolutePath).toString();
-	scanner.negated = true;
-	scanner.pattern = (JSON.parse(content) as {files: string[]}).files;
-	return scanner;
-};
-
-const methodology: Methodology[] = [
-	{
-		findSource: findPackageJson, readSource: readJson,
-	},
-	{
-		findSource: findYarnignore, readSource: read,
-	},
-	{
-		findSource: findNpmignore, readSource: read,
-	},
-	{
-		findSource: findGitignore, readSource: read,
-	},
-];
 
 const bind: Plugins.TargetBind = {
-	id, icon, name, methodology, scanOptions: {defaultScanner: scanner},
+	id, icon, name, methodology: methodologyManifest, scanOptions: {
+		defaultScanner: new ScannerGitignore({exclude: matcherExclude, include: matcherInclude}),
+	},
 };
 const yarn: Plugins.PluginExport = {viewignored: {addTargets: [bind]}};
 export default yarn;

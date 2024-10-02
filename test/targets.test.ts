@@ -88,7 +88,6 @@ const targetTestList: Plan = {
 		},
 		symlinks: symlinksTest,
 	},
-
 	/**
 	 * @see {@link npmPatternExclude} {@link npmPatternInclude}
 	 */
@@ -178,10 +177,6 @@ const targetTestList: Plan = {
 		},
 		symlinks: symlinksTest,
 	},
-
-	/**
-	 * @todo Add tests.
-	 */
 	yarn: {
 		'empty project': {
 			should: {
@@ -293,10 +288,6 @@ const targetTestList: Plan = {
 		},
 		symlinks: symlinksTest,
 	},
-
-	/**
-	 * @todo Add tests.
-	 */
 	vsce: {
 		'empty project': {
 			should: {
@@ -413,13 +404,13 @@ async function testTargetSubtest(data: TestTargetSubtestData) {
 	const actual = fileInfoList
 		.map(fileInfo => {
 			const testLineSource = testLineContent + myContentLines.slice(testLineContent)
-				.findIndex(line => line.includes(fileInfo.source instanceof viewig.SourceInfo ? fileInfo.source.relativePath : '(default)')) + 1;
+				.findIndex(line => line.includes(fileInfo.source.relativePath)) + 1;
 			return `${chalk.red(fileInfo.toString({source: true, chalk}))} (${lineColumnInfo(testFilePath, testLineSource, myContentLines[testLineSource].length)})`;
 		})
 		.sort().join('\n        ');
 	info += `      Results: \n        ${actual}\n`;
 	for (const fileInfo of (await fileInfoListPromise)) {
-		const sourceString = fileInfo.source instanceof viewig.SourceInfo ? fileInfo.source.relativePath : '(default)';
+		const sourceString = fileInfo.source.relativePath;
 		assert.strictEqual(sourceString, should.source, 'The source is not right.' + chalk.white(info));
 	}
 

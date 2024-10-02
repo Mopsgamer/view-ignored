@@ -20,8 +20,8 @@ import {
 	boxError, decorNameList, highlight, styleNameList, type BoxOptions,
 } from './styling.js';
 import {
-	DirectoryTree,
-	type File, type FileInfo, package_, type ReadDeepStreamDataRoot, readDirectoryDeep, type ReadDirectoryEventEmitter, type ReadDirectoryProgress, realOptions, scanPathList, Sorting, SourceInfo, streamDirectoryDeep,
+	type DirectoryTree,
+	type File, type FileInfo, package_, type ReadDeepStreamDataRoot, readDirectoryDeep, type ReadDirectoryEventEmitter, type ReadDirectoryProgress, makeOptionsReal, scanPathList, Sorting, streamDirectoryDeep,
 } from './lib.js';
 import {filterNameList, type FilterName} from './browser/filtering.js';
 
@@ -270,7 +270,7 @@ type ScanContext = {
 	count: ReadDirectoryProgress;
 	stream: ReadDirectoryEventEmitter;
 	fileInfoList: FileInfo[];
-	direntTree: DirectoryTree;
+	direntTree: DirectoryTree | undefined;
 	reading: Promise<ReadDeepStreamDataRoot>;
 };
 
@@ -289,14 +289,14 @@ export async function actionScan(): Promise<void> {
 		process.exit(1);
 	}
 
-	const options = realOptions({posix: flags.posix || flags.parsable, concurrency: flags.concurrency});
+	const options = makeOptionsReal({posix: flags.posix || flags.parsable, concurrency: flags.concurrency});
 	if (flags.parsable) {
 		const stream = streamDirectoryDeep('.', options);
 		const direntTree = await readDirectoryDeep(stream);
 		const fileInfoList: FileInfo[] = await scanPathList(direntTree, flags.target, {...options, filter: flags.filter, maxDepth: flags.depth});
 		console.log(fileInfoList.map(fileInfo =>
 			fileInfo.relativePath + (
-				flags.showSources ? '<' + (fileInfo.source instanceof SourceInfo ? fileInfo.source.relativePath : '(default)') : ''
+				flags.showSources ? '<' + (fileInfo.source.relativePath) : ''
 			),
 		).join(','));
 	} else {
@@ -310,7 +310,7 @@ export async function actionScan(): Promise<void> {
 			count: {
 				files: 0, directories: 0, current: 0, total: 0,
 			},
-			direntTree: new DirectoryTree('', '', []),
+			direntTree: undefined,
 			fileInfoList: [],
 			stream,
 			message: '',
@@ -337,7 +337,7 @@ export async function actionScan(): Promise<void> {
 							title: 'Scanning',
 							async task() {
 								context.fileInfoList = await scanPathList(
-									context.direntTree,
+									context.direntTree!,
 									flags.target,
 									{
 										...options,
@@ -353,7 +353,7 @@ export async function actionScan(): Promise<void> {
 								const sorter = Sorting[flags.sort];
 								const cache = new Map<File, number>();
 								if (flags.sort === 'modified') {
-									await makeMtimeCache(cache, context.direntTree, {concurrency: flags.concurrency});
+									await makeMtimeCache(cache, context.direntTree!, {concurrency: flags.concurrency});
 								}
 
 								const time = Date.now() - start;

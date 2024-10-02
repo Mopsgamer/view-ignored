@@ -1,10 +1,13 @@
 import {icons} from '@m234/nerd-fonts';
 import {
-	type Plugins, type FindSource, type Methodology,
-	type ReadSource,
+	type Plugins, type Methodology,
+	File,
+	ErrorNoSources,
+	ErrorInvalidPattern,
 } from '../../index.js';
 import {ScannerGitignore} from '../scanner.js';
 import {type TargetIcon, type TargetName} from '../targets.js';
+import {useSourceFile} from './git.js';
 
 const id = 'npm';
 const name: TargetName = 'NPM';
@@ -36,88 +39,67 @@ export const matcherInclude = [
 	'LICENCE*',
 ];
 
-const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude});
+const methodologyGitignore: Methodology = function (tree, o) {
+	const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude});
+	const sourceFile = tree.findRecursive<File>(dirent => dirent instanceof File && dirent.base === '.gitignore');
 
-const isValidSourceMinimatch: FindSource = function (o, s) {
-	const content = o.fsa.readFileSync(s.absolutePath).toString();
-	if (!scanner.isValid(content)) {
-		return false;
+	if (sourceFile === undefined) {
+		throw new ErrorNoSources();
 	}
 
-	scanner.pattern = content;
-	return true;
-};
-
-const findGitignore: FindSource = function (o, s) {
-	if (s.base !== '.gitignore') {
-		return false;
+	const content = o.fsa.readFileSync(sourceFile.absolutePath).toString();
+	const pattern = content;
+	if (!scanner.isValid(pattern)) {
+		throw new ErrorInvalidPattern();
 	}
 
-	return isValidSourceMinimatch(o, s);
+	scanner.pattern = pattern;
+	return useSourceFile(sourceFile, scanner);
 };
 
-const findNpmignore: FindSource = function (o, s) {
-	if (s.base !== '.npmignore') {
-		return false;
+const methodologyNpmignore: Methodology = function (tree, o) {
+	const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude});
+	const sourceFile = tree.findRecursive<File>(dirent => dirent instanceof File && dirent.base === '.npmignore');
+
+	if (sourceFile === undefined) {
+		return methodologyGitignore(tree, o);
 	}
 
-	return isValidSourceMinimatch(o, s);
-};
-
-const findPackageJson: FindSource = function (o, s) {
-	if (s.base !== 'package.json') {
-		return false;
+	const content = o.fsa.readFileSync(sourceFile.absolutePath).toString();
+	const pattern = content;
+	if (!scanner.isValid(pattern)) {
+		return methodologyGitignore(tree, o);
 	}
 
-	let parsed: Record<string, unknown>;
-	try {
-		const content = o.fsa.readFileSync(s.absolutePath).toString();
-		const json: unknown = JSON.parse(content);
-		if (json?.constructor !== Object) {
-			return false;
-		}
+	scanner.pattern = pattern;
+	return useSourceFile(sourceFile, scanner);
+};
 
-		parsed = json as Record<string, unknown>;
-	} catch {
-		return false;
+const methodologyManifest: Methodology = function (tree, o) {
+	const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude, negated: true});
+	const sourceFile = tree.findRecursive<File>(dirent => dirent instanceof File && dirent.base === 'package.json');
+
+	if (sourceFile === undefined) {
+		return methodologyNpmignore(tree, o);
 	}
 
-	const propertyValue: unknown = parsed.files;
-	if (!Array.isArray(propertyValue) || !scanner.isValid(propertyValue)) {
-		return false;
+	const content = o.fsa.readFileSync(sourceFile.absolutePath).toString();
+	// TODO: We should throw own error instead of JSON.parse's exception.
+	// TODO: What happens if 'files' field is not a string array? What if this strings are comments?
+	// TODO: The manifest can be invalid for publishing like no name no version.
+	const pattern = (JSON.parse(content) as {files: unknown}).files;
+	if (!scanner.isValid(pattern)) {
+		return methodologyNpmignore(tree, o);
 	}
 
-	return true;
+	scanner.pattern = pattern;
+	return useSourceFile(sourceFile, scanner);
 };
-
-const read: ReadSource = function (o, s) {
-	const content = o.fsa.readFileSync(s.absolutePath).toString();
-	scanner.negated = false;
-	scanner.pattern = content;
-	return scanner;
-};
-
-const readJson: ReadSource = function (o, s) {
-	const content = o.fsa.readFileSync(s.absolutePath).toString();
-	scanner.negated = true;
-	scanner.pattern = (JSON.parse(content) as {files: string[]}).files;
-	return scanner;
-};
-
-const methodology: Methodology[] = [
-	{
-		findSource: findPackageJson, readSource: readJson,
-	},
-	{
-		findSource: findNpmignore, readSource: read,
-	},
-	{
-		findSource: findGitignore, readSource: read,
-	},
-];
 
 const bind: Plugins.TargetBind = {
-	id, icon, name, methodology, testCommand, scanOptions: {defaultScanner: scanner},
+	id, icon, name, methodology: methodologyManifest, testCommand, scanOptions: {
+		defaultScanner: new ScannerGitignore({exclude: matcherExclude, include: matcherInclude}),
+	},
 };
 const npm: Plugins.PluginExport = {viewignored: {addTargets: [bind]}};
 export default npm;

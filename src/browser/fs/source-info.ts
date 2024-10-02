@@ -4,55 +4,25 @@ import EventEmitter from 'node:events';
 import pLimit from 'p-limit';
 import {
 	DirectoryTree,
-	type Methodology,
 	File,
 	type RealScanFolderOptions,
-	Directory,
+	type Scanner,
 } from '../lib.js';
 
 /**
  * The source of patterns.
  */
 export class SourceInfo extends File {
-	/**
-	 * Get instance for each source file recursively.
-	 */
-	static async createCache(tree: DirectoryTree, methodology: Methodology, optionsReal: RealScanFolderOptions): Promise<Map<string, SourceInfo>> {
-		const map = new Map<string, SourceInfo>();
-
-		function processDirentTree(direntTree: DirectoryTree, rootSource?: SourceInfo) {
-			if (rootSource === undefined) {
-				const goodSource = direntTree.children.find(child => {
-					if (!(child instanceof File)) {
-						return false;
-					}
-
-					const isValid = methodology.findSource(optionsReal, child);
-					return isValid;
-				});
-
-				if (goodSource !== undefined) {
-					rootSource = new SourceInfo(goodSource.relativePath, goodSource.absolutePath, methodology, optionsReal);
-				}
-			}
-
-			for (const dirent of direntTree.children) {
-				if ('children' in dirent) {
-					processDirentTree(dirent, rootSource);
-				}
-
-				if (rootSource !== undefined) {
-					map.set(dirent.relativePath, rootSource);
-				}
-			}
-		}
-
-		processDirentTree(tree);
-
-		return map;
+	static from(file: File, scanner: Scanner) {
+		return new SourceInfo(file.parent, file.relativePath, file.absolutePath, scanner);
 	}
 
 	constructor(
+		/**
+         * The parent of the file.
+         */
+		parent: DirectoryTree,
+
 		/**
 		 * The relative path to the file.
 		 */
@@ -64,16 +34,11 @@ export class SourceInfo extends File {
 		absolutePath: string,
 
 		/**
-		 * The pattern parser.
+		 * The scanner of patterns.
 		 */
-		public readonly methodology: Methodology,
-
-		/**
-		 * The options.
-		 */
-		public readonly options?: RealScanFolderOptions,
+		public readonly scanner: Scanner,
 	) {
-		super(relativePath, absolutePath);
+		super(parent, relativePath, absolutePath);
 	}
 }
 
@@ -87,7 +52,6 @@ export type ReadDeepStreamDataRoot = {
 };
 export type ReadDeepStreamData = {
 	target: DirectoryTree | File;
-	parent?: Directory;
 	progress: ReadDirectoryProgress;
 };
 
@@ -108,7 +72,7 @@ export type ReadDirectoryProgress = {
 
 export type ReadDeepStreamOptions = ReadDirectoryOptions & {
 	controller?: ReadDirectoryEventEmitter;
-	parent?: Directory;
+	parent?: DirectoryTree;
 	progress?: ReadDirectoryProgress;
 };
 
@@ -149,7 +113,7 @@ export async function streamDirectoryDeepRecursion(directoryPath: {toString(): s
 	const readdir = fsa.promises.readdir ?? FSP.readdir;
 	const absolutePath = patha.join(cwd, String(directoryPath));
 	const relativePath = patha.relative(cwd, absolutePath);
-	const directory = new Directory(relativePath, absolutePath);
+	const directory = new DirectoryTree(parent, relativePath, absolutePath, []);
 	const entryList = await readdir(absolutePath, {withFileTypes: true});
 
 	const promises = entryList.map(entry => limit(async () => {
@@ -166,17 +130,17 @@ export async function streamDirectoryDeepRecursion(directoryPath: {toString(): s
 			return data;
 		}
 
-		const file = new File(relativePath, absolutePath);
+		const file = new File(parent, relativePath, absolutePath);
 		++progress.current;
 		controller.emit('progress', progress);
-		controller.emit('data', {target: file, parent: directory, progress});
+		controller.emit('data', {target: file, progress});
 		return file;
 	}));
 
 	const x = await Promise.all(promises);
 	const entryPaths = x.map(s => s instanceof File ? s : s.target);
-	const directoryTree = new DirectoryTree(relativePath, absolutePath, entryPaths);
-	const data: ReadDeepStreamData = {target: directoryTree, parent, progress};
+	directory.children.push(...entryPaths);
+	const data: ReadDeepStreamData = {target: directory, progress};
 	controller.emit('progress', progress);
 	controller.emit('data', data);
 	return data;

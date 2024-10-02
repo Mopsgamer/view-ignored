@@ -1,10 +1,13 @@
 import {icons} from '@m234/nerd-fonts';
 import {
-	type Plugins, type FindSource, type Methodology,
-	type ReadSource,
+	type Plugins, type Methodology,
+	ErrorNoSources,
+	File,
+	ErrorInvalidPattern,
 } from '../../index.js';
 import {ScannerGitignore} from '../scanner.js';
 import {type TargetIcon, type TargetName} from '../targets.js';
+import {useSourceFile} from './git.js';
 
 const id = 'vsce';
 const name: TargetName = 'VSCE';
@@ -18,31 +21,23 @@ const matcherExclude: string[] = [
 
 const scanner = new ScannerGitignore({exclude: matcherExclude});
 
-const find: FindSource = function (o, s) {
-	if (s.base !== '.vscodeignore') {
-		return false;
+const methodology: Methodology = function (tree, o) {
+	const sourceFile = tree.findRecursive<File>(dirent => dirent instanceof File && dirent.base === '.vscodeignore');
+
+	if (sourceFile === undefined) {
+		throw new ErrorNoSources();
 	}
 
-	const content = o.fsa.readFileSync(s.absolutePath).toString();
-	if (!scanner.isValid(content)) {
-		return false;
+	const content = o.fsa.readFileSync(sourceFile.absolutePath).toString();
+	// TODO: The manifest can be invalid for publishing like no engine.
+	const pattern = content;
+	if (!scanner.isValid(pattern)) {
+		throw new ErrorInvalidPattern();
 	}
 
-	scanner.pattern = content;
-	return true;
+	scanner.pattern = pattern;
+	return useSourceFile(sourceFile, scanner);
 };
-
-const read: ReadSource = function (o, s) {
-	const content = o.fsa.readFileSync(s.absolutePath).toString();
-	scanner.pattern = content;
-	return scanner;
-};
-
-const methodology: Methodology[] = [
-	{
-		findSource: find, readSource: read,
-	},
-];
 
 const bind: Plugins.TargetBind = {
 	id, icon, name, methodology, testCommand, scanOptions: {defaultScanner: scanner},

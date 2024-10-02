@@ -47,13 +47,17 @@ export class ScannerMinimatch implements Scanner {
 		this.negated = options?.negated ?? false;
 	}
 
-	isValid(pattern: string | string[]): boolean {
-		if (Array.isArray(pattern)) {
-			return pattern.every(p => this.isValid(p));
+	isValid(value: unknown): value is string | string[] {
+		if (Array.isArray(value)) {
+			return value.every(p => !Array.isArray(p) && this.isValid(value));
+		}
+
+		if (typeof value !== 'string') {
+			return false;
 		}
 
 		try {
-			minimatch.makeRe(pattern);
+			minimatch.makeRe(value);
 			return true;
 		} catch {
 			return false;
@@ -70,7 +74,8 @@ export class ScannerMinimatch implements Scanner {
 		if (typeof argument === 'string') {
 			const patternList = argument.split(/\r?\n/);
 
-			return patternList.some(pattern => minimatch(path, pattern, {dot: true, matchBase: true}));
+			const someMatch = patternList.some(pattern => minimatch(path, pattern, {dot: true, matchBase: true}));
+			return someMatch;
 		}
 
 		let check: boolean;
@@ -84,7 +89,7 @@ export class ScannerMinimatch implements Scanner {
 			return false;
 		}
 
-		check = this.ignores(path, argument?.pattern ?? this._pattern);
+		check = this.ignores(path, argument?.pattern ?? this.pattern);
 		return (argument?.negated ?? this.negated) ? !check : check;
 	}
 }
@@ -92,12 +97,16 @@ export class ScannerMinimatch implements Scanner {
 export type ScannerGitignoreOptions = ScannerMinimatchOptions;
 
 export class ScannerGitignore extends ScannerMinimatch implements Scanner {
+	private static gitignoreToMinimatch<T extends string | string[]>(argument: T): T;
 	private static gitignoreToMinimatch(argument: string | string[]): string | string[] {
 		if (typeof argument === 'string') {
-			argument = argument.split(/\r?\n/);
+			return ScannerGitignore.gitignoreToMinimatch(argument.split(/\r?\n/)).join('\n');
 		}
 
-		return argument.map(p => gitignoreToMinimatch(p));
+		return argument
+			.map(p => p.replaceAll(/(#.+$|(?<!\\) )/gm, ''))
+			.filter(s => s !== '')
+			.map(p => gitignoreToMinimatch(p));
 	}
 
 	constructor(
@@ -115,6 +124,24 @@ export class ScannerGitignore extends ScannerMinimatch implements Scanner {
 		}
 
 		super(options);
+	}
+
+	isValid(value: unknown): value is string | string[] {
+		if (Array.isArray(value)) {
+			return value.every(p => !Array.isArray(p) && this.isValid(value));
+		}
+
+		if (typeof value !== 'string') {
+			return false;
+		}
+
+		try {
+			const converted = ScannerGitignore.gitignoreToMinimatch(value);
+			minimatch.makeRe(converted);
+			return true;
+		} catch {
+			return false;
+		}
 	}
 
 	get pattern() {

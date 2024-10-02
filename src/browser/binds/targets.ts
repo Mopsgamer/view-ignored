@@ -54,9 +54,9 @@ export type TargetBind = {
 	icon?: TargetIcon;
 
 	/**
-     * The walkthrough. Files including patterns.
+     * @see {@link Methodology}
      */
-	methodology: Methodology[];
+	methodology: Methodology;
 
 	/**
      * Folder deep scanning options for the target.
