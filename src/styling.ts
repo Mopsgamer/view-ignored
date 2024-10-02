@@ -43,7 +43,7 @@ export function highlight(text: string, chalk?: ChalkInstance): string {
 		}
 
 		if (match.match(rnumber) !== null) {
-			return chalk.hex('#73DEA7')(match.replaceAll(/\B(?=(\d{3})+(?!\d))/g, ','));
+			return chalk.hex('#73DEA7')(match);
 		}
 
 		if (match.match(rspecial) !== null) {
