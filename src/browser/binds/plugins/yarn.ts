@@ -38,7 +38,6 @@ const methodologyGitignore: Methodology = function (tree, o) {
 	}
 
 	const content = o.fsa.readFileSync(sourceFile.absolutePath).toString();
-	// TODO: .gitignore can contain comments. Does code below actually work in this situations?
 	const pattern = content;
 	if (!scanner.isValid(pattern)) {
 		throw new ErrorInvalidPattern();
@@ -57,7 +56,6 @@ const methodologyNpmignore: Methodology = function (tree, o) {
 	}
 
 	const content = o.fsa.readFileSync(sourceFile.absolutePath).toString();
-	// TODO: .gitignore can contain comments. Does code below actually work in this situations?
 	const pattern = content;
 	if (!scanner.isValid(pattern)) {
 		return methodologyGitignore(tree, o);
@@ -76,7 +74,6 @@ const methodologyYarnignore: Methodology = function (tree, o) {
 	}
 
 	const content = o.fsa.readFileSync(sourceFile.absolutePath).toString();
-	// TODO: .gitignore can contain comments. Does code below actually work in this situations?
 	const pattern = content;
 	if (!scanner.isValid(pattern)) {
 		return methodologyNpmignore(tree, o);
