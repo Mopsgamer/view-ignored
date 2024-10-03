@@ -17,7 +17,7 @@ import {
 } from './browser/styling.js';
 import {makeMtimeCache, sortNameList, type SortName} from './browser/sorting.js';
 import {
-	boxError, decorNameList, highlight, styleNameList, type BoxOptions,
+	boxError, decorNameList, highlight, stringTime, styleNameList, type BoxOptions,
 } from './styling.js';
 import {
 	Directory,
@@ -376,7 +376,7 @@ export async function actionScan(): Promise<void> {
 								let message = '';
 								message += files;
 								message += '\n';
-								message += `Done in ${time < 2000 ? chalk.yellow(fastSymbol) : ''}${highlight(String(time / 1000), chalk)} seconds.`;
+								message += `Done in ${time < 2000 ? chalk.yellow(fastSymbol) : ''}${stringTime(time, chalk)}.`;
 								message += '\n';
 								message += `Listed ${highlight(String(context.fileInfoList.length), chalk)} files.`;
 								message += '\n';

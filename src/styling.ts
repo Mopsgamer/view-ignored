@@ -54,3 +54,11 @@ export function highlight(text: string, chalk?: ChalkInstance): string {
 	});
 	return colored;
 }
+
+export function stringTime(time: number, chalk: ChalkInstance) {
+	if (time < 1000) {
+		return `${highlight(String(time), chalk)} milliseconds`;
+	}
+
+	return `${highlight((time / 1000).toFixed(2), chalk)} seconds`;
+}
