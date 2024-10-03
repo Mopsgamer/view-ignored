@@ -2,10 +2,11 @@ import * as PATH from 'node:path';
 import process from 'node:process';
 import * as FS from 'node:fs';
 import {createRequire} from 'node:module';
+import EventEmitter from 'node:events';
 import {configDefault} from '../config.js';
 import {
 	Directory,
-	type File, FileInfo, SourceInfo,
+	type File, FileInfo, type DeepStreamEventEmitter, SourceInfo,
 } from './fs/index.js';
 import {targetGet} from './binds/index.js';
 import {ErrorTargetNotBound, SomeError} from './errors.js';
@@ -22,7 +23,7 @@ export * as Plugins from './binds/index.js';
 export const package_ = createRequire(import.meta.url)('../../package.json') as typeof import('../../package.json');
 
 /**
- * Uses `node:fs` and `node:fs/promises` be default.
+ * Uses `node:fs` and `node:fs/promises` by default.
  */
 export type FileSystemAdapter = {
 	readFileSync?: typeof FS.readFileSync;
@@ -51,9 +52,12 @@ export type Scanner = {
  * Similarly, npm will raise an error if you attempt to publish a package without a basic 'package.json'.
  * This exception can be ignored if the {@link ScanOptions.defaultScanner} option is specified.
  */
-export type Methodology = (tree: Directory, realOptions: RealScanFolderOptions) => Map<File, SourceInfo>;
+export type Methodology = (tree: Directory, realOptions: RealScanOptions) => Map<File, SourceInfo>;
 
-export type RealScanFolderOptions = Required<Omit<ScanOptions, 'defaultScanner'>> & {
+/**
+ * Options with defaults and additional properties.
+ */
+export type RealScanOptions = Required<Omit<ScanOptions, 'defaultScanner'>> & {
 	defaultScanner?: Scanner | undefined;
 	fsa: Required<FileSystemAdapter>;
 	patha: PATH.PlatformPath;
@@ -61,12 +65,12 @@ export type RealScanFolderOptions = Required<Omit<ScanOptions, 'defaultScanner'>
 
 /**
  * Folder deep scanning options.
- * @see {@link ScanFileOptions}
  */
 export type ScanOptions = {
 
 	/**
 	 * The target or the scan methodology.
+	 * @default "git"
 	 */
 	target?: string | Methodology;
 
@@ -120,14 +124,33 @@ export type ScanOptions = {
 
 /**
  * Gets info about the each file: it is ignored or not.
- * @param pathList The list of relative paths. The should be relative to the current working directory.
+ * @param directoryPath The relative path to the directory.
  * @throws If no valid sources: {@link ErrorNoSources}.
  * This exception can be ignored if the {@link ScanOptions.defaultScanner} option is specified.
  */
 export async function scan(directoryPath: string, options?: ScanOptions): Promise<FileInfo[]>;
+/**
+ * Gets info about the each file: it is ignored or not.
+ * @param directory The current working directory.
+ * @throws If no valid sources: {@link ErrorNoSources}.
+ * This exception can be ignored if the {@link ScanOptions.defaultScanner} option is specified.
+ */
 export async function scan(directory: Directory, options?: ScanOptions): Promise<FileInfo[]>;
+/**
+ * Gets info about the each file: it is ignored or not.
+ * @param stream The stream of the current working directory reading.
+ * @throws If no valid sources: {@link ErrorNoSources}.
+ * This exception can be ignored if the {@link ScanOptions.defaultScanner} option is specified.
+ */
+export async function scan(stream: DeepStreamEventEmitter, options?: ScanOptions): Promise<FileInfo[]>;
+/**
+ * Gets info about the each file: it is ignored or not.
+ * @param pathList The list of relative paths. The should be relative to the current working directory.
+ * @throws If no valid sources: {@link ErrorNoSources}.
+ * This exception can be ignored if the {@link ScanOptions.defaultScanner} option is specified.
+ */
 export async function scan(pathList: string[], options?: ScanOptions): Promise<FileInfo[]>;
-export async function scan(argument0: string | string[] | Directory, options?: ScanOptions): Promise<FileInfo[]> {
+export async function scan(argument0: string | string[] | Directory | DeepStreamEventEmitter, options?: ScanOptions): Promise<FileInfo[]> {
 	options ??= {};
 	const optionsReal = makeOptionsReal(options);
 
@@ -141,11 +164,19 @@ export async function scan(argument0: string | string[] | Directory, options?: S
 	}
 
 	if (typeof argument0 === 'string') {
-		return scan(await Directory.deepRead(argument0, optionsReal), options);
+		const stream = Directory.deepStream(argument0, optionsReal);
+		const result = scan(stream, options);
+		stream.run();
+		return result;
 	}
 
 	if (Array.isArray(argument0)) {
 		const tree: Directory = Directory.from(argument0, optionsReal.cwd);
+		return scan(tree, options);
+	}
+
+	if (argument0 instanceof EventEmitter) {
+		const {tree} = await argument0.endPromise;
 		return scan(tree, options);
 	}
 
@@ -196,13 +227,13 @@ export async function scan(argument0: string | string[] | Directory, options?: S
 }
 
 /**
- * @returns Usable options object.
+ * @returns Options with defaults and additional properties.
  */
-export function makeOptionsReal(options?: ScanOptions): RealScanFolderOptions {
+export function makeOptionsReal(options?: ScanOptions): RealScanOptions {
 	options ??= {};
 	const posix = options.posix ?? false;
 	const concurrency = options.concurrency ?? configDefault.concurrency;
-	const optionsReal: RealScanFolderOptions = {
+	const optionsReal: RealScanOptions = {
 		concurrency,
 		target: options.target ?? 'git',
 		defaultScanner: options.defaultScanner,

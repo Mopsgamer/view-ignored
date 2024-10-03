@@ -21,7 +21,7 @@ const matcherExclude: string[] = [
 
 const methodology: Methodology = function (tree, o) {
 	const scanner = new ScannerGitignore({exclude: matcherExclude});
-	const sourceFile = tree.findRecursive<File>(dirent => dirent instanceof File && dirent.base === '.vscodeignore');
+	const sourceFile = tree.findAll<File>(dirent => dirent instanceof File && dirent.base === '.vscodeignore');
 
 	if (sourceFile === undefined) {
 		throw new ErrorNoSources();
@@ -31,7 +31,7 @@ const methodology: Methodology = function (tree, o) {
 	// TODO: The manifest can be invalid for publishing like no engine.
 	const pattern = content;
 	if (!scanner.isValid(pattern)) {
-		throw new ErrorInvalidPattern();
+		throw new ErrorInvalidPattern(sourceFile, pattern);
 	}
 
 	scanner.pattern = pattern;

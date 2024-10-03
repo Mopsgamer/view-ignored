@@ -31,7 +31,7 @@ const matcherInclude = [
 
 const methodologyGitignore: Methodology = function (tree, o) {
 	const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude});
-	const sourceFile = tree.findRecursive<File>(dirent => dirent instanceof File && dirent.base === '.gitignore');
+	const sourceFile = tree.findAll<File>(dirent => dirent instanceof File && dirent.base === '.gitignore');
 
 	if (sourceFile === undefined) {
 		throw new ErrorNoSources();
@@ -40,7 +40,7 @@ const methodologyGitignore: Methodology = function (tree, o) {
 	const content = o.fsa.readFileSync(sourceFile.absolutePath).toString();
 	const pattern = content;
 	if (!scanner.isValid(pattern)) {
-		throw new ErrorInvalidPattern();
+		throw new ErrorInvalidPattern(sourceFile, pattern);
 	}
 
 	scanner.pattern = pattern;
@@ -49,7 +49,7 @@ const methodologyGitignore: Methodology = function (tree, o) {
 
 const methodologyNpmignore: Methodology = function (tree, o) {
 	const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude});
-	const sourceFile = tree.findRecursive<File>(dirent => dirent instanceof File && dirent.base === '.npmignore');
+	const sourceFile = tree.findAll<File>(dirent => dirent instanceof File && dirent.base === '.npmignore');
 
 	if (sourceFile === undefined) {
 		return methodologyGitignore(tree, o);
@@ -67,7 +67,7 @@ const methodologyNpmignore: Methodology = function (tree, o) {
 
 const methodologyYarnignore: Methodology = function (tree, o) {
 	const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude});
-	const sourceFile = tree.findRecursive<File>(dirent => dirent instanceof File && dirent.base === '.yarnignore');
+	const sourceFile = tree.findAll<File>(dirent => dirent instanceof File && dirent.base === '.yarnignore');
 
 	if (sourceFile === undefined) {
 		return methodologyNpmignore(tree, o);
@@ -85,7 +85,7 @@ const methodologyYarnignore: Methodology = function (tree, o) {
 
 const methodologyManifest: Methodology = function (tree, o) {
 	const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude, negated: true});
-	const sourceFile = tree.findRecursive<File>(dirent => dirent instanceof File && dirent.base === 'package.json');
+	const sourceFile = tree.findAll<File>(dirent => dirent instanceof File && dirent.base === 'package.json');
 
 	if (sourceFile === undefined) {
 		return methodologyYarnignore(tree, o);

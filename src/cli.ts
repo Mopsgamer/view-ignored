@@ -21,7 +21,7 @@ import {
 } from './styling.js';
 import {
 	Directory,
-	type File, type FileInfo, package_, type ReadDeepStreamDataRoot, type ReadDirectoryEventEmitter, type ReadDirectoryProgress, makeOptionsReal, scan, Sorting,
+	type File, type FileInfo, package_, type DeepStreamDataRoot, type DeepStreamEventEmitter, type DeepStreamProgress, makeOptionsReal, scan, Sorting,
 } from './lib.js';
 import {filterNameList, type FilterName} from './browser/filtering.js';
 
@@ -267,11 +267,10 @@ export function parseArgumentKeyValue(pair: string): Config.ConfigPair {
 
 type ScanContext = {
 	message: string;
-	count: ReadDirectoryProgress;
-	stream: ReadDirectoryEventEmitter;
+	count: DeepStreamProgress;
+	stream: DeepStreamEventEmitter;
 	fileInfoList: FileInfo[];
-	direntTree: Directory | undefined;
-	reading: Promise<ReadDeepStreamDataRoot>;
+	reading: Promise<DeepStreamDataRoot>;
 };
 
 /**
@@ -292,8 +291,7 @@ export async function actionScan(): Promise<void> {
 	const optionsReal = makeOptionsReal({posix: flags.posix || flags.parsable, concurrency: flags.concurrency});
 	if (flags.parsable) {
 		const stream = Directory.deepStream('.', optionsReal);
-		const direntTree = await Directory.deepRead(stream, optionsReal);
-		const fileInfoList: FileInfo[] = await scan(direntTree, {
+		const fileInfoList: FileInfo[] = await scan(stream, {
 			...optionsReal,
 			target: flags.target,
 			filter: flags.filter,
@@ -315,11 +313,10 @@ export async function actionScan(): Promise<void> {
 			count: {
 				files: 0, directories: 0, current: 0, total: 0,
 			},
-			direntTree: undefined,
 			fileInfoList: [],
 			stream,
 			message: '',
-			reading: new Promise<ReadDeepStreamDataRoot>(resolve => {
+			reading: new Promise<DeepStreamDataRoot>(resolve => {
 				stream.on('end', data => {
 					resolve(data);
 				});
@@ -333,16 +330,15 @@ export async function actionScan(): Promise<void> {
 						{
 							title: 'Preparing',
 							async task() {
-								const {tree, progress} = await context.reading;
+								const {progress} = await context.reading;
 								Object.assign(context.count, progress);
-								context.direntTree = tree;
 							},
 						},
 						{
 							title: 'Scanning',
 							async task() {
 								context.fileInfoList = await scan(
-									context.direntTree!,
+									context.stream,
 									{
 										...optionsReal,
 										target: flags.target,
@@ -358,7 +354,8 @@ export async function actionScan(): Promise<void> {
 								const sorter = Sorting[flags.sort];
 								const cache = new Map<File, number>();
 								if (flags.sort === 'modified') {
-									await makeMtimeCache(cache, context.direntTree!, {concurrency: flags.concurrency});
+									const {tree} = await context.reading;
+									await makeMtimeCache(cache, tree, {concurrency: flags.concurrency});
 								}
 
 								const time = Date.now() - start;
@@ -404,7 +401,7 @@ export async function actionScan(): Promise<void> {
 			exitOnError: true,
 		});
 		try {
-			await context.stream.run();
+			context.stream.run();
 			await progress.run();
 		} catch (error) {
 			logError(format(error), {title: 'view-ignored - Error while scan.'});

@@ -1,3 +1,5 @@
+import {type File} from './lib.js';
+
 export class SomeError extends Error {}
 
 export class ErrorNoSources extends SomeError {
@@ -7,8 +9,8 @@ export class ErrorNoSources extends SomeError {
 }
 
 export class ErrorInvalidPattern extends SomeError {
-	constructor() {
-		super('Got invalid pattern.');
+	constructor(file: File, pattern?: string | string[]) {
+		super(`Got invalid pattern in '${file.relativePath}'.` + (pattern === undefined ? '' : ` Pattern: ${JSON.stringify(pattern)}`));
 	}
 }
 

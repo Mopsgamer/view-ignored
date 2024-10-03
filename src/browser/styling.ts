@@ -32,7 +32,10 @@ export type FormatFilesOptions = {
 	 */
 	decor?: DecorName;
 
-	chalk: ChalkInstance;
+	/**
+	 * @default undefined
+	 */
+	chalk?: ChalkInstance;
 };
 
 /**
@@ -140,10 +143,16 @@ export function decorCondition(decor: DecorName, condition: DecorConditionOption
 	return result;
 }
 
+/**
+ * @see {@link boxError}
+ */
 export type BoxOptions = {
 	noColor?: boolean;
 } & Options;
 
+/**
+ * Make a message in a red box. Or without color.
+ */
 export function boxError(message: string, options?: BoxOptions): string {
 	let result = ('\n' + boxen(message, {
 		titleAlignment: 'left',

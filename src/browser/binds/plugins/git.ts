@@ -33,7 +33,7 @@ export function useSourceFile(sourceFile: File, scanner: Scanner & {pattern: str
 
 const methodology: Methodology = function (tree, o) {
 	const scanner = new ScannerGitignore({exclude: matcherExclude});
-	const sourceFile = tree.findRecursive<File>(dirent => dirent instanceof File && dirent.base === '.gitignore');
+	const sourceFile = tree.findAll<File>(dirent => dirent instanceof File && dirent.base === '.gitignore');
 
 	if (sourceFile === undefined) {
 		throw new ErrorNoSources();
@@ -42,7 +42,7 @@ const methodology: Methodology = function (tree, o) {
 	const content = o.fsa.readFileSync(sourceFile.absolutePath).toString();
 	const pattern = content;
 	if (!scanner.isValid(pattern)) {
-		throw new ErrorInvalidPattern();
+		throw new ErrorInvalidPattern(sourceFile, pattern);
 	}
 
 	scanner.pattern = pattern;
