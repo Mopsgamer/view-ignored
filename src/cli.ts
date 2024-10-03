@@ -20,8 +20,8 @@ import {
 	boxError, decorNameList, highlight, styleNameList, type BoxOptions,
 } from './styling.js';
 import {
-	type Directory,
-	type File, type FileInfo, package_, type ReadDeepStreamDataRoot, readDirectoryDeep, type ReadDirectoryEventEmitter, type ReadDirectoryProgress, makeOptionsReal, scanPathList, Sorting, streamDirectoryDeep,
+	Directory,
+	type File, type FileInfo, package_, type ReadDeepStreamDataRoot, type ReadDirectoryEventEmitter, type ReadDirectoryProgress, makeOptionsReal, scanPathList, Sorting,
 } from './lib.js';
 import {filterNameList, type FilterName} from './browser/filtering.js';
 
@@ -291,8 +291,8 @@ export async function actionScan(): Promise<void> {
 
 	const options = makeOptionsReal({posix: flags.posix || flags.parsable, concurrency: flags.concurrency});
 	if (flags.parsable) {
-		const stream = streamDirectoryDeep('.', options);
-		const direntTree = await readDirectoryDeep(stream);
+		const stream = Directory.streamDirectoryDeep('.', options);
+		const direntTree = await Directory.readDirectoryDeep(stream);
 		const fileInfoList: FileInfo[] = await scanPathList(direntTree, flags.target, {...options, filter: flags.filter, maxDepth: flags.depth});
 		console.log(fileInfoList.map(fileInfo =>
 			fileInfo.relativePath + (
@@ -305,7 +305,7 @@ export async function actionScan(): Promise<void> {
 			name = chalk.hex('#' + bind.icon.color.toString(16))(name);
 		}
 
-		const stream = streamDirectoryDeep('.', options);
+		const stream = Directory.streamDirectoryDeep('.', options);
 		const context: ScanContext = {
 			count: {
 				files: 0, directories: 0, current: 0, total: 0,

@@ -5,7 +5,7 @@ import {createRequire} from 'node:module';
 import {configDefault} from '../config.js';
 import {
 	Directory,
-	type File, FileInfo, readDirectoryDeep, SourceInfo,
+	type File, FileInfo, SourceInfo,
 } from './fs/index.js';
 import {targetGet} from './binds/index.js';
 import {ErrorTargetNotBound, SomeError} from './errors.js';
@@ -196,7 +196,7 @@ export async function scanFolder(sources: Methodology[], options?: ScanFolderOpt
 export async function scanFolder(target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
 export async function scanFolder(argument1: Methodology[] | string, options?: ScanFolderOptions): Promise<FileInfo[]> {
 	const optionsReal = makeOptionsReal(options);
-	const direntTree = await readDirectoryDeep('.', optionsReal);
+	const direntTree = await Directory.readDirectoryDeep('.', optionsReal);
 
 	return scanPathList(direntTree, argument1 as string, options);
 }
