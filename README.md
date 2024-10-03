@@ -35,10 +35,10 @@ viewig scan . --parsable
 
 # scan: plugins (space, comma or pipe separated)
 # all built-in plugins loaded automatically
-viewig scan . --plugins="plugin1, example2"
-viewig scan . --plugins="plugin1 example2"
-viewig scan . --plugins plugin1 example2
-viewig scan . --plugins plugin1, example2
+viewig scan . --plugins="example1, example2"
+viewig scan . --plugins="example1 example2"
+viewig scan . --plugins example1 example2
+viewig scan . --plugins example1, example2
 
 # config: print configuration entries
 viewig config get
@@ -51,21 +51,19 @@ viewig config set style=tree
 # config: always use nerdfonts
 viewig config set decor=nerdfonts
 # config: always use plugins
-viewig config set plugins=typescript-viewig,eslint-vign-plugin
+viewig config set plugins=example1,example2
 ```
 
 ### Programmatically
 
+All you need it to add
+
 ```js
-import * as vign from "view-ignored";
-import * as vign from "view-ignored/browser"; // for web environment apps
+import * as vign from "view-ignored"; // or "view-ignored/browser"
 
 await vign.Plugins.loadBuiltIns(["git", "npm"]); // load built-in plugins
 await vign.Plugins.loadBuiltIns(); // load all built-in plugins
 await vign.Plugins.loadPlugins(["example"]); // load third-party plugins
-
-const fileInfoList = await vign.scanFolder("git");
-const fileInfo = await vign.scanFile("./path/to/file", "git");
 
 // options available
 const fileInfoList = await vign.scanFolder("git", { cwd, ... });
