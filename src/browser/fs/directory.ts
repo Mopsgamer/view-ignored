@@ -253,4 +253,29 @@ export class Directory implements ParsedPath {
 			return found;
 		}
 	}
+
+	filterRecursive<T extends Directory | File = Directory | File>(callback: (dirent: Directory | File) => boolean): T[] {
+		const directoryChildrens: Directory[] = [];
+		const found = this.children.filter(dirent => {
+			if (dirent instanceof Directory) {
+				directoryChildrens.push(dirent);
+			}
+
+			return callback(dirent);
+		}) as T[];
+		if (found.length > 0) {
+			return found;
+		}
+
+		for (const directory of directoryChildrens) {
+			const found = directory.filterRecursive<T>(callback);
+			if (found.length === 0) {
+				continue;
+			}
+
+			return found;
+		}
+
+		return [];
+	}
 }
