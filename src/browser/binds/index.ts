@@ -81,7 +81,7 @@ export async function loadPlugins(modulePathList: string[]): Promise<PluginLoade
 	return allLoaded;
 }
 
-export const builtInImportMap: Record<BuiltInName, string> = {
+const builtInImportMap: Record<BuiltInName, string> = {
 	git: './plugins/git.js',
 	npm: './plugins/npm.js',
 	vsce: './plugins/vsce.js',
