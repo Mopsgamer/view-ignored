@@ -97,7 +97,8 @@ const methodologyManifest: Methodology = function (tree, o) {
 };
 
 const bind: Plugins.TargetBind = {
-	id, icon, name, methodology: methodologyManifest, testCommand, scanOptions: {
+	id, icon, name, testCommand, scanOptions: {
+		target: methodologyManifest,
 		defaultScanner: new ScannerGitignore({exclude: matcherExclude, include: matcherInclude}),
 	},
 };

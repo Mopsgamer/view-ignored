@@ -1,6 +1,6 @@
 
 import {
-	type ScanFolderOptions, type Methodology,
+	type ScanOptions,
 } from '../lib.js';
 
 /**
@@ -54,14 +54,9 @@ export type TargetBind = {
 	icon?: TargetIcon;
 
 	/**
-     * @see {@link Methodology}
-     */
-	methodology: Methodology;
-
-	/**
      * Folder deep scanning options for the target.
      */
-	scanOptions?: ScanFolderOptions;
+	scanOptions?: ScanOptions;
 
 	/**
      * Test command.

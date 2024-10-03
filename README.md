@@ -65,9 +65,9 @@ await vign.Plugins.loadBuiltIns(["git", "npm"]); // load built-in plugins
 await vign.Plugins.loadBuiltIns(); // load all built-in plugins
 await vign.Plugins.loadPlugins(["example"]); // load third-party plugins
 
-// options available
-const fileInfoList = await vign.scanFolder("git", { cwd, ... });
-const fileInfoList = await vign.scanFile("./path/to/file", "git", { cwd, ... });
+// scan - options available
+const fileInfoList = await vign.scan(".", { target: "git", cwd: process.cwd() });
+const fileInfoList = await vign.scan(["./path/to/file"], { target: "git", process.cwd() });
 
 // use results
 if (fileInfo.ignored) {
@@ -79,14 +79,14 @@ if (fileInfo.ignored) {
 
 ```js
 const sorter = vign.Sorting.firstFolders;
-const fileInfoList = await vign.scanFolder("npm");
+const fileInfoList = await vign.scan(".", {target: "npm"});
 const fileInfoSorted = fileInfoList.sort((a, b) => sorter(String(a), String(b)));
 ```
 
 ### Targets
 
 - `git`
-- `npm` (can be usable for PNPM and Bun)
+- `npm` (use it for PNPM and Bun)
 - `yarn`
 - `vsce`
 - `jsr` *planned*

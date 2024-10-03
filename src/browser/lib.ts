@@ -49,11 +49,11 @@ export type Scanner = {
  * @throws If the target does not allow the current ignore configurations: {@link SomeError}.
  * For example, {@link https://www.npmjs.com/package/@vscode/vsce vsce} considers it invalid if your manifest is missing the 'engines' field.
  * Similarly, npm will raise an error if you attempt to publish a package without a basic 'package.json'.
- * This exception can be ignored if the {@link ScanFolderOptions.defaultScanner} option is specified.
+ * This exception can be ignored if the {@link ScanOptions.defaultScanner} option is specified.
  */
 export type Methodology = (tree: Directory, realOptions: RealScanFolderOptions) => Map<File, SourceInfo>;
 
-export type RealScanFolderOptions = Required<Omit<ScanFolderOptions, 'defaultScanner'>> & {
+export type RealScanFolderOptions = Required<Omit<ScanOptions, 'defaultScanner'>> & {
 	defaultScanner?: Scanner | undefined;
 	fsa: Required<FileSystemAdapter>;
 	patha: PATH.PlatformPath;
@@ -63,7 +63,12 @@ export type RealScanFolderOptions = Required<Omit<ScanFolderOptions, 'defaultSca
  * Folder deep scanning options.
  * @see {@link ScanFileOptions}
  */
-export type ScanFolderOptions = {
+export type ScanOptions = {
+
+	/**
+	 * The target or the scan methodology.
+	 */
+	target?: string | Methodology;
 
 	/**
 	 * The default scanner if the methodology could not find any sources.
@@ -117,34 +122,37 @@ export type ScanFolderOptions = {
  * Gets info about the each file: it is ignored or not.
  * @param pathList The list of relative paths. The should be relative to the current working directory.
  * @throws If no valid sources: {@link ErrorNoSources}.
- * This exception can be ignored if the {@link ScanFolderOptions.defaultScanner} option is specified.
+ * This exception can be ignored if the {@link ScanOptions.defaultScanner} option is specified.
  */
-export async function scanPathList(tree: Directory, sources: Methodology, options?: ScanFolderOptions): Promise<FileInfo[]>;
-export async function scanPathList(tree: Directory, target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
-export async function scanPathList(pathList: string[], sources: Methodology, options?: ScanFolderOptions): Promise<FileInfo[]>;
-export async function scanPathList(pathList: string[], target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
-export async function scanPathList(argument0: string[] | Directory, argument1: Methodology | string, options?: ScanFolderOptions): Promise<FileInfo[]> {
+export async function scan(directoryPath: string, options?: ScanOptions): Promise<FileInfo[]>;
+export async function scan(directory: Directory, options?: ScanOptions): Promise<FileInfo[]>;
+export async function scan(pathList: string[], options?: ScanOptions): Promise<FileInfo[]>;
+export async function scan(argument0: string | string[] | Directory, options?: ScanOptions): Promise<FileInfo[]> {
 	options ??= {};
+	const optionsReal = makeOptionsReal(options);
 
-	if (typeof argument1 === 'string') {
-		const bind = targetGet(argument1);
+	if (typeof optionsReal.target === 'string') {
+		const bind = targetGet(optionsReal.target);
 		if (bind === undefined) {
-			throw new ErrorTargetNotBound(argument1);
+			throw new ErrorTargetNotBound(optionsReal.target);
 		}
 
-		return scanPathList(argument0 as Directory, bind.methodology, Object.assign(options, bind.scanOptions));
+		return scan(argument0 as Directory, Object.assign(options, bind.scanOptions));
 	}
 
-	const optionsReal = makeOptionsReal(options);
+	if (typeof argument0 === 'string') {
+		return scan(await Directory.deepRead(argument0, optionsReal), options);
+	}
+
 	if (Array.isArray(argument0)) {
 		const tree: Directory = Directory.from(argument0, optionsReal.cwd);
-		return scanPathList(tree, argument1, options);
+		return scan(tree, options);
 	}
 
 	const fileList = argument0.flat();
 	let cache: Map<File, SourceInfo>;
 	try {
-		cache = argument1(argument0, optionsReal);
+		cache = optionsReal.target(argument0, optionsReal);
 	} catch (error) {
 		if (!(error instanceof SomeError) || optionsReal.defaultScanner === undefined) {
 			throw error;
@@ -188,28 +196,15 @@ export async function scanPathList(argument0: string[] | Directory, argument1: M
 }
 
 /**
- * Scans project's directory paths to determine whether they are being ignored.
- * @throws If no valid sources: {@link ErrorNoSources}.
- * This exception can be ignored if the {@link ScanFolderOptions.defaultScanner} option is specified.
- */
-export async function scanFolder(sources: Methodology[], options?: ScanFolderOptions): Promise<FileInfo[]>;
-export async function scanFolder(target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
-export async function scanFolder(argument1: Methodology[] | string, options?: ScanFolderOptions): Promise<FileInfo[]> {
-	const optionsReal = makeOptionsReal(options);
-	const direntTree = await Directory.deepRead('.', optionsReal);
-
-	return scanPathList(direntTree, argument1 as string, options);
-}
-
-/**
  * @returns Usable options object.
  */
-export function makeOptionsReal(options?: ScanFolderOptions): RealScanFolderOptions {
+export function makeOptionsReal(options?: ScanOptions): RealScanFolderOptions {
 	options ??= {};
 	const posix = options.posix ?? false;
 	const concurrency = options.concurrency ?? configDefault.concurrency;
 	const optionsReal: RealScanFolderOptions = {
 		concurrency,
+		target: options.target ?? 'git',
 		defaultScanner: options.defaultScanner,
 		cwd: options.cwd ?? process.cwd(),
 		filter: options.filter ?? configDefault.filter,

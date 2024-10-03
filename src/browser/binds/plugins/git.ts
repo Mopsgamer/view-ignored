@@ -20,8 +20,6 @@ const matcherExclude: string[] = [
 	'.DS_Store/**',
 ];
 
-const scanner = new ScannerGitignore({exclude: matcherExclude});
-
 export function useSourceFile(sourceFile: File, scanner: Scanner & {pattern: string | string[]}): Map<File, SourceInfo> {
 	const map = new Map<File, SourceInfo>();
 	const fileList = sourceFile.parent.flat();
@@ -34,6 +32,7 @@ export function useSourceFile(sourceFile: File, scanner: Scanner & {pattern: str
 }
 
 const methodology: Methodology = function (tree, o) {
+	const scanner = new ScannerGitignore({exclude: matcherExclude});
 	const sourceFile = tree.findRecursive<File>(dirent => dirent instanceof File && dirent.base === '.gitignore');
 
 	if (sourceFile === undefined) {
@@ -51,7 +50,10 @@ const methodology: Methodology = function (tree, o) {
 };
 
 const bind: Plugins.TargetBind = {
-	id, icon, name, methodology, testCommand, scanOptions: {defaultScanner: scanner},
+	id, icon, name, testCommand, scanOptions: {
+		target: methodology,
+		defaultScanner: new ScannerGitignore({exclude: matcherExclude}),
+	},
 };
 const git: Plugins.PluginExport = {viewignored: {addTargets: [bind]}};
 export default git;

@@ -377,7 +377,7 @@ async function testTargetSubtest(data: TestTargetSubtestData) {
 	const {fixture, myContentLines, targetId, test, testName} = data;
 	const {should} = test;
 
-	const fileInfoListPromise = viewig.scanFolder(targetId, {cwd: fixture.getPath(), filter: 'included'});
+	const fileInfoListPromise = viewig.scan('.', {target: targetId, cwd: fixture.getPath(), filter: 'included'});
 	const testLine = myContentLines.findIndex(ln => ln.includes(testName)) + 1;
 	const testLineContent = testLine + myContentLines.slice(testLine).findIndex(ln => ln.includes('content')) + 1;
 	let info = `\n      Test location: ${lineColumnInfo(testFilePath, testLine, myContentLines[testLine].length)}\n      Test name: ${chalk.magenta(testName)}\n`;

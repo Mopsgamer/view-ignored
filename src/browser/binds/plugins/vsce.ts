@@ -19,9 +19,8 @@ const matcherExclude: string[] = [
 	'.DS_Store/**',
 ];
 
-const scanner = new ScannerGitignore({exclude: matcherExclude});
-
 const methodology: Methodology = function (tree, o) {
+	const scanner = new ScannerGitignore({exclude: matcherExclude});
 	const sourceFile = tree.findRecursive<File>(dirent => dirent instanceof File && dirent.base === '.vscodeignore');
 
 	if (sourceFile === undefined) {
@@ -40,7 +39,10 @@ const methodology: Methodology = function (tree, o) {
 };
 
 const bind: Plugins.TargetBind = {
-	id, icon, name, methodology, testCommand, scanOptions: {defaultScanner: scanner},
+	id, icon, name, testCommand, scanOptions: {
+		target: methodology,
+		defaultScanner: new ScannerGitignore({exclude: matcherExclude}),
+	},
 };
 const vsce: Plugins.PluginExport = {viewignored: {addTargets: [bind]}};
 export default vsce;

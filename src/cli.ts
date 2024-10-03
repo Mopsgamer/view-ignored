@@ -21,7 +21,7 @@ import {
 } from './styling.js';
 import {
 	Directory,
-	type File, type FileInfo, package_, type ReadDeepStreamDataRoot, type ReadDirectoryEventEmitter, type ReadDirectoryProgress, makeOptionsReal, scanPathList, Sorting,
+	type File, type FileInfo, package_, type ReadDeepStreamDataRoot, type ReadDirectoryEventEmitter, type ReadDirectoryProgress, makeOptionsReal, scan, Sorting,
 } from './lib.js';
 import {filterNameList, type FilterName} from './browser/filtering.js';
 
@@ -293,7 +293,12 @@ export async function actionScan(): Promise<void> {
 	if (flags.parsable) {
 		const stream = Directory.deepStream('.', options);
 		const direntTree = await Directory.deepRead(stream);
-		const fileInfoList: FileInfo[] = await scanPathList(direntTree, flags.target, {...options, filter: flags.filter, maxDepth: flags.depth});
+		const fileInfoList: FileInfo[] = await scan(direntTree, {
+			...options,
+			target: flags.target,
+			filter: flags.filter,
+			maxDepth: flags.depth,
+		});
 		console.log(fileInfoList.map(fileInfo =>
 			fileInfo.relativePath + (
 				flags.showSources ? '<' + (fileInfo.source.relativePath) : ''
@@ -336,11 +341,11 @@ export async function actionScan(): Promise<void> {
 						{
 							title: 'Scanning',
 							async task() {
-								context.fileInfoList = await scanPathList(
+								context.fileInfoList = await scan(
 									context.direntTree!,
-									flags.target,
 									{
 										...options,
+										target: flags.target,
 										filter: flags.filter,
 										maxDepth: flags.depth,
 									},
