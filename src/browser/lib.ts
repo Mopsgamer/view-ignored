@@ -4,7 +4,7 @@ import * as FS from 'node:fs';
 import {createRequire} from 'node:module';
 import {configDefault} from '../config.js';
 import {
-	DirectoryTree,
+	Directory,
 	type File, FileInfo, readDirectoryDeep, SourceInfo,
 } from './fs/index.js';
 import {targetGet} from './binds/index.js';
@@ -51,7 +51,7 @@ export type Scanner = {
  * Similarly, npm will raise an error if you attempt to publish a package without a basic 'package.json'.
  * This exception can be ignored if the {@link ScanFolderOptions.defaultScanner} option is specified.
  */
-export type Methodology = (tree: DirectoryTree, realOptions: RealScanFolderOptions) => Map<File, SourceInfo>;
+export type Methodology = (tree: Directory, realOptions: RealScanFolderOptions) => Map<File, SourceInfo>;
 
 export type RealScanFolderOptions = Required<Omit<ScanFolderOptions, 'defaultScanner'>> & {
 	defaultScanner?: Scanner | undefined;
@@ -119,11 +119,11 @@ export type ScanFolderOptions = {
  * @throws If no valid sources: {@link ErrorNoSources}.
  * This exception can be ignored if the {@link ScanFolderOptions.defaultScanner} option is specified.
  */
-export async function scanPathList(tree: DirectoryTree, sources: Methodology, options?: ScanFolderOptions): Promise<FileInfo[]>;
-export async function scanPathList(tree: DirectoryTree, target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
+export async function scanPathList(tree: Directory, sources: Methodology, options?: ScanFolderOptions): Promise<FileInfo[]>;
+export async function scanPathList(tree: Directory, target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
 export async function scanPathList(pathList: string[], sources: Methodology, options?: ScanFolderOptions): Promise<FileInfo[]>;
 export async function scanPathList(pathList: string[], target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
-export async function scanPathList(argument0: string[] | DirectoryTree, argument1: Methodology | string, options?: ScanFolderOptions): Promise<FileInfo[]> {
+export async function scanPathList(argument0: string[] | Directory, argument1: Methodology | string, options?: ScanFolderOptions): Promise<FileInfo[]> {
 	options ??= {};
 
 	if (typeof argument1 === 'string') {
@@ -132,12 +132,12 @@ export async function scanPathList(argument0: string[] | DirectoryTree, argument
 			throw new ErrorTargetNotBound(argument1);
 		}
 
-		return scanPathList(argument0 as DirectoryTree, bind.methodology, Object.assign(options, bind.scanOptions));
+		return scanPathList(argument0 as Directory, bind.methodology, Object.assign(options, bind.scanOptions));
 	}
 
 	const optionsReal = makeOptionsReal(options);
 	if (Array.isArray(argument0)) {
-		const tree: DirectoryTree = DirectoryTree.from(argument0, optionsReal.cwd);
+		const tree: Directory = Directory.from(argument0, optionsReal.cwd);
 		return scanPathList(tree, argument1, options);
 	}
 

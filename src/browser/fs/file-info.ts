@@ -5,7 +5,7 @@ import {decorCondition, type DecorName} from '../styling.js';
 import {type FilterName} from '../filtering.js';
 import {File} from './file.js';
 import {type SourceInfo} from './source-info.js';
-import {type DirectoryTree} from './directory.js';
+import {type Directory} from './directory.js';
 
 /**
  * @see {@link FileInfo.prototype.toString}
@@ -70,7 +70,7 @@ export class FileInfo extends File {
 		/**
          * The parent of the file.
          */
-		parent: DirectoryTree,
+		parent: Directory,
 
 		/**
 		 * The relative path to the file.

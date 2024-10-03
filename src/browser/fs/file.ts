@@ -1,5 +1,5 @@
 import {parse, type ParsedPath} from 'node:path';
-import {type DirectoryTree} from './directory.js';
+import {type Directory} from './directory.js';
 
 export class File implements ParsedPath {
 	public readonly base: string;
@@ -11,7 +11,7 @@ export class File implements ParsedPath {
 		/**
          * The parent of the file.
          */
-		public readonly parent: DirectoryTree,
+		public readonly parent: Directory,
 
 		/**
 		 * The relative path to the file.

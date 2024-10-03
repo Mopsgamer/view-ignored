@@ -3,9 +3,9 @@ import {
 } from 'node:path';
 import {File} from './file.js';
 
-export class DirectoryTree implements ParsedPath {
-	static from(pathList: Array<{toString(): string}>, cwd: string): DirectoryTree {
-		const tree = new DirectoryTree(undefined, '.', cwd, []);
+export class Directory implements ParsedPath {
+	static from(pathList: Array<{toString(): string}>, cwd: string): Directory {
+		const tree = new Directory(undefined, '.', cwd, []);
 
 		for (const path of pathList) {
 			const entryNameList = path.toString().split(/[\\/]/);
@@ -21,10 +21,10 @@ export class DirectoryTree implements ParsedPath {
 				}
 
 				let directory = tree.children.find(
-					c => c instanceof DirectoryTree && c.absolutePath === absolutePath,
-				) as DirectoryTree | undefined;
+					c => c instanceof Directory && c.absolutePath === absolutePath,
+				) as Directory | undefined;
 				if (directory === undefined) {
-					directory = new DirectoryTree(tree, relativePath, absolutePath, []);
+					directory = new Directory(tree, relativePath, absolutePath, []);
 					tree.children.push(directory);
 				}
 
@@ -44,7 +44,7 @@ export class DirectoryTree implements ParsedPath {
 		/**
          * The parent of the directory.
          */
-		public readonly parent: DirectoryTree | undefined,
+		public readonly parent: Directory | undefined,
 
 		/**
          * The relative path to the directory.
@@ -59,7 +59,7 @@ export class DirectoryTree implements ParsedPath {
 		/**
          * The content of the directory.
          */
-		public readonly children: Array<DirectoryTree | File>,
+		public readonly children: Array<Directory | File>,
 	) {
 		const parsed = parse(absolutePath);
 		this.base = parsed.base;
@@ -87,10 +87,10 @@ export class DirectoryTree implements ParsedPath {
 		return direntList;
 	}
 
-	findRecursive<T extends DirectoryTree | File = DirectoryTree | File>(callback: (dirent: DirectoryTree | File) => boolean): T | undefined {
-		const directoryChildrens: DirectoryTree[] = [];
+	findRecursive<T extends Directory | File = Directory | File>(callback: (dirent: Directory | File) => boolean): T | undefined {
+		const directoryChildrens: Directory[] = [];
 		const found = this.children.find(dirent => {
-			if (dirent instanceof DirectoryTree) {
+			if (dirent instanceof Directory) {
 				directoryChildrens.push(dirent);
 			}
 

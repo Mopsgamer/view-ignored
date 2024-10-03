@@ -20,7 +20,7 @@ import {
 	boxError, decorNameList, highlight, styleNameList, type BoxOptions,
 } from './styling.js';
 import {
-	type DirectoryTree,
+	type Directory,
 	type File, type FileInfo, package_, type ReadDeepStreamDataRoot, readDirectoryDeep, type ReadDirectoryEventEmitter, type ReadDirectoryProgress, makeOptionsReal, scanPathList, Sorting, streamDirectoryDeep,
 } from './lib.js';
 import {filterNameList, type FilterName} from './browser/filtering.js';
@@ -270,7 +270,7 @@ type ScanContext = {
 	count: ReadDirectoryProgress;
 	stream: ReadDirectoryEventEmitter;
 	fileInfoList: FileInfo[];
-	direntTree: DirectoryTree | undefined;
+	direntTree: Directory | undefined;
 	reading: Promise<ReadDeepStreamDataRoot>;
 };
 

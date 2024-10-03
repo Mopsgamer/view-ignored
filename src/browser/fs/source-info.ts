@@ -3,7 +3,7 @@ import * as FSP from 'node:fs/promises';
 import EventEmitter from 'node:events';
 import pLimit from 'p-limit';
 import {
-	DirectoryTree,
+	Directory,
 	File,
 	type RealScanFolderOptions,
 	type Scanner,
@@ -21,7 +21,7 @@ export class SourceInfo extends File {
 		/**
          * The parent of the file.
          */
-		parent: DirectoryTree,
+		parent: Directory,
 
 		/**
 		 * The relative path to the file.
@@ -47,11 +47,11 @@ export type ReadDirectoryEventEmitter = EventEmitter<ReadDirectoryEventMap> & {
 };
 
 export type ReadDeepStreamDataRoot = {
-	tree: DirectoryTree;
+	tree: Directory;
 	progress: ReadDirectoryProgress;
 };
 export type ReadDeepStreamData = {
-	target: DirectoryTree | File;
+	target: Directory | File;
 	progress: ReadDirectoryProgress;
 };
 
@@ -61,7 +61,7 @@ export type ReadDirectoryEventMap = {
 	'progress': [ReadDirectoryProgress];
 };
 
-export type ReadDirectoryStream = ReadableStream<File | DirectoryTree>;
+export type ReadDirectoryStream = ReadableStream<File | Directory>;
 
 export type ReadDirectoryProgress = {
 	directories: number;
@@ -72,7 +72,7 @@ export type ReadDirectoryProgress = {
 
 export type ReadDeepStreamOptions = ReadDirectoryOptions & {
 	controller?: ReadDirectoryEventEmitter;
-	parent?: DirectoryTree;
+	parent?: Directory;
 	progress?: ReadDirectoryProgress;
 };
 
@@ -113,7 +113,7 @@ export async function streamDirectoryDeepRecursion(directoryPath: {toString(): s
 	const readdir = fsa.promises.readdir ?? FSP.readdir;
 	const absolutePath = patha.join(cwd, String(directoryPath));
 	const relativePath = patha.relative(cwd, absolutePath);
-	const directory = new DirectoryTree(parent, relativePath, absolutePath, []);
+	const directory = new Directory(parent, relativePath, absolutePath, []);
 	const entryList = await readdir(absolutePath, {withFileTypes: true});
 
 	const promises = entryList.map(entry => limit(async () => {
@@ -153,7 +153,7 @@ export function streamDirectoryDeep(directoryPath: string, optionsReal: ReadDire
 	controller.run = async function (): Promise<ReadDeepStreamDataRoot> {
 		const data = await streamDirectoryDeepRecursion(directoryPath, {...optionsReal, controller});
 		const {progress, target} = data;
-		const dataRoot: ReadDeepStreamDataRoot = {progress, tree: target as DirectoryTree};
+		const dataRoot: ReadDeepStreamDataRoot = {progress, tree: target as Directory};
 		controller.emit('end', dataRoot);
 		return dataRoot;
 	};
@@ -164,16 +164,16 @@ export function streamDirectoryDeep(directoryPath: string, optionsReal: ReadDire
 /**
  * @returns Root directory.
  */
-export function readDirectoryDeep(stream: ReadDirectoryEventEmitter): Promise<DirectoryTree>;
-export function readDirectoryDeep(directoryPath: string, optionsReal: ReadDirectoryOptions): Promise<DirectoryTree>;
-export async function readDirectoryDeep(argument1: string | ReadDirectoryEventEmitter, optionsReal?: ReadDirectoryOptions): Promise<DirectoryTree> {
+export function readDirectoryDeep(stream: ReadDirectoryEventEmitter): Promise<Directory>;
+export function readDirectoryDeep(directoryPath: string, optionsReal: ReadDirectoryOptions): Promise<Directory>;
+export async function readDirectoryDeep(argument1: string | ReadDirectoryEventEmitter, optionsReal?: ReadDirectoryOptions): Promise<Directory> {
 	const controller = argument1 instanceof EventEmitter ? argument1 : streamDirectoryDeep(argument1, optionsReal!);
 	if (typeof argument1 === 'string') {
 		const {tree} = await controller.run();
 		return tree;
 	}
 
-	const tree = await new Promise<DirectoryTree>(resolve => {
+	const tree = await new Promise<Directory>(resolve => {
 		controller.once('end', data => {
 			resolve(data.tree);
 		});
