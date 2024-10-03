@@ -196,7 +196,7 @@ export async function scanFolder(sources: Methodology[], options?: ScanFolderOpt
 export async function scanFolder(target: string, options?: ScanFolderOptions): Promise<FileInfo[]>;
 export async function scanFolder(argument1: Methodology[] | string, options?: ScanFolderOptions): Promise<FileInfo[]> {
 	const optionsReal = makeOptionsReal(options);
-	const direntTree = await Directory.readDirectoryDeep('.', optionsReal);
+	const direntTree = await Directory.deepRead('.', optionsReal);
 
 	return scanPathList(direntTree, argument1 as string, options);
 }

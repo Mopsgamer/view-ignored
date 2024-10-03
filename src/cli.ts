@@ -291,8 +291,8 @@ export async function actionScan(): Promise<void> {
 
 	const options = makeOptionsReal({posix: flags.posix || flags.parsable, concurrency: flags.concurrency});
 	if (flags.parsable) {
-		const stream = Directory.streamDirectoryDeep('.', options);
-		const direntTree = await Directory.readDirectoryDeep(stream);
+		const stream = Directory.deepStream('.', options);
+		const direntTree = await Directory.deepRead(stream);
 		const fileInfoList: FileInfo[] = await scanPathList(direntTree, flags.target, {...options, filter: flags.filter, maxDepth: flags.depth});
 		console.log(fileInfoList.map(fileInfo =>
 			fileInfo.relativePath + (
@@ -305,7 +305,7 @@ export async function actionScan(): Promise<void> {
 			name = chalk.hex('#' + bind.icon.color.toString(16))(name);
 		}
 
-		const stream = Directory.streamDirectoryDeep('.', options);
+		const stream = Directory.deepStream('.', options);
 		const context: ScanContext = {
 			count: {
 				files: 0, directories: 0, current: 0, total: 0,

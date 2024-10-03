@@ -36,15 +36,40 @@ export type ReadDirectoryProgress = {
 	total: number;
 };
 
-export type ReadDeepStreamOptions = ReadDirectoryOptions & {
+type DeepStreamNestedOptions = ReadDirectoryOptions & {
 	controller?: ReadDirectoryEventEmitter;
 	parent?: Directory;
 	progress?: ReadDirectoryProgress;
 };
 
+export type DeepCountOptions = Pick<DeepStreamNestedOptions, 'fsa' | 'patha' | 'cwd' | 'concurrency' | 'progress'>;
+
 export type ReadDirectoryOptions = Pick<RealScanFolderOptions, 'cwd' | 'fsa' | 'patha' | 'concurrency'>;
 
 export class Directory implements ParsedPath {
+	/**
+	 * @returns Root directory.
+	 */
+	static async deepRead(stream: ReadDirectoryEventEmitter): Promise<Directory>;
+	static async deepRead(directoryPath: string, optionsReal: ReadDirectoryOptions): Promise<Directory>;
+	static async deepRead(argument1: string | ReadDirectoryEventEmitter, optionsReal?: ReadDirectoryOptions): Promise<Directory> {
+		const controller = argument1 instanceof EventEmitter ? argument1 : Directory.deepStream(argument1, optionsReal!);
+		if (typeof argument1 === 'string') {
+			const {tree} = await controller.run();
+			return tree;
+		}
+
+		const tree = await new Promise<Directory>(resolve => {
+			controller.once('end', data => {
+				resolve(data.tree);
+			});
+		});
+		return tree;
+	}
+
+	/**
+	 * Get the {@link Directory} instance from a file path list. Paths should be relative.
+	 */
 	static from(pathList: Array<{toString(): string}>, cwd: string): Directory {
 		const tree = new Directory(undefined, '.', cwd, []);
 
@@ -76,7 +101,12 @@ export class Directory implements ParsedPath {
 		return tree;
 	}
 
-	static async directoryDeepCount(directoryPath: {toString(): string}, options: Pick<ReadDeepStreamOptions, 'fsa' | 'patha' | 'cwd' | 'concurrency' | 'progress'>): Promise<ReadDirectoryProgress> {
+	/**
+	 * Get the number of directories and files.
+	 * @param directoryPath Relative path to the directory.
+	 * @param options The counter and reader options.
+	 */
+	static async deepCount(directoryPath: {toString(): string}, options: DeepCountOptions): Promise<ReadDirectoryProgress> {
 		const {
 			fsa, patha, cwd, concurrency, progress = {
 				current: 0, total: 0, files: 0, directories: 0,
@@ -92,7 +122,7 @@ export class Directory implements ParsedPath {
 			if (entry.isDirectory() && !entry.isSymbolicLink()) {
 				const absolutePath = patha.join(entry.parentPath, entry.name);
 				const relativePath = patha.relative(cwd, absolutePath);
-				await Directory.directoryDeepCount(relativePath, {...options, progress});
+				await Directory.deepCount(relativePath, {...options, progress});
 				++progress.directories;
 				return;
 			}
@@ -104,10 +134,34 @@ export class Directory implements ParsedPath {
 		return progress;
 	}
 
-	static async streamDirectoryDeepRecursion(directoryPath: {toString(): string}, options: ReadDeepStreamOptions): Promise<ReadDeepStreamData> {
+	/**
+	 * Read directories and files progressively.
+	 * @param directoryPath Relative path to the directory.
+	 * @param options The reader options.
+	 */
+	static deepStream(directoryPath: string, optionsReal: ReadDirectoryOptions): ReadDirectoryEventEmitter {
+		const controller = new EventEmitter() as ReadDirectoryEventEmitter;
+		controller.run = async function (): Promise<ReadDeepStreamDataRoot> {
+			const data = await Directory.deepStreamNested(directoryPath, {...optionsReal, controller});
+			const {progress, target} = data;
+			const dataRoot: ReadDeepStreamDataRoot = {progress, tree: target as Directory};
+			controller.emit('end', dataRoot);
+			return dataRoot;
+		};
+
+		return controller;
+	}
+
+	/**
+	 * Read directories and files progressively.
+	 * @private This function should be wrapped by {@link deepStream}.
+	 * @param directoryPath Relative path to the directory.
+	 * @param options The reader options.
+	 */
+	private static async deepStreamNested(directoryPath: {toString(): string}, options: DeepStreamNestedOptions): Promise<ReadDeepStreamData> {
 		const {fsa, patha, cwd, concurrency, parent} = options;
 		const controller = options.controller ?? new EventEmitter() as ReadDirectoryEventEmitter;
-		const progress = options.progress ?? await Directory.directoryDeepCount(directoryPath, options);
+		const progress = options.progress ?? await Directory.deepCount(directoryPath, options);
 		controller.emit('progress', progress);
 		const limit = pLimit(concurrency);
 		const readdir = fsa.promises.readdir ?? FSP.readdir;
@@ -122,7 +176,7 @@ export class Directory implements ParsedPath {
 			const relativePath = patha.relative(cwd, absolutePath);
 
 			if (entry.isDirectory() && !entry.isSymbolicLink()) {
-				const data = await Directory.streamDirectoryDeepRecursion(relativePath, {
+				const data = await Directory.deepStreamNested(relativePath, {
 					...options, controller, progress, parent,
 				});
 				++progress.current;
@@ -144,39 +198,6 @@ export class Directory implements ParsedPath {
 		controller.emit('progress', progress);
 		controller.emit('data', data);
 		return data;
-	}
-
-	static streamDirectoryDeep(directoryPath: string, optionsReal: ReadDirectoryOptions): ReadDirectoryEventEmitter {
-		const controller = new EventEmitter() as ReadDirectoryEventEmitter;
-		controller.run = async function (): Promise<ReadDeepStreamDataRoot> {
-			const data = await Directory.streamDirectoryDeepRecursion(directoryPath, {...optionsReal, controller});
-			const {progress, target} = data;
-			const dataRoot: ReadDeepStreamDataRoot = {progress, tree: target as Directory};
-			controller.emit('end', dataRoot);
-			return dataRoot;
-		};
-
-		return controller;
-	}
-
-	/**
-	 * @returns Root directory.
-	 */
-	static async readDirectoryDeep(stream: ReadDirectoryEventEmitter): Promise<Directory>;
-	static async readDirectoryDeep(directoryPath: string, optionsReal: ReadDirectoryOptions): Promise<Directory>;
-	static async readDirectoryDeep(argument1: string | ReadDirectoryEventEmitter, optionsReal?: ReadDirectoryOptions): Promise<Directory> {
-		const controller = argument1 instanceof EventEmitter ? argument1 : Directory.streamDirectoryDeep(argument1, optionsReal!);
-		if (typeof argument1 === 'string') {
-			const {tree} = await controller.run();
-			return tree;
-		}
-
-		const tree = await new Promise<Directory>(resolve => {
-			controller.once('end', data => {
-				resolve(data.tree);
-			});
-		});
-		return tree;
 	}
 
 	public readonly base: string;
