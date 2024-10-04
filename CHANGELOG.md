@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Code linting: move from eslint to xo.
 - Changed cli output.
 - API Changes.
-- New configuration properties: posix, noColor. Remove color property (color level).
+- Changes for configuration properties. Removed color property (color level).
 
 ## [0.2.2] - 2024-08-20
 
