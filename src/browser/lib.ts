@@ -6,10 +6,10 @@ import EventEmitter from 'node:events';
 import {configDefault} from '../config.js';
 import {
 	Directory,
-	type File, FileInfo, type DeepStreamEventEmitter, SourceInfo,
+	type File, FileInfo, type DeepStreamEventEmitter, type SourceInfo,
 } from './fs/index.js';
 import {targetGet} from './binds/index.js';
-import {ErrorTargetNotBound, SomeError} from './errors.js';
+import {TargetNotBoundError, ViewIgnoredError} from './errors.js';
 import {type FilterName} from './filtering.js';
 
 export * from './errors.js';
@@ -47,18 +47,16 @@ export type Scanner = {
 
 /**
  * Recursively creates a cache scanner for each file.
- * @throws If the target does not allow the current ignore configurations: {@link SomeError}.
+ * @throws If the target does not allow the current ignore configurations: {@link ViewIgnoredError}.
  * For example, {@link https://www.npmjs.com/package/@vscode/vsce vsce} considers it invalid if your manifest is missing the 'engines' field.
  * Similarly, npm will raise an error if you attempt to publish a package without a basic 'package.json'.
- * This exception can be ignored if the {@link ScanOptions.defaultScanner} option is specified.
  */
 export type Methodology = (tree: Directory, realOptions: RealScanOptions) => Map<File, SourceInfo>;
 
 /**
  * Options with defaults and additional properties.
  */
-export type RealScanOptions = Required<Omit<ScanOptions, 'defaultScanner'>> & {
-	defaultScanner?: Scanner | undefined;
+export type RealScanOptions = Required<ScanOptions> & {
 	fsa: Required<FileSystemAdapter>;
 	patha: PATH.PlatformPath;
 };
@@ -73,12 +71,6 @@ export type ScanOptions = {
 	 * @default "git"
 	 */
 	target?: string | Methodology;
-
-	/**
-	 * The default scanner if the methodology could not find any sources.
-	 * @default undefined
-	 */
-	defaultScanner?: Scanner;
 
 	/**
 	 * The max concurrency for file-system operations.
@@ -126,28 +118,24 @@ export type ScanOptions = {
  * Gets info about the each file: it is ignored or not.
  * @param directoryPath The relative path to the directory.
  * @throws If no valid sources: {@link ErrorNoSources}.
- * This exception can be ignored if the {@link ScanOptions.defaultScanner} option is specified.
  */
 export async function scan(directoryPath: string, options?: ScanOptions): Promise<FileInfo[]>;
 /**
  * Gets info about the each file: it is ignored or not.
  * @param directory The current working directory.
  * @throws If no valid sources: {@link ErrorNoSources}.
- * This exception can be ignored if the {@link ScanOptions.defaultScanner} option is specified.
  */
 export async function scan(directory: Directory, options?: ScanOptions): Promise<FileInfo[]>;
 /**
  * Gets info about the each file: it is ignored or not.
  * @param stream The stream of the current working directory reading.
  * @throws If no valid sources: {@link ErrorNoSources}.
- * This exception can be ignored if the {@link ScanOptions.defaultScanner} option is specified.
  */
 export async function scan(stream: DeepStreamEventEmitter, options?: ScanOptions): Promise<FileInfo[]>;
 /**
  * Gets info about the each file: it is ignored or not.
  * @param pathList The list of relative paths. The should be relative to the current working directory.
  * @throws If no valid sources: {@link ErrorNoSources}.
- * This exception can be ignored if the {@link ScanOptions.defaultScanner} option is specified.
  */
 export async function scan(pathList: string[], options?: ScanOptions): Promise<FileInfo[]>;
 export async function scan(argument0: string | string[] | Directory | DeepStreamEventEmitter, options?: ScanOptions): Promise<FileInfo[]> {
@@ -157,7 +145,7 @@ export async function scan(argument0: string | string[] | Directory | DeepStream
 	if (typeof optionsReal.target === 'string') {
 		const bind = targetGet(optionsReal.target);
 		if (bind === undefined) {
-			throw new ErrorTargetNotBound(optionsReal.target);
+			throw new TargetNotBoundError(optionsReal.target);
 		}
 
 		return scan(argument0 as Directory, Object.assign(options, bind.scanOptions));
@@ -181,36 +169,14 @@ export async function scan(argument0: string | string[] | Directory | DeepStream
 	}
 
 	const fileList = argument0.flat();
-	let cache: Map<File, SourceInfo>;
-	try {
-		cache = optionsReal.target(argument0, optionsReal);
-	} catch (error) {
-		if (!(error instanceof SomeError) || optionsReal.defaultScanner === undefined) {
-			throw error;
-		}
-
-		const fileInfoList: FileInfo[] = [];
-		for (const entry of fileList) {
-			const defaultSourceInfo = new SourceInfo(argument0, '(default)', '(default)', optionsReal.defaultScanner);
-			const fileInfo = FileInfo.from(entry, defaultSourceInfo);
-			const ignored = !fileInfo.isIncludedBy(optionsReal.filter);
-
-			if (ignored) {
-				continue;
-			}
-
-			fileInfoList.push(fileInfo);
-		}
-
-		return fileInfoList;
-	}
+	const cache = optionsReal.target(argument0, optionsReal);
 
 	const fileInfoList: FileInfo[] = [];
 	for (const entry of fileList) {
 		const sourceInfo = cache.get(entry);
 
 		if (sourceInfo === undefined) {
-			throw new SomeError(`Invalid methodology. Cannot get scanner for ${entry.relativePath}`);
+			throw new ViewIgnoredError(`Invalid methodology. Cannot get scanner for ${entry.relativePath}`);
 		}
 
 		const fileInfo = FileInfo.from(entry, sourceInfo);
@@ -236,7 +202,6 @@ export function makeOptionsReal(options?: ScanOptions): RealScanOptions {
 	const optionsReal: RealScanOptions = {
 		concurrency,
 		target: options.target ?? 'git',
-		defaultScanner: options.defaultScanner,
 		cwd: options.cwd ?? process.cwd(),
 		filter: options.filter ?? configDefault.filter,
 		fsa: (options.fsa ?? FS) as Required<FileSystemAdapter>,

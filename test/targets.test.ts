@@ -10,7 +10,7 @@ import chalk from 'chalk';
 import * as viewig from '../src/index.js';
 
 type Case = {
-	should: typeof viewig.SomeError | {
+	should: typeof viewig.ViewIgnoredError | {
 		include: string[];
 		source: string;
 	};
@@ -389,7 +389,7 @@ async function testTargetSubtest(data: TestTargetSubtestData) {
 				await fileInfoListPromise;
 			}, chalk.white(info));
 		} catch (error) {
-			assert(error instanceof should, 'Bad SomeError prototype. ' + info);
+			assert(error instanceof should, 'Bad ViewIgnoredError prototype. ' + info);
 		}
 
 		return;

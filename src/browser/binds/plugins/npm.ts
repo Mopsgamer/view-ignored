@@ -2,8 +2,9 @@ import {icons} from '@m234/nerd-fonts';
 import {
 	type Plugins, type Methodology,
 	File,
-	ErrorNoSources,
-	ErrorInvalidPattern,
+	NoSourcesError,
+	InvalidPatternError,
+	SourceFileError,
 } from '../../index.js';
 import {ScannerGitignore} from '../scanner.js';
 import {type TargetIcon, type TargetName} from '../targets.js';
@@ -39,18 +40,34 @@ export const matcherInclude = [
 	'LICENCE*',
 ];
 
+export type ValidManifestNpm = {
+	name: string;
+	version: string;
+	files?: string[];
+};
+
+export function isValidManifest(value: unknown): value is ValidManifestNpm {
+	if (value?.constructor !== Object) {
+		return false;
+	}
+
+	const value_ = value as Record<string, unknown>;
+	return ('name' in value_ && typeof value_.name === 'string')
+	&& ('version' in value_ && typeof value_.version === 'string');
+}
+
 const methodologyGitignore: Methodology = function (tree, o) {
 	const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude});
 	const sourceFile = tree.findAll<File>(dirent => dirent instanceof File && dirent.base === '.gitignore');
 
 	if (sourceFile === undefined) {
-		throw new ErrorNoSources();
+		throw new NoSourcesError();
 	}
 
 	const content = o.fsa.readFileSync(sourceFile.absolutePath).toString();
 	const pattern = content;
 	if (!scanner.isValid(pattern)) {
-		throw new ErrorInvalidPattern(sourceFile, pattern);
+		throw new InvalidPatternError(sourceFile, pattern);
 	}
 
 	scanner.pattern = pattern;
@@ -75,20 +92,14 @@ const methodologyNpmignore: Methodology = function (tree, o) {
 	return useSourceFile(sourceFile, scanner);
 };
 
-const methodologyManifest: Methodology = function (tree, o) {
+const methodologyPackageJsonFiles = (manifest: ValidManifestNpm): Methodology => function (tree, o) {
 	const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude, negated: true});
-	const sourceFile = tree.findAll<File>(dirent => dirent instanceof File && dirent.base === 'package.json');
+	const sourceFile = tree.children.find((dirent): dirent is File =>
+		dirent instanceof File && dirent.base === 'package.json',
+	);
 
-	if (sourceFile === undefined) {
-		return methodologyNpmignore(tree, o);
-	}
-
-	const content = o.fsa.readFileSync(sourceFile.absolutePath).toString();
-	// TODO: We should throw own error instead of JSON.parse's exception.
-	// TODO: What happens if 'files' field is not a string array? What if this strings are comments?
-	// TODO: The manifest can be invalid for publishing like no name no version.
-	const pattern = (JSON.parse(content) as {files: unknown}).files;
-	if (!scanner.isValid(pattern)) {
+	const {files: pattern} = manifest;
+	if (sourceFile === undefined || !scanner.isValid(pattern)) {
 		return methodologyNpmignore(tree, o);
 	}
 
@@ -96,10 +107,36 @@ const methodologyManifest: Methodology = function (tree, o) {
 	return useSourceFile(sourceFile, scanner);
 };
 
+const methodology: Methodology = function (tree, o) {
+	const packageJson = tree.children.find((dirent): dirent is File =>
+		dirent instanceof File && dirent.base === 'package.json',
+	);
+	if (packageJson === undefined) {
+		throw new SourceFileError('package.json', 'Expected a valid json object');
+	}
+
+	const packageJsonContent = o.fsa.readFileSync(packageJson.absolutePath).toString();
+	let manifest: unknown;
+	try {
+		manifest = JSON.parse(packageJsonContent);
+	} catch (error) {
+		if (error instanceof Error) {
+			throw new SourceFileError(packageJson, error.message);
+		}
+
+		throw error;
+	}
+
+	if (!isValidManifest(manifest)) {
+		throw new SourceFileError(packageJson, 'Must have name and version.');
+	}
+
+	return methodologyPackageJsonFiles(manifest)(tree, o);
+};
+
 const bind: Plugins.TargetBind = {
 	id, icon, name, testCommand, scanOptions: {
-		target: methodologyManifest,
-		defaultScanner: new ScannerGitignore({exclude: matcherExclude, include: matcherInclude}),
+		target: methodology,
 	},
 };
 const npm: Plugins.PluginExport = {viewignored: {addTargets: [bind]}};

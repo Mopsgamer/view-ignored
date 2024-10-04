@@ -128,7 +128,8 @@ export class ScannerGitignore extends ScannerMinimatch implements Scanner {
 
 	isValid(value: unknown): value is string | string[] {
 		if (Array.isArray(value)) {
-			return value.every(p => !Array.isArray(p) && this.isValid(value));
+			console.log(value);
+			return value.every(p => !Array.isArray(p) || this.isValid(value));
 		}
 
 		if (typeof value !== 'string') {

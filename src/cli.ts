@@ -22,6 +22,7 @@ import {
 import {
 	Directory,
 	type File, type FileInfo, package_, type DeepStreamDataRoot, type DeepStreamEventEmitter, type DeepStreamProgress, makeOptionsReal, scan, Sorting,
+	ViewIgnoredError,
 } from './lib.js';
 import {filterNameList, type FilterName} from './browser/filtering.js';
 
@@ -404,7 +405,9 @@ export async function actionScan(): Promise<void> {
 			context.stream.run();
 			await progress.run();
 		} catch (error) {
-			logError(format(error), {title: 'view-ignored - Error while scan.'});
+			if (!(error instanceof ViewIgnoredError)) {
+				logError(format(error), {title: 'view-ignored - Error while scan.'});
+			}
 		}
 
 		console.log(context.message);

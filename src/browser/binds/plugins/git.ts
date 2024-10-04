@@ -2,10 +2,10 @@ import {icons} from '@m234/nerd-fonts';
 import {
 	type Plugins, type Methodology,
 	File,
-	ErrorNoSources,
+	NoSourcesError,
 	SourceInfo,
 	type Scanner,
-	ErrorInvalidPattern,
+	InvalidPatternError,
 } from '../../index.js';
 import {ScannerGitignore} from '../scanner.js';
 import {type TargetIcon, type TargetName} from '../targets.js';
@@ -36,13 +36,13 @@ const methodology: Methodology = function (tree, o) {
 	const sourceFile = tree.findAll<File>(dirent => dirent instanceof File && dirent.base === '.gitignore');
 
 	if (sourceFile === undefined) {
-		throw new ErrorNoSources();
+		throw new NoSourcesError();
 	}
 
 	const content = o.fsa.readFileSync(sourceFile.absolutePath).toString();
 	const pattern = content;
 	if (!scanner.isValid(pattern)) {
-		throw new ErrorInvalidPattern(sourceFile, pattern);
+		throw new InvalidPatternError(sourceFile, pattern);
 	}
 
 	scanner.pattern = pattern;
@@ -52,7 +52,6 @@ const methodology: Methodology = function (tree, o) {
 const bind: Plugins.TargetBind = {
 	id, icon, name, testCommand, scanOptions: {
 		target: methodology,
-		defaultScanner: new ScannerGitignore({exclude: matcherExclude}),
 	},
 };
 const git: Plugins.PluginExport = {viewignored: {addTargets: [bind]}};
