@@ -66,6 +66,23 @@ const targetTestList: Plan = {
 				'.gitignore': 'node_modules',
 			},
 		},
+		'nested .gitignore': {
+			should: {
+				include: [
+					'app/file.txt',
+					'app/.gitignore',
+				],
+				source: '.gitignore',
+			},
+			content: {
+				'file.txt': '',
+				app: {
+					'file.txt': '',
+					'node_modules/tempdep/indexOf.js': '',
+					'.gitignore': 'node_modules',
+				},
+			},
+		},
 		symlinks: {
 			should: {
 				include: [
