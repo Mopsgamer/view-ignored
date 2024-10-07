@@ -2,9 +2,9 @@ import {icons} from '@m234/nerd-fonts';
 import {
 	type Plugins, type Methodology,
 	File,
-	NoSourcesError,
+	NoSourceError,
 	InvalidPatternError,
-	SourceFileError,
+	BadSourceError,
 } from '../../index.js';
 import {ScannerGitignore} from '../scanner.js';
 import {type TargetIcon, type TargetName} from '../targets.js';
@@ -61,7 +61,7 @@ const methodologyGitignore: Methodology = function (tree, o) {
 	const sourceFile = tree.findAll<File>(dirent => dirent instanceof File && dirent.base === '.gitignore');
 
 	if (sourceFile === undefined) {
-		throw new NoSourcesError();
+		throw new NoSourceError('.gitignore');
 	}
 
 	const content = o.fsa.readFileSync(sourceFile.absolutePath).toString();
@@ -112,7 +112,7 @@ const methodology: Methodology = function (tree, o) {
 		dirent instanceof File && dirent.base === 'package.json',
 	);
 	if (packageJson === undefined) {
-		throw new SourceFileError('package.json', 'Expected a valid json object');
+		throw new NoSourceError('package.json');
 	}
 
 	const packageJsonContent = o.fsa.readFileSync(packageJson.absolutePath).toString();
@@ -121,14 +121,14 @@ const methodology: Methodology = function (tree, o) {
 		manifest = JSON.parse(packageJsonContent);
 	} catch (error) {
 		if (error instanceof Error) {
-			throw new SourceFileError(packageJson, error.message);
+			throw new BadSourceError(packageJson, error.message);
 		}
 
 		throw error;
 	}
 
 	if (!isValidManifest(manifest)) {
-		throw new SourceFileError(packageJson, 'Must have name and version.');
+		throw new BadSourceError(packageJson, 'Must have name and version.');
 	}
 
 	return methodologyPackageJsonFiles(manifest)(tree, o);

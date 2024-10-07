@@ -2,7 +2,7 @@ import {icons} from '@m234/nerd-fonts';
 import {
 	type Plugins, type Methodology,
 	File,
-	NoSourcesError,
+	NoSourceError,
 	SourceInfo,
 	type Scanner,
 	InvalidPatternError,
@@ -36,7 +36,7 @@ const methodology: Methodology = function (tree, o) {
 	const sourceFile = tree.findAll<File>(dirent => dirent instanceof File && dirent.base === '.gitignore');
 
 	if (sourceFile === undefined) {
-		throw new NoSourcesError();
+		throw new NoSourceError('.gitignore');
 	}
 
 	const content = o.fsa.readFileSync(sourceFile.absolutePath).toString();

@@ -1,16 +1,13 @@
 /* eslint-disable @typescript-eslint/no-loop-func */
 /* eslint-disable @typescript-eslint/naming-convention */
 import assert from 'node:assert';
-import {readFileSync} from 'node:fs';
 import PATH from 'node:path';
-import process from 'node:process';
-import {fileURLToPath} from 'node:url';
 import {type FileTree, type FsFixture, createFixture} from 'fs-fixture';
 import chalk from 'chalk';
 import * as viewig from '../src/index.js';
 
 type Case = {
-	should: typeof viewig.ViewIgnoredError | {
+	should: string | {
 		include: string[];
 		source: string;
 	};
@@ -20,7 +17,7 @@ type Case = {
 type DirectoryCase = Record<string, Case>;
 type Plan = Record<string, DirectoryCase>;
 
-const realProject = {
+const realProject: FileTree = {
 	'.github': {},
 	'bin/app': '',
 	'node_modules/tempdep/indexOf.js': '',
@@ -32,42 +29,25 @@ const realProject = {
 	'config.json': '',
 };
 
-const symlinksTest: Case = {
-	should: {
-		include: [
-			'awesomefile',
-			'awesomefolder/folded',
-			'awesomefile.lnk',
-			'awesomefolder.lnk',
-		],
-		source: '(default)',
-	},
-	content: {
+const symlinksProject: FileTree = {
+	emptyfolder: {},
+	awesomefolder: {
 		emptyfolder: {},
-		awesomefolder: {
-			emptyfolder: {},
-			folded: '',
-		},
-		awesomefile: '',
-		'awesomefile.lnk': ({symlink}) => symlink('./awesomefile'),
-		'awesomefolder.lnk': ({symlink}) => symlink('./awesomefolder'),
+		folded: '',
 	},
+	awesomefile: '',
+	'awesomefile.lnk': ({symlink}) => symlink('./awesomefile'),
+	'awesomefolder.lnk': ({symlink}) => symlink('./awesomefolder'),
 };
 
 const targetTestList: Plan = {
 	git: {
 		'empty project': {
-			should: {
-				include: [],
-				source: '(default)',
-			},
+			should: viewig.NoSourceError.name,
 			content: {},
 		},
 		'single file': {
-			should: {
-				include: ['file.txt'],
-				source: '(default)',
-			},
+			should: viewig.NoSourceError.name,
 			content: {
 				'file.txt': '',
 			},
@@ -86,48 +66,62 @@ const targetTestList: Plan = {
 				'.gitignore': 'node_modules',
 			},
 		},
-		symlinks: symlinksTest,
+		symlinks: {
+			should: {
+				include: [
+					'.gitignore',
+					'awesomefile',
+					'awesomefolder/folded',
+					'awesomefile.lnk',
+					'awesomefolder.lnk',
+				],
+				source: '.gitignore',
+			},
+			content: {...symlinksProject, '.gitignore': ''},
+		},
 	},
 	/**
 	 * @see {@link npmPatternExclude} {@link npmPatternInclude}
 	 */
 	npm: {
 		'empty project': {
-			should: {
-				include: [],
-				source: '(default)',
-			},
+			should: viewig.NoSourceError.name,
 			content: {},
 		},
 		'single file': {
-			should: {
-				include: ['file.txt'],
-				source: '(default)',
-			},
+			should: viewig.NoSourceError.name,
 			content: {
 				'file.txt': '',
 			},
 		},
 		'.gitignore': {
 			should: {
-				include: ['file.txt'],
+				include: ['file.txt', 'package.json'],
 				source: '.gitignore',
 			},
 			content: {
 				'file.txt': '',
 				'node_modules/tempdep/indexOf.js': '',
 				'.gitignore': 'node_modules',
+				'package.json': JSON.stringify({
+					name: 'app',
+					version: '0.0.1',
+				}),
 			},
 		},
 		'.gitignore with comment': {
 			should: {
-				include: ['file.txt'],
+				include: ['file.txt', 'package.json'],
 				source: '.gitignore',
 			},
 			content: {
 				'file.txt': '',
 				'node_modules/tempdep/indexOf.js': '',
 				'.gitignore': '#comment\nnode_modules',
+				'package.json': JSON.stringify({
+					name: 'app',
+					version: '0.0.1',
+				}),
 			},
 		},
 		'(package.json), .npmignore, .gitignore': {
@@ -175,45 +169,66 @@ const targetTestList: Plan = {
 				}),
 			},
 		},
-		symlinks: symlinksTest,
+		symlinks: {
+			should: {
+				include: [
+					'awesomefile',
+					'awesomefolder/folded',
+					'awesomefile.lnk',
+					'awesomefolder.lnk',
+					'package.json',
+				],
+				source: '.npmignore',
+			},
+			content: {
+				...symlinksProject,
+				'.npmignore': '',
+				'package.json': JSON.stringify({
+					name: 'app',
+					version: '0.0.1',
+				}),
+			},
+		},
 	},
 	yarn: {
 		'empty project': {
-			should: {
-				include: [],
-				source: '(default)',
-			},
+			should: viewig.NoSourceError.name,
 			content: {},
 		},
 		'single file': {
-			should: {
-				include: ['file.txt'],
-				source: '(default)',
-			},
+			should: viewig.NoSourceError.name,
 			content: {
 				'file.txt': '',
 			},
 		},
 		'.gitignore': {
 			should: {
-				include: ['file.txt'],
+				include: ['file.txt', 'package.json'],
 				source: '.gitignore',
 			},
 			content: {
 				'file.txt': '',
 				'node_modules/tempdep/indexOf.js': '',
 				'.gitignore': 'node_modules',
+				'package.json': JSON.stringify({
+					name: 'app',
+					version: '0.0.1',
+				}),
 			},
 		},
 		'.gitignore with comment': {
 			should: {
-				include: ['file.txt'],
+				include: ['file.txt', 'package.json'],
 				source: '.gitignore',
 			},
 			content: {
 				'file.txt': '',
 				'node_modules/tempdep/indexOf.js': '',
 				'.gitignore': '#comment\nnode_modules',
+				'package.json': JSON.stringify({
+					name: 'app',
+					version: '0.0.1',
+				}),
 			},
 		},
 		'(package.json), .yarnignore, .npmignore, .gitignore': {
@@ -286,21 +301,34 @@ const targetTestList: Plan = {
 				}),
 			},
 		},
-		symlinks: symlinksTest,
+		symlinks: {
+			should: {
+				include: [
+					'awesomefile',
+					'awesomefolder/folded',
+					'awesomefile.lnk',
+					'awesomefolder.lnk',
+					'package.json',
+				],
+				source: '.yarnignore',
+			},
+			content: {
+				...symlinksProject,
+				'.yarnignore': '',
+				'package.json': JSON.stringify({
+					name: 'app',
+					version: '0.0.1',
+				}),
+			},
+		},
 	},
 	vsce: {
 		'empty project': {
-			should: {
-				include: [],
-				source: '(default)',
-			},
+			should: viewig.NoSourceError.name,
 			content: {},
 		},
 		'single file': {
-			should: {
-				include: ['file.txt'],
-				source: '(default)',
-			},
+			should: viewig.NoSourceError.name,
 			content: {
 				'file.txt': '',
 			},
@@ -310,6 +338,7 @@ const targetTestList: Plan = {
 				include: [
 					'file.txt',
 					'.vscodeignore',
+					'package.json',
 				],
 				source: '.vscodeignore',
 			},
@@ -317,16 +346,38 @@ const targetTestList: Plan = {
 				'file.txt': '',
 				'node_modules/tempdep/indexOf.js': '',
 				'.vscodeignore': 'node_modules',
+				'package.json': JSON.stringify({
+					name: 'app',
+					version: '0.0.1',
+					engines: {vscode: '>=1.0.0'},
+				}),
 			},
 		},
-		symlinks: symlinksTest,
+		symlinks: {
+			should: {
+				include: [
+					'.vscodeignore',
+					'awesomefile',
+					'awesomefolder/folded',
+					'awesomefile.lnk',
+					'awesomefolder.lnk',
+					'package.json',
+				],
+				source: '.vscodeignore',
+			},
+			content: {
+				...symlinksProject,
+				'.vscodeignore': '',
+				'package.json': JSON.stringify({
+					name: 'app',
+					version: '0.0.1',
+					engines: {vscode: '>=1.0.0'},
+				}),
+			},
+		},
 	},
 };
 
-const testFilePathJs = PATH.relative(process.cwd(), fileURLToPath(import.meta.url));
-const testFilePath = testFilePathJs.replace(new RegExp(`${'out'}[/\\\\]`), '').replace(/js$/, 'ts');
-const myContent = readFileSync(testFilePath).toString();
-const myContentLines = myContent.split('\n');
 describe('Targets', () => {
 	before(async () => {
 		await viewig.Plugins.loadBuiltIns();
@@ -352,8 +403,6 @@ describe('Targets', () => {
 						fixture,
 						targetId,
 						test: tests[testName],
-						testName,
-						myContentLines,
 					});
 				});
 			}
@@ -361,35 +410,29 @@ describe('Targets', () => {
 	}
 });
 
-function lineColumnInfo(filePath: string, line: number, column: number, name?: string) {
-	return `${chalk.cyan(filePath)}${chalk.white(':')}${chalk.yellow(line)}${chalk.white(':')}${chalk.yellow(column)}${name ? `\t- ${name}` : ''}`;
-}
-
 type TestTargetSubtestData = {
 	fixture: FsFixture;
 	targetId: string;
 	test: Case;
-	testName: string;
-	myContentLines: string[];
 };
 
 async function testTargetSubtest(data: TestTargetSubtestData) {
-	const {fixture, myContentLines, targetId, test, testName} = data;
+	const {fixture, targetId, test} = data;
 	const {should} = test;
 
 	const fileInfoListPromise = viewig.scan('.', {target: targetId, cwd: fixture.getPath(), filter: 'included'});
-	const testLine = myContentLines.findIndex(ln => ln.includes(testName)) + 1;
-	const testLineContent = testLine + myContentLines.slice(testLine).findIndex(ln => ln.includes('content')) + 1;
-	let info = `\n      Test location: ${lineColumnInfo(testFilePath, testLine, myContentLines[testLine].length)}\n      Test name: ${chalk.magenta(testName)}\n`;
+	void fileInfoListPromise.catch(() => { /* empty */ });
 
-	if (typeof should !== 'object') {
+	if (typeof should === 'string') {
 		try {
 			await fileInfoListPromise;
 			assert.throws(async () => {
 				await fileInfoListPromise;
-			}, chalk.white(info));
+			});
 		} catch (error) {
-			assert(error instanceof should, 'Bad ViewIgnoredError prototype. ' + info);
+			assert(error instanceof Error, `Expected ViewIgnoredError, got ${String(error)}`);
+			assert(error instanceof viewig.ViewIgnoredError, `Expected ViewIgnoredError, got ${error.name}`);
+			assert(error.name === should, `Expected ${should}, got ${error.name}`);
 		}
 
 		return;
@@ -397,18 +440,14 @@ async function testTargetSubtest(data: TestTargetSubtestData) {
 
 	assert.doesNotThrow(async () => {
 		await fileInfoListPromise;
-	}, chalk.white(info));
+	});
 	const fileInfoList = await fileInfoListPromise;
 	const cmp1 = fileInfoList.map(l => l.toString()).sort();
 	const cmp2 = should.include.map(filePath => filePath.split(PATH.posix.sep).join(PATH.sep)).sort();
 	const actual = fileInfoList
-		.map(fileInfo => {
-			const testLineSource = testLineContent + myContentLines.slice(testLineContent)
-				.findIndex(line => line.includes(fileInfo.source.relativePath)) + 1;
-			return `${chalk.red(fileInfo.toString({source: true, chalk}))} (${lineColumnInfo(testFilePath, testLineSource, myContentLines[testLineSource].length)})`;
-		})
+		.map(fileInfo => `${chalk.red(fileInfo.toString({source: true, chalk}))}`)
 		.sort().join('\n        ');
-	info += `      Results: \n        ${actual}\n`;
+	const info = `\n      Results:\n        ${actual}\n`;
 	for (const fileInfo of (await fileInfoListPromise)) {
 		const sourceString = fileInfo.source.relativePath;
 		assert.strictEqual(sourceString, should.source, 'The source is not right.' + chalk.white(info));
