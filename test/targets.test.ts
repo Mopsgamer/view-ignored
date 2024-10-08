@@ -1,16 +1,18 @@
 
 /* eslint-disable @typescript-eslint/naming-convention */
-import assert from 'node:assert';
+import assert, {AssertionError} from 'node:assert';
 import PATH from 'node:path';
 import {type FileTree, createFixture} from 'fs-fixture';
 import chalk from 'chalk';
 import * as viewig from '../src/index.js';
 
+type Check = {
+	include: string[];
+	source: string;
+};
+
 type Case = {
-	should: string | {
-		include: string[];
-		source: string;
-	};
+	should: string | Check[];
 	content: FileTree;
 };
 
@@ -57,13 +59,13 @@ describe('Targets', () => {
 		});
 		testTarget('.gitignore', {
 			targetId,
-			should: {
+			should: [{
 				include: [
 					'file.txt',
 					'.gitignore',
 				],
 				source: '.gitignore',
-			},
+			}],
 			content: {
 				'file.txt': '',
 				'node_modules/tempdep/indexOf.js': '',
@@ -72,13 +74,13 @@ describe('Targets', () => {
 		});
 		testTarget('nested .gitignore', {
 			targetId,
-			should: {
+			should: [{
 				include: [
 					'app/file.txt',
 					'app/.gitignore',
 				],
 				source: 'app/.gitignore',
-			},
+			}],
 			content: {
 				'file.txt': '',
 				app: {
@@ -90,7 +92,7 @@ describe('Targets', () => {
 		});
 		testTarget('symlinks', {
 			targetId,
-			should: {
+			should: [{
 				include: [
 					'.gitignore',
 					'awesomefile',
@@ -99,7 +101,7 @@ describe('Targets', () => {
 					'awesomefolder.lnk',
 				],
 				source: '.gitignore',
-			},
+			}],
 			content: {...symlinksProject, '.gitignore': ''},
 		});
 	});
@@ -119,10 +121,10 @@ describe('Targets', () => {
 		});
 		testTarget('.gitignore', {
 			targetId,
-			should: {
+			should: [{
 				include: ['file.txt', 'package.json'],
 				source: '.gitignore',
-			},
+			}],
 			content: {
 				'file.txt': '',
 				'node_modules/tempdep/indexOf.js': '',
@@ -135,10 +137,10 @@ describe('Targets', () => {
 		});
 		testTarget('.gitignore with comment', {
 			targetId,
-			should: {
+			should: [{
 				include: ['file.txt', 'package.json'],
 				source: '.gitignore',
-			},
+			}],
 			content: {
 				'file.txt': '',
 				'node_modules/tempdep/indexOf.js': '',
@@ -151,7 +153,7 @@ describe('Targets', () => {
 		});
 		testTarget('(package.json), .npmignore, .gitignore', {
 			targetId,
-			should: {
+			should: [{
 				include: [
 					'LICENSE',
 					'README.md',
@@ -159,7 +161,7 @@ describe('Targets', () => {
 					'package.json',
 				],
 				source: 'package.json',
-			},
+			}],
 			content: {
 				...realProject,
 				'.npmignore': 'node_modules\nconfig*.json\ntest\n.github',
@@ -174,7 +176,7 @@ describe('Targets', () => {
 		});
 		testTarget('package.json, (.npmignore), .gitignore', {
 			targetId,
-			should: {
+			should: [{
 				include: [
 					'LICENSE',
 					'README.md',
@@ -184,7 +186,7 @@ describe('Targets', () => {
 					'package.json',
 				],
 				source: '.npmignore',
-			},
+			}],
 			content: {
 				...realProject,
 				'.npmignore': 'node_modules\nconfig*.json\ntest\n.github',
@@ -196,9 +198,58 @@ describe('Targets', () => {
 				}),
 			},
 		});
+		testTarget('nested package.json, (.npmignore), .gitignore', {
+			targetId,
+			should: [
+				{
+					include: [
+						'app1/LICENSE',
+						'app1/README.md',
+						'app1/bin/app',
+						'app1/lib/cli.js',
+						'app1/lib/index.js',
+						'app1/package.json',
+					],
+					source: 'app1/.npmignore',
+				},
+				{
+					include: [
+						'app2/LICENSE',
+						'app2/README.md',
+						'app2/bin/app',
+						'app2/lib/cli.js',
+						'app2/lib/index.js',
+						'app2/package.json',
+					],
+					source: 'app2/.npmignore',
+				},
+			],
+			content: {
+				app1: {
+					...realProject,
+					'.npmignore': 'node_modules\nconfig*.json\ntest\n.github',
+					'.gitignore': 'node_modules\nconfig.json',
+					'package.json': JSON.stringify({
+						main: './lib/index.js',
+						name: 'app1',
+						version: '0.0.1',
+					}),
+				},
+				app2: {
+					...realProject,
+					'.npmignore': 'node_modules\nconfig*.json\ntest\n.github',
+					'.gitignore': 'node_modules\nconfig.json',
+					'package.json': JSON.stringify({
+						main: './lib/index.js',
+						name: 'app2',
+						version: '0.0.1',
+					}),
+				},
+			},
+		});
 		testTarget('symlinks', {
 			targetId,
-			should: {
+			should: [{
 				include: [
 					'awesomefile',
 					'awesomefolder/folded',
@@ -207,7 +258,7 @@ describe('Targets', () => {
 					'package.json',
 				],
 				source: '.npmignore',
-			},
+			}],
 			content: {
 				...symlinksProject,
 				'.npmignore': '',
@@ -234,10 +285,10 @@ describe('Targets', () => {
 		});
 		testTarget('.gitignore', {
 			targetId,
-			should: {
+			should: [{
 				include: ['file.txt', 'package.json'],
 				source: '.gitignore',
-			},
+			}],
 			content: {
 				'file.txt': '',
 				'node_modules/tempdep/indexOf.js': '',
@@ -250,10 +301,10 @@ describe('Targets', () => {
 		});
 		testTarget('.gitignore with comment', {
 			targetId,
-			should: {
+			should: [{
 				include: ['file.txt', 'package.json'],
 				source: '.gitignore',
-			},
+			}],
 			content: {
 				'file.txt': '',
 				'node_modules/tempdep/indexOf.js': '',
@@ -266,7 +317,7 @@ describe('Targets', () => {
 		});
 		testTarget('(package.json), .yarnignore, .npmignore, .gitignore', {
 			targetId,
-			should: {
+			should: [{
 				include: [
 					'LICENSE',
 					'README.md',
@@ -274,7 +325,7 @@ describe('Targets', () => {
 					'package.json',
 				],
 				source: 'package.json',
-			},
+			}],
 			content: {
 				...realProject,
 				'.yarnignore': 'node_modules\nconfig*.json\ntest\n.github\nREADME*',
@@ -290,7 +341,7 @@ describe('Targets', () => {
 		});
 		testTarget('package.json, (.yarnignore), .npmignore, .gitignore', {
 			targetId,
-			should: {
+			should: [{
 				include: [
 					'LICENSE',
 					'README.md',
@@ -300,7 +351,7 @@ describe('Targets', () => {
 					'package.json',
 				],
 				source: '.yarnignore',
-			},
+			}],
 			content: {
 				...realProject,
 				'.yarnignore': 'node_modules\nconfig*.json\ntest\n.github\nREADME*',
@@ -315,7 +366,7 @@ describe('Targets', () => {
 		});
 		testTarget('package.json, .yarnignore, (.npmignore), .gitignore', {
 			targetId,
-			should: {
+			should: [{
 				include: [
 					'LICENSE',
 					'README.md',
@@ -325,7 +376,7 @@ describe('Targets', () => {
 					'package.json',
 				],
 				source: '.npmignore',
-			},
+			}],
 			content: {
 				...realProject,
 				'.npmignore': 'node_modules\nconfig*.json\ntest\n.github',
@@ -339,7 +390,7 @@ describe('Targets', () => {
 		});
 		testTarget('symlinks', {
 			targetId,
-			should: {
+			should: [{
 				include: [
 					'awesomefile',
 					'awesomefolder/folded',
@@ -348,7 +399,7 @@ describe('Targets', () => {
 					'package.json',
 				],
 				source: '.yarnignore',
-			},
+			}],
 			content: {
 				...symlinksProject,
 				'.yarnignore': '',
@@ -375,14 +426,14 @@ describe('Targets', () => {
 		});
 		testTarget('.vscodeignore', {
 			targetId,
-			should: {
+			should: [{
 				include: [
 					'file.txt',
 					'.vscodeignore',
 					'package.json',
 				],
 				source: '.vscodeignore',
-			},
+			}],
 			content: {
 				'file.txt': '',
 				'node_modules/tempdep/indexOf.js': '',
@@ -396,7 +447,7 @@ describe('Targets', () => {
 		});
 		testTarget('symlinks', {
 			targetId,
-			should: {
+			should: [{
 				include: [
 					'.vscodeignore',
 					'awesomefile',
@@ -406,7 +457,7 @@ describe('Targets', () => {
 					'package.json',
 				],
 				source: '.vscodeignore',
-			},
+			}],
 			content: {
 				...symlinksProject,
 				'.vscodeignore': '',
@@ -424,6 +475,10 @@ type TestTargetSubtestData = Case & {
 	targetId: string;
 };
 
+function unixToTargetPath(path: string) {
+	return path.split(PATH.posix.sep).join(PATH.sep);
+}
+
 function testTarget(title: string, data: TestTargetSubtestData) {
 	it(title, async () => {
 		after(async () => {
@@ -435,34 +490,47 @@ function testTarget(title: string, data: TestTargetSubtestData) {
 		const fileInfoListPromise = viewig.scan('.', {target: targetId, cwd: fixture.getPath(), filter: 'included'});
 
 		if (typeof should === 'string') {
-			try {
-				await fileInfoListPromise;
-				assert.throws(async () => {
-					await fileInfoListPromise;
-				});
-			} catch (error) {
+			void fileInfoListPromise.catch(error => {
 				assert(error instanceof Error, `Expected ViewIgnoredError, got ${String(error)}`);
 				assert(error instanceof viewig.ViewIgnoredError, `Expected ViewIgnoredError, got ${error.name}`);
 				assert(error.name === should, `Expected ${should}, got ${error.name}`);
-			}
-
+			}).then(() => {
+				throw new AssertionError({message: 'Expected ViewIgnoredError exception, got valid file info list.'});
+			});
 			return;
 		}
 
 		const fileInfoList = await fileInfoListPromise;
-		const cmp1 = fileInfoList.map(l => l.toString()).sort();
-		const cmp2 = should.include.map(filePath => filePath.split(PATH.posix.sep).join(PATH.sep)).sort();
-		const actual = fileInfoList
+		const results = fileInfoList
 			.map(fileInfo => `${chalk.red(fileInfo.toString({source: true, chalk}))}`)
-			.sort().join('\n        ');
-		const info = `\n      Results:\n        ${actual}\n`;
-		for (const fileInfo of fileInfoList) {
-			assert.ok(fileInfo.source !== undefined, 'The source is missing, but expected.' + chalk.white(info));
-			const sourceString = fileInfo.source.relativePath;
-			assert.strictEqual(sourceString, should.source.split(PATH.posix.sep).join(PATH.sep), 'The source is not right.' + chalk.white(info));
+			.sort();
+		const resultsExpectedAlso = should
+			.flatMap(shouldCase => shouldCase.include)
+			.filter(expectedPath => !fileInfoList.some(fileInfo => unixToTargetPath(expectedPath) === unixToTargetPath(fileInfo.relativePath)))
+			.map(path => `${chalk.red(path)}`)
+			.sort();
+		const info = `\n      Results:\n        ${results.join('\n        ')}\n      Expected also:\n        ${resultsExpectedAlso.join('\n        ')}\n`;
+		for (const shouldCase of should) {
+			shouldCase.include = shouldCase.include.map(filePath => unixToTargetPath(filePath));
+			shouldCase.source = unixToTargetPath(shouldCase.source);
 		}
 
-		assert.deepEqual(cmp1, cmp2, 'The path list is bad.' + chalk.white(info));
+		if (resultsExpectedAlso.length > 0) {
+			throw new AssertionError({message: 'The path list is bad.' + chalk.white(info)});
+		}
+
+		for (const fileInfo of fileInfoList) {
+			const {source} = fileInfo;
+			assert.ok(source !== undefined, 'The source is missing, but expected.' + chalk.white(info));
+			const comparableSource = unixToTargetPath(source?.relativePath);
+			const shouldCase: Check | undefined = should.find(shouldCase => shouldCase.source === comparableSource);
+			if (shouldCase === undefined) {
+				const sourceListExpected = should.map(s => s.source);
+				throw new AssertionError({message: `The source is not right: ${comparableSource}. Expected: ${sourceListExpected.join(' or ')}. ${chalk.white(info)}`});
+			}
+
+			assert.strictEqual(comparableSource, shouldCase.source, 'The source is not right.' + chalk.white(info));
+		}
 	});
 }
 
