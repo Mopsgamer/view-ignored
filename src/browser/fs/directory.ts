@@ -142,12 +142,17 @@ export class Directory implements ParsedPath {
 		return tree;
 	}
 
-	protected static getIterator = function * (directory: Directory): IterableIterator<Directory | File> {
+	public static getIterator = function * (directory: Directory): IterableIterator<Directory | File> {
+		const subDirectories: Directory[] = [];
 		for (const element of directory.children) {
 			yield element;
 			if (element instanceof Directory) {
-				yield * Directory.getIterator(element);
+				subDirectories.push(element);
 			}
+		}
+
+		for (const subDirectory of subDirectories) {
+			yield * Directory.getIterator(subDirectory);
 		}
 	};
 
