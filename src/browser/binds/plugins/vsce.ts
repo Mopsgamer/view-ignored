@@ -5,6 +5,7 @@ import {
 	File,
 	InvalidPatternError,
 	BadSourceError,
+	type SourceInfo,
 } from '../../index.js';
 import {ScannerGitignore} from '../scanner.js';
 import {type TargetIcon, type TargetName} from '../targets.js';
@@ -45,21 +46,26 @@ export function isValidManifest(value: unknown): value is ValidManifestVsce {
 }
 
 const methodologyVscodeignore: Methodology = function (tree, o) {
-	const scanner = new ScannerGitignore({exclude: matcherExclude});
-	const sourceFile = Array.from(tree).find(dirent => dirent instanceof File && dirent.base === '.vscodeignore') as File | undefined;
+	const sourceList = Array.from(tree).filter(dirent => dirent instanceof File && dirent.base === '.vscodeignore') as File[];
+	const map = new Map<File, SourceInfo>();
+	for (const sourceFile of sourceList) {
+		const scanner = new ScannerGitignore({exclude: matcherExclude});
 
-	if (sourceFile === undefined) {
-		throw new NoSourceError('.vscodeignore');
+		if (sourceFile === undefined) {
+			throw new NoSourceError('.vscodeignore');
+		}
+
+		const content = o.modules.fs.readFileSync(sourceFile.absolutePath).toString();
+		const pattern = content;
+		if (!scanner.isValid(pattern)) {
+			throw new InvalidPatternError(sourceFile, pattern);
+		}
+
+		scanner.pattern = pattern;
+		useSourceFile(map, sourceFile, scanner);
 	}
 
-	const content = o.modules.fs.readFileSync(sourceFile.absolutePath).toString();
-	const pattern = content;
-	if (!scanner.isValid(pattern)) {
-		throw new InvalidPatternError(sourceFile, pattern);
-	}
-
-	scanner.pattern = pattern;
-	return useSourceFile(sourceFile, scanner);
+	return map;
 };
 
 const methodology: Methodology = function (tree, o) {

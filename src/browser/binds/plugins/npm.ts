@@ -5,6 +5,7 @@ import {
 	NoSourceError,
 	InvalidPatternError,
 	BadSourceError,
+	type SourceInfo,
 } from '../../index.js';
 import {ScannerGitignore} from '../scanner.js';
 import {type TargetIcon, type TargetName} from '../targets.js';
@@ -57,52 +58,67 @@ export function isValidManifest(value: unknown): value is ValidManifestNpm {
 }
 
 const methodologyGitignore: Methodology = function (tree, o) {
-	const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude});
-	const sourceFile = Array.from(tree).find(dirent => dirent instanceof File && dirent.base === '.gitignore') as File | undefined;
+	const sourceList = Array.from(tree).filter(dirent => dirent instanceof File && dirent.base === '.gitignore') as File[];
+	const map = new Map<File, SourceInfo>();
+	for (const sourceFile of sourceList) {
+		const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude});
 
-	if (sourceFile === undefined) {
-		throw new NoSourceError('.gitignore');
+		if (sourceFile === undefined) {
+			throw new NoSourceError('.gitignore');
+		}
+
+		const content = o.modules.fs.readFileSync(sourceFile.absolutePath).toString();
+		const pattern = content;
+		if (!scanner.isValid(pattern)) {
+			throw new InvalidPatternError(sourceFile, pattern);
+		}
+
+		scanner.pattern = pattern;
+		useSourceFile(map, sourceFile, scanner);
 	}
 
-	const content = o.modules.fs.readFileSync(sourceFile.absolutePath).toString();
-	const pattern = content;
-	if (!scanner.isValid(pattern)) {
-		throw new InvalidPatternError(sourceFile, pattern);
-	}
-
-	scanner.pattern = pattern;
-	return useSourceFile(sourceFile, scanner);
+	return map;
 };
 
 const methodologyNpmignore: Methodology = function (tree, o) {
-	const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude});
-	const sourceFile = Array.from(tree).find(dirent => dirent instanceof File && dirent.base === '.npmignore') as File | undefined;
+	const sourceList = Array.from(tree).filter(dirent => dirent instanceof File && dirent.base === '.npmignore') as File[];
+	const map = new Map<File, SourceInfo>();
+	for (const sourceFile of sourceList) {
+		const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude});
 
-	if (sourceFile === undefined) {
-		return methodologyGitignore(tree, o);
+		if (sourceFile === undefined) {
+			return methodologyGitignore(tree, o);
+		}
+
+		const content = o.modules.fs.readFileSync(sourceFile.absolutePath).toString();
+		const pattern = content;
+		if (!scanner.isValid(pattern)) {
+			return methodologyGitignore(tree, o);
+		}
+
+		scanner.pattern = pattern;
+		useSourceFile(map, sourceFile, scanner);
 	}
 
-	const content = o.modules.fs.readFileSync(sourceFile.absolutePath).toString();
-	const pattern = content;
-	if (!scanner.isValid(pattern)) {
-		return methodologyGitignore(tree, o);
-	}
-
-	scanner.pattern = pattern;
-	return useSourceFile(sourceFile, scanner);
+	return map;
 };
 
 const methodologyPackageJsonFiles = (manifest: ValidManifestNpm): Methodology => function (tree, o) {
-	const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude, negated: true});
-	const sourceFile = Array.from(tree).find(dirent => dirent instanceof File && dirent.base === 'package.json') as File | undefined;
+	const sourceList = Array.from(tree).filter(dirent => dirent instanceof File && dirent.base === 'package.json') as File[];
+	const map = new Map<File, SourceInfo>();
+	for (const sourceFile of sourceList) {
+		const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude, negated: true});
 
-	const {files: pattern} = manifest;
-	if (sourceFile === undefined || !scanner.isValid(pattern)) {
-		return methodologyNpmignore(tree, o);
+		const {files: pattern} = manifest;
+		if (sourceFile === undefined || !scanner.isValid(pattern)) {
+			return methodologyNpmignore(tree, o);
+		}
+
+		scanner.pattern = pattern;
+		useSourceFile(map, sourceFile, scanner);
 	}
 
-	scanner.pattern = pattern;
-	return useSourceFile(sourceFile, scanner);
+	return map;
 };
 
 const methodology: Methodology = function (tree, o) {

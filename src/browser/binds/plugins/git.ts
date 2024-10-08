@@ -21,8 +21,7 @@ const matcherExclude: string[] = [
 	'.DS_Store/**',
 ];
 
-export function useSourceFile(sourceFile: File, scanner: Scanner & {pattern: string | string[]}): Map<File, SourceInfo> {
-	const map = new Map<File, SourceInfo>();
+export function useSourceFile(map: Map<File, SourceInfo>, sourceFile: File, scanner: Scanner & {pattern: string | string[]}): void {
 	const sourceInfo = SourceInfo.from(sourceFile, scanner);
 	for (const file of sourceFile.parent) {
 		if (file instanceof Directory) {
@@ -31,26 +30,29 @@ export function useSourceFile(sourceFile: File, scanner: Scanner & {pattern: str
 
 		map.set(file, sourceInfo);
 	}
-
-	return map;
 }
 
 const methodology: Methodology = function (tree, o) {
-	const scanner = new ScannerGitignore({exclude: matcherExclude});
-	const sourceFile = Array.from(tree).find(dirent => dirent instanceof File && dirent.base === '.gitignore') as File | undefined;
+	const sourceList = Array.from(tree).filter(dirent => dirent instanceof File && dirent.base === '.gitignore') as File[];
+	const map = new Map<File, SourceInfo>();
+	for (const sourceFile of sourceList) {
+		const scanner = new ScannerGitignore({exclude: matcherExclude});
 
-	if (sourceFile === undefined) {
-		throw new NoSourceError('.gitignore');
+		if (sourceFile === undefined) {
+			throw new NoSourceError('.gitignore');
+		}
+
+		const content = o.modules.fs.readFileSync(sourceFile.absolutePath).toString();
+		const pattern = content;
+		if (!scanner.isValid(pattern)) {
+			throw new InvalidPatternError(sourceFile, pattern);
+		}
+
+		scanner.pattern = pattern;
+		useSourceFile(map, sourceFile, scanner);
 	}
 
-	const content = o.modules.fs.readFileSync(sourceFile.absolutePath).toString();
-	const pattern = content;
-	if (!scanner.isValid(pattern)) {
-		throw new InvalidPatternError(sourceFile, pattern);
-	}
-
-	scanner.pattern = pattern;
-	return useSourceFile(sourceFile, scanner);
+	return map;
 };
 
 const bind: Plugins.TargetBind = {
