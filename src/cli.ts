@@ -300,7 +300,7 @@ export async function actionScan(): Promise<void> {
 		});
 		console.log(fileInfoList.map(fileInfo =>
 			fileInfo.relativePath + (
-				flags.showSources ? '<' + (fileInfo.source.relativePath) : ''
+				flags.showSources && fileInfo.source !== undefined ? '<' + (fileInfo.source.relativePath) : ''
 			),
 		).join(','));
 	} else {

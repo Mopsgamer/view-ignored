@@ -9,7 +9,7 @@ import {
 	type File, FileInfo, type DeepStreamEventEmitter, type SourceInfo,
 } from './fs/index.js';
 import {targetGet} from './binds/index.js';
-import {TargetNotBoundError, ViewIgnoredError} from './errors.js';
+import {TargetNotBoundError} from './errors.js';
 import {type FilterName} from './filtering.js';
 
 export * from './errors.js';
@@ -168,16 +168,15 @@ export async function scan(argument0: string | string[] | Directory | DeepStream
 		return scan(tree, options);
 	}
 
-	const fileList = argument0.flat();
 	const cache = optionsReal.target(argument0, optionsReal);
 
 	const fileInfoList: FileInfo[] = [];
-	for (const entry of fileList) {
-		const sourceInfo = cache.get(entry);
-
-		if (sourceInfo === undefined) {
-			throw new ViewIgnoredError(`Invalid methodology. Cannot get scanner for ${entry.relativePath}`);
+	for (const entry of argument0) {
+		if (entry instanceof Directory) {
+			continue;
 		}
+
+		const sourceInfo = cache.get(entry);
 
 		const fileInfo = FileInfo.from(entry, sourceInfo);
 		const ignored = !fileInfo.isIncludedBy(optionsReal.filter);

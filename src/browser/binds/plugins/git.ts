@@ -6,6 +6,7 @@ import {
 	SourceInfo,
 	type Scanner,
 	InvalidPatternError,
+	Directory,
 } from '../../index.js';
 import {ScannerGitignore} from '../scanner.js';
 import {type TargetIcon, type TargetName} from '../targets.js';
@@ -22,9 +23,12 @@ const matcherExclude: string[] = [
 
 export function useSourceFile(sourceFile: File, scanner: Scanner & {pattern: string | string[]}): Map<File, SourceInfo> {
 	const map = new Map<File, SourceInfo>();
-	const fileList = sourceFile.parent.flat();
 	const sourceInfo = SourceInfo.from(sourceFile, scanner);
-	for (const file of fileList) {
+	for (const file of sourceFile.parent) {
+		if (file instanceof Directory) {
+			continue;
+		}
+
 		map.set(file, sourceInfo);
 	}
 
@@ -33,7 +37,7 @@ export function useSourceFile(sourceFile: File, scanner: Scanner & {pattern: str
 
 const methodology: Methodology = function (tree, o) {
 	const scanner = new ScannerGitignore({exclude: matcherExclude});
-	const sourceFile = tree.findAll<File>(dirent => dirent instanceof File && dirent.base === '.gitignore');
+	const sourceFile = Array.from(tree).find(dirent => dirent instanceof File && dirent.base === '.gitignore') as File | undefined;
 
 	if (sourceFile === undefined) {
 		throw new NoSourceError('.gitignore');

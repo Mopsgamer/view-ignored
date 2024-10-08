@@ -58,7 +58,7 @@ export function isValidManifest(value: unknown): value is ValidManifestNpm {
 
 const methodologyGitignore: Methodology = function (tree, o) {
 	const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude});
-	const sourceFile = tree.findAll<File>(dirent => dirent instanceof File && dirent.base === '.gitignore');
+	const sourceFile = Array.from(tree).find(dirent => dirent instanceof File && dirent.base === '.gitignore') as File | undefined;
 
 	if (sourceFile === undefined) {
 		throw new NoSourceError('.gitignore');
@@ -76,7 +76,7 @@ const methodologyGitignore: Methodology = function (tree, o) {
 
 const methodologyNpmignore: Methodology = function (tree, o) {
 	const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude});
-	const sourceFile = tree.findAll<File>(dirent => dirent instanceof File && dirent.base === '.npmignore');
+	const sourceFile = Array.from(tree).find(dirent => dirent instanceof File && dirent.base === '.npmignore') as File | undefined;
 
 	if (sourceFile === undefined) {
 		return methodologyGitignore(tree, o);
@@ -94,9 +94,7 @@ const methodologyNpmignore: Methodology = function (tree, o) {
 
 const methodologyPackageJsonFiles = (manifest: ValidManifestNpm): Methodology => function (tree, o) {
 	const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude, negated: true});
-	const sourceFile = tree.children.find((dirent): dirent is File =>
-		dirent instanceof File && dirent.base === 'package.json',
-	);
+	const sourceFile = Array.from(tree).find(dirent => dirent instanceof File && dirent.base === 'package.json') as File | undefined;
 
 	const {files: pattern} = manifest;
 	if (sourceFile === undefined || !scanner.isValid(pattern)) {
@@ -108,9 +106,7 @@ const methodologyPackageJsonFiles = (manifest: ValidManifestNpm): Methodology =>
 };
 
 const methodology: Methodology = function (tree, o) {
-	const packageJson = tree.children.find((dirent): dirent is File =>
-		dirent instanceof File && dirent.base === 'package.json',
-	);
+	const packageJson = Array.from(tree).find(dirent => dirent instanceof File && dirent.base === 'package.json') as File | undefined;
 	if (packageJson === undefined) {
 		throw new NoSourceError('package.json');
 	}

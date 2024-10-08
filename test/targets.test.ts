@@ -77,7 +77,7 @@ describe('Targets', () => {
 					'app/file.txt',
 					'app/.gitignore',
 				],
-				source: '.gitignore',
+				source: 'app/.gitignore',
 			},
 			content: {
 				'file.txt': '',
@@ -433,7 +433,6 @@ function testTarget(title: string, data: TestTargetSubtestData) {
 		const fixture = await createFixture(data.content);
 
 		const fileInfoListPromise = viewig.scan('.', {target: targetId, cwd: fixture.getPath(), filter: 'included'});
-		void fileInfoListPromise.catch(() => { /* empty */ });
 
 		if (typeof should === 'string') {
 			try {
@@ -450,9 +449,6 @@ function testTarget(title: string, data: TestTargetSubtestData) {
 			return;
 		}
 
-		assert.doesNotThrow(async () => {
-			await fileInfoListPromise;
-		});
 		const fileInfoList = await fileInfoListPromise;
 		const cmp1 = fileInfoList.map(l => l.toString()).sort();
 		const cmp2 = should.include.map(filePath => filePath.split(PATH.posix.sep).join(PATH.sep)).sort();
@@ -460,9 +456,10 @@ function testTarget(title: string, data: TestTargetSubtestData) {
 			.map(fileInfo => `${chalk.red(fileInfo.toString({source: true, chalk}))}`)
 			.sort().join('\n        ');
 		const info = `\n      Results:\n        ${actual}\n`;
-		for (const fileInfo of (await fileInfoListPromise)) {
+		for (const fileInfo of fileInfoList) {
+			assert.ok(fileInfo.source !== undefined, 'The source is missing, but expected.' + chalk.white(info));
 			const sourceString = fileInfo.source.relativePath;
-			assert.strictEqual(sourceString, should.source, 'The source is not right.' + chalk.white(info));
+			assert.strictEqual(sourceString, should.source.split(PATH.posix.sep).join(PATH.sep), 'The source is not right.' + chalk.white(info));
 		}
 
 		assert.deepEqual(cmp1, cmp2, 'The path list is bad.' + chalk.white(info));

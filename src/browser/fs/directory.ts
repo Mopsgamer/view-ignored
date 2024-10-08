@@ -4,6 +4,7 @@ import {
 } from 'node:path';
 import EventEmitter from 'node:events';
 import * as FSP from 'node:fs/promises';
+import process from 'node:process';
 import pLimit from 'p-limit';
 import {type RealScanOptions} from '../lib.js';
 import {File} from './file.js';
@@ -110,7 +111,7 @@ export class Directory implements ParsedPath {
 	/**
 	 * Get the {@link Directory} instance from a file path list. Paths should be relative.
 	 */
-	static from(pathList: Array<{toString(): string}>, cwd: string): Directory {
+	static from(pathList: Array<{toString(): string}>, cwd: string = process.cwd()): Directory {
 		const tree = new Directory(undefined, '.', cwd, []);
 
 		for (const path of pathList) {
@@ -140,6 +141,15 @@ export class Directory implements ParsedPath {
 
 		return tree;
 	}
+
+	protected static getIterator = function * (directory: Directory): IterableIterator<Directory | File> {
+		for (const element of directory.children) {
+			yield element;
+			if (element instanceof Directory) {
+				yield * Directory.getIterator(element);
+			}
+		}
+	};
 
 	/**
 	 * Read directories and files progressively.
@@ -223,78 +233,12 @@ export class Directory implements ParsedPath {
 		this.root = parsed.root;
 	}
 
+	[Symbol.iterator] = () => Directory.getIterator(this);
+
 	/**
 	 * @returns The relative path to the directory.
 	 */
 	toString(): string {
 		return this.relativePath;
-	}
-
-	/**
-	 * @returns All nested files.
-	 */
-	flat(): File[] {
-		const direntList = this.children.flatMap<File>(dirent => {
-			if (dirent instanceof File) {
-				return dirent;
-			}
-
-			return dirent.flat();
-		});
-		return direntList;
-	}
-
-	/**
-	 * @returns Nested file or folder.
-	 */
-	findAll<T extends Directory | File = Directory | File>(callback: (dirent: Directory | File) => boolean): T | undefined {
-		const directoryChildrens: Directory[] = [];
-		const found = this.children.find(dirent => {
-			if (dirent instanceof Directory) {
-				directoryChildrens.push(dirent);
-			}
-
-			return callback(dirent);
-		}) as T | undefined;
-		if (found !== undefined) {
-			return found;
-		}
-
-		for (const directory of directoryChildrens) {
-			const found = directory.findAll<T>(callback);
-			if (found === undefined) {
-				continue;
-			}
-
-			return found;
-		}
-	}
-
-	/**
-	 * @returns Filtered nested files and folders.
-	 */
-	filterAll<T extends Directory | File = Directory | File>(callback: (dirent: Directory | File) => boolean): T[] {
-		const directoryChildrens: Directory[] = [];
-		const found = this.children.filter(dirent => {
-			if (dirent instanceof Directory) {
-				directoryChildrens.push(dirent);
-			}
-
-			return callback(dirent);
-		}) as T[];
-		if (found.length > 0) {
-			return found;
-		}
-
-		for (const directory of directoryChildrens) {
-			const found = directory.filterAll<T>(callback);
-			if (found.length === 0) {
-				continue;
-			}
-
-			return found;
-		}
-
-		return [];
 	}
 }

@@ -46,7 +46,7 @@ export function isValidManifest(value: unknown): value is ValidManifestVsce {
 
 const methodologyVscodeignore: Methodology = function (tree, o) {
 	const scanner = new ScannerGitignore({exclude: matcherExclude});
-	const sourceFile = tree.findAll<File>(dirent => dirent instanceof File && dirent.base === '.vscodeignore');
+	const sourceFile = Array.from(tree).find(dirent => dirent instanceof File && dirent.base === '.vscodeignore') as File | undefined;
 
 	if (sourceFile === undefined) {
 		throw new NoSourceError('.vscodeignore');
@@ -63,9 +63,7 @@ const methodologyVscodeignore: Methodology = function (tree, o) {
 };
 
 const methodology: Methodology = function (tree, o) {
-	const packageJson = tree.children.find((dirent): dirent is File =>
-		dirent instanceof File && dirent.base === 'package.json',
-	);
+	const packageJson = Array.from(tree).find(dirent => dirent instanceof File && dirent.base === 'package.json') as File | undefined;
 	if (packageJson === undefined) {
 		throw new NoSourceError('package.json');
 	}

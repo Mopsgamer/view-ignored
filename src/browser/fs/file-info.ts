@@ -53,18 +53,20 @@ export type FileInfoToStringOptions = {
 	entire?: boolean;
 };
 
+export type FileInfoStatus = 'ignored' | 'included' | 'non-target';
+
 /**
  * The result of the file path scan.
  */
 export class FileInfo extends File {
-	static from(file: File, source: SourceInfo) {
+	static from(file: File, source?: SourceInfo) {
 		return new FileInfo(file.parent, file.relativePath, file.absolutePath, source);
 	}
 
 	/**
 	 * Determines if ignored file is ignored or not.
 	*/
-	public readonly isIgnored: boolean;
+	public readonly status: FileInfoStatus;
 
 	constructor(
 		/**
@@ -85,10 +87,11 @@ export class FileInfo extends File {
 		/**
 		 * The source of patterns.
 		 */
-		public readonly source: SourceInfo,
+		public readonly source?: SourceInfo,
 	) {
 		super(parent, relativePath, absolutePath);
-		this.isIgnored = source.scanner.ignores(relativePath);
+		this.status = source === undefined ? 'non-target'
+			: (source.scanner.ignores(relativePath) ? 'ignored' : 'included');
 	}
 
 	/**
@@ -105,13 +108,14 @@ export class FileInfo extends File {
 			ifNerd: chalk && glyph.color !== undefined ? chalk.hex(glyph.color.toString(16))(glyph.char) : glyph.char,
 			postfix: ' ',
 		}) : '';
-		let prefix = usePrefix ? (this.isIgnored ? '!' : '+') : '';
-		let postfix = useSource ? ' << ' + this.source.toString() : '';
+		let prefix = usePrefix && this.status !== 'non-target' ? (this.status === 'ignored' ? '!' : '+') : '';
+		let postfix = useSource && this.source !== undefined ? ' << ' + this.source.toString() : '';
 
 		if (chalk) {
 			prefix = chalk.dim(prefix);
 			postfix = chalk.dim(postfix);
-			const clr = this.isIgnored ? chalk.gray : chalk.green;
+			const clr = this.status === 'non-target' ? chalk.white
+				: (this.status === 'included' ? chalk.green : chalk.white);
 			if (entire) {
 				return fIcon + clr(prefix + this.relativePath + postfix);
 			}
@@ -136,8 +140,8 @@ export class FileInfo extends File {
 		}
 
 		filter ??= 'all';
-		const filterIgnore = (filter === 'ignored') && this.isIgnored;
-		const filterInclude = (filter === 'included') && !this.isIgnored;
+		const filterIgnore = (filter === 'ignored') && this.status === 'ignored';
+		const filterInclude = (filter === 'included') && this.status === 'included';
 		const filterAll = filter === 'all';
 		const result = filterIgnore || filterInclude || filterAll;
 		return result;
