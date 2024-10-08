@@ -1,8 +1,8 @@
-/* eslint-disable @typescript-eslint/no-loop-func */
+
 /* eslint-disable @typescript-eslint/naming-convention */
 import assert from 'node:assert';
 import PATH from 'node:path';
-import {type FileTree, type FsFixture, createFixture} from 'fs-fixture';
+import {type FileTree, createFixture} from 'fs-fixture';
 import chalk from 'chalk';
 import * as viewig from '../src/index.js';
 
@@ -13,9 +13,6 @@ type Case = {
 	};
 	content: FileTree;
 };
-
-type DirectoryCase = Record<string, Case>;
-type Plan = Record<string, DirectoryCase>;
 
 const realProject: FileTree = {
 	'.github': {},
@@ -40,19 +37,26 @@ const symlinksProject: FileTree = {
 	'awesomefolder.lnk': ({symlink}) => symlink('./awesomefolder'),
 };
 
-const targetTestList: Plan = {
-	git: {
-		'empty project': {
+describe('Targets', () => {
+	before(async () => {
+		await viewig.Plugins.loadBuiltIns();
+	});
+	let targetId = 'git';
+	describe(targetId, () => {
+		testTarget('empty folder', {
+			targetId,
 			should: viewig.NoSourceError.name,
 			content: {},
-		},
-		'single file': {
+		});
+		testTarget('single file', {
+			targetId,
 			should: viewig.NoSourceError.name,
 			content: {
 				'file.txt': '',
 			},
-		},
-		'.gitignore': {
+		});
+		testTarget('.gitignore', {
+			targetId,
 			should: {
 				include: [
 					'file.txt',
@@ -65,8 +69,9 @@ const targetTestList: Plan = {
 				'node_modules/tempdep/indexOf.js': '',
 				'.gitignore': 'node_modules',
 			},
-		},
-		'nested .gitignore': {
+		});
+		testTarget('nested .gitignore', {
+			targetId,
 			should: {
 				include: [
 					'app/file.txt',
@@ -82,8 +87,9 @@ const targetTestList: Plan = {
 					'.gitignore': 'node_modules',
 				},
 			},
-		},
-		symlinks: {
+		});
+		testTarget('symlinks', {
+			targetId,
 			should: {
 				include: [
 					'.gitignore',
@@ -95,23 +101,24 @@ const targetTestList: Plan = {
 				source: '.gitignore',
 			},
 			content: {...symlinksProject, '.gitignore': ''},
-		},
-	},
-	/**
-	 * @see {@link npmPatternExclude} {@link npmPatternInclude}
-	 */
-	npm: {
-		'empty project': {
+		});
+	});
+	targetId = 'npm';
+	describe(targetId, () => {
+		testTarget('empty project', {
+			targetId,
 			should: viewig.NoSourceError.name,
 			content: {},
-		},
-		'single file': {
+		});
+		testTarget('single file', {
+			targetId,
 			should: viewig.NoSourceError.name,
 			content: {
 				'file.txt': '',
 			},
-		},
-		'.gitignore': {
+		});
+		testTarget('.gitignore', {
+			targetId,
 			should: {
 				include: ['file.txt', 'package.json'],
 				source: '.gitignore',
@@ -125,8 +132,9 @@ const targetTestList: Plan = {
 					version: '0.0.1',
 				}),
 			},
-		},
-		'.gitignore with comment': {
+		});
+		testTarget('.gitignore with comment', {
+			targetId,
 			should: {
 				include: ['file.txt', 'package.json'],
 				source: '.gitignore',
@@ -140,8 +148,9 @@ const targetTestList: Plan = {
 					version: '0.0.1',
 				}),
 			},
-		},
-		'(package.json), .npmignore, .gitignore': {
+		});
+		testTarget('(package.json), .npmignore, .gitignore', {
+			targetId,
 			should: {
 				include: [
 					'LICENSE',
@@ -162,8 +171,9 @@ const targetTestList: Plan = {
 					version: '0.0.1',
 				}),
 			},
-		},
-		'package.json, (.npmignore), .gitignore': {
+		});
+		testTarget('package.json, (.npmignore), .gitignore', {
+			targetId,
 			should: {
 				include: [
 					'LICENSE',
@@ -185,8 +195,9 @@ const targetTestList: Plan = {
 					version: '0.0.1',
 				}),
 			},
-		},
-		symlinks: {
+		});
+		testTarget('symlinks', {
+			targetId,
 			should: {
 				include: [
 					'awesomefile',
@@ -205,20 +216,24 @@ const targetTestList: Plan = {
 					version: '0.0.1',
 				}),
 			},
-		},
-	},
-	yarn: {
-		'empty project': {
+		});
+	});
+	targetId = 'yarn';
+	describe(targetId, () => {
+		testTarget('empty project', {
+			targetId,
 			should: viewig.NoSourceError.name,
 			content: {},
-		},
-		'single file': {
+		});
+		testTarget('single file', {
+			targetId,
 			should: viewig.NoSourceError.name,
 			content: {
 				'file.txt': '',
 			},
-		},
-		'.gitignore': {
+		});
+		testTarget('.gitignore', {
+			targetId,
 			should: {
 				include: ['file.txt', 'package.json'],
 				source: '.gitignore',
@@ -232,8 +247,9 @@ const targetTestList: Plan = {
 					version: '0.0.1',
 				}),
 			},
-		},
-		'.gitignore with comment': {
+		});
+		testTarget('.gitignore with comment', {
+			targetId,
 			should: {
 				include: ['file.txt', 'package.json'],
 				source: '.gitignore',
@@ -247,8 +263,9 @@ const targetTestList: Plan = {
 					version: '0.0.1',
 				}),
 			},
-		},
-		'(package.json), .yarnignore, .npmignore, .gitignore': {
+		});
+		testTarget('(package.json), .yarnignore, .npmignore, .gitignore', {
+			targetId,
 			should: {
 				include: [
 					'LICENSE',
@@ -270,8 +287,9 @@ const targetTestList: Plan = {
 					version: '0.0.1',
 				}),
 			},
-		},
-		'package.json, (.yarnignore), .npmignore, .gitignore': {
+		});
+		testTarget('package.json, (.yarnignore), .npmignore, .gitignore', {
+			targetId,
 			should: {
 				include: [
 					'LICENSE',
@@ -294,8 +312,9 @@ const targetTestList: Plan = {
 					version: '0.0.1',
 				}),
 			},
-		},
-		'package.json, .yarnignore, (.npmignore), .gitignore': {
+		});
+		testTarget('package.json, .yarnignore, (.npmignore), .gitignore', {
+			targetId,
 			should: {
 				include: [
 					'LICENSE',
@@ -317,8 +336,9 @@ const targetTestList: Plan = {
 					version: '0.0.1',
 				}),
 			},
-		},
-		symlinks: {
+		});
+		testTarget('symlinks', {
+			targetId,
 			should: {
 				include: [
 					'awesomefile',
@@ -337,20 +357,24 @@ const targetTestList: Plan = {
 					version: '0.0.1',
 				}),
 			},
-		},
-	},
-	vsce: {
-		'empty project': {
+		});
+	});
+	targetId = 'vsce';
+	describe(targetId, () => {
+		testTarget('empty project', {
+			targetId,
 			should: viewig.NoSourceError.name,
 			content: {},
-		},
-		'single file': {
+		});
+		testTarget('single file', {
+			targetId,
 			should: viewig.NoSourceError.name,
 			content: {
 				'file.txt': '',
 			},
-		},
-		'.vscodeignore': {
+		});
+		testTarget('.vscodeignore', {
+			targetId,
 			should: {
 				include: [
 					'file.txt',
@@ -369,8 +393,9 @@ const targetTestList: Plan = {
 					engines: {vscode: '>=1.0.0'},
 				}),
 			},
-		},
-		symlinks: {
+		});
+		testTarget('symlinks', {
+			targetId,
 			should: {
 				include: [
 					'.vscodeignore',
@@ -391,85 +416,56 @@ const targetTestList: Plan = {
 					engines: {vscode: '>=1.0.0'},
 				}),
 			},
-		},
-	},
-};
-
-describe('Targets', () => {
-	before(async () => {
-		await viewig.Plugins.loadBuiltIns();
-	});
-	for (const targetId in targetTestList) {
-		if (!Object.hasOwn(targetTestList, targetId)) {
-			continue;
-		}
-
-		describe(targetId, () => {
-			const tests = targetTestList[targetId];
-			for (const testName in tests) {
-				if (!Object.hasOwn(tests, testName)) {
-					continue;
-				}
-
-				it(testName, async () => {
-					after(async () => {
-						await fixture.rm();
-					});
-					const fixture = await createFixture(tests[testName].content);
-					await testTargetSubtest({
-						fixture,
-						targetId,
-						test: tests[testName],
-					});
-				});
-			}
 		});
-	}
+	});
 });
 
-type TestTargetSubtestData = {
-	fixture: FsFixture;
+type TestTargetSubtestData = Case & {
 	targetId: string;
-	test: Case;
 };
 
-async function testTargetSubtest(data: TestTargetSubtestData) {
-	const {fixture, targetId, test} = data;
-	const {should} = test;
+function testTarget(title: string, data: TestTargetSubtestData) {
+	it(title, async () => {
+		after(async () => {
+			await fixture.rm();
+		});
+		const {targetId, should} = data;
+		const fixture = await createFixture(data.content);
 
-	const fileInfoListPromise = viewig.scan('.', {target: targetId, cwd: fixture.getPath(), filter: 'included'});
-	void fileInfoListPromise.catch(() => { /* empty */ });
+		const fileInfoListPromise = viewig.scan('.', {target: targetId, cwd: fixture.getPath(), filter: 'included'});
+		void fileInfoListPromise.catch(() => { /* empty */ });
 
-	if (typeof should === 'string') {
-		try {
-			await fileInfoListPromise;
-			assert.throws(async () => {
+		if (typeof should === 'string') {
+			try {
 				await fileInfoListPromise;
-			});
-		} catch (error) {
-			assert(error instanceof Error, `Expected ViewIgnoredError, got ${String(error)}`);
-			assert(error instanceof viewig.ViewIgnoredError, `Expected ViewIgnoredError, got ${error.name}`);
-			assert(error.name === should, `Expected ${should}, got ${error.name}`);
+				assert.throws(async () => {
+					await fileInfoListPromise;
+				});
+			} catch (error) {
+				assert(error instanceof Error, `Expected ViewIgnoredError, got ${String(error)}`);
+				assert(error instanceof viewig.ViewIgnoredError, `Expected ViewIgnoredError, got ${error.name}`);
+				assert(error.name === should, `Expected ${should}, got ${error.name}`);
+			}
+
+			return;
 		}
 
-		return;
-	}
+		assert.doesNotThrow(async () => {
+			await fileInfoListPromise;
+		});
+		const fileInfoList = await fileInfoListPromise;
+		const cmp1 = fileInfoList.map(l => l.toString()).sort();
+		const cmp2 = should.include.map(filePath => filePath.split(PATH.posix.sep).join(PATH.sep)).sort();
+		const actual = fileInfoList
+			.map(fileInfo => `${chalk.red(fileInfo.toString({source: true, chalk}))}`)
+			.sort().join('\n        ');
+		const info = `\n      Results:\n        ${actual}\n`;
+		for (const fileInfo of (await fileInfoListPromise)) {
+			const sourceString = fileInfo.source.relativePath;
+			assert.strictEqual(sourceString, should.source, 'The source is not right.' + chalk.white(info));
+		}
 
-	assert.doesNotThrow(async () => {
-		await fileInfoListPromise;
+		assert.deepEqual(cmp1, cmp2, 'The path list is bad.' + chalk.white(info));
 	});
-	const fileInfoList = await fileInfoListPromise;
-	const cmp1 = fileInfoList.map(l => l.toString()).sort();
-	const cmp2 = should.include.map(filePath => filePath.split(PATH.posix.sep).join(PATH.sep)).sort();
-	const actual = fileInfoList
-		.map(fileInfo => `${chalk.red(fileInfo.toString({source: true, chalk}))}`)
-		.sort().join('\n        ');
-	const info = `\n      Results:\n        ${actual}\n`;
-	for (const fileInfo of (await fileInfoListPromise)) {
-		const sourceString = fileInfo.source.relativePath;
-		assert.strictEqual(sourceString, should.source, 'The source is not right.' + chalk.white(info));
-	}
-
-	assert.deepEqual(cmp1, cmp2, 'The path list is bad.' + chalk.white(info));
 }
 
