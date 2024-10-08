@@ -503,12 +503,10 @@ function testTarget(title: string, data: TestTargetSubtestData) {
 		const fileInfoList = await fileInfoListPromise;
 		const results = fileInfoList
 			.map(fileInfo => `${chalk.red(fileInfo.toString({source: true, chalk}))}`)
-			.sort();
 		const resultsExpectedAlso = should
 			.flatMap(shouldCase => shouldCase.include)
 			.filter(expectedPath => !fileInfoList.some(fileInfo => unixToTargetPath(expectedPath) === unixToTargetPath(fileInfo.relativePath)))
 			.map(path => `${chalk.red(path)}`)
-			.sort();
 		const info = `\n      Results:\n        ${results.join('\n        ')}\n      Expected also:\n        ${resultsExpectedAlso.join('\n        ')}\n`;
 		for (const shouldCase of should) {
 			shouldCase.include = shouldCase.include.map(filePath => unixToTargetPath(filePath));
