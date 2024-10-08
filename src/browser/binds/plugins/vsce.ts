@@ -52,7 +52,7 @@ const methodologyVscodeignore: Methodology = function (tree, o) {
 		throw new NoSourceError('.vscodeignore');
 	}
 
-	const content = o.fsa.readFileSync(sourceFile.absolutePath).toString();
+	const content = o.modules.fs.readFileSync(sourceFile.absolutePath).toString();
 	const pattern = content;
 	if (!scanner.isValid(pattern)) {
 		throw new InvalidPatternError(sourceFile, pattern);
@@ -68,7 +68,7 @@ const methodology: Methodology = function (tree, o) {
 		throw new NoSourceError('package.json');
 	}
 
-	const packageJsonContent = o.fsa.readFileSync(packageJson.absolutePath).toString();
+	const packageJsonContent = o.modules.fs.readFileSync(packageJson.absolutePath).toString();
 	let manifest: unknown;
 	try {
 		manifest = JSON.parse(packageJsonContent);

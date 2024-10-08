@@ -64,7 +64,7 @@ const methodologyGitignore: Methodology = function (tree, o) {
 		throw new NoSourceError('.gitignore');
 	}
 
-	const content = o.fsa.readFileSync(sourceFile.absolutePath).toString();
+	const content = o.modules.fs.readFileSync(sourceFile.absolutePath).toString();
 	const pattern = content;
 	if (!scanner.isValid(pattern)) {
 		throw new InvalidPatternError(sourceFile, pattern);
@@ -82,7 +82,7 @@ const methodologyNpmignore: Methodology = function (tree, o) {
 		return methodologyGitignore(tree, o);
 	}
 
-	const content = o.fsa.readFileSync(sourceFile.absolutePath).toString();
+	const content = o.modules.fs.readFileSync(sourceFile.absolutePath).toString();
 	const pattern = content;
 	if (!scanner.isValid(pattern)) {
 		return methodologyGitignore(tree, o);
@@ -111,7 +111,7 @@ const methodology: Methodology = function (tree, o) {
 		throw new NoSourceError('package.json');
 	}
 
-	const packageJsonContent = o.fsa.readFileSync(packageJson.absolutePath).toString();
+	const packageJsonContent = o.modules.fs.readFileSync(packageJson.absolutePath).toString();
 	let manifest: unknown;
 	try {
 		manifest = JSON.parse(packageJsonContent);

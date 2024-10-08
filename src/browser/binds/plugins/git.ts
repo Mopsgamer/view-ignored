@@ -43,7 +43,7 @@ const methodology: Methodology = function (tree, o) {
 		throw new NoSourceError('.gitignore');
 	}
 
-	const content = o.fsa.readFileSync(sourceFile.absolutePath).toString();
+	const content = o.modules.fs.readFileSync(sourceFile.absolutePath).toString();
 	const pattern = content;
 	if (!scanner.isValid(pattern)) {
 		throw new InvalidPatternError(sourceFile, pattern);

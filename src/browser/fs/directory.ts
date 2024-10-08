@@ -44,9 +44,9 @@ type DeepStreamNestedOptions = DeepStreamOptions & {
 	progress?: DeepStreamProgress;
 };
 
-export type DeepCountOptions = Pick<DeepStreamNestedOptions, 'fsa' | 'patha' | 'cwd' | 'concurrency' | 'progress'>;
+export type DeepCountOptions = Pick<DeepStreamNestedOptions, 'modules' | 'cwd' | 'concurrency' | 'progress'>;
 
-export type DeepStreamOptions = Pick<RealScanOptions, 'cwd' | 'fsa' | 'patha' | 'concurrency'>;
+export type DeepStreamOptions = Pick<RealScanOptions, 'cwd' | 'modules' | 'concurrency'>;
 
 /**
  * File system directory representation.
@@ -59,20 +59,20 @@ export class Directory implements ParsedPath {
 	 */
 	static async deepCount(directoryPath: {toString(): string}, options: DeepCountOptions): Promise<DeepStreamProgress> {
 		const {
-			fsa, patha, cwd, concurrency, progress = {
+			modules, cwd, concurrency, progress = {
 				current: 0, total: 0, files: 0, directories: 0,
 			},
 		} = options;
 		const limit = pLimit(concurrency);
-		const readdir = fsa.promises.readdir ?? FSP.readdir;
-		const absolutePath = patha.join(cwd, String(directoryPath));
+		const readdir = modules.fs.promises.readdir ?? FSP.readdir;
+		const absolutePath = modules.path.join(cwd, String(directoryPath));
 		const entryList = await readdir(absolutePath, {withFileTypes: true});
 
 		const promises = entryList.map(entry => limit(async () => {
 			++progress.total;
 			if (entry.isDirectory() && !entry.isSymbolicLink()) {
-				const absolutePath = patha.join(entry.parentPath, entry.name);
-				const relativePath = patha.relative(cwd, absolutePath);
+				const absolutePath = modules.path.join(entry.parentPath, entry.name);
+				const relativePath = modules.path.relative(cwd, absolutePath);
 				await Directory.deepCount(relativePath, {...options, progress});
 				++progress.directories;
 				return;
@@ -166,21 +166,21 @@ export class Directory implements ParsedPath {
 	 * @param options The reader options.
 	 */
 	private static async deepStreamNested(directoryPath: {toString(): string}, options: DeepStreamNestedOptions): Promise<DeepStreamData> {
-		const {fsa, patha, cwd, concurrency, parent} = options;
+		const {modules, cwd, concurrency, parent} = options;
 		const controller = options.controller ?? new EventEmitter() as DeepStreamEventEmitter;
 		const progress = options.progress ?? await Directory.deepCount(directoryPath, options);
 		controller.emit('progress', progress);
 		const limit = pLimit(concurrency);
-		const readdir = fsa.promises.readdir ?? FSP.readdir;
-		const absolutePath = patha.join(cwd, String(directoryPath));
-		const relativePath = patha.relative(cwd, absolutePath);
+		const readdir = modules.fs.promises.readdir ?? FSP.readdir;
+		const absolutePath = modules.path.join(cwd, String(directoryPath));
+		const relativePath = modules.path.relative(cwd, absolutePath);
 		const directory = new Directory(parent, relativePath, absolutePath, []);
 		const entryList = await readdir(absolutePath, {withFileTypes: true});
 
 		const promises = entryList.map(entry => limit(async () => {
 			const parent = directory;
-			const absolutePath = patha.join(entry.parentPath, entry.name);
-			const relativePath = patha.relative(cwd, absolutePath);
+			const absolutePath = modules.path.join(entry.parentPath, entry.name);
+			const relativePath = modules.path.relative(cwd, absolutePath);
 
 			if (entry.isDirectory() && !entry.isSymbolicLink()) {
 				const data = await Directory.deepStreamNested(relativePath, {

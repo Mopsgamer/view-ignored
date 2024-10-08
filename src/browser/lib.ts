@@ -56,9 +56,17 @@ export type Methodology = (tree: Directory, realOptions: RealScanOptions) => Map
 /**
  * Options with defaults and additional properties.
  */
-export type RealScanOptions = Required<ScanOptions> & {
-	fsa: Required<FileSystemAdapter>;
-	patha: PATH.PlatformPath;
+export type RealScanOptions = Required<Omit<ScanOptions, 'fsa'>> & {
+	modules: {
+		/**
+		 * File system adapter.
+		 */
+		fs: Required<FileSystemAdapter>;
+		/**
+		 * Path module adapter.
+		 */
+		path: PATH.PlatformPath;
+	};
 };
 
 /**
@@ -203,8 +211,10 @@ export function makeOptionsReal(options?: ScanOptions): RealScanOptions {
 		target: options.target ?? 'git',
 		cwd: options.cwd ?? process.cwd(),
 		filter: options.filter ?? configDefault.filter,
-		fsa: (options.fsa ?? FS) as Required<FileSystemAdapter>,
-		patha: posix ? PATH.posix : PATH,
+		modules: {
+			fs: (options.fsa ?? FS) as Required<FileSystemAdapter>,
+			path: posix ? PATH.posix : PATH,
+		},
 		maxDepth: options.maxDepth ?? configDefault.depth,
 		posix,
 	};

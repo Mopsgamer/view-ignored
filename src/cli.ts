@@ -290,8 +290,12 @@ export async function actionScan(): Promise<void> {
 	}
 
 	const optionsReal = makeOptionsReal({posix: flags.posix || flags.parsable, concurrency: flags.concurrency});
+	const stream = Directory.deepStream('.', {
+		concurrency: optionsReal.concurrency,
+		cwd: optionsReal.cwd,
+		modules: optionsReal.modules,
+	});
 	if (flags.parsable) {
-		const stream = Directory.deepStream('.', optionsReal);
 		const fileInfoList: FileInfo[] = await scan(stream, {
 			...optionsReal,
 			target: flags.target,
@@ -309,7 +313,6 @@ export async function actionScan(): Promise<void> {
 			name = chalk.hex('#' + bind.icon.color.toString(16))(name);
 		}
 
-		const stream = Directory.deepStream('.', optionsReal);
 		const context: ScanContext = {
 			count: {
 				files: 0, directories: 0, current: 0, total: 0,
