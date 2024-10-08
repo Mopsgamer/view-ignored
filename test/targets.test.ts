@@ -1,7 +1,6 @@
 
 /* eslint-disable @typescript-eslint/naming-convention */
 import assert, {AssertionError} from 'node:assert';
-import PATH from 'node:path';
 import {type FileTree, createFixture} from 'fs-fixture';
 import chalk from 'chalk';
 import * as viewig from '../src/index.js';
@@ -475,10 +474,6 @@ type TestTargetSubtestData = Case & {
 	targetId: string;
 };
 
-function unixToTargetPath(path: string) {
-	return path.split(PATH.posix.sep).join(PATH.sep);
-}
-
 function testTarget(title: string, data: TestTargetSubtestData) {
 	it(title, async () => {
 		after(async () => {
@@ -487,7 +482,9 @@ function testTarget(title: string, data: TestTargetSubtestData) {
 		const {targetId, should} = data;
 		const fixture = await createFixture(data.content);
 
-		const fileInfoListPromise = viewig.scan('.', {target: targetId, cwd: fixture.getPath(), filter: 'included'});
+		const fileInfoListPromise = viewig.scan('.', {
+			posix: true, target: targetId, cwd: fixture.getPath(), filter: 'included',
+		});
 
 		if (typeof should === 'string') {
 			void fileInfoListPromise.catch(error => {
@@ -502,16 +499,12 @@ function testTarget(title: string, data: TestTargetSubtestData) {
 
 		const fileInfoList = await fileInfoListPromise;
 		const results = fileInfoList
-			.map(fileInfo => `${chalk.red(fileInfo.toString({source: true, chalk}))}`)
+			.map(fileInfo => `${chalk.red(fileInfo.toString({source: true, chalk}))}`);
 		const resultsExpectedAlso = should
 			.flatMap(shouldCase => shouldCase.include)
-			.filter(expectedPath => !fileInfoList.some(fileInfo => unixToTargetPath(expectedPath) === unixToTargetPath(fileInfo.relativePath)))
-			.map(path => `${chalk.red(path)}`)
+			.filter(expectedPath => !fileInfoList.some(fileInfo => expectedPath === fileInfo.relativePath))
+			.map(path => `${chalk.red(path)}`);
 		const info = `\n      Results:\n        ${results.join('\n        ')}\n      Expected also:\n        ${resultsExpectedAlso.join('\n        ')}\n`;
-		for (const shouldCase of should) {
-			shouldCase.include = shouldCase.include.map(filePath => unixToTargetPath(filePath));
-			shouldCase.source = unixToTargetPath(shouldCase.source);
-		}
 
 		if (resultsExpectedAlso.length > 0) {
 			throw new AssertionError({message: 'The path list is bad.' + chalk.white(info)});
@@ -520,7 +513,7 @@ function testTarget(title: string, data: TestTargetSubtestData) {
 		for (const fileInfo of fileInfoList) {
 			const {source} = fileInfo;
 			assert.ok(source !== undefined, 'The source is missing, but expected.' + chalk.white(info));
-			const comparableSource = unixToTargetPath(source?.relativePath);
+			const comparableSource = source?.relativePath;
 			const shouldCase: Check | undefined = should.find(shouldCase => shouldCase.source === comparableSource);
 			if (shouldCase === undefined) {
 				const sourceListExpected = should.map(s => s.source);
