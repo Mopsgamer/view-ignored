@@ -142,7 +142,10 @@ export class Directory implements ParsedPath {
 		return tree;
 	}
 
-	public static getIterator = function * (directory: Directory): IterableIterator<Directory | File> {
+	/**
+	 * Get deep iterator for the directory.
+	 */
+	public static children = function * (directory: Directory): IterableIterator<Directory | File> {
 		const subDirectories: Directory[] = [];
 		for (const element of directory.children) {
 			yield element;
@@ -152,7 +155,7 @@ export class Directory implements ParsedPath {
 		}
 
 		for (const subDirectory of subDirectories) {
-			yield * Directory.getIterator(subDirectory);
+			yield * Directory.children(subDirectory);
 		}
 	};
 
@@ -238,7 +241,7 @@ export class Directory implements ParsedPath {
 		this.root = parsed.root;
 	}
 
-	[Symbol.iterator] = () => Directory.getIterator(this);
+	[Symbol.iterator] = () => Directory.children(this);
 
 	/**
 	 * @returns The relative path to the directory.
