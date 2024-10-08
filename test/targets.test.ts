@@ -498,15 +498,26 @@ function testTarget(title: string, data: TestTargetSubtestData) {
 		}
 
 		const fileInfoList = await fileInfoListPromise;
+		const shouldPaths = should
+			.flatMap(shouldCase => shouldCase.include);
 		const results = fileInfoList
 			.map(fileInfo => `${chalk.red(fileInfo.toString({source: true, chalk}))}`);
-		const resultsExpectedAlso = should
-			.flatMap(shouldCase => shouldCase.include)
+		const resultsExpected = shouldPaths
 			.filter(expectedPath => !fileInfoList.some(fileInfo => expectedPath === fileInfo.relativePath))
 			.map(path => `${chalk.red(path)}`);
-		const info = `\n      Results:\n        ${results.join('\n        ')}\n      Expected also:\n        ${resultsExpectedAlso.join('\n        ')}\n`;
+		const resultsNotExpected = fileInfoList
+			.filter(fileInfo => shouldPaths.includes(fileInfo.relativePath))
+			.map(path => `${chalk.red(path)}`);
+		const info = `\n${
+			results.length === 0 ? '' : `\tResults:\n\t  ${results.join('\n\t  ')}\n\n`
+		}${
+			resultsExpected.length === 0 ? '' : `\tExpected:\n\t  ${resultsExpected.join('\n\t  ')}\n\n`
+		}${
+			resultsNotExpected.length === 0 ? '' : `\tNot expected:\n\t  ${resultsNotExpected.join('\n\t  ')}\n\n`
+		}`
+			.replaceAll('\t', ' '.repeat(6));
 
-		if (resultsExpectedAlso.length > 0) {
+		if (resultsExpected.length > 0) {
 			throw new AssertionError({message: 'The path list is bad.' + chalk.white(info)});
 		}
 
