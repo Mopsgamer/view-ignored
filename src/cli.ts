@@ -15,7 +15,7 @@ import {
 import {
 	decorCondition, type DecorName, formatFiles, type StyleName,
 } from './browser/styling.js';
-import {makeMtimeCache, sortNameList, type SortName} from './browser/sorting.js';
+import {sortNameList, type SortName} from './browser/sorting.js';
 import {
 	boxError, decorNameList, highlight, stringTime, styleNameList, type BoxOptions,
 } from './styling.js';
@@ -359,7 +359,7 @@ export async function actionScan(): Promise<void> {
 								const cache = new Map<File, number>();
 								if (flags.sort === 'modified') {
 									const {tree} = await context.reading;
-									await makeMtimeCache(cache, tree, {concurrency: flags.concurrency});
+									await tree.deepModifiedTime(cache, optionsReal);
 								}
 
 								const time = Date.now() - start;

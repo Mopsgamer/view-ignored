@@ -21,19 +21,21 @@ const matcherExclude: string[] = [
 	'.DS_Store/**',
 ];
 
-export function useSourceFile(map: Map<File, SourceInfo>, sourceFile: File, scanner: Scanner & {pattern: string | string[]}): void {
+export function useSourceFile(map: Map<File, SourceInfo>, sourceFile: File, scanner: Scanner & {pattern: string | string[]}): Map<File, SourceInfo> {
 	const sourceInfo = SourceInfo.from(sourceFile, scanner);
-	for (const file of sourceFile.parent) {
+	for (const file of sourceFile.parent.deepIterator()) {
 		if (file instanceof Directory) {
 			continue;
 		}
 
 		map.set(file, sourceInfo);
 	}
+
+	return map;
 }
 
 const methodology: Methodology = function (tree, o) {
-	const sourceList = Array.from(tree).filter(dirent => dirent instanceof File && dirent.base === '.gitignore') as File[];
+	const sourceList = tree.deep().filter(dirent => dirent instanceof File && dirent.base === '.gitignore') as File[];
 	const map = new Map<File, SourceInfo>();
 	for (const sourceFile of sourceList) {
 		const scanner = new ScannerGitignore({exclude: matcherExclude});

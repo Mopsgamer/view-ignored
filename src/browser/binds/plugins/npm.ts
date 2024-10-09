@@ -1,11 +1,12 @@
 import {icons} from '@m234/nerd-fonts';
 import {
 	type Plugins, type Methodology,
-	File,
-	NoSourceError,
+	type File,
+	Directory,
 	InvalidPatternError,
 	BadSourceError,
 	type SourceInfo,
+	NoSourceError,
 } from '../../index.js';
 import {ScannerGitignore} from '../scanner.js';
 import {type TargetIcon, type TargetName} from '../targets.js';
@@ -54,77 +55,74 @@ export function isValidManifest(value: unknown): value is ValidManifestNpm {
 
 	const value_ = value as Record<string, unknown>;
 	return ('name' in value_ && typeof value_.name === 'string')
-	&& ('version' in value_ && typeof value_.version === 'string');
+	&& ('version' in value_ && typeof value_.version === 'string')
+	&& (value_.files === undefined || (Array.isArray(value_.files) && value_.files.every(element => typeof element === 'string')));
 }
 
-const methodologyGitignore: Methodology = function (tree, o) {
-	const sourceList = Array.from(tree).filter(dirent => dirent instanceof File && dirent.base === '.gitignore') as File[];
+export function useChildren(tree: Directory, map: Map<File, SourceInfo>, getMap: (child: Directory) => Map<File, SourceInfo>) {
+	for (const child of Array.from(tree.children.values())) {
+		if (!(child instanceof Directory)) {
+			continue;
+		}
+
+		const submap = getMap(child);
+		for (const [key, value] of submap.entries()) {
+			map.set(key, value);
+		}
+	}
+
+	return map;
+}
+
+export const sourceSearch = (priority: string[], scanner: ScannerGitignore): Methodology => function (tree, o) {
 	const map = new Map<File, SourceInfo>();
-	for (const sourceFile of sourceList) {
-		const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude});
+
+	for (const element of priority) {
+		const sourceFile = tree.get(element);
 
 		if (sourceFile === undefined) {
-			throw new NoSourceError('.gitignore');
+			continue;
 		}
 
-		const content = o.modules.fs.readFileSync(sourceFile.absolutePath).toString();
-		const pattern = content;
-		if (!scanner.isValid(pattern)) {
-			throw new InvalidPatternError(sourceFile, pattern);
+		if (sourceFile.base === 'package.json') {
+			const manifest = JSON.parse(o.modules.fs.readFileSync(sourceFile.absolutePath).toString()) as unknown;
+			if (!isValidManifest(manifest)) {
+				throw new BadSourceError(sourceFile, 'Must have \'name\', \'version\' and \'files\'.');
+			}
+
+			const {files: pattern} = manifest;
+
+			if (pattern === undefined) {
+				continue;
+			}
+
+			if (!scanner.isValid(pattern)) {
+				throw new BadSourceError(sourceFile, `Invalid pattern, got ${JSON.stringify(pattern)}`);
+			}
+
+			scanner.negated = true;
+			scanner.pattern = pattern;
+		} else {
+			const content = o.modules.fs.readFileSync(sourceFile.absolutePath).toString();
+			const pattern = content;
+			if (!scanner.isValid(pattern)) {
+				throw new InvalidPatternError(sourceFile, pattern);
+			}
+
+			scanner.negated = false;
+			scanner.pattern = pattern;
 		}
 
-		scanner.pattern = pattern;
-		useSourceFile(map, sourceFile, scanner);
+		return useSourceFile(map, sourceFile, scanner);
 	}
 
-	return map;
-};
-
-const methodologyNpmignore: Methodology = function (tree, o) {
-	const sourceList = Array.from(tree).filter(dirent => dirent instanceof File && dirent.base === '.npmignore') as File[];
-	const map = new Map<File, SourceInfo>();
-	for (const sourceFile of sourceList) {
-		const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude});
-
-		if (sourceFile === undefined) {
-			return methodologyGitignore(tree, o);
-		}
-
-		const content = o.modules.fs.readFileSync(sourceFile.absolutePath).toString();
-		const pattern = content;
-		if (!scanner.isValid(pattern)) {
-			return methodologyGitignore(tree, o);
-		}
-
-		scanner.pattern = pattern;
-		useSourceFile(map, sourceFile, scanner);
-	}
-
-	return map;
-};
-
-const methodologyPackageJsonFiles = (manifest: ValidManifestNpm): Methodology => function (tree, o) {
-	const sourceList = Array.from(tree).filter(dirent => dirent instanceof File && dirent.base === 'package.json') as File[];
-	const map = new Map<File, SourceInfo>();
-	for (const sourceFile of sourceList) {
-		const scanner = new ScannerGitignore({exclude: matcherExclude, include: matcherInclude, negated: true});
-
-		const {files: pattern} = manifest;
-		if (sourceFile === undefined || !scanner.isValid(pattern)) {
-			return methodologyNpmignore(tree, o);
-		}
-
-		scanner.pattern = pattern;
-		useSourceFile(map, sourceFile, scanner);
-	}
-
-	return map;
+	return useChildren(tree, map, child => sourceSearch(priority, scanner)(child, o));
 };
 
 const methodology: Methodology = function (tree, o) {
-	const packageJson = Array.from(tree).find(dirent => dirent instanceof File && dirent.base === 'package.json') as File | undefined;
+	const packageJson = tree.get('package.json');
 	if (packageJson === undefined) {
-		throw new NoSourceError('package.json');
+		throw new NoSourceError('\'package.json\' in the root');
 	}
 
 	const packageJsonContent = o.modules.fs.readFileSync(packageJson.absolutePath).toString();
@@ -140,10 +138,13 @@ const methodology: Methodology = function (tree, o) {
 	}
 
 	if (!isValidManifest(manifest)) {
-		throw new BadSourceError(packageJson, 'Must have name and version.');
+		throw new BadSourceError(packageJson, 'Must have \'name\', \'version\' and \'files\'.');
 	}
 
-	return methodologyPackageJsonFiles(manifest)(tree, o);
+	return sourceSearch(
+		['package.json', '.npmignore', '.gitignore'],
+		new ScannerGitignore({exclude: matcherExclude, include: matcherInclude}),
+	)(tree, o);
 };
 
 const bind: Plugins.TargetBind = {

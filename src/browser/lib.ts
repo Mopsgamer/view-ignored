@@ -30,6 +30,7 @@ export type FileSystemAdapter = {
 	readdirSync?: typeof FS.readdirSync;
 	promises?: {
 		readdir(path: string, options: {withFileTypes: true}): Promise<FS.Dirent[]>;
+		stat(path: string): Promise<FS.Stats>;
 	};
 };
 
@@ -179,7 +180,7 @@ export async function scan(argument0: string | string[] | Directory | DeepStream
 	const cache = optionsReal.target(argument0, optionsReal);
 
 	const fileInfoList: FileInfo[] = [];
-	for (const entry of argument0) {
+	for (const entry of argument0.deepIterator()) {
 		if (entry instanceof Directory) {
 			continue;
 		}

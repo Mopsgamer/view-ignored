@@ -7,6 +7,7 @@ import * as FSP from 'node:fs/promises';
 import process from 'node:process';
 import pLimit from 'p-limit';
 import {type RealScanOptions} from '../lib.js';
+import {configDefault} from '../../config.js';
 import {File} from './file.js';
 
 export type DeepStreamEventEmitter = EventEmitter<DeepStreamEventMap> & {
@@ -45,7 +46,7 @@ type DeepStreamNestedOptions = DeepStreamOptions & {
 };
 
 export type DeepCountOptions = Pick<DeepStreamNestedOptions, 'modules' | 'cwd' | 'concurrency' | 'progress'>;
-
+export type DeepModifiedTimeOptions = Pick<RealScanOptions, 'concurrency' | 'modules'>;
 export type DeepStreamOptions = Pick<RealScanOptions, 'cwd' | 'modules' | 'concurrency'>;
 
 /**
@@ -112,7 +113,7 @@ export class Directory implements ParsedPath {
 	 * Get the {@link Directory} instance from a file path list. Paths should be relative.
 	 */
 	static from(pathList: Array<{toString(): string}>, cwd: string = process.cwd()): Directory {
-		const tree = new Directory(undefined, '.', cwd, []);
+		const tree = new Directory(undefined, '.', cwd, new Map());
 
 		for (const path of pathList) {
 			const entryNameList = path.toString().split(/[\\/]/);
@@ -123,16 +124,16 @@ export class Directory implements ParsedPath {
 
 				if (index === entryNameList.length - 1) {
 					const file = new File(tree, relativePath, absolutePath);
-					tree.children.push(file);
+					tree.set(file.base, file);
 					return tree;
 				}
 
-				let directory = tree.children.find(
+				let directory = Array.from(tree.children.values()).find(
 					c => c instanceof Directory && c.absolutePath === absolutePath,
 				) as Directory | undefined;
 				if (directory === undefined) {
-					directory = new Directory(tree, relativePath, absolutePath, []);
-					tree.children.push(directory);
+					directory = new Directory(tree, relativePath, absolutePath, new Map());
+					tree.set(`${directory.base}/`, directory);
 				}
 
 				return directory;
@@ -145,9 +146,9 @@ export class Directory implements ParsedPath {
 	/**
 	 * Get deep iterator for the directory.
 	 */
-	public static children = function * (directory: Directory): IterableIterator<Directory | File> {
+	public static deepIterator = function * (directory: Directory): IterableIterator<Directory | File> {
 		const subDirectories: Directory[] = [];
-		for (const element of directory.children) {
+		for (const element of directory.children.values()) {
 			yield element;
 			if (element instanceof Directory) {
 				subDirectories.push(element);
@@ -155,7 +156,7 @@ export class Directory implements ParsedPath {
 		}
 
 		for (const subDirectory of subDirectories) {
-			yield * Directory.children(subDirectory);
+			yield * Directory.deepIterator(subDirectory);
 		}
 	};
 
@@ -174,10 +175,10 @@ export class Directory implements ParsedPath {
 		const readdir = modules.fs.promises.readdir ?? FSP.readdir;
 		const absolutePath = modules.path.join(cwd, String(directoryPath));
 		const relativePath = modules.path.relative(cwd, absolutePath);
-		const directory = new Directory(parent, relativePath, absolutePath, []);
+		const directory = new Directory(parent, relativePath, absolutePath, new Map());
 		const entryList = await readdir(absolutePath, {withFileTypes: true});
 
-		const promises = entryList.map(entry => limit(async () => {
+		const promises = entryList.map(entry => limit(async (): Promise<DeepStreamData> => {
 			const parent = directory;
 			const absolutePath = modules.path.join(entry.parentPath, entry.name);
 			const relativePath = modules.path.relative(cwd, absolutePath);
@@ -192,15 +193,18 @@ export class Directory implements ParsedPath {
 			}
 
 			const file = new File(parent, relativePath, absolutePath);
+			const data: DeepStreamData = {target: file, progress};
 			++progress.current;
 			controller.emit('progress', progress);
-			controller.emit('data', {target: file, progress});
-			return file;
+			controller.emit('data', data);
+			return data;
 		}));
 
-		const x = await Promise.all(promises);
-		const entryPaths = x.map(s => s instanceof File ? s : s.target);
-		directory.children.push(...entryPaths);
+		const dataList = await Promise.all(promises);
+		for (const {target: entry} of dataList) {
+			directory.children.set(`${entry.base}${entry instanceof Directory ? '/' : ''}`, entry);
+		}
+
 		const data: DeepStreamData = {target: directory, progress};
 		controller.emit('progress', progress);
 		controller.emit('data', data);
@@ -229,9 +233,13 @@ export class Directory implements ParsedPath {
 		public readonly absolutePath: string,
 
 		/**
-         * The content of the directory.
+         * The content of the directory. It is a Map for performance reasons: you can find any file or folder without a loop if you know the name.
+		 *
+		 * Keys: {@link File.base} or {@link Directory.base}. Directory base ends with '/'.
+		 *
+		 * Values: {@link File} or {@link Directory} itself.
          */
-		public readonly children: Array<Directory | File>,
+		public readonly children: Map<string, Directory | File>,
 	) {
 		const parsed = parse(absolutePath);
 		this.base = parsed.base;
@@ -241,12 +249,50 @@ export class Directory implements ParsedPath {
 		this.root = parsed.root;
 	}
 
-	[Symbol.iterator] = () => Directory.children(this);
+	deepIterator() {
+		return Directory.deepIterator(this);
+	}
+
+	deep() {
+		return Array.from(Directory.deepIterator(this));
+	}
 
 	/**
 	 * @returns The relative path to the directory.
 	 */
 	toString(): string {
 		return this.relativePath;
+	}
+
+	get<T extends string>(key: T): (T extends `${string}/` ? Directory : File) | undefined {
+		return this.children.get(key) as (T extends `${string}/` ? Directory : File) | undefined;
+	}
+
+	set<T extends string>(key: T, value: (T extends `${string}/` ? Directory : File)): typeof this.children {
+		return this.children.set(key, value);
+	}
+
+	/**
+	 * @returns The cache for each file of the directory with last time edited number.
+	 * @see {@link modified}.
+	 */
+	async deepModifiedTime(out: Map<File, number>, realOptions: DeepModifiedTimeOptions): Promise<Map<File, number>> {
+		const {concurrency = configDefault.concurrency, modules} = realOptions;
+		const limit = pLimit(concurrency);
+		const promiseList: Array<Promise<void>> = [];
+		for (const entry of this.deepIterator()) {
+			if (entry instanceof Directory) {
+				continue;
+			}
+
+			promiseList.push(limit(async () => {
+				const fileStat = await modules.fs.promises.stat(entry.absolutePath);
+				out.set(entry, fileStat.mtime.getTime());
+			}));
+		}
+
+		void await Promise.all(promiseList);
+
+		return out;
 	}
 }

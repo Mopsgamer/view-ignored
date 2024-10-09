@@ -109,7 +109,7 @@ export class FileInfo extends File {
 			postfix: ' ',
 		}) : '';
 		let prefix = usePrefix && this.status !== 'non-target' ? (this.status === 'ignored' ? '!' : '+') : '';
-		let postfix = useSource && this.source !== undefined ? ' << ' + this.source.toString() : '';
+		let postfix = useSource && this.source !== undefined ? ' < ' + this.source.toString() : '';
 
 		if (chalk) {
 			prefix = chalk.dim(prefix);

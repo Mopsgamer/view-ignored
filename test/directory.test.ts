@@ -7,6 +7,6 @@ describe('directory', () => {
 			'foo',
 			'bar/foo',
 		]);
-		assert.deepEqual(Array.from(directory).length, 3);
+		assert.deepEqual(directory.deep().length, 3);
 	});
 });
