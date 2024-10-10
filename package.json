@@ -12,9 +12,9 @@
 		"test": "pnpm mocha ./out/test/**/*.test.js",
 		"build": "pnpm shx rm -rf out && pnpm tsc",
 		"build:pub": "pnpm shx rm -rf out && pnpm tsc --sourceMap false",
-		"build:watch": "pnpm tsc --watch",
-		"lint": "pnpm eslint .",
-		"lint:fix": "pnpm eslint . --fix",
+		"build:watch": "pnpm shx rm -rf out && pnpm tsc --watch",
+		"lint": "pnpm xo",
+		"lint:fix": "pnpm xo --fix",
 		"release:major": "pnpm release-it --increment=major",
 		"release:minor": "pnpm release-it --increment=minor",
 		"release:patch": "pnpm release-it --increment=patch"
@@ -23,7 +23,8 @@
 	"license": "ISC",
 	"main": "./out/src/index.js",
 	"files": [
-		"out/src"
+		"/bin",
+		"/out/src"
 	],
 	"repository": {
 		"type": "git",
@@ -33,6 +34,10 @@
 		"url": "https://github.com/Mopsgamer/view-ignored/issues"
 	},
 	"homepage": "https://github.com/Mopsgamer/view-ignored",
+	"exports": {
+		".": "./out/src/index.js",
+		"./browser": "./out/src/browser/index.js"
+	},
 	"release-it": {
 		"hooks": {
 			"before:init": "pnpm prerelease"
@@ -51,6 +56,19 @@
 			"publish": true
 		}
 	},
+	"xo": {
+		"ignores": "/out/",
+		"rules": {
+			"@typescript-eslint/promise-function-async": "off",
+			"@typescript-eslint/use-unknown-in-catch-callback-variable": "off",
+			"@typescript-eslint/no-unused-vars": "error",
+			"n/no-unpublished-bin": "off",
+			"linebreak-style": [
+				"error",
+				"unix"
+			]
+		}
+	},
 	"publishConfig": {
 		"access": "public"
 	},
@@ -58,37 +76,33 @@
 		"lib": "out/src"
 	},
 	"dependencies": {
-		"arrify": "^3.0.0",
+		"@humanwhocodes/gitignore-to-minimatch": "^1.0.2",
+		"@m234/nerd-fonts": "^0.1.2",
+		"ansi-regex": "^6.1.0",
 		"boxen": "^8.0.1",
 		"chalk": "^5.3.0",
 		"commander": "^12.1.0",
-		"get-value": "^3.0.1",
-		"glob": "^11.0.0",
-		"ignore": "^5.3.1",
 		"jsonify-paths": "^1.1.0",
+		"listr2": "^8.2.4",
 		"load-plugin": "^6.0.3",
 		"minimatch": "^10.0.1",
-		"ora": "^8.0.1",
+		"p-limit": "^6.1.0",
 		"treeify": "^1.1.0",
-		"tslib": "^2.6.3",
-		"yaml": "^2.5.0"
+		"tslib": "^2.7.0",
+		"yaml": "^2.5.1"
 	},
 	"devDependencies": {
-		"@eslint/js": "^9.4.0",
 		"@release-it/keep-a-changelog": "^5.0.0",
-		"@types/get-value": "^3.0.5",
-		"@types/mocha": "^10.0.6",
-		"@types/node": "^20.14.2",
+		"@types/mocha": "^10.0.8",
+		"@types/node": "^20.16.5",
 		"@types/treeify": "^1.0.3",
-		"eslint": "^8.57.0",
-		"eslint-plugin-only-warn": "^1.1.0",
 		"fs-fixture": "^2.4.0",
-		"globals": "^15.4.0",
-		"mocha": "^10.4.0",
-		"release-it": "^17.3.0",
+		"globals": "^15.9.0",
+		"mocha": "^10.7.3",
+		"release-it": "^17.6.0",
 		"shx": "^0.3.4",
-		"typescript": "^5.4.5",
-		"typescript-eslint": "^7.13.0"
+		"typescript": "^5.6.2",
+		"xo": "^0.59.3"
 	},
 	"keywords": [
 		"tree",

@@ -1,85 +1,39 @@
-import { Plugins, Methodology, ScanMethod } from "../../index.js"
-import getValue from "get-value";
+import {icons} from '@m234/nerd-fonts';
+import {
+	type Plugins,
+} from '../../index.js';
+import {type TargetIcon, type TargetName} from '../targets.js';
+import {ScannerGitignore} from '../scanner.js';
+import * as npm from './npm.js';
 
-export const id = "yarn"
-export const name = "Yarn"
+const id = 'yarn';
+const name: TargetName = 'Yarn';
+const icon: TargetIcon = {...icons['nf-seti-yarn'], color: 0x2E_2A_65};
+// FIXME: Yarn can all this stuff another way.
 
 /**
- * [!WARNING] All patterns copied from npm plugin, so they should be verified with yarn docs.
+ * @private
  */
 export const matcherExclude = [
-    'node_modules/**',
-    '.*.swp',
-    '._*',
-    '.DS_Store/**',
-    '.git/**',
-    '.gitignore',
-    '.hg/**',
-    '.yarnignore',
-    '.npmignore',
-    '.npmrc',
-    '.lock-wscript',
-    '.svn/**',
-    '.wafpickle-*',
-    'config.gypi',
-    'CVS/**',
-    'npm-debug.log',
+	...npm.matcherExclude,
+	'.yarnignore',
+	'.yarnrc',
 ];
+
 /**
- * [!WARNING] All patterns copied from npm plugin, so they should be verified with yarn docs.
+ * @private
  */
 export const matcherInclude = [
-    '/bin/',
-    '/package.json',
-    '/README',
-    '/README.*',
-    '/LICENSE',
-    '/LICENSE.*',
-    '/LICENCE',
-    '/LICENCE.*',
+	...npm.matcherInclude,
 ];
 
-export const scanGit: ScanMethod = function (data) {
-    const { scanner, content } = data
-    const pat = content?.toString()
-    if (!scanner.patternIsValid(pat)) {
-        return false
-    }
-    scanner.add(pat)
-    return true
-}
-
-export const scanPackageJsonFiles: ScanMethod = function (data) {
-    const { scanner, content } = data
-    let parsed: object
-    try {
-        const pat = content?.toString()
-        if (!pat) {
-            return false
-        }
-
-        const json = JSON.parse(pat)
-        if (json?.constructor !== Object) {
-            return false
-        }
-        parsed = json
-    } catch {
-        return false
-    }
-    const propVal = getValue(parsed, "files")
-    if (!scanner.patternIsValid(propVal)) {
-        return false
-    }
-    scanner.add(propVal)
-    return true
-}
-
-export const methodology: Methodology[] = [
-    { pattern: "**/package.json", matcherNegated: true, matcher: "gitignore", scan: scanPackageJsonFiles, matcherInclude, matcherExclude },
-    { pattern: "**/.yarnignore", matcher: "gitignore", scan: scanGit, matcherInclude, matcherExclude },
-    { pattern: "**/.npmignore", matcher: "gitignore", scan: scanGit, matcherInclude, matcherExclude },
-    { pattern: "**/.gitignore", matcher: "gitignore", scan: scanGit, matcherInclude, matcherExclude },
-]
-
-const bind: Plugins.TargetBind = { id, name, methodology }
-export default ({ viewignored: { addTargets: [bind] } } as Plugins.PluginExport)
+const bind: Plugins.TargetBind = {
+	id, icon, name, scanOptions: {
+		target: npm.methodologyManifestNpmLike(
+			['package.json', '.yarnignore', '.npmignore', '.gitignore'],
+			new ScannerGitignore({exclude: matcherExclude, include: matcherInclude}),
+		),
+	},
+};
+const yarn: Plugins.PluginExport = {viewignored: {addTargets: [bind]}};
+export default yarn;

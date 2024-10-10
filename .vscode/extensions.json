@@ -1,5 +1,7 @@
 {
 	"recommendations": [
-		"dbaeumer.vscode-eslint"
+		"samverschueren.linter-xo",
+		"hbenl.vscode-mocha-test-adapter",
+		"hbenl.vscode-test-explorer"
 	]
 }

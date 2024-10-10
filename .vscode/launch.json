@@ -14,7 +14,24 @@
 			"args": [
 				"./out/test/**/*.test.js"
 			],
+			"console": "integratedTerminal",
 			"program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+			"sourceMaps": true,
+		},
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "viewig scan --parsable",
+			"skipFiles": [
+				"<node_internals>/**"
+			],
+			"args": [
+				"scan",
+				"--parsable"
+			],
+			"console": "integratedTerminal",
+			"program": "${workspaceFolder}/bin/viewig",
+			"cwd": "${workspaceFolder}",
 			"sourceMaps": true,
 		},
 		{
@@ -27,14 +44,31 @@
 			"args": [
 				"scan"
 			],
-			"program": "${workspaceFolder}/out/src/bin.js",
+			"console": "integratedTerminal",
+			"program": "${workspaceFolder}/bin/viewig",
 			"cwd": "${workspaceFolder}",
 			"sourceMaps": true,
 		},
 		{
 			"type": "node",
 			"request": "launch",
-			"name": "viewig scan --target npm",
+			"name": "viewig scan --sort=modified",
+			"skipFiles": [
+				"<node_internals>/**"
+			],
+			"args": [
+				"scan",
+				"--sort=modified",
+			],
+			"console": "integratedTerminal",
+			"program": "${workspaceFolder}/bin/viewig",
+			"cwd": "${workspaceFolder}",
+			"sourceMaps": true,
+		},
+		{
+			"type": "node",
+			"request": "launch",
+			"name": "viewig scan --target=npm",
 			"skipFiles": [
 				"<node_internals>/**"
 			],
@@ -42,7 +76,8 @@
 				"scan",
 				"--target=npm",
 			],
-			"program": "${workspaceFolder}/out/src/bin.js",
+			"console": "integratedTerminal",
+			"program": "${workspaceFolder}/bin/viewig",
 			"cwd": "${workspaceFolder}",
 			"sourceMaps": true,
 		},
@@ -57,7 +92,8 @@
 				"scan",
 				"--plugins=t",
 			],
-			"program": "${workspaceFolder}/out/src/bin.js",
+			"console": "integratedTerminal",
+			"program": "${workspaceFolder}/bin/viewig",
 			"cwd": "${workspaceFolder}",
 			"sourceMaps": true,
 		},

@@ -1,105 +1,129 @@
-import { isTargetBind, TargetBind, targetSet } from "./targets.js";
-import { loadPlugin as load } from "load-plugin";
+import {loadPlugin as load} from 'load-plugin';
+import pLimit from 'p-limit';
+import {isTargetBind, type TargetBind, targetSet} from './targets.js';
 
-export * from "./targets.js"
+export * from './scanner.js';
+export * from './targets.js';
+
+/**
+ * @private
+ */
+const builtInImportMap: Record<BuiltInName, string> = {
+	git: './plugins/git.js',
+	npm: './plugins/npm.js',
+	vsce: './plugins/vsce.js',
+	yarn: './plugins/yarn.js',
+};
+
+/**
+ * Built-in name list.
+ * @public
+ */
+export const builtInNameList = ['git', 'npm', 'vsce', 'yarn'] as const;
+
+/**
+ * Built-in name type.
+ * @public
+ */
+export type BuiltInName = typeof builtInNameList[number];
 
 /**
  * The result of loading.
+ * @public
  */
-export interface PluginLoaded {
-    moduleName: string
-    isLoaded: boolean
-    exports: unknown
-}
+export type PluginLoaded = {
+	resource: string;
+	isLoaded: boolean;
+	exports: unknown;
+};
 
 /**
- * If a plugin wants to change something, it must export it as default.
+ * If a plugin wants to change something, it must export default.
+ * @private
  */
-export interface PluginExport {
-    viewignored: {
-        addTargets: TargetBind[]
-    }
-}
+export type PluginExport = {
+	viewignored: {
+		addTargets: TargetBind[];
+	};
+};
 
 /**
  * Checks if the value is the {@link PluginExport}.
+ * @public
  */
 export function isPluginExport(value: unknown): value is PluginExport {
-    if (value?.constructor !== Object) {
-        return false
-    }
+	if (value?.constructor !== Object) {
+		return false;
+	}
 
-    const vign = (value as Partial<PluginExport>).viewignored
-    return (vign?.constructor === Object)
-        && 'addTargets' in vign && Array.isArray(vign.addTargets) && vign.addTargets.every(isTargetBind)
+	const vign = (value as Partial<PluginExport>).viewignored;
+	return (vign?.constructor === Object)
+        && 'addTargets' in vign && Array.isArray(vign.addTargets) && vign.addTargets.every(v => isTargetBind(v));
 }
 
 /**
  * Imports the plugin's exported data.
+ * @public
  */
 export function importPlugin(exportData: PluginExport) {
-    const { addTargets } = exportData.viewignored
-    for (const targetBind of addTargets) {
-        targetSet(targetBind)
-    }
+	const {addTargets} = exportData.viewignored;
+	for (const targetBind of addTargets) {
+		targetSet(targetBind);
+	}
 }
 
 /**
- * No rejects.
- * @param moduleName Plugin name.
- * @returns Import result for the module.
+ * @param modulePath The plugin name.
+ * @returns The import result for the module.
+ * @public
  */
-export function loadPlugin(moduleName: string): Promise<PluginLoaded> {
-    try {
-        return new Promise<PluginLoaded>((resolve) => {
-            load(moduleName)
-                .catch((reason: unknown) => {
-                    const r = reason as Record<string, unknown>
-                    if (r?.code === 'ERR_MODULE_NOT_FOUND') {
-                        reason = r.message
-                    }
-                    const fail: PluginLoaded = { moduleName, isLoaded: false, exports: reason }
-                    resolve(fail)
-                })
-                .then((exports: unknown) => {
-                    const result: PluginLoaded = { moduleName, isLoaded: true, exports }
-                    if (isPluginExport(exports)) {
-                        importPlugin(exports)
-                    }
-                    resolve(result)
-                })
-        })
-    } catch (reason) {
-        const fail: PluginLoaded = { moduleName, isLoaded: false, exports: reason }
-        return Promise.resolve(fail)
-    }
+export async function loadPlugin(modulePath: string, useImport = false): Promise<PluginLoaded> {
+	try {
+		const exports: unknown = useImport ? Object.getOwnPropertyDescriptor(await import(modulePath), 'default')?.value : await load(modulePath);
+		const result: PluginLoaded = {resource: modulePath, isLoaded: true, exports};
+		if (isPluginExport(exports)) {
+			importPlugin(exports);
+		}
+
+		return result;
+	} catch (error: unknown) {
+		const r = error as Record<string, unknown>;
+		let reason: unknown = r;
+		if (r?.code === 'ERR_MODULE_NOT_FOUND') {
+			reason = r.message;
+		}
+
+		const fail: PluginLoaded = {resource: modulePath, isLoaded: false, exports: reason};
+		return fail;
+	}
 }
 
 /**
- * Loads plugins one by one using {@link loadPlugin}.
- * @param moduleNameList The list of plugins.
+ * @param modulePathList The plugin name list.
+ * @returns The import result for the list of modules.
+ * @public
  */
-export async function loadPluginsQueue(moduleNameList?: string[]): Promise<PluginLoaded[]> {
-    const resultList: PluginLoaded[] = []
-    for (const module of moduleNameList ?? []) {
-        const result = await loadPlugin(module)
-        resultList.push(result)
-    }
-    return resultList;
+export async function loadPlugins(modulePathList: string[]): Promise<PluginLoaded[]> {
+	const limit = pLimit(5);
+	const allLoaded = await Promise.all(modulePathList.map(modulePath => limit(() => loadPlugin(modulePath))));
+	return allLoaded;
 }
 
-export const BuiltInGit = import("./plugins/git.js")
-BuiltInGit.then(e => e.default).then(importPlugin)
-export const BuiltInVsce = import("./plugins/vsce.js")
-BuiltInVsce.then(e => e.default).then(importPlugin)
-export const BuiltInNpm = import("./plugins/npm.js")
-BuiltInNpm.then(e => e.default).then(importPlugin)
-export const BuiltInYarn = import("./plugins/yarn.js")
-BuiltInYarn.then(e => e.default).then(importPlugin)
+/**
+ * Load any built-in plugin.
+ * @public
+ */
+export function loadBuiltIn(builtIn: BuiltInName): Promise<PluginLoaded> {
+	return loadPlugin(builtInImportMap[builtIn], true);
+}
 
 /**
- * Built-in plugins loading queue.
+ * @param modulePathList The plugin name list.
+ * @returns The import result for the list of modules.
+ * @public
  */
-export const BuiltIns = Promise.allSettled(
-    [BuiltInGit, BuiltInVsce, BuiltInNpm, BuiltInYarn]
-)
+export async function loadBuiltIns(builtInList: BuiltInName[] = Array.from(builtInNameList)): Promise<PluginLoaded[]> {
+	const limit = pLimit(5);
+	const allLoaded = await Promise.all(builtInList.map(modulePath => limit(() => loadBuiltIn(modulePath))));
+	return allLoaded;
+}

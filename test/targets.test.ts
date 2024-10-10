@@ -1,197 +1,579 @@
-import { FileTree, createFixture } from "fs-fixture"
-import * as viewig from "../src/index.js"
-import assert from "assert"
-import { readFileSync } from "fs"
-import chalk from "chalk"
 
-interface Case {
-    should: typeof viewig.SomeError | {
-        include: string[]
-        source: string
-    }
-    content: FileTree
+/* eslint-disable @typescript-eslint/naming-convention */
+import assert, {AssertionError} from 'node:assert';
+import {type FileTree, createFixture} from 'fs-fixture';
+import chalk from 'chalk';
+import * as viewig from '../src/index.js';
+
+type Check = {
+	include: string[];
+	source: string;
+};
+
+type Case = {
+	should: string | Check[];
+	content: FileTree;
+};
+
+const realProject: FileTree = {
+	'.github': {},
+	'bin/app': '',
+	'node_modules/tempdep/indexOf.js': '',
+	'lib/cli.js': '',
+	'lib/index.js': '',
+	'test/app.test.js': '',
+	'README.md': '',
+	LICENSE: '',
+	'config.json': '',
+};
+
+const symlinksProject: FileTree = {
+	emptyfolder: {},
+	awesomefolder: {
+		emptyfolder: {},
+		folded: '',
+	},
+	awesomefile: '',
+	'awesomefile.lnk': ({symlink}) => symlink('./awesomefile'),
+	'awesomefolder.lnk': ({symlink}) => symlink('./awesomefolder'),
+};
+
+describe('Targets', () => {
+	before(async () => {
+		await viewig.Plugins.loadBuiltIns();
+	});
+	let targetId = 'git';
+	describe(targetId, () => {
+		testTarget('empty folder', {
+			targetId,
+			should: viewig.NoSourceError.name,
+			content: {},
+		});
+		testTarget('single file', {
+			targetId,
+			should: viewig.NoSourceError.name,
+			content: {
+				'file.txt': '',
+			},
+		});
+		testTarget('.gitignore', {
+			targetId,
+			should: [{
+				include: [
+					'file.txt',
+					'.gitignore',
+				],
+				source: '.gitignore',
+			}],
+			content: {
+				'file.txt': '',
+				'node_modules/tempdep/indexOf.js': '',
+				'.gitignore': 'node_modules',
+			},
+		});
+		testTarget('nested should use parent', {
+			targetId,
+			should: [{
+				include: [
+					'app/file.txt',
+					'app/.gitignore',
+				],
+				source: 'app/.gitignore',
+			}],
+			content: {
+				'file.txt': '',
+				app: {
+					'file.txt': '',
+					'node_modules/tempdep/indexOf.js': '',
+					'.gitignore': 'node_modules',
+				},
+			},
+		});
+		testTarget('symlinks', {
+			targetId,
+			should: [{
+				include: [
+					'.gitignore',
+					'awesomefile',
+					'awesomefolder/folded',
+					'awesomefile.lnk',
+					'awesomefolder.lnk',
+				],
+				source: '.gitignore',
+			}],
+			content: {...symlinksProject, '.gitignore': ''},
+		});
+	});
+	targetId = 'npm';
+	describe(targetId, () => {
+		testTarget('empty project', {
+			targetId,
+			should: viewig.NoSourceError.name,
+			content: {},
+		});
+		testTarget('single file', {
+			targetId,
+			should: viewig.NoSourceError.name,
+			content: {
+				'file.txt': '',
+			},
+		});
+		testTarget('.gitignore', {
+			targetId,
+			should: [{
+				include: ['file.txt', 'package.json'],
+				source: '.gitignore',
+			}],
+			content: {
+				'file.txt': '',
+				'node_modules/tempdep/indexOf.js': '',
+				'.gitignore': 'node_modules',
+				'package.json': JSON.stringify({
+					name: 'app',
+					version: '0.0.1',
+				}),
+			},
+		});
+		testTarget('.gitignore with comment', {
+			targetId,
+			should: [{
+				include: ['file.txt', 'package.json'],
+				source: '.gitignore',
+			}],
+			content: {
+				'file.txt': '',
+				'node_modules/tempdep/indexOf.js': '',
+				'.gitignore': '#comment\nnode_modules',
+				'package.json': JSON.stringify({
+					name: 'app',
+					version: '0.0.1',
+				}),
+			},
+		});
+		testTarget('(package.json), .npmignore, .gitignore', {
+			targetId,
+			should: [{
+				include: [
+					'LICENSE',
+					'README.md',
+					'bin/app',
+					'package.json',
+				],
+				source: 'package.json',
+			}],
+			content: {
+				...realProject,
+				'.npmignore': 'node_modules\nconfig*.json\ntest\n.github',
+				'.gitignore': 'node_modules\nconfig.json',
+				'package.json': JSON.stringify({
+					files: [],
+					main: './lib/index.js',
+					name: 'app',
+					version: '0.0.1',
+				}),
+			},
+		});
+		testTarget('package.json, (.npmignore), .gitignore', {
+			targetId,
+			should: [{
+				include: [
+					'LICENSE',
+					'README.md',
+					'bin/app',
+					'lib/cli.js',
+					'lib/index.js',
+					'package.json',
+				],
+				source: '.npmignore',
+			}],
+			content: {
+				...realProject,
+				'.npmignore': 'node_modules\nconfig*.json\ntest\n.github',
+				'.gitignore': 'node_modules\nconfig.json',
+				'package.json': JSON.stringify({
+					main: './lib/index.js',
+					name: 'app',
+					version: '0.0.1',
+				}),
+			},
+		});
+		testTarget('nested should use parent .npmignore', {
+			targetId,
+			should: [
+				{
+					include: [
+						'LICENSE',
+						'README.md',
+						'bin/app',
+						'lib/cli.js',
+						'lib/index.js',
+						'package.json',
+						'app2/LICENSE',
+						'app2/README.md',
+						'app2/bin/app',
+						'app2/lib/cli.js',
+						'app2/lib/index.js',
+						'app2/package.json',
+					],
+					source: '.npmignore',
+				},
+			],
+			content: {
+				...realProject,
+				'.npmignore': 'node_modules\nconfig*.json\ntest\n.github',
+				'.gitignore': 'node_modules\nconfig.json',
+				'package.json': JSON.stringify({
+					main: './lib/index.js',
+					name: 'app1',
+					version: '0.0.1',
+				}),
+				app2: {
+					...realProject,
+					'.npmignore': 'lib',
+					'.gitignore': 'node_modules\nconfig.json',
+					'package.json': JSON.stringify({
+						main: './lib/index.js',
+						name: 'app2',
+						version: '0.0.1',
+					}),
+				},
+			},
+		});
+		testTarget('separate should use own x/.npmignore', {
+			targetId,
+			should: [
+				{
+					include: [
+						'app1/LICENSE',
+						'app1/README.md',
+						'app1/bin/app',
+						'app1/lib/cli.js',
+						'app1/lib/index.js',
+						'app1/package.json',
+					],
+					source: 'app1/.npmignore',
+				},
+				{
+					include: [
+						'app2/LICENSE',
+						'app2/README.md',
+						'app2/bin/app',
+						'app2/lib/cli.js',
+						'app2/lib/index.js',
+						'app2/package.json',
+					],
+					source: 'app2/.npmignore',
+				},
+			],
+			content: {
+				app1: {
+					...realProject,
+					'.npmignore': 'node_modules\nconfig*.json\ntest\n.github',
+					'.gitignore': 'node_modules\nconfig.json',
+					'package.json': JSON.stringify({
+						main: './lib/index.js',
+						name: 'app1',
+						version: '0.0.1',
+					}),
+				},
+				app2: {
+					...realProject,
+					'.npmignore': 'node_modules\nconfig*.json\ntest\n.github',
+					'.gitignore': 'node_modules\nconfig.json',
+					'package.json': JSON.stringify({
+						main: './lib/index.js',
+						name: 'app2',
+						version: '0.0.1',
+					}),
+				},
+				'package.json': JSON.stringify({
+					name: 'monorepo',
+					version: '0.0.1',
+				}),
+			},
+		});
+		testTarget('symlinks', {
+			targetId,
+			should: [{
+				include: [
+					'awesomefile',
+					'awesomefolder/folded',
+					'awesomefile.lnk',
+					'awesomefolder.lnk',
+					'package.json',
+				],
+				source: '.npmignore',
+			}],
+			content: {
+				...symlinksProject,
+				'.npmignore': '',
+				'package.json': JSON.stringify({
+					name: 'app',
+					version: '0.0.1',
+				}),
+			},
+		});
+	});
+	targetId = 'yarn';
+	describe(targetId, () => {
+		testTarget('empty project', {
+			targetId,
+			should: viewig.NoSourceError.name,
+			content: {},
+		});
+		testTarget('single file', {
+			targetId,
+			should: viewig.NoSourceError.name,
+			content: {
+				'file.txt': '',
+			},
+		});
+		testTarget('.gitignore', {
+			targetId,
+			should: [{
+				include: ['file.txt', 'package.json'],
+				source: '.gitignore',
+			}],
+			content: {
+				'file.txt': '',
+				'node_modules/tempdep/indexOf.js': '',
+				'.gitignore': 'node_modules',
+				'package.json': JSON.stringify({
+					name: 'app',
+					version: '0.0.1',
+				}),
+			},
+		});
+		testTarget('.gitignore with comment', {
+			targetId,
+			should: [{
+				include: ['file.txt', 'package.json'],
+				source: '.gitignore',
+			}],
+			content: {
+				'file.txt': '',
+				'node_modules/tempdep/indexOf.js': '',
+				'.gitignore': '#comment\nnode_modules',
+				'package.json': JSON.stringify({
+					name: 'app',
+					version: '0.0.1',
+				}),
+			},
+		});
+		testTarget('(package.json), .yarnignore, .npmignore, .gitignore', {
+			targetId,
+			should: [{
+				include: [
+					'LICENSE',
+					'README.md',
+					'bin/app',
+					'package.json',
+				],
+				source: 'package.json',
+			}],
+			content: {
+				...realProject,
+				'.yarnignore': 'node_modules\nconfig*.json\ntest\n.github\nREADME*',
+				'.npmignore': 'node_modules\nconfig*.json\ntest\n.github',
+				'.gitignore': 'node_modules\nconfig.json',
+				'package.json': JSON.stringify({
+					files: [],
+					main: './lib/index.js',
+					name: 'app',
+					version: '0.0.1',
+				}),
+			},
+		});
+		testTarget('package.json, (.yarnignore), .npmignore, .gitignore', {
+			targetId,
+			should: [{
+				include: [
+					'LICENSE',
+					'README.md',
+					'bin/app',
+					'lib/cli.js',
+					'lib/index.js',
+					'package.json',
+				],
+				source: '.yarnignore',
+			}],
+			content: {
+				...realProject,
+				'.yarnignore': 'node_modules\nconfig*.json\ntest\n.github\nREADME*',
+				'.npmignore': 'node_modules\nconfig*.json\ntest\n.github',
+				'.gitignore': 'node_modules\nconfig.json',
+				'package.json': JSON.stringify({
+					main: './lib/index.js',
+					name: 'app',
+					version: '0.0.1',
+				}),
+			},
+		});
+		testTarget('package.json, .yarnignore, (.npmignore), .gitignore', {
+			targetId,
+			should: [{
+				include: [
+					'LICENSE',
+					'README.md',
+					'bin/app',
+					'lib/cli.js',
+					'lib/index.js',
+					'package.json',
+				],
+				source: '.npmignore',
+			}],
+			content: {
+				...realProject,
+				'.npmignore': 'node_modules\nconfig*.json\ntest\n.github',
+				'.gitignore': 'node_modules\nconfig.json',
+				'package.json': JSON.stringify({
+					main: './lib/index.js',
+					name: 'app',
+					version: '0.0.1',
+				}),
+			},
+		});
+		testTarget('symlinks', {
+			targetId,
+			should: [{
+				include: [
+					'awesomefile',
+					'awesomefolder/folded',
+					'awesomefile.lnk',
+					'awesomefolder.lnk',
+					'package.json',
+				],
+				source: '.yarnignore',
+			}],
+			content: {
+				...symlinksProject,
+				'.yarnignore': '',
+				'package.json': JSON.stringify({
+					name: 'app',
+					version: '0.0.1',
+				}),
+			},
+		});
+	});
+	targetId = 'vsce';
+	describe(targetId, () => {
+		testTarget('empty project', {
+			targetId,
+			should: viewig.NoSourceError.name,
+			content: {},
+		});
+		testTarget('single file', {
+			targetId,
+			should: viewig.NoSourceError.name,
+			content: {
+				'file.txt': '',
+			},
+		});
+		testTarget('.vscodeignore', {
+			targetId,
+			should: [{
+				include: [
+					'file.txt',
+					'.vscodeignore',
+					'package.json',
+				],
+				source: '.vscodeignore',
+			}],
+			content: {
+				'file.txt': '',
+				'node_modules/tempdep/indexOf.js': '',
+				'.vscodeignore': 'node_modules',
+				'package.json': JSON.stringify({
+					name: 'app',
+					version: '0.0.1',
+					engines: {vscode: '>=1.0.0'},
+				}),
+			},
+		});
+		testTarget('symlinks', {
+			targetId,
+			should: [{
+				include: [
+					'.vscodeignore',
+					'awesomefile',
+					'awesomefolder/folded',
+					'awesomefile.lnk',
+					'awesomefolder.lnk',
+					'package.json',
+				],
+				source: '.vscodeignore',
+			}],
+			content: {
+				...symlinksProject,
+				'.vscodeignore': '',
+				'package.json': JSON.stringify({
+					name: 'app',
+					version: '0.0.1',
+					engines: {vscode: '>=1.0.0'},
+				}),
+			},
+		});
+	});
+});
+
+type TestTargetSubtestData = Case & {
+	targetId: string;
+};
+
+function testTarget(title: string, data: TestTargetSubtestData) {
+	it(title, async () => {
+		after(async () => {
+			await fixture.rm();
+		});
+		const {targetId, should} = data;
+		const fixture = await createFixture(data.content);
+
+		const fileInfoListPromise = viewig.scan('.', {
+			posix: true,
+			target: targetId,
+			cwd: fixture.getPath(),
+			filter: 'included',
+		});
+
+		if (typeof should === 'string') {
+			void fileInfoListPromise.catch(error => {
+				assert(error instanceof Error, `Expected ViewIgnoredError, got ${String(error)}`);
+				assert(error instanceof viewig.ViewIgnoredError, `Expected ViewIgnoredError, got ${error.name}`);
+				assert(error.name === should, `Expected ${should}, got ${error.name}`);
+			}).then(() => {
+				throw new AssertionError({message: 'Expected ViewIgnoredError exception, got valid file info list.'});
+			});
+			return;
+		}
+
+		const fileInfoList = await fileInfoListPromise;
+		const shouldPaths = should
+			.flatMap(shouldCase => shouldCase.include);
+
+		const info = `\n${
+			fileInfoList.length === 0 ? ''
+				: `\tResults:\n\t  ${fileInfoList.map(fileInfo => fileInfo.toString({source: true})).join('\n\t  ')}\n\n`
+		}`
+			.replaceAll('\t', ' '.repeat(6));
+
+		assert.deepEqual(fileInfoList.map(String).sort(), shouldPaths.sort(), 'Bad path list.');
+
+		for (const fileInfo of fileInfoList) {
+			const {source} = fileInfo;
+			if (fileInfo.status === 'non-target') {
+				throw new AssertionError({message: 'Unexpected non-target file.' + chalk.white(info)});
+			}
+
+			assert.ok(source !== undefined, 'The source is missing, but expected.' + chalk.white(info));
+			const comparableSource = source?.relativePath;
+			const shouldCase: Check | undefined = should.find(shouldCase => shouldCase.source === comparableSource);
+			if (shouldCase === undefined) {
+				const sourceListExpected = should.map(s => s.source);
+				throw new AssertionError({message: `The source is not right: ${comparableSource}. Expected: ${sourceListExpected.join(' or ')}. ${chalk.white(info)}`});
+			}
+
+			assert.strictEqual(comparableSource, shouldCase.source, 'Unexpected source.' + chalk.white(info));
+		}
+	});
 }
 
-type DirCase = Record<string, Case>
-type Plan = Record<string, DirCase>
-
-const realProject = {
-    '.github': {},
-    'bin/app': '',
-    'node_modules/tempdep/indexOf.js': '',
-    'lib/cli.js': '',
-    'lib/index.js': '',
-    'test/app.test.js': '',
-    'README.md': '',
-    'config.json': '',
-}
-
-const targetTestList: Plan = {
-    git: {
-        'empty project': {
-            should: viewig.ErrorNoSources,
-            content: {},
-        },
-        'single file': {
-            should: viewig.ErrorNoSources,
-            content: {
-                'file.txt': ''
-            },
-        },
-        '.gitignore': {
-            should: {
-                include: [
-                    'file.txt',
-                    '.gitignore',
-                ],
-                source: '.gitignore'
-            },
-            content: {
-                'file.txt': '',
-                'node_modules/tempdep/indexOf.js': '',
-                '.gitignore': 'node_modules',
-            },
-        },
-    },
-
-    /**
-     * @see {@link npmPatternExclude} {@link npmPatternInclude}
-     */
-    npm: {
-        'empty project': {
-            should: viewig.ErrorNoSources,
-            content: {},
-        },
-        'single file': {
-            should: viewig.ErrorNoSources,
-            content: {
-                'file.txt': '',
-            },
-        },
-        '.gitignore': {
-            should: {
-                include: ['file.txt'],
-                source: '.gitignore',
-            },
-            content: {
-                'file.txt': '',
-                'node_modules/tempdep/indexOf.js': '',
-                '.gitignore': 'node_modules',
-            },
-        },
-        'real project: (package.json), .npmignore, .gitignore': {
-            should: {
-                include: [
-                    'README.md',
-                    'bin/app',
-                    'package.json',
-                ],
-                source: 'package.json',
-            },
-            content: {
-                ...realProject,
-                '.npmignore': 'node_modules\nconfig*.json\ntest\n.github',
-                '.gitignore': 'node_modules\nconfig.json',
-                'package.json': JSON.stringify({
-                    files: [],
-                    main: './lib/index.js',
-                    name: 'app',
-                    version: '0.0.1',
-                }),
-            },
-        },
-        'real project: package.json, (.npmignore), .gitignore': {
-            should: {
-                include: [
-                    'README.md',
-                    'bin/app',
-                    'lib/cli.js',
-                    'lib/index.js',
-                    'package.json'
-                ],
-                source: '.npmignore',
-            },
-            content: {
-                ...realProject,
-                '.npmignore': 'node_modules\nconfig*.json\ntest\n.github',
-                '.gitignore': 'node_modules\nconfig.json',
-                'package.json': JSON.stringify({
-                    main: './lib/index.js',
-                    name: 'app',
-                    version: '0.0.1',
-                }),
-            },
-        },
-    },
-
-    /**
-     * @todo Add tests.
-     */
-    yarn: {
-        'empty project': {
-            should: viewig.ErrorNoSources,
-            content: {},
-        },
-    },
-
-    /**
-     * @todo Add tests.
-     */
-    vsce: {
-        'empty project': {
-            should: viewig.ErrorNoSources,
-            content: {},
-        },
-    },
-}
-
-function lineInfo(line: number, name?: string) {
-    return `${chalk.cyan('./test/targets.test.ts')}${chalk.white(':')}${chalk.yellow(line)}${name ? `\t- ${name}` : ''}`
-}
-
-describe("Targets", function () {
-    const myContent = readFileSync('./test/targets.test.ts').toString()
-    const myContentLines = myContent.split('\n')
-    before(async () => { await viewig.Plugins.BuiltIns })
-    for (const targetId in targetTestList) {
-        describe(targetId, function () {
-            const tests = targetTestList[targetId]
-            for (const testName in tests) {
-                it(testName, async function () {
-                    const test = tests[testName]
-                    const { should, content } = test
-
-                    const fixture = await createFixture(content)
-                    const lookListPromise = viewig.scanProject(targetId, { cwd: fixture.getPath(), filter: 'included' })
-                    lookListPromise.then(() => fixture.rm())
-
-                    if (typeof should !== "object") {
-                        try {
-                            await lookListPromise
-                            assert.throws(async () => { await lookListPromise })
-                        } catch (exc) {
-                            assert(exc instanceof should, "Bad SomeError prototype.")
-                        }
-                        return;
-                    }
-
-                    const cmp1 = (await lookListPromise).map(l => l.toString()).sort()
-                    const cmp2 = should.include.sort()
-                    const testLine = myContentLines.findIndex(ln => ln.includes(testName)) + 1
-                    const testLineContent = testLine + myContentLines.slice(testLine).findIndex(ln => ln.includes('content')) + 1
-                    const actual = (await lookListPromise)
-                        .map(l => {
-                            const testLineSource = testLineContent + myContentLines.slice(testLineContent).findIndex(ln => ln.includes(l.source.sourcePath)) + 1
-                            return chalk.red(l.toString({ source: true, chalk })) + ' ' + lineInfo(testLineSource)
-                        })
-                        .sort().join('\n        ');
-                    const info = `\n      Test location: ${lineInfo(testLine)}\n      Test name: ${chalk.magenta(testName)}\n      Results: \n        ${actual}\n`
-                    for (const fileInfo of (await lookListPromise)) {
-                        assert.strictEqual(fileInfo.source.sourcePath, should.source, 'The source is not right.' + chalk.white(info))
-                    }
-                    assert.deepEqual(cmp1, cmp2, 'The path list is bad.' + chalk.white(info))
-                })
-            }
-        })
-    }
-})

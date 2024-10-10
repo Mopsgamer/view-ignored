@@ -1,7 +1,9 @@
 # view-ignored
 
-[![npm version](https://badge.fury.io/js/view-ignored.svg)](https://www.npmjs.com/package/view-ignored)
-[![Downloads](https://img.shields.io/npm/dm/view-ignored.svg)](https://www.npmjs.com/package/view-ignored)
+[![npm version](https://img.shields.io/npm/v/view-ignored.svg?style=flat)](https://www.npmjs.com/package/view-ignored)
+[![npm downloads](https://img.shields.io/npm/dm/view-ignored.svg?style=flat)](https://www.npmjs.com/package/view-ignored)
+[![github](https://img.shields.io/github/stars/Mopsgamer/view-ignored.svg?style=flat)](https://github.com/Mopsgamer/view-ignored)
+[![github issues](https://img.shields.io/github/issues/Mopsgamer/view-ignored.svg?style=flat)](https://github.com/Mopsgamer/view-ignored/issues)
 
 Retrieve list of files ignored/included by Git, NPM, Yarn and VSC Extension.
 
@@ -34,10 +36,11 @@ viewig scan . --target=npm
 viewig scan . --parsable
 
 # scan: plugins (space, comma or pipe separated)
-viewig scan . --plugins="vign-p-tsx, vign-p-jsdoc"
-viewig scan . --plugins="vign-p-tsx vign-p-jsdoc"
-viewig scan . --plugins vign-p-tsx vign-p-jsdoc
-viewig scan . --plugins vign-p-tsx, vign-p-jsdoc
+# all built-in plugins loaded automatically
+viewig scan . --plugins="example1, example2"
+viewig scan . --plugins="example1 example2"
+viewig scan . --plugins example1 example2
+viewig scan . --plugins example1, example2
 
 # config: print configuration entries
 viewig config get
@@ -50,24 +53,27 @@ viewig config set style=tree
 # config: always use nerdfonts
 viewig config set decor=nerdfonts
 # config: always use plugins
-viewig config set plugins=typescript-viewig,eslint-vign-plugin
+viewig config set plugins=example1,example2
 ```
 
 ### Programmatically
 
+All you need it to add
+
 ```js
-import * as vign from "view-ignored";
-import * as vign from "view-ignored/out/src/browser"; // for web environment apps
+import * as vign from "view-ignored"; // or "view-ignored/browser"
 
-const fileInfoList = await vign.scanProject("git");
-const fileInfo = await vign.scanFile("./path/to/file", "git");
+await vign.Plugins.loadBuiltIns(["git", "npm"]); // load built-in plugins
+await vign.Plugins.loadBuiltIns(); // load all built-in plugins
+await vign.Plugins.loadPlugins(["example"]); // load third-party plugins
 
-// options available
-const fileInfoList = await vign.scanProject("git", { cwd, ... });
+// scan - options available
+const fileInfoList = await vign.scan(".", { target: "git", cwd: process.cwd() });
+const fileInfoList = await vign.scan(["./path/to/file"], { target: "git", process.cwd() });
 
 // use results
 if (fileInfo.ignored) {
-    superCodeEditor.explorer.colorFile(fileInfo.filePath, "gray");
+    superCodeEditor.explorer.colorFile(fileInfo.relativePath, "gray");
 }
 ```
 
@@ -75,24 +81,14 @@ if (fileInfo.ignored) {
 
 ```js
 const sorter = vign.Sorting.firstFolders;
-const fileInfoList = await vign.scanProject("npm");
-const fileInfoSorted = fileInfoList.map(String).sort(sorter);
-```
-
-```js
-const sorter = vign.Sorting.modified;
-const fileInfoList = await vign.scanProject("npm");
-
-const cache = new Map<string, number>(fileInfoList.map(String).map(
-    filePath => [filePath, fs.statSync(filePath).mtime.getTime()])
-);
-const lookedSorted = fileInfoList.sort((a, b) => sorter(a.toString(), b.toString(), cache));
+const fileInfoList = await vign.scan(".", {target: "npm"});
+const fileInfoSorted = fileInfoList.sort((a, b) => sorter(String(a), String(b)));
 ```
 
 ### Targets
 
 - `git`
-- `npm` (can be usable for PNPM and Bun)
+- `npm` (use it for PNPM and Bun)
 - `yarn`
 - `vsce`
 - `jsr` *planned*

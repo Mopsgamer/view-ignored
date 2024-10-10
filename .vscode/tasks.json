@@ -60,7 +60,7 @@
 			"type": "npm",
 			"script": "lint",
 			"label": "Lint",
-			"detail": "pnpm eslint"
+			"detail": "pnpm xo"
 		},
 		{
 			"icon": {
@@ -70,7 +70,7 @@
 			"type": "npm",
 			"script": "lint:fix",
 			"label": "Lint and fix",
-			"detail": "pnpm eslint . --fix"
+			"detail": "pnpm xo --fix"
 		},
 		{
 			"icon": {

@@ -1,148 +1,170 @@
-import path from "path"
+import path from 'node:path';
 
 /**
  * Contains all file sort names.
+ * @public
  */
-export const sortNameList = ["firstFolders", "firstFiles", "type", "mixed", "modified"] as const
+export const sortNameList = ['firstFolders', 'firstFiles', 'type', 'mixed', 'modified'] as const;
+
 /**
  * Contains all file sort names as a type.
+ * @public
  */
-export type SortName = typeof sortNameList[number]
+export type SortName = typeof sortNameList[number];
+
 /**
  * {@link Array.prototype.sort}'s file path comparator.
+ * @public
  */
-export type SortFunc = (a: string, b: string) => number
+export type SortFunction = (a: string, b: string) => number;
+
 /**
  * Checks if the value is the {@link SortName}.
+ * @public
  */
 export function isSortName(value: unknown): value is SortName {
-	return typeof value === "string" && sortNameList.includes(value as SortName)
+	return typeof value === 'string' && sortNameList.includes(value as SortName);
 }
 
 /**
+ * @public
  * @example
  * "path/to/the/file" -> ["path", "to/the/file", false]
  * "file" -> ["file", "file", true]
  * "file/" -> ["file", "", false]
  */
-function slicePath(p: string): [next: string, other: string, isLast: boolean] {
-	const slashIndex = p.indexOf('/')
-	const next = p.substring(0, slashIndex)
-	const other = p.substring(slashIndex + 1)
-	const isLast = next === '' && (p.lastIndexOf('/') === slashIndex)
-	return [slashIndex < 0 ? other : next, other, isLast]
+export function shiftPath(p: string): [next: string, other: string, isLast: boolean] {
+	const slashIndex = p.search(/[/\\]/);
+	const next = p.slice(0, Math.max(0, slashIndex));
+	const other = p.slice(Math.max(0, slashIndex + 1));
+	const isLast = next === '';
+	return [slashIndex < 0 ? other : next, other, isLast];
 }
 
 /**
  * Files and folders are sorted by their names.
  * Folders are displayed before files.
+ * @public
  */
 export function firstFolders(a: string, b: string): number {
 	let comp = 0;
-	let next1, others1, next2, others2, last1, last2;
 	for (; comp === 0;) {
-		[next1, others1, last1] = slicePath(a);
-		a = others1;
-		[next2, others2, last2] = slicePath(b);
-		b = others2;
+		const [next1, post1, last1] = shiftPath(a);
+		a = post1;
+		const [next2, post2, last2] = shiftPath(b);
+		b = post2;
 		comp = mixed(next1, next2);
 		if (last1 || last2) {
 			if (last1 === last2) {
-				break
+				break;
 			}
-			if (last1 === false) {
-				return -1
+
+			if (!last1) {
+				return -1;
 			}
-			return +1
+
+			return +1;
 		}
 	}
-	return comp
+
+	return comp;
 }
 
 /**
  * Files and folders are sorted by their names.
  * Files are displayed before folders.
+ * @public
  */
 export function firstFiles(a: string, b: string): number {
 	let comp = 0;
-	let next1, others1, next2, others2, last1, last2;
 	for (; comp === 0;) {
-		[next1, others1, last1] = slicePath(a);
-		a = others1;
-		[next2, others2, last2] = slicePath(b);
-		b = others2;
+		const [next1, post1, last1] = shiftPath(a);
+		a = post1;
+		const [next2, post2, last2] = shiftPath(b);
+		b = post2;
 		comp = mixed(next1, next2);
 		if (last1 || last2) {
 			if (last1 === last2) {
-				break
+				break;
 			}
-			if (last1 === true) {
-				return -1
+
+			if (last1) {
+				return -1;
 			}
-			return +1
+
+			return +1;
 		}
 	}
-	return comp
+
+	return comp;
 }
 
 /**
  * Files and folders are sorted by last modified date in descending order.
  * Folders are displayed before files.
+ * @see {@link makeMtimeCache}
+ * @public
  */
-export function modified(a: string, b: string, map: Map<string, number>): number {
+export function modified(a: string, b: string, map: Map<{toString(): string}, number>): number {
 	let comp = 0;
-	let others1, others2, last1, last2;
 	for (; comp === 0;) {
-		[, others1, last1] = slicePath(a);
-		a = others1;
-		[, others2, last2] = slicePath(b);
-		b = others2;
-		comp = (map.get(a) ?? 0) - (map.get(b) ?? 0)
+		const [, post1, last1] = shiftPath(a);
+		a = post1;
+		const [, post2, last2] = shiftPath(b);
+		b = post2;
+		comp = (map.get(a) ?? 0) - (map.get(b) ?? 0);
 		if (last1 || last2) {
 			if (last1 === last2) {
-				break
+				break;
 			}
-			if (last1 === false) {
-				return -1
+
+			if (!last1) {
+				return -1;
 			}
-			return +1
+
+			return +1;
 		}
 	}
-	return comp
+
+	return comp;
 }
 
 /**
  * Files and folders are grouped by extension type then sorted by thir names.
  * Folders are displayed before files.
+ * @public
  */
 export function type(a: string, b: string): number {
 	let comp = 0;
-	let next1, others1, next2, others2, last1, last2;
 	for (; comp === 0;) {
-		[next1, others1, last1] = slicePath(a);
-		a = others1;
-		[next2, others2, last2] = slicePath(b);
-		b = others2;
-		const ppa = path.parse(next1)
-		const ppb = path.parse(next2)
-		comp = mixed(ppa.ext, ppb.ext) || mixed(ppa.name, ppb.name)
+		const [next1, post1, last1] = shiftPath(a);
+		a = post1;
+		const [next2, post2, last2] = shiftPath(b);
+		b = post2;
+		const ppa = path.parse(next1);
+		const ppb = path.parse(next2);
+		comp = mixed(ppa.ext, ppb.ext) || mixed(ppa.name, ppb.name);
 		if (last1 || last2) {
 			if (last1 === last2) {
-				break
+				break;
 			}
-			if (last1 === false) {
-				return -1
+
+			if (!last1) {
+				return -1;
 			}
-			return +1
+
+			return +1;
 		}
 	}
-	return comp
+
+	return comp;
 }
 
 /**
  * Files and folders are sorted by their names.
  * Files are interwoven with folders.
+ * @public
  */
 export function mixed(a: string, b: string): number {
-	return a.localeCompare(b, undefined, { ignorePunctuation: false })
+	return a.localeCompare(b, undefined, {ignorePunctuation: false});
 }

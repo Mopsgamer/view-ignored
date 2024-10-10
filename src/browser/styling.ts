@@ -1,229 +1,187 @@
-import { FileInfo } from "../index.js"
-import { default as tree } from "treeify";
-import jsonifyPaths from "jsonify-paths";
-import { ChalkInstance } from "chalk";
-import path from "path";
-import boxen, { Options } from "boxen";
-import { stripVTControlCharacters } from "util";
+import PATH from 'node:path';
+import {stripVTControlCharacters} from 'node:util';
+import tree from 'treeify';
+import jsonifyPaths from 'jsonify-paths';
+import {type ChalkInstance} from 'chalk';
+import boxen, {type Options} from 'boxen';
+import {type FileInfo} from '../index.js';
 
-export interface FormatFilesOptions {
+/**
+ * @public
+ */
+export type FormatFilesOptions = {
+	/**
+	 * On posix systems, this has no effect.  But, on Windows, it means that
+	 * paths will be `/` delimited, and absolute paths will be their full
+	 * resolved UNC forms, eg instead of `'C:\\foo\\bar'`, it would return
+	 * `'//?/C:/foo/bar'`
+	 * @default false
+     * @returns `/` delimited paths, even on Windows.
+     */
+	posix?: boolean;
+
 	/**
 	 * @default false
 	 */
-	showSources?: boolean
+	showSources?: boolean;
+
 	/**
 	 * @default "paths"
 	 */
-	style: StyleName,
+	style: StyleName;
+
 	/**
 	 * @default "paths"
 	 */
-	decor?: DecorName,
-	chalk: ChalkInstance,
-}
+	decor?: DecorName;
+
+	/**
+	 * @default undefined
+	 */
+	chalk?: ChalkInstance;
+};
 
 /**
  * @returns Prints a readable file list. Here is '\n' ending.
+ * @public
  */
 export function formatFiles(files: FileInfo[], options: FormatFilesOptions): string {
-	const { showSources = false, chalk, decor = "normal", style } = options ?? {};
+	const {showSources = false, chalk, decor = 'normal', style, posix = false} = options ?? {};
 
-	const isPaths = style === "paths"
-	const paths = files.map(f => f.toString({ fileIcon: decor, usePrefix: true, chalk: chalk, source: showSources, entire: isPaths }))
+	const patha = posix ? PATH.posix : PATH;
+	const isPaths = style === 'paths';
+	const paths = files.map(f => f.toString({
+		fileIcon: decor, usePrefix: true, chalk, source: showSources, entire: isPaths,
+	}));
 
 	if (isPaths) {
-		return paths.join('\n') + '\n'
+		return paths.join('\n') + '\n';
 	}
 
-	// isTree
-	const pathsAsObject = jsonifyPaths.from(paths, { delimiter: "/" })
-	const pathsAsTree = tree.asTree(pathsAsObject, true, true)
-	return pathsAsTree
+	// IsTree
+	const pathsAsObject = jsonifyPaths.from(paths, {delimiter: patha.sep});
+	const pathsAsTree = tree.asTree(pathsAsObject, true, true);
+	return pathsAsTree;
 }
 
 /**
  * Contains all style names.
+ * @public
  */
-export const styleNameList = ['tree', 'paths'] as const
+export const styleNameList = ['tree', 'paths'] as const;
+
 /**
  * Contains all style names as a type.
+ * @public
  */
-export type StyleName = typeof styleNameList[number]
+export type StyleName = typeof styleNameList[number];
+
 /**
  * Checks if the value is the {@link StyleName}.
+ * @public
  */
 export function isStyleName(value: unknown): value is StyleName {
-	return typeof value === "string" && styleNameList.includes(value as StyleName)
+	return typeof value === 'string' && styleNameList.includes(value as StyleName);
 }
 
 /**
  * Contains all decor names.
+ * @public
  */
-export const decorNameList = ['normal', 'emoji', 'nerdfonts'] as const
+export const decorNameList = ['normal', 'emoji', 'nerdfonts'] as const;
+
 /**
  * Contains all decor names as a type.
+ * @public
  */
-export type DecorName = typeof decorNameList[number]
+export type DecorName = typeof decorNameList[number];
+
 /**
  * Checks if the value is the {@link DecorName}.
+ * @public
  */
 export function isDecorName(value: unknown): value is DecorName {
-	return typeof value === "string" && decorNameList.includes(value as DecorName)
+	return typeof value === 'string' && decorNameList.includes(value as DecorName);
 }
 
 /**
  * Formatting options for the {@link decorCondition}.
+ * @public
  */
-export interface DecorConditionOptions {
+export type DecorConditionOptions = {
 	/**
 	 * @default ""
 	 */
-	prefix?: string
+	prefix?: string;
 
 	/**
 	 * @default ""
 	 */
-	postfix?: string
+	postfix?: string;
 
 	/**
 	 * If the decor is not an emoji or nerd use this string.
 	 * @default ""
 	 */
-	ifNormal?: string
+	ifNormal?: string;
 
 	/**
 	 * If style name (lowercase) contains `emoji` use this string.
 	 * @default ""
 	 */
-	ifEmoji?: string
+	ifEmoji?: string;
 
 	/**
 	 * If style name (lowercase) contains `nerd` use this string.
 	 * @default ""
 	 */
-	ifNerd?: string
-}
+	ifNerd?: string;
+};
 
 /**
  * Formats the string for specific style types.
  * @param decor The decor name.
  * @param condition Formatting options.
+ * @public
  */
 export function decorCondition(decor: DecorName, condition: DecorConditionOptions): string {
-	let result: string = condition.ifNormal ?? ''
+	let result: string = condition.ifNormal ?? '';
 	if (decor === 'emoji') {
-		result = condition.ifEmoji ?? result
+		result = condition.ifEmoji ?? result;
 	} else if (decor === 'nerdfonts') {
-		result = condition.ifNerd ?? result
+		result = condition.ifNerd ?? result;
 	}
 
 	if (result !== '') {
-		result = (condition.prefix ?? '') + result + (condition.postfix ?? '')
+		result = (condition.prefix ?? '') + result + (condition.postfix ?? '');
 	}
-	return result
-}
 
-export interface BoxOptions extends Options {
-	noColor?: boolean
-}
-
-export function boxError(message: string, options?: BoxOptions): string {
-	let result = ('\n' + boxen(message, {
-		titleAlignment: "left",
-		padding: { left: 2, right: 2 },
-		borderColor: "redBright",
-		borderStyle: "round",
-		...options,
-	}))
-	if (options?.noColor) {
-		result = stripVTControlCharacters(result)
-	}
-	return result
+	return result;
 }
 
 /**
- * Returns file icon for the file name & extension.
- * @param decor The decor name.
- * @param filePath The full file path.
+ * @see {@link boxError}
+ * @public
  */
-export function decorFile(decor: DecorName | undefined, filePath: string): string {
-	const parsed = path.parse(filePath)
-	let icon = ''
-	switch (parsed.ext.toLocaleLowerCase()) {
-		case ".js":
-		case ".cjs":
-		case ".mjs":
-			icon = '\ue60c'
-			break;
-		case ".ts":
-		case ".cts":
-		case ".mts":
-			icon = '\ue628'
-			break;
-		case ".styl":
-			icon = '\ue600'
-			break;
-		case ".less":
-			icon = '\ue60b'
-			break;
-		case ".scss":
-		case ".sass":
-			icon = '\ue603'
-			break;
-		case ".go":
-			icon = '\ue65e'
-			break;
+export type BoxOptions = {
+	noColor?: boolean;
+} & Options;
 
-		case ".json":
-		case ".jsonc":
-		case ".json5":
-			icon = '\ue60b'
-			break;
-		case ".yml":
-		case ".yaml":
-			icon = '\ue6a8'
-			break;
-
-		case ".gitignore":
-			icon = '\ue65d'
-			break;
-		case ".npmignore":
-			icon = '\ue616'
-			break;
-		case ".dockerignore":
-			icon = '\ue650'
-			break;
-
-		default:
-			icon = '\ue64e'
-			break;
+/**
+ * Make a message in a red box. Or without color.
+ * @public
+ */
+export function boxError(message: string, options?: BoxOptions): string {
+	let result = ('\n' + boxen(message, {
+		titleAlignment: 'left',
+		padding: {left: 2, right: 2},
+		borderColor: 'redBright',
+		borderStyle: 'round',
+		...options,
+	}));
+	if (options?.noColor) {
+		result = stripVTControlCharacters(result);
 	}
-	switch (parsed.name.toLocaleLowerCase()) {
-		case "readme":
-			icon = '\ue66a'
-			break;
-		case "changelog":
-			icon = '\ue641'
-			break;
-		case "tsconfig":
-			icon = '\ue69d'
-			break;
-		case "eslint.config":
-			icon = '\ue655'
-			break;
-		case "stylelint.config":
-			icon = '\ue695'
-			break;
 
-		default:
-			break;
-	}
-	if (!decor) {
-		return ''
-	}
-	return decorCondition(decor, {
-		ifEmoji: '📄',
-		ifNerd: icon,
-		postfix: ' '
-	})
+	return result;
 }

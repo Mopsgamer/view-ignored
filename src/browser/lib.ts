@@ -1,273 +1,248 @@
-import { Scanner, PatternType, isPatternType } from "./scanner.js";
-import { glob, FSOption } from "glob";
-import { FileInfo } from "./fileinfo.js";
-import { SourceInfo } from "./sourceinfo.js";
-import { targetGet } from "./binds/index.js";
-import path from "path";
-import { ErrorNoSources, ErrorTargetNotBound } from "./errors.js";
-import * as FS from "fs"
+import * as PATH from 'node:path';
+import process from 'node:process';
+import * as FS from 'node:fs';
+import {createRequire} from 'node:module';
+import EventEmitter from 'node:events';
+import pLimit, {type LimitFunction} from 'p-limit';
+import {configDefault} from '../config.js';
+import {
+	Directory,
+	File, FileInfo, type DeepStreamEventEmitter, type SourceInfo,
+} from './fs/index.js';
+import {targetGet} from './binds/index.js';
+import {TargetNotBoundError} from './errors.js';
+import {type FilterName} from './filtering.js';
 
-export * from "./errors.js"
-export * from "./scanner.js"
-export * from "./fileinfo.js"
-export * from "./sourceinfo.js"
-export * as Styling from "./styling.js"
-export * as Sorting from "./sorting.js"
-export * as Plugins from "./binds/index.js"
-
-/**
- * Contains all filter names.
- */
-export const filterNameList = ["ignored", "included", "all"] as const
-/**
- * Contains all filter names as a type.
- */
-export type FilterName = typeof filterNameList[number]
-/**
- * Checks if the value is the {@link FilterName}.
- */
-export function isFilterName(value: unknown): value is FilterName {
-	return typeof value === "string" && filterNameList.includes(value as FilterName)
-}
+export * from './errors.js';
+export * from './fs/index.js';
+export * as Filtering from './filtering.js';
+export * as Styling from './styling.js';
+export * as Sorting from './sorting.js';
+export * as Plugins from './binds/index.js';
 
 /**
- * Uses `readFileSync` and `readFile`.
- * @extends glob.FileSystemAdapter
- */
-export interface FileSystemAdapter extends FSOption {
-	readFileSync?: typeof FS.readFileSync
-	readdirSync?: typeof FS.readdirSync
-	statSync?: typeof FS.statSync
-}
-
-//#region looking
-/**
- * Also can write rules to the {@link Scanner}.
- * @returns `true`, if the given source is valid.
- */
-export type ScanMethod = (sourceInfo: SourceInfo) => boolean
+ * ViewIgnored's package.json.
+ * @public
+*/
+// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+export const package_ = createRequire(import.meta.url)('../../package.json') as typeof import('../../package.json');
 
 /**
- * Represents the methodology for reading the target's source.
+ * Uses `node:fs` and `node:fs/promises` by default.
+ * @public
  */
-export interface Methodology {
-	/**
-	 * Git configuration property.
-	 * @see {@link https://git-scm.com/docs/git-config#Documentation/git-config.txt-coreignoreCase|git-config ignorecase}.
-	 * @default false
-	 */
-	ignoreCase?: boolean
+export type FileSystemAdapter = {
+	readFileSync?: typeof FS.readFileSync;
+	readdirSync?: typeof FS.readdirSync;
+	promises?: {
+		readdir(path: string, options: {withFileTypes: true}): Promise<FS.Dirent[]>;
+		stat(path: string): Promise<FS.Stats>;
+	};
+};
 
+// #region scanning
+/**
+ * The custom scanner.
+ * @public
+ */
+export type Scanner = {
 	/**
-	 * The parser for the patterns.
-	 * @default "gitignore"
+	 * @returns `true`, if the given path is ignored.
 	 */
-	matcher: PatternType
-
-	/**
-	 * Use the patterns for including instead of excluding/ignoring.
-	 * @default false
-	 */
-	matcherNegated?: boolean
-
-	/**
-	 * Additional patterns for files, provided by the {@link pattern}.
-	 *
-	 * Example: You have the '.gitignore' file. You want to scan patterns from it and add additional patterns. Use this property.
-	 * @default []
-	 */
-	matcherAdd?: string[]
-
-	/**
-	 * Force ignore patterns.
-	 * Takes precedence over {@link matcherAdd}.
-	 * @default []
-	 */
-	matcherExclude?: string[]
-
-	/**
-	 * Force include patterns.
-	 * Takes precedence over {@link matcherExclude}.
-	 * @default []
-	 */
-	matcherInclude?: string[]
-
-	/**
-	 * First valid source will be used as {@link Scanner}.
-	 */
-	pattern: SourceInfo[] | string[] | SourceInfo | string
-
-	/**
-	 * Scanner function. Should return `true`, if the given source is valid and also add patterns to the {@link FileInfo.scanner}.
-	 */
-	scan: ScanMethod
-}
+	ignores(path: string): boolean;
+};
 
 /**
- * Checks if the value is the {@link Methodology}.
+ * Recursively creates a cache scanner for each file.
+ * @throws If the target does not allow the current ignore configurations: {@link ViewIgnoredError}.
+ * For example, {@link https://www.npmjs.com/package/@vscode/vsce vsce} considers it invalid if your manifest is missing the 'engines' field.
+ * Similarly, npm will raise an error if you attempt to publish a package without a basic 'package.json'.
+ * @public
  */
-export function isMethodology(value: unknown): value is Methodology {
-	if (value?.constructor !== Object) {
-		return false
-	}
-
-	const v = value as Partial<Methodology>
-
-	return isPatternType(v.matcher)
-		&& (typeof v.pattern === "string")
-		&& (v.matcherAdd === undefined || Array.isArray(v.matcherAdd) && v.matcherAdd.every(p => Scanner.patternIsValid(p, { patternType: v.matcher as PatternType })))
-}
+export type Methodology = (tree: Directory, realOptions: RealScanOptions) => Map<File, SourceInfo>;
 
 /**
- * File scanning options.
- * @see {@link ScanFolderOptions}
+ * Options with defaults and additional properties.
+ * @public
  */
-export interface ScanFileOptions {
+export type RealScanOptions = Required<Omit<ScanOptions, 'fsa'>> & {
+	modules: {
+		/**
+		 * File system adapter.
+		 */
+		fs: Required<FileSystemAdapter>;
+		/**
+		 * Path module adapter.
+		 */
+		path: PATH.PlatformPath;
+	};
+};
+
+/**
+ * Folder deep scanning options.
+ * @public
+ */
+export type ScanOptions = {
+
+	/**
+	 * The target or the scan methodology.
+	 * @default "git"
+	 */
+	target?: string | Methodology;
+
+	/**
+	 * The max concurrency for file-system operations.
+	 * @default 8
+	 */
+	concurrency?: number;
+
 	/**
 	 * Custom implementation of methods for working with the file system.
 	 * @default import * as FS from "fs"
 	 */
-	fsa?: FileSystemAdapter
+	fsa?: FileSystemAdapter;
 
 	/**
 	 * The current working directory in which to search.
 	 * @default process.cwd()
 	 */
-	cwd?: string
-
-	/**
-	 * Specifies the maximum number of concurrent requests from a reader to read
-	 * directories.
-	 * @default os.cpus().length
-	 */
-	concurrency?: number
+	cwd?: string;
 
 	/**
 	 * Specifies the maximum depth of a read directory relative to the start
 	 * directory.
 	 * @default Infinity
 	 */
-	maxDepth?: number
-}
+	maxDepth?: number;
 
-/**
- * Folder deep scanning options.
- * @see {@link ScanFileOptions}
- */
-export interface ScanFolderOptions extends ScanFileOptions {
+	/**
+	 * On posix systems, this has no effect.  But, on Windows, it means that
+	 * paths will be `/` delimited, and absolute paths will be their full
+	 * resolved UNC forms, eg instead of `'C:\\foo\\bar'`, it would return
+	 * `'//?/C:/foo/bar'`
+	 * @default false
+     * @returns `/` delimited paths, even on Windows.
+     */
+	posix?: boolean;
+
 	/**
 	 * Filter output.
 	 * @default "included"
 	 */
-	filter?: FilterName | ((fileInfo: FileInfo) => boolean)
-}
+	filter?: FilterName | ((fileInfo: FileInfo) => boolean);
+};
 
 /**
- * Gets info about the file: it is ignored or not.
- * @throws {ErrorNoSources} if the source is bad.
+ * Gets info about the each file: it is ignored or not.
+ * @param directoryPath The relative path to the directory.
+ * @throws If no valid sources: {@link ErrorNoSources}.
+ * @public
  */
-export async function scanFile(filePath: string, sources: Methodology[], options: ScanFileOptions): Promise<FileInfo> {
-	const { fsa = FS, cwd = process.cwd() } = options ?? {}
-	for (const methodology of sources) {
-		const sourceInfoList: SourceInfo[] = await SourceInfo.fromMethodology(methodology, options)
-
-		for (const sourceInfo of sourceInfoList) {
-			sourceInfo.readSync(cwd, fsa.readFileSync ?? FS.readFileSync)
-			const isGoodSource = methodology.scan(sourceInfo)
-			if (isGoodSource) {
-				return FileInfo.from(filePath, sourceInfo)
-			}
-		}
-	}
-	throw new ErrorNoSources(sources)
-}
+export async function scan(directoryPath: string, options?: ScanOptions): Promise<FileInfo[]>;
 
 /**
- * Scans project's directory paths to determine whether they are being ignored.
- * @throws {ErrorNoSources} if the source is bad.
+ * Gets info about the each file: it is ignored or not.
+ * @param directory The current working directory.
+ * @throws If no valid sources: {@link ErrorNoSources}.
+ * @public
  */
-export async function scanProject(sources: Methodology[], options: ScanFolderOptions): Promise<FileInfo[]>
-export async function scanProject(target: string, options: ScanFolderOptions): Promise<FileInfo[]>
-export async function scanProject(arg1: Methodology[] | string, options: ScanFolderOptions): Promise<FileInfo[]> {
-	if (typeof arg1 === "string") {
-		const bind = targetGet(arg1)
+export async function scan(directory: Directory, options?: ScanOptions): Promise<FileInfo[]>;
+
+/**
+ * Gets info about the each file: it is ignored or not.
+ * @param stream The stream of the current working directory reading.
+ * @throws If no valid sources: {@link ErrorNoSources}.
+ * @public
+ */
+export async function scan(stream: DeepStreamEventEmitter, options?: ScanOptions): Promise<FileInfo[]>;
+
+/**
+ * Gets info about the each file: it is ignored or not.
+ * @param pathList The list of relative paths. The should be relative to the current working directory.
+ * @throws If no valid sources: {@link ErrorNoSources}.
+ * @public
+ */
+export async function scan(pathList: string[], options?: ScanOptions): Promise<FileInfo[]>;
+export async function scan(argument0: string | string[] | Directory | DeepStreamEventEmitter, options?: ScanOptions): Promise<FileInfo[]> {
+	options ??= {};
+	const optionsReal = makeOptionsReal(options);
+
+	if (typeof optionsReal.target === 'string') {
+		const bind = targetGet(optionsReal.target);
 		if (bind === undefined) {
-			throw new ErrorTargetNotBound(arg1)
+			throw new TargetNotBoundError(optionsReal.target);
 		}
-		return scanProject(bind.methodology, Object.assign(options, bind.scanOptions))
+
+		return scan(argument0 as Directory, Object.assign(options, bind.scanOptions));
 	}
 
-	const allFilePaths = await glob("**", {
-		...options,
-		nodir: true,
-		dot: true,
-		posix: true,
-	})
+	if (typeof argument0 === 'string') {
+		const stream = Directory.deepStream(argument0, optionsReal);
+		const result = scan(stream, options);
+		stream.run();
+		return result;
+	}
 
-	// Find good source.
-	const { filter = "included", fsa = FS, cwd = process.cwd() } = options;
-	for (const methodology of arg1) {
-		const resultList: FileInfo[] = []
-		const sourceInfoList: SourceInfo[] = await SourceInfo.fromMethodology(methodology, options)
+	if (Array.isArray(argument0)) {
+		const tree: Directory = Directory.from(argument0, optionsReal.cwd);
+		return scan(tree, options);
+	}
 
-		if (sourceInfoList.length < 1) {
-			continue
-		}
+	if (argument0 instanceof EventEmitter) {
+		const {tree} = await argument0.endPromise;
+		return scan(tree, options);
+	}
 
-		const cache = new Set<string>()
+	const tree = argument0;
+	const cache = optionsReal.target(tree, optionsReal);
+	const fileInfoList: FileInfo[] = [];
+	const promiseList: Array<Promise<void>> = [];
+	const cacheDirectories = new Map<Directory, LimitFunction>();
+	for (const directory of [tree].concat(tree.deep(Directory))) {
+		cacheDirectories.set(directory, pLimit(optionsReal.concurrency));
+	}
 
-		let noSource = false
-		for (const filePath of allFilePaths) {
-			if (cache.has(filePath)) {
-				continue
+	for (const entry of tree.deepIterator(File)) {
+		const limit = cacheDirectories.get(entry.parent)!;
+		promiseList.push(limit(async () => {
+			const sourceInfo = cache.get(entry);
+
+			const fileInfo = FileInfo.from(entry, sourceInfo);
+			const ignored = !fileInfo.isIncludedBy(optionsReal.filter);
+
+			if (ignored) {
+				return;
 			}
 
-			const sourceInfo = SourceInfo.hierarcy(filePath, sourceInfoList, {
-				closest: false,
-				filter(sourceInfo) {
-					if (!(sourceInfo instanceof SourceInfo)) {
-						return true
-					}
-					if (sourceInfo.content === undefined) {
-						sourceInfo.readSync(cwd, fsa.readFileSync ?? FS.readFileSync)
-					}
-					return methodology.scan(sourceInfo)
-				}
-			})
+			fileInfoList.push(fileInfo);
+		}));
+	}
 
-			if (sourceInfo === undefined) {
-				noSource = true
-				break
-			}
+	await Promise.all(promiseList);
 
-			// also create cache for each file in the direcotry
-			const fileDir = path.dirname(filePath)
-			const fileDirAbsolute = path.join(cwd, fileDir)
-			const entryList = (fsa?.readdirSync ?? FS.readdirSync)(fileDirAbsolute)
-
-			for (const entry of entryList) {
-				const entryPath = path.join(fileDir, entry)
-				const entryPathNormal = fileDir !== '.' ? fileDir + '/' + entry : entry
-				const entryPathAbsolute = path.join(cwd, entryPath)
-				const stat = (fsa?.statSync ?? FS.statSync)(entryPathAbsolute)
-				cache.add(entryPathNormal)
-
-				if (stat.isFile()) {
-					// push new FileInfo
-					const fileInfo = FileInfo.from(entryPathNormal, sourceInfo)
-					if (fileInfo.isIncludedBy(filter)) {
-						resultList.push(fileInfo)
-					}
-				}
-			}
-		} // forend
-
-		if (noSource) {
-			continue
-		}
-
-		return resultList
-	} // forend
-	throw new ErrorNoSources(arg1)
+	return fileInfoList;
 }
-//#endregion
+
+/**
+ * @returns Options with defaults and additional properties.
+ * @public
+ */
+export function makeOptionsReal(options?: ScanOptions): RealScanOptions {
+	options ??= {};
+	const posix = options.posix ?? false;
+	const concurrency = options.concurrency ?? configDefault.concurrency;
+	const optionsReal: RealScanOptions = {
+		concurrency,
+		target: options.target ?? 'git',
+		cwd: options.cwd ?? process.cwd(),
+		filter: options.filter ?? configDefault.filter,
+		modules: {
+			fs: (options.fsa ?? FS) as Required<FileSystemAdapter>,
+			path: posix ? PATH.posix : PATH,
+		},
+		maxDepth: options.maxDepth ?? configDefault.depth,
+		posix,
+	};
+	return optionsReal;
+}
+// #endregion

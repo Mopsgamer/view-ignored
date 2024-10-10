@@ -1,310 +1,523 @@
-import fs from "fs";
-import { Chalk, ChalkInstance, ColorSupportLevel } from "chalk";
-import { Argument, InvalidArgumentError, Option, Command } from "commander";
-import * as Config from "./config.js";
-import { BuiltIns, loadPluginsQueue, targetGet } from "./browser/binds/index.js";
-import { decorCondition, DecorName, formatFiles, StyleName } from "./browser/styling.js";
-import { SortName } from "./browser/sorting.js";
-import { ErrorNoSources, FilterName, scanProject, Sorting } from "./lib.js";
-import { boxError, BoxOptions, formatConfigConflicts } from "./styling.js";
-import ora from "ora";
-import { createRequire } from "module";
-import { format } from "util";
+/* eslint-disable unicorn/no-process-exit */
+import {format} from 'node:util';
+import * as process from 'node:process';
+import {icons} from '@m234/nerd-fonts';
+import {Chalk} from 'chalk';
+import {
+	Argument, InvalidArgumentError, Option, Command,
+} from 'commander';
+import {Listr} from 'listr2';
+import * as Config from './config.js';
+import {
+	targetGet, loadPlugins, loadBuiltIns,
+	targetList,
+} from './browser/binds/index.js';
+import {
+	decorCondition, type DecorName, formatFiles, type StyleName,
+} from './browser/styling.js';
+import {sortNameList, type SortName} from './browser/sorting.js';
+import {
+	boxError, decorNameList, highlight, stringTime, styleNameList, type BoxOptions,
+} from './styling.js';
+import {
+	Directory,
+	type File, type FileInfo, package_, type DeepStreamDataRoot, type DeepStreamEventEmitter, type DeepStreamProgress, makeOptionsReal, scan, Sorting,
+	ViewIgnoredError,
+} from './lib.js';
+import {filterNameList, type FilterName} from './browser/filtering.js';
 
-export const { version } = createRequire(import.meta.url)('../package.json') as typeof import('../package.json');
-
+/**
+ * @private
+ */
 export function logError(message: string, options?: BoxOptions) {
-    console.log(boxError(message, { noColor: getColorLevel(program.opts()) === 0, ...options }))
+	console.log(boxError(message, {...options}));
 }
 
 /**
- * Use it instead of {@link program}.parse()
+ * Use it instead of {@link program.parse}.
+ * @private
  */
 export async function programInit() {
-    Config.configManager.load()
-    program.version('v' + version, '-v')
-    program.parseOptions(process.argv)
-    const flags = program.opts<ProgramFlags>()
-    const chalk = getChalk(flags)
-    try {
-        Config.configManager.load()
-    } catch (error) {
-        formatConfigConflicts(chalk, flags.decor, error)
-        return
-    }
-    try {
-        await BuiltIns
-        const configPlugins = Config.configManager.get('plugins')
-        const loaded = await loadPluginsQueue(flags.plugins)
-        for (const load of loaded) {
-            if (!load.isLoaded) {
-                logError(format(load.exports), {
-                    title: `Unable to load plugin '${load.moduleName}' ` + (configPlugins.includes(load.moduleName)
-                        ? '(imported by ' + Config.configManager.filePath + ')'
-                        : '(imported by --plugins option)')
-                })
-            }
-        }
-    } catch (reason) {
-        logError(format(reason))
-        process.exit(1)
-    }
+	try {
+		const {configManager, configDefault, configValueArray, configValueString, configValueLiteral} = Config;
 
-    program.addOption(new Option("--no-color", 'force disable colors').default(false))
-    Config.configValueLinkCliOption("plugins", program, new Option('--plugins <modules...>', 'import modules to modify behavior'), parseArgArrStr)
-    Config.configValueLinkCliOption("color", program, new Option("--color <level>", 'the interface color level'), parseArgInt)
-    Config.configValueLinkCliOption("decor", program, new Option("--decor <decor>", "the interface decorations"))
-    Config.configValueLinkCliOption("parsable", scanProgram, new Option('-p, --parsable [parsable]', "print parsable text"), parseArgBool)
-    Config.configValueLinkCliOption("target", scanProgram, new Option("-t, --target <ignorer>", 'the scan target'))
-    Config.configValueLinkCliOption("filter", scanProgram, new Option("--filter <filter>", 'filter results'))
-    Config.configValueLinkCliOption("sort", scanProgram, new Option("--sort <sorter>", 'sort results'))
-    Config.configValueLinkCliOption("style", scanProgram, new Option("--style <style>", 'results view mode'))
-    Config.configValueLinkCliOption("depth", scanProgram, new Option("--depth <depth>", 'the max results depth'), parseArgInt)
-    Config.configValueLinkCliOption("showSources", scanProgram, new Option("--show-sources [show]", 'show scan sources'), parseArgBool)
-    program.parse()
-}
+		const flags = program.optsWithGlobals<ProgramFlags>();
+		const chalk = new Chalk();
 
-/** Chalk, but configured by view-ignored cli. */
-export function getColorLevel(flags: ProgramFlags): ColorSupportLevel {
-    const colorLevel = (flags.noColor ? 0 : Math.max(0, Math.min(Number(flags.color ?? 3), 3))) as ColorSupportLevel
-    return colorLevel
-}
+		configManager.keySetValidator<'plugins'>('plugins', configDefault.plugins, configValueArray(configValueString()));
+		const loadResultConfig = configManager.load();
+		const builtInPlugins = await loadBuiltIns();
+		const configPlugins = configManager.get<'plugins'>('plugins');
+		const loadResultPlugins = (flags.plugins ? await loadPlugins(flags.plugins) : []).concat(builtInPlugins);
+		for (const loadResult of loadResultPlugins) {
+			if (loadResult.isLoaded) {
+				continue;
+			}
 
-/** Chalk, but configured by view-ignored cli. */
-export function getChalk(flags: ProgramFlags): ChalkInstance {
-    const chalk = new Chalk({ level: getColorLevel(flags) })
-    return chalk
+			logError(format(loadResult.exports), {
+				title: `view-ignored - Plugin loading failed: '${loadResult.resource}' ${
+					builtInPlugins.includes(loadResult)
+						? '(imported from built-ins)'
+						: (configPlugins.includes(loadResult.resource)
+							? '(imported by ' + configManager.path + ')'
+							: '(imported by --plugins option)')
+				}.`,
+			});
+		}
+
+		const targets = targetList();
+		configManager.keySetValidator('target', configDefault.target, configValueLiteral(targets));
+
+		{
+			const title = 'view-ignored - Configuration loading failed.';
+			const infoSymbol = decorCondition(flags.decor, {ifEmoji: 'ℹ️', ifNerd: icons['nf-seti-info'].char, postfix: ' '});
+			const errorIcon = decorCondition(flags.decor, {
+				ifNerd: icons['nf-seti-error'].char, ifEmoji: '⚠️', postfix: ' ',
+			});
+			const footer = `\n\n${chalk.blue(infoSymbol)}Configuration path: ${Config.configManager.path}`;
+			if (typeof loadResultConfig === 'string') {
+				logError(loadResultConfig + footer, {title});
+				process.exit(1);
+			}
+
+			if (loadResultConfig && loadResultConfig?.size > 0) {
+				const propertiesErrors = Array.from(loadResultConfig.entries()).map(
+					([key, message]) => `${Config.configManager.getPairString(key, {chalk, types: false, real: true})} - ${chalk.red(errorIcon)}${message}`,
+				).join('\n');
+				logError(`Invalid properties:\n${propertiesErrors}${footer}`, {title});
+
+				process.exit(1);
+			}
+		}
+
+		program.version('v' + package_.version, '-v');
+		configManager.setOption('noColor', program, new Option('--no-color', 'force disable colors'), parseArgumentBoolean);
+		configManager.setOption('posix', program, new Option('--posix', 'use unix path separator'), parseArgumentBoolean);
+		configManager.setOption('plugins', program, new Option('--plugins <modules...>', 'import modules to modify behavior'), parseArgumentArrayString);
+		configManager.setOption('decor', program, new Option('--decor <decor>', 'the interface decorations'), createArgumentParserStringLiteral([...decorNameList]));
+		configManager.setOption('parsable', program, new Option('-p, --parsable [parsable]', 'print parsable text'), parseArgumentBoolean);
+		configManager.setOption('target', scanProgram, new Option('-t, --target <ignorer>', 'the scan target'), createArgumentParserStringLiteral(targets));
+		configManager.setOption('filter', scanProgram, new Option('--filter <filter>', 'filter results'), createArgumentParserStringLiteral([...filterNameList]));
+		configManager.setOption('sort', scanProgram, new Option('--sort <sorter>', 'sort results'), createArgumentParserStringLiteral([...sortNameList]));
+		configManager.setOption('style', scanProgram, new Option('--style <style>', 'results view mode'), createArgumentParserStringLiteral([...styleNameList]));
+		configManager.setOption('depth', scanProgram, new Option('--depth <depth>', 'the max results depth'), parseArgumentInteger);
+		configManager.setOption('showSources', scanProgram, new Option('--show-sources [show]', 'show scan sources'), parseArgumentBoolean);
+		configManager.setOption('concurrency', scanProgram, new Option('--concurrency [limit]', 'the limit for the signgle directory operations'), parseArgumentInteger);
+
+		program.parse();
+	} catch (error) {
+		logError(format(error), {title: 'view-ignored - Fatal error.'});
+		process.exit(1);
+	}
 }
 
 /**
  * Command-line entire program flags.
+ * @public
  */
-export interface ProgramFlags {
-    plugins: string[]
-    noColor: boolean
-    color: string
-    decor: DecorName
-}
+export type ProgramFlags = {
+	posix: boolean;
+	plugins: string[];
+	noColor: boolean;
+	decor: DecorName;
+	parsable: boolean;
+};
 
 /**
  * Command-line 'scan' command flags.
+ * @public
  */
-export interface ScanFlags {
-    target: string
-    filter: FilterName
-    sort: SortName
-    style: StyleName
-    showSources: boolean
-    depth: number
-    parsable: boolean
-}
+export type ScanFlags = {
+	target: string;
+	filter: FilterName;
+	sort: SortName;
+	style: StyleName;
+	showSources: boolean;
+	depth: number;
+	concurrency: number;
+};
 
 /**
  * Command-line 'cfg get' command flags.
+ * @public
  */
-export interface ConfigGetFlags {
-    real: boolean
-}
+export type ConfigGetFlags = {
+	real: boolean;
+	types: boolean;
+};
 
 /**
  * `view-ignored` command-line programl
+ * @public
  */
-export const program = new Command()
+export const program = new Command();
 
 /**
  * Command-line 'scan' command.
+ * @public
  */
 export const scanProgram = program
-    .command("scan")
-    .aliases(['sc'])
-    .description('get ignored/included paths')
-    .action(actionScan)
+	.command('scan')
+	.aliases(['sc'])
+	.description('get ignored/included paths')
+	.action(actionScan);
 
 /**
-* Command-line 'config' command.
-*/
+ * Command-line 'config' command.
+ * @public
+ */
 export const cfgProgram = program
-    .command("config")
-    .alias('cfg')
-    .description('cli config manipulation')
+	.command('config')
+	.alias('cfg')
+	.description('cli config manipulation');
 
 /**
  * Command-line argument: key=value pair.
- * @see {@link parseArgKeyVal}
+ * @see {@link parseArgumentKeyValue}
+ * @public
  */
-export const argConfigKeyVal = new Argument('[pair]', "the configuration entry key=value'").argParser(parseArgKeyVal)
+
+export const argumentConfigKeyValue = new Argument('[pair]', 'the configuration entry key=value\'').argParser(parseArgumentKeyValue);
+
 /**
  * Command-line argument: config property.
  * @see {@link Config.configKeyList}
+ * @public
  */
-export const argConfigKey = new Argument('[key]', 'the configuration setting name').choices(Config.configKeyList)
+export const argumentConfigKey = new Argument('[key]', 'the configuration setting name').choices(Config.configKeyList);
 
-export const cfgGetOption = new Option('--real', 'use default value(s) as fallback').default(false)
+/**
+ * @public
+ */
+export const cfgRealOption = new Option('--real', 'use default value(s) as fallback').default(false);
+
+/**
+ * @public
+ */
+export const cfgTypesOption = new Option('--types', 'use default value(s) as fallback').default(false);
 
 cfgProgram
-    .command('path').description('print the config file path')
-    .action(actionCfgPath)
+	.command('path').description('print the config file path')
+	.action(actionCfgPath);
 cfgProgram
-    .command('set').description("set config property using syntax 'key=value'")
-    .addArgument(argConfigKeyVal)
-    .action(actionCfgSet)
+	.command('set').description('set config property using syntax \'key=value\'')
+	.addArgument(argumentConfigKeyValue)
+	.addOption(cfgRealOption)
+	.addOption(cfgTypesOption)
+	.action(actionCfgSet);
 cfgProgram
-    .command('unset').description("delete configuration value if cpecified, otherwise delete entire config")
-    .addArgument(argConfigKey)
-    .action(actionCfgUnset)
+	.command('unset').description('delete configuration value if cpecified, otherwise delete entire config')
+	.addArgument(argumentConfigKey)
+	.addOption(cfgRealOption)
+	.addOption(cfgTypesOption)
+	.action(actionCfgUnset);
 cfgProgram
-    .command('get').description('print configuration value(s). You can use --real option to view real values')
-    .addOption(cfgGetOption)
-    .addArgument(argConfigKey)
-    .action(actionCfgGet)
+	.command('get').description('print configuration value(s). You can use --real option to view real values')
+	.addOption(cfgRealOption)
+	.addOption(cfgTypesOption)
+	.addArgument(argumentConfigKey)
+	.action(actionCfgGet);
 
-export function parseArgArrStr(arg: string): string[] {
-    return arg.split(/[ ,|]/).filter(Boolean)
-}
-
-export function parseArgBool(arg: string): boolean {
-    if (!Config.boolValues.includes(arg)) {
-        throw new InvalidArgumentError(`Got invalid value '${arg}'. Should be a boolean.`)
-    }
-    return Config.trueValues.includes(arg)
-}
-
-export function parseArgInt(arg: string): number {
-    const num = parseInt(arg)
-    if (!Number.isInteger(num)) {
-        throw new InvalidArgumentError(`Got invalid value '${num}'. Should be an integer.`)
-    }
-    return num
-}
-
-export function parseArgKey(key: string): Config.ConfigKey {
-    if (!Config.isConfigKey(key)) {
-        throw new InvalidArgumentError(`Got invalid key '${key}'. Allowed config keys are ${Config.configKeyList.join(', ')}.`)
-    }
-    return key;
-}
-
-export function parseArgKeyVal(pair: string): Config.ConfigPair {
-    const result = pair.split('=') as [string, string]
-    const [key] = result
-    if (result.length !== 2) {
-        throw new InvalidArgumentError(`Expected 'key=value'.`)
-    }
-    if (!Config.isConfigKey(key)) {
-        throw new InvalidArgumentError(`Got invalid key '${key}'. Allowed config keys are ${Config.configKeyList.join(', ')}.`)
-    }
-    const option = Config.configValueGetCliOption(key)!
-    const val = option.parseArg?.(result[1], undefined) ?? result[1]
-
-    if (!Config.isConfigValue(key, val)) {
-        const list = Config.configValueList(key)
-        if (list === undefined) {
-            throw new InvalidArgumentError(`Invalid value '${val}' for the key '${key}'.`)
-        }
-        if (Array.isArray(list)) {
-            throw new InvalidArgumentError(`Invalid value '${val}' for the key '${key}'. Allowed config values are ${list.join(', ')}`)
-        }
-        throw new InvalidArgumentError(`Invalid value '${val}' for the key '${key}'. ${list}`)
-    }
-    return [key, val] as [Config.ConfigKey, Config.ConfigValue]
+/**
+ * @public
+ */
+export function parseArgumentArrayString(argument: string): string[] {
+	return argument.split(/[ ,|]/).filter(Boolean);
 }
 
 /**
+ * @public
+ */
+export function parseArgumentBoolean(argument: string): boolean {
+	const errorMessage = Config.configValueSwitch()(argument);
+	if (errorMessage !== undefined) {
+		throw new InvalidArgumentError(errorMessage);
+	}
+
+	return Config.switchTrueValues.includes(argument);
+}
+
+/**
+ * @public
+ */
+export function parseArgumentInteger(argument: string): number {
+	const value = Number.parseInt(argument, 10);
+	const errorMessage = Config.configValueInteger()(value);
+	if (errorMessage !== undefined) {
+		throw new InvalidArgumentError(errorMessage);
+	}
+
+	return value;
+}
+
+/**
+ * @public
+ */
+export function createArgumentParserStringLiteral(choices: string[]) {
+	return function (argument: string): string {
+		const errorMessage = Config.configValueLiteral(choices)(argument);
+		if (errorMessage !== undefined) {
+			throw new InvalidArgumentError(errorMessage);
+		}
+
+		return argument;
+	};
+}
+
+/**
+ * @public
+ */
+export function parseArgumentKey(key: string): string {
+	const errorMessage = Config.configManager.checkKey(key);
+	if (errorMessage !== undefined) {
+		throw new InvalidArgumentError(errorMessage);
+	}
+
+	return key;
+}
+
+/**
+ * @public
+ */
+export function parseArgumentKeyValue(pair: string): Config.ConfigPair {
+	const result = pair.split('=') as [string] | [string, string];
+	if (result.length > 2) {
+		throw new InvalidArgumentError('Expected \'key=value\'.');
+	}
+
+	if (result.length !== 2) {
+		const [key] = result;
+		const message = Config.configManager.checkKey(key);
+		if (message !== undefined) {
+			throw new InvalidArgumentError(`Expected 'key=value'. ${message}`);
+		}
+	}
+
+	const [key, valueString] = result as [string, string];
+	const {parseArg: parseArgument} = Config.configManager.getOption(key) ?? {};
+	const value = parseArgument?.<unknown>(valueString, undefined) ?? valueString;
+
+	const message = Config.configManager.checkValue(key, value);
+	if (message !== undefined) {
+		throw new InvalidArgumentError(`Expected 'key=value'. ${message}`);
+	}
+
+	return [key, value] as [Config.ConfigKey, Config.ConfigValue];
+}
+
+/**
+ * @public
+ */
+type ScanContext = {
+	message: string;
+	count: DeepStreamProgress;
+	stream: DeepStreamEventEmitter;
+	fileInfoList: FileInfo[];
+	reading: Promise<DeepStreamDataRoot>;
+};
+
+/**
  * Command-line 'scan' command action.
+ * @public
  */
 export async function actionScan(): Promise<void> {
-    const flagsGlobal: ProgramFlags & ScanFlags = scanProgram.optsWithGlobals()
-    const cwd = process.cwd()
-    const start = Date.now()
-    const chalk = getChalk(program.opts())
+	const flags = scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>();
+	const cwd = process.cwd();
+	const start = Date.now();
+	const chalk = new Chalk();
 
-    const fileInfoListP = scanProject(flagsGlobal.target, { filter: flagsGlobal.filter, maxDepth: flagsGlobal.depth })
-        .catch((error) => {
-            spinner.stop()
-            spinner.clear()
-            if (!(error instanceof ErrorNoSources)) {
-                throw error
-            }
-            console.error(`Bad sources for ${flagsGlobal.target}: ${ErrorNoSources.walk(flagsGlobal.target)}`)
-            process.exit(1)
-        })
+	const bind = targetGet(flags.target);
+	if (bind === undefined) {
+		logError(format(`Bad target '${flags.target}'. Registered targets: ${targetList().join(', ')}.`), {title: 'view-ignored - Fatal error.'});
+		process.exit(1);
+	}
 
-    if (flagsGlobal.parsable) {
-        console.log((await fileInfoListP).map(fi => fi.filePath + (flagsGlobal.showSources ? '<' + fi.source.sourcePath : '')).join('|'))
-        return
-    }
+	const optionsReal = makeOptionsReal({posix: flags.posix || flags.parsable, concurrency: flags.concurrency});
+	const stream = Directory.deepStream('.', {
+		concurrency: optionsReal.concurrency,
+		cwd: optionsReal.cwd,
+		modules: optionsReal.modules,
+	});
+	if (flags.parsable) {
+		const fileInfoList: FileInfo[] = await scan(stream, {
+			...optionsReal,
+			target: flags.target,
+			filter: flags.filter,
+			maxDepth: flags.depth,
+		});
+		console.log(fileInfoList.map(fileInfo =>
+			fileInfo.relativePath + (
+				flags.showSources && fileInfo.source !== undefined ? '<' + (fileInfo.source.relativePath) : ''
+			),
+		).join(','));
+	} else {
+		let name: string = decorCondition(flags.decor, {ifNerd: bind.icon?.char, postfix: ' '}) + bind.name;
+		if (bind.icon?.color !== undefined) {
+			name = chalk.hex('#' + bind.icon.color.toString(16))(name);
+		}
 
-    const spinner = ora({ text: cwd, color: 'white' })
-    spinner.start()
+		const context: ScanContext = {
+			count: {
+				files: 0, directories: 0, current: 0, total: 0,
+			},
+			fileInfoList: [],
+			stream,
+			message: '',
+			reading: new Promise<DeepStreamDataRoot>(resolve => {
+				stream.on('end', data => {
+					resolve(data);
+				});
+			}),
+		};
+		const progress = new Listr([
+			{
+				title: `${name} ${chalk.hex('#73A7DE')(flags.filter)} ${cwd}`,
+				async task(context, task) {
+					return task.newListr([
+						{
+							title: 'Preparing',
+							async task() {
+								const {progress} = await context.reading;
+								Object.assign(context.count, progress);
+							},
+						},
+						{
+							title: 'Scanning',
+							async task() {
+								context.fileInfoList = await scan(
+									context.stream,
+									{
+										...optionsReal,
+										target: flags.target,
+										filter: flags.filter,
+										maxDepth: flags.depth,
+									},
+								);
+							},
+						},
+						{
+							title: 'Printing',
+							async task() {
+								const sorter = Sorting[flags.sort];
+								const cache = new Map<File, number>();
+								if (flags.sort === 'modified') {
+									const {tree} = await context.reading;
+									await tree.deepModifiedTime(cache, optionsReal);
+								}
 
-    spinner.suffixText = "Generating...";
-    const fileInfoList = await fileInfoListP
+								const time = Date.now() - start;
+								const fileInfoListSorted = context.fileInfoList.sort((a, b) => sorter(String(a), String(b), cache));
 
-    const sorter = Sorting[flagsGlobal.sort]
-    const cache = new Map<string, number>(fileInfoList.map(String).map(
-        filePath => [filePath, fs.statSync(filePath).mtime.getTime()])
-    )
-    const lookedSorted = fileInfoList.sort((a, b) => sorter(a.toString(), b.toString(), cache))
+								const files = formatFiles(
+									fileInfoListSorted,
+									{
+										chalk,
+										posix: flags.posix,
+										style: flags.style,
+										decor: flags.decor,
+										showSources: flags.showSources,
+									});
+								const fastSymbol = decorCondition(flags.decor, {ifEmoji: '⚡', ifNerd: icons['nf-md-lightning_bolt'].char});
+								const infoSymbol = decorCondition(flags.decor, {ifEmoji: 'ℹ️', ifNerd: icons['nf-seti-info'].char, postfix: ' '});
 
-    const files = formatFiles(lookedSorted, { chalk, style: flagsGlobal.style, decor: flagsGlobal.decor, showSources: flagsGlobal.showSources })
-    const checkSymbol = decorCondition(flagsGlobal.decor, { ifEmoji: '✅', ifNerd: '\uf00c', postfix: ' ' })
-    const fastSymbol = decorCondition(flagsGlobal.decor, { ifEmoji: '⚡', ifNerd: '\udb85\udc0c' })
-    const bind = targetGet(flagsGlobal.target)!
-    const name = typeof bind.name === "string" ? bind.name : decorCondition(flagsGlobal.decor, bind.name)
-    const infoSymbol = decorCondition(flagsGlobal.decor, { ifEmoji: 'ℹ️', ifNerd: '\ue66a', postfix: ' ' })
+								let message = '';
+								message += files;
+								message += '\n';
+								message += `Done in ${time < 2000 ? chalk.yellow(fastSymbol) : ''}${stringTime(time, chalk)}.`;
+								message += '\n';
+								message += `Listed ${highlight(String(context.fileInfoList.length), chalk)} files.`;
+								message += '\n';
+								message += `Processed ${highlight(String(context.count.files), chalk)} files and ${highlight(String(context.count.directories), chalk)} directories.`;
+								message += '\n';
+								if (bind.testCommand) {
+									message += '\n';
+									message += `${chalk.blue(infoSymbol)}You can use ${highlight(`'${bind.testCommand}'`, chalk)} to check if the list is valid.`;
+								}
 
-    const time = Date.now() - start
-    let message = ''
-    message += files
-    message += '\n'
-    message += `${chalk.green(checkSymbol)}Done in ${time < 400 ? chalk.yellow(fastSymbol) : ''}${time}ms.`
-    message += '\n'
-    message += `${fileInfoList.length} files listed for ${name} (${flagsGlobal.filter}).`
-    message += '\n'
-    if (bind.testCommand) {
-        message += '\n'
-        message += `${chalk.blue(infoSymbol)}You can use '${chalk.magenta(bind.testCommand)}' to check if the list is valid.`
-    }
-    message += '\n'
-    spinner.stop()
-    spinner.clear()
-    console.log(cwd + '\n' + message)
+								message += '\n';
+
+								context.message = message;
+							},
+						},
+					]);
+				},
+			},
+		],
+		{
+			ctx: context,
+			exitOnError: true,
+		});
+		try {
+			context.stream.run();
+			await progress.run();
+		} catch (error) {
+			if (!(error instanceof ViewIgnoredError)) {
+				logError(format(error), {title: 'view-ignored - Error while scan.'});
+			}
+		}
+
+		console.log(context.message);
+	}
 }
 
 /**
  * Command-line 'config path' command action.
+ * @public
  */
 export function actionCfgPath(): void {
-    console.log(Config.configFilePath)
+	console.log(Config.configManager.path);
 }
 
 /**
  * Command-line 'config set' command action
+ * @public
  */
-export function actionCfgSet(pair?: Config.ConfigPair): void {
-    if (pair === undefined) {
-        console.log(`Allowed config keys are ${Config.configKeyList.join(', ')}.`)
-        return
-    }
-    const [key, val] = pair
-    Config.configManager.set(key, val).save()
-    console.log(Config.configManager.getPairString(key))
+export function actionCfgSet(pair: Config.ConfigPair | undefined, options: ConfigGetFlags): void {
+	if (pair === undefined) {
+		console.log(`Allowed config keys are ${Config.configKeyList.join(', ')}.`);
+		return;
+	}
+
+	const [key, value] = pair;
+	const errorMessage = Config.configManager.set(key, value);
+	if (errorMessage !== undefined) {
+		logError(errorMessage);
+		return;
+	}
+
+	const flags = scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>();
+	const chalk = new Chalk();
+	Config.configManager.save();
+	console.log(Config.configManager.getPairString(key, {
+		chalk, real: options.real, types: options.types, parsable: flags.parsable,
+	}));
 }
 
 /**
  * Command-line 'config unset' command action
+ * @public
  */
-export function actionCfgUnset(key: Config.ConfigKey | undefined): void {
-    if (key === undefined) {
-        console.log('Configuration file has been completely deleted.')
-    }
-    Config.configManager.unset(key).save()
-    console.log(Config.configManager.getPairString(key))
+export function actionCfgUnset(key: Config.ConfigKey | undefined, options: ConfigGetFlags): void {
+	if (key === undefined) {
+		console.log('Configuration file has been completely deleted.');
+	}
+
+	const flags = scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>();
+	const chalk = new Chalk();
+	Config.configManager.unset(key).save();
+	console.log(Config.configManager.getPairString(key, {
+		chalk, real: options.real, types: options.types, parsable: flags.parsable,
+	}));
 }
 
 /**
  * Command-line 'config unset' command action
+ * @public
  */
 export function actionCfgGet(key: Config.ConfigKey | undefined, options: ConfigGetFlags): void {
-    console.log(Config.configManager.getPairString(key, options.real))
+	const flags = scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>();
+	const chalk = new Chalk();
+	console.log(Config.configManager.getPairString(key, {
+		chalk, real: options.real, types: options.types, parsable: flags.parsable,
+	}));
 }
