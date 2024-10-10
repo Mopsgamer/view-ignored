@@ -3,7 +3,7 @@ import process from 'node:process';
 import * as FS from 'node:fs';
 import {createRequire} from 'node:module';
 import EventEmitter from 'node:events';
-import pLimit from 'p-limit';
+import pLimit, {type LimitFunction} from 'p-limit';
 import {configDefault} from '../config.js';
 import {
 	Directory,
@@ -178,36 +178,32 @@ export async function scan(argument0: string | string[] | Directory | DeepStream
 		return scan(tree, options);
 	}
 
-	const cache = optionsReal.target(argument0, optionsReal);
-
+	const tree = argument0;
+	const cache = optionsReal.target(tree, optionsReal);
 	const fileInfoList: FileInfo[] = [];
-	for (const entryDirectory of argument0.deepIterator()) {
-		if (entryDirectory instanceof File) {
-			continue;
-		}
+	const promiseList: Array<Promise<void>> = [];
+	const cacheDirectories = new Map<Directory, LimitFunction>();
+	for (const directory of [tree].concat(tree.deep(Directory))) {
+		cacheDirectories.set(directory, pLimit(optionsReal.concurrency));
+	}
 
-		const subLimit = pLimit(optionsReal.concurrency);
-		const subPromiseList: Array<Promise<void>> = [];
+	for (const entry of tree.deepIterator(File)) {
+		const limit = cacheDirectories.get(entry.parent)!;
+		promiseList.push(limit(async () => {
+			const sourceInfo = cache.get(entry);
 
-		for (const entry of entryDirectory.children.values()) {
-			if (entry instanceof Directory) {
-				continue;
+			const fileInfo = FileInfo.from(entry, sourceInfo);
+			const ignored = !fileInfo.isIncludedBy(optionsReal.filter);
+
+			if (ignored) {
+				return;
 			}
 
-			subPromiseList.push(subLimit((): void => {
-				const sourceInfo = cache.get(entry);
-
-				const fileInfo = FileInfo.from(entry, sourceInfo);
-				const ignored = !fileInfo.isIncludedBy(optionsReal.filter);
-
-				if (ignored) {
-					return;
-				}
-
-				fileInfoList.push(fileInfo);
-			}));
-		}
+			fileInfoList.push(fileInfo);
+		}));
 	}
+
+	await Promise.all(promiseList);
 
 	return fileInfoList;
 }

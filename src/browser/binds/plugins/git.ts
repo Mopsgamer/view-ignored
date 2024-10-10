@@ -38,7 +38,7 @@ export function useSourceFile(map: Map<File, SourceInfo>, sourceFile: File, scan
  * @param base The name for gitignore-like file.
  */
 export const methodologyGitignoreLike = (base: string): Methodology => function (tree, o) {
-	const sourceList = tree.deep().filter(dirent => dirent instanceof File && dirent.base === base) as File[];
+	const sourceList = tree.deep(File).filter(dirent => dirent.base === base);
 	const map = new Map<File, SourceInfo>();
 	for (const sourceFile of sourceList) {
 		const scanner = new ScannerGitignore({exclude: matcherExclude});

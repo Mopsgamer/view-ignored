@@ -20,7 +20,7 @@ export type DeepStreamDataRoot = {
 	progress: DeepStreamProgress;
 };
 export type DeepStreamData = {
-	target: Directory | File;
+	target: Entry;
 	progress: DeepStreamProgress;
 };
 
@@ -37,7 +37,7 @@ export type DeepStreamEventMap = {
 	'progress': [DeepStreamProgress];
 };
 
-export type DeepStream = ReadableStream<File | Directory>;
+export type DeepStream = ReadableStream<Entry>;
 
 type DeepStreamNestedOptions = DeepStreamOptions & {
 	controller?: DeepStreamEventEmitter;
@@ -48,6 +48,10 @@ type DeepStreamNestedOptions = DeepStreamOptions & {
 export type DeepCountOptions = Pick<DeepStreamNestedOptions, 'modules' | 'cwd' | 'concurrency' | 'progress'>;
 export type DeepModifiedTimeOptions = Pick<RealScanOptions, 'concurrency' | 'modules'>;
 export type DeepStreamOptions = Pick<RealScanOptions, 'cwd' | 'modules' | 'concurrency'>;
+
+export type Entry = Directory | File;
+export type EntryClass = typeof Directory | typeof File;
+export type EntryInstanceFrom<T extends undefined | EntryClass> = T extends undefined ? Entry : T extends typeof Directory ? Directory : File;
 
 /**
  * File system directory representation.
@@ -146,10 +150,15 @@ export class Directory implements ParsedPath {
 	/**
 	 * Get deep iterator for the directory.
 	 */
-	public static deepIterator = function * (directory: Directory): IterableIterator<Directory | File> {
+	public static deepIterator = function * <T extends undefined | EntryClass>(
+		directory: Directory, instanceOf?: T,
+	): IterableIterator<EntryInstanceFrom<T>> {
 		const subDirectories: Directory[] = [];
 		for (const element of directory.children.values()) {
-			yield element;
+			if (instanceOf === undefined || element instanceof instanceOf) {
+				yield element as EntryInstanceFrom<T>;
+			}
+
 			if (element instanceof Directory) {
 				subDirectories.push(element);
 			}
@@ -239,7 +248,7 @@ export class Directory implements ParsedPath {
 		 *
 		 * Values: {@link File} or {@link Directory} itself.
          */
-		public readonly children: Map<string, Directory | File>,
+		public readonly children: Map<string, Entry>,
 	) {
 		const parsed = parse(absolutePath);
 		this.base = parsed.base;
@@ -249,12 +258,18 @@ export class Directory implements ParsedPath {
 		this.root = parsed.root;
 	}
 
-	deepIterator() {
-		return Directory.deepIterator(this);
+	/**
+	 * @param instanceOf Optionally filter children by type.
+	 */
+	deepIterator<T extends undefined | typeof File | typeof Directory>(instanceOf?: T) {
+		return Directory.deepIterator<T>(this, instanceOf);
 	}
 
-	deep() {
-		return Array.from(Directory.deepIterator(this));
+	/**
+	 * @param instanceOf Optionally filter children by type.
+	 */
+	deep<T extends undefined | typeof File | typeof Directory>(instanceOf?: T) {
+		return Array.from(Directory.deepIterator<T>(this, instanceOf));
 	}
 
 	/**

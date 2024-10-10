@@ -549,27 +549,14 @@ function testTarget(title: string, data: TestTargetSubtestData) {
 		const fileInfoList = await fileInfoListPromise;
 		const shouldPaths = should
 			.flatMap(shouldCase => shouldCase.include);
-		const resultsUnexpected = fileInfoList
-			.filter(fileInfo => !shouldPaths.includes(fileInfo.relativePath));
-		const resultsMissing = shouldPaths
-			.filter(expectedPath => !fileInfoList.map(String).includes(expectedPath));
 
 		const info = `\n${
 			fileInfoList.length === 0 ? ''
-				: `\tResults:\n\t  ${fileInfoList.map(fileInfo => `${
-					(resultsUnexpected.includes(fileInfo) ? chalk.red : chalk.reset)(
-						fileInfo.toString({source: true}))
-				}`).join('\n\t  ')}\n\n`
-		+			(resultsMissing.length === 0 ? ''
-			: `\tMissing:\n\t  ${resultsMissing.join('\n\t  ')}\n\n`)
-		+			(resultsUnexpected.length === 0 ? ''
-			: `\tUnexpected:\n\t  ${resultsUnexpected.join('\n\t  ')}\n\n`)
+				: `\tResults:\n\t  ${fileInfoList.map(fileInfo => fileInfo.toString({source: true})).join('\n\t  ')}\n\n`
 		}`
 			.replaceAll('\t', ' '.repeat(6));
 
-		if (resultsMissing.length > 0) {
-			throw new AssertionError({message: 'Bad path list.' + chalk.white(info)});
-		}
+		assert.deepEqual(fileInfoList.map(String).sort(), shouldPaths.sort(), 'Bad path list.');
 
 		for (const fileInfo of fileInfoList) {
 			const {source} = fileInfo;
