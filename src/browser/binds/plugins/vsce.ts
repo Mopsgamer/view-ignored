@@ -13,16 +13,25 @@ const name: TargetName = 'VSCE';
 const icon: TargetIcon = {...icons['nf-md-microsoft_visual_studio_code'], color: 0x23_A9_F1};
 const testCommand = 'vsce ls';
 
+/**
+ * @private
+ */
 export const matcherExclude: string[] = [
 	...git.matcherExclude,
 ];
 
+/**
+ * @private
+ */
 export type ValidManifestVsce = {
 	name: string;
 	version: string;
 	engines: {vscode: string};
 };
 
+/**
+ * @private
+ */
 export function isValidManifest(value: unknown): value is ValidManifestVsce {
 	if (value?.constructor !== Object) {
 		return false;
@@ -41,7 +50,10 @@ export function isValidManifest(value: unknown): value is ValidManifestVsce {
 	return 'vscode' in engines && typeof engines.vscode === 'string';
 }
 
-const methodologyManifestVsce: Methodology = function (tree, o) {
+/**
+ * @private
+ */
+export const methodologyManifestVsce: Methodology = function (tree, o) {
 	const packageJson = Array.from(tree.deepIterator()).find(dirent => dirent instanceof File && dirent.base === 'package.json') as File | undefined;
 	if (packageJson === undefined) {
 		throw new NoSourceError('package.json');

@@ -17,6 +17,9 @@ const name: TargetName = 'NPM';
 const icon: TargetIcon = {...icons['nf-seti-npm'], color: 0xCA_04_04};
 const testCommand = 'npm pack --dry-run';
 
+/**
+ * @private
+ */
 export const matcherExclude = [
 	...git.matcherExclude,
 	'**/node_modules/**',
@@ -35,6 +38,10 @@ export const matcherExclude = [
 	'**/CVS/**',
 	'**/npm-debug.log',
 ];
+
+/**
+ * @private
+ */
 export const matcherInclude = [
 	'bin/**',
 	'package.json',
@@ -43,12 +50,18 @@ export const matcherInclude = [
 	'LICENCE*',
 ];
 
+/**
+ * @private
+ */
 export type ValidManifestNpm = {
 	name: string;
 	version: string;
 	files?: string[];
 };
 
+/**
+ * @private
+ */
 export function isValidManifest(value: unknown): value is ValidManifestNpm {
 	if (value?.constructor !== Object) {
 		return false;
@@ -60,6 +73,9 @@ export function isValidManifest(value: unknown): value is ValidManifestNpm {
 	&& (value_.files === undefined || (Array.isArray(value_.files) && value_.files.every(element => typeof element === 'string')));
 }
 
+/**
+ * @private
+ */
 export function useChildren(tree: Directory, map: Map<File, SourceInfo>, getMap: (child: Directory) => Map<File, SourceInfo>) {
 	for (const child of Array.from(tree.children.values())) {
 		if (!(child instanceof Directory)) {
@@ -75,6 +91,9 @@ export function useChildren(tree: Directory, map: Map<File, SourceInfo>, getMap:
 	return map;
 }
 
+/**
+ * @private
+ */
 export const sourceSearch = (priority: string[], scanner: PatternScanner): Methodology => function (tree, o) {
 	const map = new Map<File, SourceInfo>();
 
@@ -123,6 +142,7 @@ export const sourceSearch = (priority: string[], scanner: PatternScanner): Metho
 /**
  * @param priority The list of file names from highest to lowest priority.
  * @param scanner The pattern scanner.
+ * @private
  */
 export const methodologyManifestNpmLike = (priority: string[], scanner: PatternScanner): Methodology => function (tree, o) {
 	const packageJson = tree.get('package.json');

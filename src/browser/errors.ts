@@ -1,9 +1,15 @@
 import {type File} from './lib.js';
 
+/**
+ * @public
+ */
 export class ViewIgnoredError extends Error {
 	name = 'ViewIgnoredError';
 }
 
+/**
+ * @public
+ */
 export class NoSourceError extends ViewIgnoredError {
 	static joinOr(fileBaseList: string[]) {
 		return fileBaseList.map(base => `'${base}'`).join(' or ');
@@ -31,6 +37,9 @@ export class NoSourceError extends ViewIgnoredError {
 	}
 }
 
+/**
+ * @public
+ */
 export class BadSourceError extends ViewIgnoredError {
 	name = 'BadSourceError';
 	/**
@@ -52,6 +61,9 @@ export class BadSourceError extends ViewIgnoredError {
 	}
 }
 
+/**
+ * @public
+ */
 export class InvalidPatternError extends ViewIgnoredError {
 	name = 'InvalidPatternError';
 	constructor(file: File, pattern?: string | string[]) {
@@ -59,6 +71,9 @@ export class InvalidPatternError extends ViewIgnoredError {
 	}
 }
 
+/**
+ * @public
+ */
 export class TargetNotBoundError extends ViewIgnoredError {
 	name = 'TargetNotBoundError';
 	constructor(targetId: string) {

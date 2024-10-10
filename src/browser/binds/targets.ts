@@ -1,10 +1,10 @@
-
 import {
 	type ScanOptions,
 } from '../lib.js';
 
 /**
- * The target icon/logo as a NF icon.
+ * The target icon/logo as a {@link https://www.nerdfonts.com/ NF} icon.
+ * @public
  */
 export type TargetIcon = {
 	/**
@@ -17,16 +17,21 @@ export type TargetIcon = {
 	color?: number;
 };
 
+/**
+ * @public
+ */
 export type TargetName = string;
 
 /**
  * Should satisfy RegExp: `/^[-a-zA-Z0-9]+$/`.
+ * @public
  */
 export type TargetId = string;
 
 /**
  * @param value Target's id. Simple name.
  * @returns `true`, if the id is available for binding.
+ * @public
  */
 export function isTargetId(value: unknown): value is TargetId {
 	return typeof value === 'string' && (/^[-a-zA-Z\d]+$/.exec(value)) !== null;
@@ -35,6 +40,7 @@ export function isTargetId(value: unknown): value is TargetId {
 /**
  * The bind which allows use predefined options for scan functions.
  * @see {@link scanFolder}
+ * @public
  */
 export type TargetBind = {
 	/**
@@ -69,6 +75,7 @@ export type TargetBind = {
 
 /**
  * Checks if the value is the {@link TargetBind}.
+ * @public
  */
 export function isTargetBind(value: unknown): value is TargetBind {
 	return value?.constructor === Object;
@@ -76,11 +83,13 @@ export function isTargetBind(value: unknown): value is TargetBind {
 
 /**
  * The container for binds: id=bind.
+ * @private
  */
 const targetBindMap = new Map<string, TargetBind>();
 
 /**
  * Allows to create targets for view-ignored scan* functions.
+ * @public
  * @example
  * scanFolder("abc") // error
  * Bindings.targetSet("abc", {...})
@@ -92,6 +101,7 @@ export function targetSet(bind: TargetBind): void {
 
 /**
  * Get all target ids.
+ * @public
  * @example
  * ["git", "npm", "vsce", ...]
  */
@@ -103,6 +113,7 @@ export function targetList(): string[] {
 /**
  * Get target bind by target id.
  * @param id Target id.
+ * @public
  */
 export function targetGet(id: TargetId): TargetBind | undefined {
 	return targetBindMap.get(id);

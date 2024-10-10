@@ -9,6 +9,7 @@ import {type Directory} from './directory.js';
 
 /**
  * @see {@link FileInfo.prototype.toString}
+ * @public
  */
 export type FileInfoToStringOptions = {
 	/**
@@ -53,10 +54,14 @@ export type FileInfoToStringOptions = {
 	entire?: boolean;
 };
 
+/**
+ * @public
+ */
 export type FileInfoStatus = 'ignored' | 'included' | 'non-target';
 
 /**
  * The result of the file path scan.
+ * @public
  */
 export class FileInfo extends File {
 	static from(file: File, source?: SourceInfo) {

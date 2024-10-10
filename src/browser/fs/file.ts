@@ -1,6 +1,9 @@
 import {parse, type ParsedPath} from 'node:path';
 import {type Directory} from './directory.js';
 
+/**
+ * @public
+ */
 export class File implements ParsedPath {
 	public readonly base: string;
 	public readonly dir: string;

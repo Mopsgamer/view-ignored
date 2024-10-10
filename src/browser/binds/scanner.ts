@@ -2,6 +2,9 @@ import {minimatch} from 'minimatch';
 import {gitignoreToMinimatch} from '@humanwhocodes/gitignore-to-minimatch';
 import {type Scanner} from '../lib.js';
 
+/**
+ * @public
+ */
 export type PatternScannerOptions = {
 	pattern?: string | string[];
 	exclude?: string | string[];
@@ -9,6 +12,9 @@ export type PatternScannerOptions = {
 	negated?: boolean;
 };
 
+/**
+ * @public
+ */
 export type PatternScanner = Scanner & {
 	pattern: string | string[];
 	exclude: string | string[];
@@ -20,6 +26,9 @@ export type PatternScanner = Scanner & {
 	ignores(path: string, argument?: PatternScannerOptions | string | string[]): boolean;
 };
 
+/**
+ * @public
+ */
 export class ScannerMinimatch implements PatternScanner {
 	public negated: boolean;
 	protected _pattern: string | string[];
@@ -105,6 +114,9 @@ export class ScannerMinimatch implements PatternScanner {
 	}
 }
 
+/**
+ * @public
+ */
 export class ScannerGitignore extends ScannerMinimatch {
 	private static gitignoreToMinimatch<T extends string | string[]>(argument: T): T;
 	private static gitignoreToMinimatch(argument: string | string[]): string | string[] {

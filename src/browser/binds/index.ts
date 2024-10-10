@@ -6,7 +6,30 @@ export * from './scanner.js';
 export * from './targets.js';
 
 /**
+ * @private
+ */
+const builtInImportMap: Record<BuiltInName, string> = {
+	git: './plugins/git.js',
+	npm: './plugins/npm.js',
+	vsce: './plugins/vsce.js',
+	yarn: './plugins/yarn.js',
+};
+
+/**
+ * Built-in name list.
+ * @public
+ */
+export const builtInNameList = ['git', 'npm', 'vsce', 'yarn'] as const;
+
+/**
+ * Built-in name type.
+ * @public
+ */
+export type BuiltInName = typeof builtInNameList[number];
+
+/**
  * The result of loading.
+ * @public
  */
 export type PluginLoaded = {
 	resource: string;
@@ -15,7 +38,8 @@ export type PluginLoaded = {
 };
 
 /**
- * If a plugin wants to change something, it must export it as default.
+ * If a plugin wants to change something, it must export default.
+ * @private
  */
 export type PluginExport = {
 	viewignored: {
@@ -25,6 +49,7 @@ export type PluginExport = {
 
 /**
  * Checks if the value is the {@link PluginExport}.
+ * @public
  */
 export function isPluginExport(value: unknown): value is PluginExport {
 	if (value?.constructor !== Object) {
@@ -38,6 +63,7 @@ export function isPluginExport(value: unknown): value is PluginExport {
 
 /**
  * Imports the plugin's exported data.
+ * @public
  */
 export function importPlugin(exportData: PluginExport) {
 	const {addTargets} = exportData.viewignored;
@@ -49,6 +75,7 @@ export function importPlugin(exportData: PluginExport) {
 /**
  * @param modulePath The plugin name.
  * @returns The import result for the module.
+ * @public
  */
 export async function loadPlugin(modulePath: string, useImport = false): Promise<PluginLoaded> {
 	try {
@@ -74,6 +101,7 @@ export async function loadPlugin(modulePath: string, useImport = false): Promise
 /**
  * @param modulePathList The plugin name list.
  * @returns The import result for the list of modules.
+ * @public
  */
 export async function loadPlugins(modulePathList: string[]): Promise<PluginLoaded[]> {
 	const limit = pLimit(5);
@@ -81,16 +109,10 @@ export async function loadPlugins(modulePathList: string[]): Promise<PluginLoade
 	return allLoaded;
 }
 
-const builtInImportMap: Record<BuiltInName, string> = {
-	git: './plugins/git.js',
-	npm: './plugins/npm.js',
-	vsce: './plugins/vsce.js',
-	yarn: './plugins/yarn.js',
-};
-
-export const builtInNameList = ['git', 'npm', 'vsce', 'yarn'] as const;
-export type BuiltInName = typeof builtInNameList[number];
-
+/**
+ * Load any built-in plugin.
+ * @public
+ */
 export function loadBuiltIn(builtIn: BuiltInName): Promise<PluginLoaded> {
 	return loadPlugin(builtInImportMap[builtIn], true);
 }
@@ -98,6 +120,7 @@ export function loadBuiltIn(builtIn: BuiltInName): Promise<PluginLoaded> {
 /**
  * @param modulePathList The plugin name list.
  * @returns The import result for the list of modules.
+ * @public
  */
 export async function loadBuiltIns(builtInList: BuiltInName[] = Array.from(builtInNameList)): Promise<PluginLoaded[]> {
 	const limit = pLimit(5);

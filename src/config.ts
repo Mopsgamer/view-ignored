@@ -16,41 +16,56 @@ import {filterNameList, type FilterName} from './browser/filtering.js';
 
 /**
  * The full config file name - `".view-ignored"`.
+ * @public
  */
 export const configFileName = '.view-ignored';
 
 /**
  * The user's home directory + the config file name.
  * @see {@link os.homedir}
+ * @private
  */
 const configFilePath = path.join(os.homedir(), configFileName);
 
 /**
  * Command-line configuration property list.
+ * @public
  */
 export const configKeyList = ['posix', 'noColor', 'target', 'filter', 'sort', 'style', 'decor', 'depth', 'showSources', 'plugins', 'parsable', 'concurrency'] as const satisfies ReadonlyArray<keyof Config>;
 
 /**
- * Command-line configuration's key type.
+ * Command-line configuration's property type.
+ * @public
  */
 export type ConfigKey = typeof configKeyList[number] & keyof Config;
 
+/**
+ * @public
+ */
 export type ConfigValue<KeyT extends ConfigKey = ConfigKey> = Config[KeyT];
 
+/**
+ * @public
+ */
 export type ShowSourcesType = boolean;
 
+/**
+ * @public
+ */
 export function isShowSources(value: unknown): value is ShowSourcesType {
 	return typeof value === 'boolean';
 }
 
 /**
  * Represents array with the key nad the value.
+ * @public
  */
 export type ConfigPair<KeyT extends ConfigKey = ConfigKey> = [key: KeyT, value: ConfigValue<KeyT>];
 
 /**
  * Command-line configuration structure.
  * @see {@link configKeyList} Before adding new properties.
+ * @public
  */
 export type Config = {
 	[key: string]: unknown;
@@ -70,6 +85,7 @@ export type Config = {
 
 /**
  * Command-line default config values.
+ * @public
  */
 export const configDefault: Readonly<Config> = {
 	parsable: false,
@@ -88,11 +104,15 @@ export const configDefault: Readonly<Config> = {
 
 /**
  * @returns Error message and parsed value.
+ * @public
  */
 export type ConfigValidator = ((value: unknown) => string | undefined) & {
 	typeName: string;
 };
 
+/**
+ * @public
+ */
 export const configValueArray = <T extends ConfigValidator>(type?: T) => {
 	const validator: ConfigValidator = value => {
 		if (Array.isArray(value)) {
@@ -117,6 +137,9 @@ export const configValueArray = <T extends ConfigValidator>(type?: T) => {
 	return validator;
 };
 
+/**
+ * @public
+ */
 export const configValueLiteral = (choices: readonly unknown[]): ConfigValidator => {
 	const validator: ConfigValidator = value => {
 		if (choices.includes(value)) {
@@ -131,9 +154,24 @@ export const configValueLiteral = (choices: readonly unknown[]): ConfigValidator
 	return validator;
 };
 
-export const trueValues = ['true', 'on', 'yes', 'y', 'enable', 'enabled', '1'];
-export const falseValues = ['false', 'off', 'no', 'n', 'disable', 'disabled', '0'];
-export const booleanValues = trueValues.concat(falseValues);
+/**
+ * @public
+ */
+export const switchTrueValues = ['true', 'on', 'yes', 'y', 'enable', 'enabled', '1'];
+
+/**
+ * @public
+ */
+export const switchFalseValues = ['false', 'off', 'no', 'n', 'disable', 'disabled', '0'];
+
+/**
+ * @public
+ */
+export const booleanValues = switchTrueValues.concat(switchFalseValues);
+
+/**
+ * @public
+ */
 export const configValueSwitch = (): ConfigValidator => {
 	const validator: ConfigValidator = value => {
 		if (booleanValues.includes(value as string)) {
@@ -148,6 +186,9 @@ export const configValueSwitch = (): ConfigValidator => {
 	return validator;
 };
 
+/**
+ * @public
+ */
 export const configValueBoolean = (): ConfigValidator => {
 	const validator: ConfigValidator = value => {
 		if (typeof value === 'boolean') {
@@ -161,6 +202,9 @@ export const configValueBoolean = (): ConfigValidator => {
 	return validator;
 };
 
+/**
+ * @public
+ */
 export const configValueObject = (): ConfigValidator => {
 	const validator: ConfigValidator = value => {
 		if (value?.constructor === Object) {
@@ -174,6 +218,9 @@ export const configValueObject = (): ConfigValidator => {
 	return validator;
 };
 
+/**
+ * @public
+ */
 export const configValueString = (): ConfigValidator => {
 	const validator: ConfigValidator = value => {
 		if (typeof value === 'string') {
@@ -187,6 +234,9 @@ export const configValueString = (): ConfigValidator => {
 	return validator;
 };
 
+/**
+ * @public
+ */
 export const configValueNumber = (): ConfigValidator => {
 	const validator: ConfigValidator = value => {
 		if (typeof value === 'number') {
@@ -200,6 +250,9 @@ export const configValueNumber = (): ConfigValidator => {
 	return validator;
 };
 
+/**
+ * @public
+ */
 export const configValueInteger = (): ConfigValidator => {
 	const validator: ConfigValidator = value => {
 		if (typeof value === 'number' && (Number.isSafeInteger(value) || Math.abs(value) === Infinity)) {
@@ -213,6 +266,9 @@ export const configValueInteger = (): ConfigValidator => {
 	return validator;
 };
 
+/**
+ * @public
+ */
 export type ConfigManagerGetOptions = {
 	/**
 	 * Use default value as fallback.
@@ -221,6 +277,9 @@ export type ConfigManagerGetOptions = {
 	real?: boolean;
 };
 
+/**
+ * @public
+ */
 export type ConfigManagerGetPairStringOptions = ConfigManagerGetOptions & {
 	/**
 	 * Add the type postfix.
@@ -243,6 +302,7 @@ export type ConfigManagerGetPairStringOptions = ConfigManagerGetOptions & {
 
 /**
  * File-specific actions container.
+ * @public
  */
 export class ConfigManager<ConfigType extends Config = Config> {
 	/**
@@ -531,7 +591,9 @@ export class ConfigManager<ConfigType extends Config = Config> {
 		}).join('\n');
 	}
 }
+
 /**
  * File-specific actions container. Contains get, set, unset, save, load and other configuration actions.
+ * @public
  */
 export const configManager = new ConfigManager(configFilePath);

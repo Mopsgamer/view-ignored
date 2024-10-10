@@ -9,19 +9,21 @@ import * as npm from './npm.js';
 const id = 'yarn';
 const name: TargetName = 'Yarn';
 const icon: TargetIcon = {...icons['nf-seti-yarn'], color: 0x2E_2A_65};
+// FIXME: Yarn can all this stuff another way.
 
 /**
- * [!WARNING] All patterns copied from npm plugin, so they should be verified with yarn docs.
+ * @private
  */
-const matcherExclude = [
+export const matcherExclude = [
 	...npm.matcherExclude,
 	'.yarnignore',
 	'.yarnrc',
 ];
+
 /**
- * [!WARNING] All patterns copied from npm plugin, so they should be verified with yarn docs.
+ * @private
  */
-const matcherInclude = [
+export const matcherInclude = [
 	...npm.matcherInclude,
 ];
 
