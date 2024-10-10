@@ -9,16 +9,15 @@ import {
 } from '../../index.js';
 import {ScannerGitignore} from '../scanner.js';
 import {type TargetIcon, type TargetName} from '../targets.js';
-import {useSourceFile} from './git.js';
+import * as git from './git.js';
 
 const id = 'vsce';
 const name: TargetName = 'VSCE';
 const icon: TargetIcon = {...icons['nf-md-microsoft_visual_studio_code'], color: 0x23_A9_F1};
 const testCommand = 'vsce ls';
 
-const matcherExclude: string[] = [
-	'.git/**',
-	'.DS_Store/**',
+export const matcherExclude: string[] = [
+	...git.matcherExclude,
 ];
 
 export type ValidManifestVsce = {
@@ -62,7 +61,7 @@ const methodologyVscodeignore: Methodology = function (tree, o) {
 		}
 
 		scanner.pattern = pattern;
-		useSourceFile(map, sourceFile, scanner);
+		git.useSourceFile(map, sourceFile, scanner);
 	}
 
 	return map;

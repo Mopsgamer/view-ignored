@@ -16,9 +16,9 @@ const name: TargetName = 'Git';
 const icon: TargetIcon = {...icons['nf-seti-git'], color: 0xF4_4E_28};
 const testCommand = 'git ls-tree -r <git-branch-name> --name-only';
 
-const matcherExclude: string[] = [
-	'.git/**',
-	'.DS_Store/**',
+export const matcherExclude: string[] = [
+	'**/.git/**',
+	'**/.DS_Store/**',
 ];
 
 export function useSourceFile(map: Map<File, SourceInfo>, sourceFile: File, scanner: Scanner & {pattern: string | string[]}): Map<File, SourceInfo> {

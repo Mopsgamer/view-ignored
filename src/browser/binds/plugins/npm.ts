@@ -10,7 +10,7 @@ import {
 } from '../../index.js';
 import {ScannerGitignore} from '../scanner.js';
 import {type TargetIcon, type TargetName} from '../targets.js';
-import {useSourceFile} from './git.js';
+import * as git from './git.js';
 
 const id = 'npm';
 const name: TargetName = 'NPM';
@@ -18,6 +18,7 @@ const icon: TargetIcon = {...icons['nf-seti-npm'], color: 0xCA_04_04};
 const testCommand = 'npm pack --dry-run';
 
 export const matcherExclude = [
+	...git.matcherExclude,
 	'**/node_modules/**',
 	'**/.*.swp',
 	'**/._*',
@@ -113,7 +114,7 @@ export const sourceSearch = (priority: string[], scanner: ScannerGitignore): Met
 			scanner.pattern = pattern;
 		}
 
-		return useSourceFile(map, sourceFile, scanner);
+		return git.useSourceFile(map, sourceFile, scanner);
 	}
 
 	return useChildren(tree, map, child => sourceSearch(priority, scanner)(child, o));
