@@ -2,14 +2,25 @@ import {minimatch} from 'minimatch';
 import {gitignoreToMinimatch} from '@humanwhocodes/gitignore-to-minimatch';
 import {type Scanner} from '../lib.js';
 
-export type ScannerMinimatchOptions = {
+export type PatternScannerOptions = {
 	pattern?: string | string[];
 	exclude?: string | string[];
 	include?: string | string[];
 	negated?: boolean;
 };
 
-export class ScannerMinimatch implements Scanner {
+export type PatternScanner = Scanner & {
+	pattern: string | string[];
+	exclude: string | string[];
+	include: string | string[];
+	negated: boolean;
+	isValid(value: unknown): value is string | string[];
+	ignores(path: string, pattern: string | string[]): boolean;
+	ignores(path: string, options?: PatternScannerOptions): boolean;
+	ignores(path: string, argument?: PatternScannerOptions | string | string[]): boolean;
+};
+
+export class ScannerMinimatch implements PatternScanner {
 	public negated: boolean;
 	protected _pattern: string | string[];
 	get pattern() {
@@ -39,7 +50,7 @@ export class ScannerMinimatch implements Scanner {
 	}
 
 	constructor(
-		options?: ScannerMinimatchOptions,
+		options?: PatternScannerOptions,
 	) {
 		this._pattern = options?.pattern ?? [];
 		this._exclude = options?.exclude ?? [];
@@ -65,8 +76,8 @@ export class ScannerMinimatch implements Scanner {
 	}
 
 	ignores(path: string, pattern: string | string[]): boolean;
-	ignores(path: string, options?: ScannerGitignoreOptions): boolean;
-	ignores(path: string, argument?: ScannerGitignoreOptions | string | string[]): boolean {
+	ignores(path: string, options?: PatternScannerOptions): boolean;
+	ignores(path: string, argument?: PatternScannerOptions | string | string[]): boolean {
 		if (Array.isArray(argument)) {
 			argument = argument.join('\n');
 		}
@@ -94,9 +105,7 @@ export class ScannerMinimatch implements Scanner {
 	}
 }
 
-export type ScannerGitignoreOptions = ScannerMinimatchOptions;
-
-export class ScannerGitignore extends ScannerMinimatch implements Scanner {
+export class ScannerGitignore extends ScannerMinimatch {
 	private static gitignoreToMinimatch<T extends string | string[]>(argument: T): T;
 	private static gitignoreToMinimatch(argument: string | string[]): string | string[] {
 		if (typeof argument === 'string') {
@@ -110,7 +119,7 @@ export class ScannerGitignore extends ScannerMinimatch implements Scanner {
 	}
 
 	constructor(
-		options?: ScannerGitignoreOptions,
+		options?: PatternScannerOptions,
 	) {
 		const newOptions = {...options};
 		for (const key of ['pattern', 'exclude', 'include'] as const) {

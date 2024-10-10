@@ -34,14 +34,17 @@ export function useSourceFile(map: Map<File, SourceInfo>, sourceFile: File, scan
 	return map;
 }
 
-const methodology: Methodology = function (tree, o) {
-	const sourceList = tree.deep().filter(dirent => dirent instanceof File && dirent.base === '.gitignore') as File[];
+/**
+ * @param base The name for gitignore-like file.
+ */
+export const methodologyGitignoreLike = (base: string): Methodology => function (tree, o) {
+	const sourceList = tree.deep().filter(dirent => dirent instanceof File && dirent.base === base) as File[];
 	const map = new Map<File, SourceInfo>();
 	for (const sourceFile of sourceList) {
 		const scanner = new ScannerGitignore({exclude: matcherExclude});
 
 		if (sourceFile === undefined) {
-			throw new NoSourceError('.gitignore');
+			throw new NoSourceError(base);
 		}
 
 		const content = o.modules.fs.readFileSync(sourceFile.absolutePath).toString();
@@ -59,7 +62,7 @@ const methodology: Methodology = function (tree, o) {
 
 const bind: Plugins.TargetBind = {
 	id, icon, name, testCommand, scanOptions: {
-		target: methodology,
+		target: methodologyGitignoreLike('.gitignore'),
 	},
 };
 const git: Plugins.PluginExport = {viewignored: {addTargets: [bind]}};

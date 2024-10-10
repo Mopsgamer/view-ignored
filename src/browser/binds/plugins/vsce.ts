@@ -3,11 +3,8 @@ import {
 	type Plugins, type Methodology,
 	NoSourceError,
 	File,
-	InvalidPatternError,
 	BadSourceError,
-	type SourceInfo,
 } from '../../index.js';
-import {ScannerGitignore} from '../scanner.js';
 import {type TargetIcon, type TargetName} from '../targets.js';
 import * as git from './git.js';
 
@@ -44,30 +41,7 @@ export function isValidManifest(value: unknown): value is ValidManifestVsce {
 	return 'vscode' in engines && typeof engines.vscode === 'string';
 }
 
-const methodologyVscodeignore: Methodology = function (tree, o) {
-	const sourceList = tree.deep().filter(dirent => dirent instanceof File && dirent.base === '.vscodeignore') as File[];
-	const map = new Map<File, SourceInfo>();
-	for (const sourceFile of sourceList) {
-		const scanner = new ScannerGitignore({exclude: matcherExclude});
-
-		if (sourceFile === undefined) {
-			throw new NoSourceError('.vscodeignore');
-		}
-
-		const content = o.modules.fs.readFileSync(sourceFile.absolutePath).toString();
-		const pattern = content;
-		if (!scanner.isValid(pattern)) {
-			throw new InvalidPatternError(sourceFile, pattern);
-		}
-
-		scanner.pattern = pattern;
-		git.useSourceFile(map, sourceFile, scanner);
-	}
-
-	return map;
-};
-
-const methodology: Methodology = function (tree, o) {
+const methodologyManifestVsce: Methodology = function (tree, o) {
 	const packageJson = Array.from(tree.deepIterator()).find(dirent => dirent instanceof File && dirent.base === 'package.json') as File | undefined;
 	if (packageJson === undefined) {
 		throw new NoSourceError('package.json');
@@ -89,12 +63,12 @@ const methodology: Methodology = function (tree, o) {
 		throw new BadSourceError(packageJson, 'Must have name, version and engines->vscode.');
 	}
 
-	return methodologyVscodeignore(tree, o);
+	return git.methodologyGitignoreLike('.vscodeignore')(tree, o);
 };
 
 const bind: Plugins.TargetBind = {
 	id, icon, name, testCommand, scanOptions: {
-		target: methodology,
+		target: methodologyManifestVsce,
 	},
 };
 const vsce: Plugins.PluginExport = {viewignored: {addTargets: [bind]}};

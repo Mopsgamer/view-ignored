@@ -8,7 +8,7 @@ import {
 	type SourceInfo,
 	NoSourceError,
 } from '../../index.js';
-import {ScannerGitignore} from '../scanner.js';
+import {type PatternScanner, ScannerGitignore} from '../scanner.js';
 import {type TargetIcon, type TargetName} from '../targets.js';
 import * as git from './git.js';
 
@@ -75,7 +75,7 @@ export function useChildren(tree: Directory, map: Map<File, SourceInfo>, getMap:
 	return map;
 }
 
-export const sourceSearch = (priority: string[], scanner: ScannerGitignore): Methodology => function (tree, o) {
+export const sourceSearch = (priority: string[], scanner: PatternScanner): Methodology => function (tree, o) {
 	const map = new Map<File, SourceInfo>();
 
 	for (const element of priority) {
@@ -120,7 +120,11 @@ export const sourceSearch = (priority: string[], scanner: ScannerGitignore): Met
 	return useChildren(tree, map, child => sourceSearch(priority, scanner)(child, o));
 };
 
-const methodology: Methodology = function (tree, o) {
+/**
+ * @param priority The list of file names from highest to lowest priority.
+ * @param scanner The pattern scanner.
+ */
+export const methodologyManifestNpmLike = (priority: string[], scanner: PatternScanner): Methodology => function (tree, o) {
 	const packageJson = tree.get('package.json');
 	if (packageJson === undefined) {
 		throw new NoSourceError('\'package.json\' in the root');
@@ -143,14 +147,17 @@ const methodology: Methodology = function (tree, o) {
 	}
 
 	return sourceSearch(
-		['package.json', '.npmignore', '.gitignore'],
-		new ScannerGitignore({exclude: matcherExclude, include: matcherInclude}),
+		priority,
+		scanner,
 	)(tree, o);
 };
 
 const bind: Plugins.TargetBind = {
 	id, icon, name, testCommand, scanOptions: {
-		target: methodology,
+		target: methodologyManifestNpmLike(
+			['package.json', '.npmignore', '.gitignore'],
+			new ScannerGitignore({exclude: matcherExclude, include: matcherInclude}),
+		),
 	},
 };
 const npm: Plugins.PluginExport = {viewignored: {addTargets: [bind]}};
