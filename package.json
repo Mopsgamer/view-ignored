@@ -24,7 +24,8 @@
 	"main": "./out/src/index.js",
 	"files": [
 		"/bin",
-		"/out/src"
+		"/out/src",
+		"/out/package.json"
 	],
 	"repository": {
 		"type": "git",
