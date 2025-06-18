@@ -51,13 +51,12 @@ export function useSourceFile(map: Map<File, SourceInfo>, sourceFile: File, scan
 export const methodologyGitignoreLike = (base: string): Methodology => function (tree, o) {
 	const sourceList = tree.deep(File).filter(dirent => dirent.base === base);
 	const map = new Map<File, SourceInfo>();
+	if (sourceList.length === 0) {
+		throw new NoSourceError(base);
+	}
+
 	for (const sourceFile of sourceList) {
 		const scanner = new ScannerGitignore({exclude: matcherExclude});
-
-		if (sourceFile === undefined) {
-			throw new NoSourceError(base);
-		}
-
 		const content = o.modules.fs.readFileSync(sourceFile.absolutePath).toString();
 		const pattern = content;
 		if (!scanner.isValid(pattern)) {
