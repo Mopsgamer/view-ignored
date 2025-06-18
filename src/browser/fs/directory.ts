@@ -48,9 +48,9 @@ export type DeepStreamProgress = {
  * @public
  */
 export type DeepStreamEventMap = {
-	'data': [DeepStreamData];
-	'end': [DeepStreamDataRoot];
-	'progress': [DeepStreamProgress];
+	data: [DeepStreamData];
+	end: [DeepStreamDataRoot];
+	progress: [DeepStreamProgress];
 };
 
 /**
@@ -177,9 +177,7 @@ export class Directory implements ParsedPath {
 					return tree;
 				}
 
-				let directory = Array.from(tree.children.values()).find(
-					c => c instanceof Directory && c.absolutePath === absolutePath,
-				) as Directory | undefined;
+				let directory = [...tree.children.values()].find(c => c instanceof Directory && c.absolutePath === absolutePath) as Directory | undefined;
 				if (directory === undefined) {
 					directory = new Directory(tree, relativePath, absolutePath, new Map());
 					tree.set(`${directory.base}/`, directory);
@@ -195,9 +193,7 @@ export class Directory implements ParsedPath {
 	/**
 	 * Get deep iterator for the directory.
 	 */
-	public static deepIterator = function * <T extends undefined | EntryClass>(
-		directory: Directory, instanceOf?: T,
-	): IterableIterator<EntryInstanceFrom<T>> {
+	public static deepIterator = function * <T extends undefined | EntryClass>(directory: Directory, instanceOf?: T): IterableIterator<EntryInstanceFrom<T>> {
 		const subDirectories: Directory[] = [];
 		for (const element of directory.children.values()) {
 			if (instanceOf === undefined || element instanceof instanceOf) {
@@ -314,7 +310,7 @@ export class Directory implements ParsedPath {
 	 * @param instanceOf Optionally filter children by type.
 	 */
 	deep<T extends undefined | typeof File | typeof Directory>(instanceOf?: T) {
-		return Array.from(Directory.deepIterator<T>(this, instanceOf));
+		return [...Directory.deepIterator<T>(this, instanceOf)];
 	}
 
 	/**

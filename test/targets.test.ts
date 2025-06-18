@@ -536,14 +536,17 @@ function testTarget(title: string, data: TestTargetSubtestData) {
 		});
 
 		if (typeof should === 'string') {
-			void fileInfoListPromise.catch(error => {
-				assert(error instanceof Error, `Expected ViewIgnoredError, got ${String(error)}`);
-				assert(error instanceof viewig.ViewIgnoredError, `Expected ViewIgnoredError, got ${error.name}`);
-				assert(error.name === should, `Expected ${should}, got ${error.name}`);
-			}).then(() => {
-				throw new AssertionError({message: 'Expected ViewIgnoredError exception, got valid file info list.'});
-			});
-			return;
+			try {
+				await fileInfoListPromise;
+			} catch (error) {
+				assert.ok(error instanceof Error, `Expected ViewIgnoredError, got ${String(error)}`);
+				assert.ok(error instanceof viewig.ViewIgnoredError, `Expected ViewIgnoredError, got ${error.name}`);
+				assert.ok(error.name === should, `Expected ${should}, got ${error.name}`);
+				return;
+			}
+
+			const fileInfoList = await fileInfoListPromise;
+			throw new AssertionError({message: `Expected ViewIgnoredError exception, got valid file info list: ${fileInfoList.join(', ')}.`});
 		}
 
 		const fileInfoList = await fileInfoListPromise;
@@ -551,7 +554,8 @@ function testTarget(title: string, data: TestTargetSubtestData) {
 			.flatMap(shouldCase => shouldCase.include);
 
 		const info = `\n${
-			fileInfoList.length === 0 ? ''
+			fileInfoList.length === 0
+				? ''
 				: `\tResults:\n\t  ${fileInfoList.map(fileInfo => fileInfo.toString({source: true})).join('\n\t  ')}\n\n`
 		}`
 			.replaceAll('\t', ' '.repeat(6));

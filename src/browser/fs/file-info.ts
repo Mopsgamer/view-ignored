@@ -1,6 +1,6 @@
 import PATH from 'node:path';
 import {type ChalkInstance} from 'chalk';
-import nf from '@m234/nerd-fonts';
+import * as nf from '@m234/nerd-fonts';
 import {decorCondition, type DecorName} from '../styling.js';
 import {type FilterName} from '../filtering.js';
 import {File} from './file.js';
@@ -95,7 +95,8 @@ export class FileInfo extends File {
 		public readonly source?: SourceInfo,
 	) {
 		super(parent, relativePath, absolutePath);
-		this.status = source === undefined ? 'non-target'
+		this.status = source === undefined
+			? 'non-target'
 			: (source.scanner.ignores(relativePath) ? 'ignored' : 'included');
 	}
 
@@ -107,19 +108,22 @@ export class FileInfo extends File {
 		const {fileIcon, chalk, usePrefix = false, source: useSource = false, entire = true, posix = false} = options ?? {};
 		const patha = posix ? PATH.posix : PATH;
 		const parsed = PATH.parse(this.relativePath);
-		const glyph = nf.FSC.fromPath(parsed, nf.FSC.mappings.seti);
-		const fIcon = fileIcon ? decorCondition(fileIcon, {
-			ifEmoji: '📄',
-			ifNerd: chalk && glyph.color !== undefined ? chalk.hex(glyph.color.toString(16))(glyph.char) : glyph.char,
-			postfix: ' ',
-		}) : '';
+		const glyph = nf.Seti.fromParsedPath(parsed);
+		const fIcon = fileIcon
+			? decorCondition(fileIcon, {
+				ifEmoji: '📄',
+				ifNerd: chalk && glyph.color !== undefined ? chalk.hex(glyph.color)(glyph.value) : glyph.value,
+				postfix: ' ',
+			})
+			: '';
 		let prefix = usePrefix && this.status !== 'non-target' ? (this.status === 'ignored' ? '!' : '+') : '';
 		let postfix = useSource && this.source !== undefined ? ' < ' + this.source.toString() : '';
 
 		if (chalk) {
 			prefix = chalk.dim(prefix);
 			postfix = chalk.dim(postfix);
-			const clr = this.status === 'non-target' ? chalk.white
+			const clr = this.status === 'non-target'
+				? chalk.white
 				: (this.status === 'included' ? chalk.green : chalk.white);
 			if (entire) {
 				return fIcon + clr(prefix + this.relativePath + postfix);

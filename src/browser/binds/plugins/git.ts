@@ -13,7 +13,7 @@ import {type TargetIcon, type TargetName} from '../targets.js';
 
 const id = 'git';
 const name: TargetName = 'Git';
-const icon: TargetIcon = {...icons['nf-seti-git'], color: 0xF4_4E_28};
+const icon: TargetIcon = {...icons['nf-seti-git'], color: '#F44E28'};
 const testCommand = 'git ls-tree -r <git-branch-name> --name-only';
 
 /**

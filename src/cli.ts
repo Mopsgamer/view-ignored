@@ -48,7 +48,7 @@ export async function programInit() {
 		const loadResultConfig = configManager.load();
 		const builtInPlugins = await loadBuiltIns();
 		const configPlugins = configManager.get<'plugins'>('plugins');
-		const loadResultPlugins = (flags.plugins ? await loadPlugins(flags.plugins) : []).concat(builtInPlugins);
+		const loadResultPlugins = [...(flags.plugins ? await loadPlugins(flags.plugins) : []), ...builtInPlugins];
 		for (const loadResult of loadResultPlugins) {
 			if (loadResult.isLoaded) {
 				continue;
@@ -70,9 +70,9 @@ export async function programInit() {
 
 		{
 			const title = 'view-ignored - Configuration loading failed.';
-			const infoSymbol = decorCondition(flags.decor, {ifEmoji: 'ℹ️', ifNerd: icons['nf-seti-info'].char, postfix: ' '});
+			const infoSymbol = decorCondition(flags.decor, {ifEmoji: 'ℹ️', ifNerd: icons['nf-seti-info'].value, postfix: ' '});
 			const errorIcon = decorCondition(flags.decor, {
-				ifNerd: icons['nf-seti-error'].char, ifEmoji: '⚠️', postfix: ' ',
+				ifNerd: icons['nf-seti-error'].value, ifEmoji: '⚠️', postfix: ' ',
 			});
 			const footer = `\n\n${chalk.blue(infoSymbol)}Configuration path: ${Config.configManager.path}`;
 			if (typeof loadResultConfig === 'string') {
@@ -81,11 +81,12 @@ export async function programInit() {
 			}
 
 			if (loadResultConfig && loadResultConfig?.size > 0) {
-				const propertiesErrors = Array.from(loadResultConfig.entries()).map(
-					([key, message]) => `${Config.configManager.getPairString(key, {chalk, types: false, real: true})} - ${chalk.red(errorIcon)}${message}`,
-				).join('\n');
-				logError(`Invalid properties:\n${propertiesErrors}${footer}`, {title});
+				const propertiesErrors = [...loadResultConfig.entries()].map(([key, message]) => {
+					const pair = Config.configManager.getPairString(key, {chalk, types: false, real: true});
+					return `${pair} - ${chalk.red(errorIcon)}${message}`;
+				}).join('\n');
 
+				logError(`Invalid properties:\n${propertiesErrors}${footer}`, {title});
 				process.exit(1);
 			}
 		}
@@ -348,12 +349,11 @@ export async function actionScan(): Promise<void> {
 		console.log(fileInfoList.map(fileInfo =>
 			fileInfo.relativePath + (
 				flags.showSources && fileInfo.source !== undefined ? '<' + (fileInfo.source.relativePath) : ''
-			),
-		).join(','));
+			)).join(','));
 	} else {
-		let name: string = decorCondition(flags.decor, {ifNerd: bind.icon?.char, postfix: ' '}) + bind.name;
+		let name: string = decorCondition(flags.decor, {ifNerd: bind.icon?.value, postfix: ' '}) + bind.name;
 		if (bind.icon?.color !== undefined) {
-			name = chalk.hex('#' + bind.icon.color.toString(16))(name);
+			name = chalk.hex('#' + bind.icon.color)(name);
 		}
 
 		const context: ScanContext = {
@@ -369,84 +369,87 @@ export async function actionScan(): Promise<void> {
 				});
 			}),
 		};
-		const progress = new Listr([
-			{
-				title: `${name} ${chalk.hex('#73A7DE')(flags.filter)} ${cwd}`,
-				async task(context, task) {
-					return task.newListr([
-						{
-							title: 'Preparing',
-							async task() {
-								const {progress} = await context.reading;
-								Object.assign(context.count, progress);
+		const progress = new Listr(
+			[
+				{
+					title: `${name} ${chalk.hex('#73A7DE')(flags.filter)} ${cwd}`,
+					async task(context, task) {
+						return task.newListr([
+							{
+								title: 'Preparing',
+								async task() {
+									const {progress} = await context.reading;
+									Object.assign(context.count, progress);
+								},
 							},
-						},
-						{
-							title: 'Scanning',
-							async task() {
-								context.fileInfoList = await scan(
-									context.stream,
-									{
-										...optionsReal,
-										target: flags.target,
-										filter: flags.filter,
-										maxDepth: flags.depth,
-									},
-								);
+							{
+								title: 'Scanning',
+								async task() {
+									context.fileInfoList = await scan(
+										context.stream,
+										{
+											...optionsReal,
+											target: flags.target,
+											filter: flags.filter,
+											maxDepth: flags.depth,
+										},
+									);
+								},
 							},
-						},
-						{
-							title: 'Printing',
-							async task() {
-								const sorter = Sorting[flags.sort];
-								const cache = new Map<File, number>();
-								if (flags.sort === 'modified') {
-									const {tree} = await context.reading;
-									await tree.deepModifiedTime(cache, optionsReal);
-								}
+							{
+								title: 'Printing',
+								async task() {
+									const sorter = Sorting[flags.sort];
+									const cache = new Map<File, number>();
+									if (flags.sort === 'modified') {
+										const {tree} = await context.reading;
+										await tree.deepModifiedTime(cache, optionsReal);
+									}
 
-								const time = Date.now() - start;
-								const fileInfoListSorted = context.fileInfoList.sort((a, b) => sorter(String(a), String(b), cache));
+									const time = Date.now() - start;
+									const fileInfoListSorted = context.fileInfoList.sort((a, b) => sorter(String(a), String(b), cache));
 
-								const files = formatFiles(
-									fileInfoListSorted,
-									{
-										chalk,
-										posix: flags.posix,
-										style: flags.style,
-										decor: flags.decor,
-										showSources: flags.showSources,
-									});
-								const fastSymbol = decorCondition(flags.decor, {ifEmoji: '⚡', ifNerd: icons['nf-md-lightning_bolt'].char});
-								const infoSymbol = decorCondition(flags.decor, {ifEmoji: 'ℹ️', ifNerd: icons['nf-seti-info'].char, postfix: ' '});
+									const files = formatFiles(
+										fileInfoListSorted,
+										{
+											chalk,
+											posix: flags.posix,
+											style: flags.style,
+											decor: flags.decor,
+											showSources: flags.showSources,
+										},
+									);
+									const fastSymbol = decorCondition(flags.decor, {ifEmoji: '⚡', ifNerd: icons['nf-md-lightning_bolt'].value});
+									const infoSymbol = decorCondition(flags.decor, {ifEmoji: 'ℹ️', ifNerd: icons['nf-seti-info'].value, postfix: ' '});
 
-								let message = '';
-								message += files;
-								message += '\n';
-								message += `Done in ${time < 2000 ? chalk.yellow(fastSymbol) : ''}${stringTime(time, chalk)}.`;
-								message += '\n';
-								message += `Listed ${highlight(String(context.fileInfoList.length), chalk)} files.`;
-								message += '\n';
-								message += `Processed ${highlight(String(context.count.files), chalk)} files and ${highlight(String(context.count.directories), chalk)} directories.`;
-								message += '\n';
-								if (bind.testCommand) {
+									let message = '';
+									message += files;
 									message += '\n';
-									message += `${chalk.blue(infoSymbol)}You can use ${highlight(`'${bind.testCommand}'`, chalk)} to check if the list is valid.`;
-								}
+									message += `Done in ${time < 2000 ? chalk.yellow(fastSymbol) : ''}${stringTime(time, chalk)}.`;
+									message += '\n';
+									message += `Listed ${highlight(String(context.fileInfoList.length), chalk)} files.`;
+									message += '\n';
+									message += `Processed ${highlight(String(context.count.files), chalk)} files and ${highlight(String(context.count.directories), chalk)} directories.`;
+									message += '\n';
+									if (bind.testCommand) {
+										message += '\n';
+										message += `${chalk.blue(infoSymbol)}You can use ${highlight(`'${bind.testCommand}'`, chalk)} to check if the list is valid.`;
+									}
 
-								message += '\n';
+									message += '\n';
 
-								context.message = message;
+									context.message = message;
+								},
 							},
-						},
-					]);
+						]);
+					},
 				},
+			],
+			{
+				ctx: context,
+				exitOnError: true,
 			},
-		],
-		{
-			ctx: context,
-			exitOnError: true,
-		});
+		);
 		try {
 			context.stream.run();
 			await progress.run();

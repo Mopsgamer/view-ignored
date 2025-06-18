@@ -33,7 +33,7 @@ export class ScannerMinimatch implements PatternScanner {
 	public negated: boolean;
 	protected _pattern: string | string[];
 	get pattern() {
-		return this.pattern;
+		return this._pattern;
 	}
 
 	set pattern(value: string | string[]) {
@@ -58,9 +58,7 @@ export class ScannerMinimatch implements PatternScanner {
 		this._include = value;
 	}
 
-	constructor(
-		options?: PatternScannerOptions,
-	) {
+	constructor(options?: PatternScannerOptions) {
 		this._pattern = options?.pattern ?? [];
 		this._exclude = options?.exclude ?? [];
 		this._include = options?.include ?? [];
@@ -130,9 +128,7 @@ export class ScannerGitignore extends ScannerMinimatch {
 			.map(p => gitignoreToMinimatch(p));
 	}
 
-	constructor(
-		options?: PatternScannerOptions,
-	) {
+	constructor(options?: PatternScannerOptions) {
 		const newOptions = {...options};
 		for (const key of ['pattern', 'exclude', 'include'] as const) {
 			const value = newOptions[key];

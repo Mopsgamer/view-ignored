@@ -8,8 +8,7 @@ import * as npm from './npm.js';
 
 const id = 'yarn';
 const name: TargetName = 'Yarn';
-const icon: TargetIcon = {...icons['nf-seti-yarn'], color: 0x2E_2A_65};
-// FIXME: Yarn can all this stuff another way.
+const icon: TargetIcon = {...icons['nf-seti-yarn'], color: '#2E2A65'};
 
 /**
  * @private

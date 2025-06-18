@@ -10,11 +10,11 @@ export type TargetIcon = {
 	/**
      * Glyph character.
      */
-	char: string;
+	value: string;
 	/**
      * The icon's color.
      */
-	color?: number;
+	color?: string;
 };
 
 /**
@@ -106,7 +106,7 @@ export function targetSet(bind: TargetBind): void {
  * ["git", "npm", "vsce", ...]
  */
 export function targetList(): string[] {
-	const list = Array.from(targetBindMap.keys());
+	const list = [...targetBindMap.keys()];
 	return list;
 }
 

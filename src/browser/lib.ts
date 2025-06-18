@@ -198,7 +198,7 @@ export async function scan(argument0: string | string[] | Directory | DeepStream
 	const fileInfoList: FileInfo[] = [];
 	const promiseList: Array<Promise<void>> = [];
 	const cacheDirectories = new Map<Directory, LimitFunction>();
-	for (const directory of [tree].concat(tree.deep(Directory))) {
+	for (const directory of [tree, ...tree.deep(Directory)]) {
 		cacheDirectories.set(directory, pLimit(optionsReal.concurrency));
 	}
 

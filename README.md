@@ -69,7 +69,7 @@ await vign.Plugins.loadPlugins(["example"]); // load third-party plugins
 
 // scan - options available
 const fileInfoList = await vign.scan(".", { target: "git", cwd: process.cwd() });
-const fileInfoList = await vign.scan(["./path/to/file"], { target: "git", process.cwd() });
+const fileInfoList = await vign.scan(["./path/to/file"], { target: "git", cwd: process.cwd() });
 
 // use results
 if (fileInfo.ignored) {

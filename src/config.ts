@@ -31,7 +31,20 @@ const configFilePath = path.join(os.homedir(), configFileName);
  * Command-line configuration property list.
  * @public
  */
-export const configKeyList = ['posix', 'noColor', 'target', 'filter', 'sort', 'style', 'decor', 'depth', 'showSources', 'plugins', 'parsable', 'concurrency'] as const satisfies ReadonlyArray<keyof Config>;
+export const configKeyList = [
+	'posix',
+	'noColor',
+	'target',
+	'filter',
+	'sort',
+	'style',
+	'decor',
+	'depth',
+	'showSources',
+	'plugins',
+	'parsable',
+	'concurrency',
+] as const satisfies ReadonlyArray<keyof Config>;
 
 /**
  * Command-line configuration's property type.
@@ -167,7 +180,7 @@ export const switchFalseValues = ['false', 'off', 'no', 'n', 'disable', 'disable
 /**
  * @public
  */
-export const booleanValues = switchTrueValues.concat(switchFalseValues);
+export const booleanValues = [...switchTrueValues, ...switchFalseValues];
 
 /**
  * @public
@@ -314,9 +327,7 @@ export class ConfigManager<ConfigType extends Config = Config> {
 	private readonly cliOptionLinkMap = new Map<string, Option>();
 	private readonly dataDefault: Record<string, unknown> = {};
 
-	constructor(
-		public readonly path: string,
-	) {
+	constructor(public readonly path: string) {
 		this.keySetValidator('parsable', configDefault.parsable, configValueBoolean());
 		this.keySetValidator('noColor', configDefault.noColor, configValueBoolean());
 		this.keySetValidator('posix', configDefault.posix, configValueBoolean());
@@ -394,7 +405,7 @@ export class ConfigManager<ConfigType extends Config = Config> {
 			return;
 		}
 
-		return `Unknown config key '${key}'. Choices: ${Array.from(this.configValidation.keys()).join(', ')}`;
+		return `Unknown config key '${key}'. Choices: ${[...this.configValidation.keys()].join(', ')}`;
 	}
 
 	/**
@@ -521,7 +532,7 @@ export class ConfigManager<ConfigType extends Config = Config> {
      * @returns An array of properties which defined in the configuration file.
      */
 	keyList(real = true): Array<keyof ConfigType> {
-		const keys = real ? Array.from(this.configValidation.keys()) : Object.keys(this.data);
+		const keys = real ? [...this.configValidation.keys()] : Object.keys(this.data);
 		return keys;
 	}
 
@@ -576,16 +587,18 @@ export class ConfigManager<ConfigType extends Config = Config> {
 			const value = format('%o', this.get(key, options));
 			const type = this.getType(key);
 			const pad = keyMaxLength - key.length;
-			const line = types ? format(
-				`${' '.repeat(pad)}%s ${highlight('=', chalk)} %s${highlight(':', chalk)} %s`,
-				(chalk ? chalk.hex('#FFBC42')(key) : key),
-				chalk ? highlight(value, chalk) : value,
-				(chalk ? chalk.dim(highlight(type, chalk)) : type),
-			) : format(
-				`${' '.repeat(pad)}%s ${highlight('=', chalk)} %s`,
-				(chalk ? chalk.hex('#FFBC42')(key) : key),
-				chalk ? highlight(value, chalk) : value,
-			);
+			const line = types
+				? format(
+					`${' '.repeat(pad)}%s ${highlight('=', chalk)} %s${highlight(':', chalk)} %s`,
+					(chalk ? chalk.hex('#FFBC42')(key) : key),
+					chalk ? highlight(value, chalk) : value,
+					(chalk ? chalk.dim(highlight(type, chalk)) : type),
+				)
+				: format(
+					`${' '.repeat(pad)}%s ${highlight('=', chalk)} %s`,
+					(chalk ? chalk.hex('#FFBC42')(key) : key),
+					chalk ? highlight(value, chalk) : value,
+				);
 
 			return line;
 		}).join('\n');

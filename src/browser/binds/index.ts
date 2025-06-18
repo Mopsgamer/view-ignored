@@ -58,7 +58,7 @@ export function isPluginExport(value: unknown): value is PluginExport {
 
 	const vign = (value as Partial<PluginExport>).viewignored;
 	return (vign?.constructor === Object)
-        && 'addTargets' in vign && Array.isArray(vign.addTargets) && vign.addTargets.every(v => isTargetBind(v));
+		&& 'addTargets' in vign && Array.isArray(vign.addTargets) && vign.addTargets.every(v => isTargetBind(v));
 }
 
 /**
@@ -122,7 +122,7 @@ export function loadBuiltIn(builtIn: BuiltInName): Promise<PluginLoaded> {
  * @returns The import result for the list of modules.
  * @public
  */
-export async function loadBuiltIns(builtInList: BuiltInName[] = Array.from(builtInNameList)): Promise<PluginLoaded[]> {
+export async function loadBuiltIns(builtInList: BuiltInName[] = [...builtInNameList]): Promise<PluginLoaded[]> {
 	const limit = pLimit(5);
 	const allLoaded = await Promise.all(builtInList.map(modulePath => limit(() => loadBuiltIn(modulePath))));
 	return allLoaded;

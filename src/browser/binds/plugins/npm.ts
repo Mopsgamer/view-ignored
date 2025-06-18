@@ -14,7 +14,7 @@ import * as git from './git.js';
 
 const id = 'npm';
 const name: TargetName = 'NPM';
-const icon: TargetIcon = {...icons['nf-seti-npm'], color: 0xCA_04_04};
+const icon: TargetIcon = {...icons['nf-seti-npm'], color: '#CA0404'};
 const testCommand = 'npm pack --dry-run';
 
 /**
@@ -69,15 +69,15 @@ export function isValidManifest(value: unknown): value is ValidManifestNpm {
 
 	const value_ = value as Record<string, unknown>;
 	return ('name' in value_ && typeof value_.name === 'string')
-	&& ('version' in value_ && typeof value_.version === 'string')
-	&& (value_.files === undefined || (Array.isArray(value_.files) && value_.files.every(element => typeof element === 'string')));
+		&& ('version' in value_ && typeof value_.version === 'string')
+		&& (value_.files === undefined || (Array.isArray(value_.files) && value_.files.every(element => typeof element === 'string')));
 }
 
 /**
  * @private
  */
 export function useChildren(tree: Directory, map: Map<File, SourceInfo>, getMap: (child: Directory) => Map<File, SourceInfo>) {
-	for (const child of Array.from(tree.children.values())) {
+	for (const child of tree.children.values()) {
 		if (!(child instanceof Directory)) {
 			continue;
 		}
