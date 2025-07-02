@@ -97,12 +97,12 @@
 		"@types/mocha": "^10.0.10",
 		"@types/node": "^24.0.3",
 		"@types/treeify": "^1.0.3",
+		"@typescript/native-preview": "7.0.0-dev.20250702.1",
 		"fs-fixture": "^2.8.1",
 		"globals": "^16.2.0",
 		"mocha": "^11.7.0",
 		"release-it": "^19.0.3",
 		"shx": "^0.4.0",
-		"typescript": "^5.8.3",
 		"xo": "^1.1.0"
 	},
 	"keywords": [
