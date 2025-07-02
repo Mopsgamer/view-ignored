@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Emit to `out`, not `out/src`: package.json not duplicated. Add visible type exports.
 - Move to `node --test` from `mocha`.
 - Move to `eslint` from `xo`.
+- Move to Bun from PNPM.
 
 ## [0.4.0] - 2025-06-18
 

@@ -8,16 +8,16 @@
 		"view-ignored": "./bin/viewig"
 	},
 	"scripts": {
-		"prerelease": "pnpm lint && pnpm build:pub && pnpm test",
-		"test": "pnpm node --test out/**/*.test.js",
-		"build": "pnpm build:clean && pnpm tsc -p src",
-		"build:pub": "pnpm build:clean && pnpm tsc -p src --sourceMap false && pnpm shx rm **/*.test.d.ts",
-		"build:watch": "pnpm build:clean && pnpm tsc -p src --watch",
-		"build:clean": "pnpm shx rm -rf out",
-		"lint": "pnpm eslint .",
-		"release:major": "pnpm release-it --increment=major",
-		"release:minor": "pnpm release-it --increment=minor",
-		"release:patch": "pnpm release-it --increment=patch"
+		"prerelease": "bun run lint && bun run build:pub && bun run test",
+		"test": "bun run node --test out/**/*.test.js",
+		"build": "bun run build:clean && bun run tsc -p src",
+		"build:pub": "bun run build:clean && bun run tsc -p src --sourceMap false && rm **/*.test.d.ts",
+		"build:watch": "bun run build:clean && bun run tsc -p src --watch",
+		"build:clean": "rm -rf out",
+		"lint": "bun run eslint .",
+		"release:major": "bun run release-it --increment=major",
+		"release:minor": "bun run release-it --increment=minor",
+		"release:patch": "bun run release-it --increment=patch"
 	},
 	"author": "Mopsgamer",
 	"license": "ISC",
@@ -94,7 +94,6 @@
 		"fs-fixture": "^2.8.1",
 		"globals": "^16.3.0",
 		"release-it": "^19.0.3",
-		"shx": "^0.4.0",
 		"typescript": "^5.8.3",
 		"typescript-eslint": "^8.35.1"
 	},
