@@ -462,13 +462,13 @@ export class ConfigManager<ConfigType extends Config = Config> {
 	unset(key?: string): this {
 		if (key === undefined) {
 			for (const key of Object.keys(this.data)) {
-				delete this.data[key]; // eslint-disable-line @typescript-eslint/no-dynamic-delete
+				delete this.data[key];  
 			}
 
 			return this;
 		}
 
-		delete this.data[key]; // eslint-disable-line @typescript-eslint/no-dynamic-delete
+		delete this.data[key];  
 		return this;
 	}
 
@@ -525,7 +525,6 @@ export class ConfigManager<ConfigType extends Config = Config> {
 			}).join('\n');
 		}
 
-		// eslint-disable-next-line unicorn/no-array-reduce
 		const keyMaxLength: number = keys.reduce((maxLength, key) => Math.max(maxLength, key.length), 0);
 		return keys.map((key: string): string => {
 			const value = format('%o', this.get(key, options));

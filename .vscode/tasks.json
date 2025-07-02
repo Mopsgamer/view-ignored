@@ -64,16 +64,6 @@
 		},
 		{
 			"icon": {
-				"id": "sparkle",
-				"color": "terminal.ansiWhite"
-			},
-			"type": "npm",
-			"script": "lint:fix",
-			"label": "Lint and fix",
-			"detail": "pnpm xo --fix"
-		},
-		{
-			"icon": {
 				"id": "check-all",
 				"color": "terminal.ansiWhite"
 			},

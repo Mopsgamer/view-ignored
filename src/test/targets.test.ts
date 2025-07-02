@@ -1,9 +1,8 @@
-
-/* eslint-disable @typescript-eslint/naming-convention */
 import assert, {AssertionError} from 'node:assert';
 import {type FileTree, createFixture} from 'fs-fixture';
-import chalk from 'chalk';
-import * as viewig from '../src/index.js';
+import * as viewig from '../index.js';
+import {describe, it, before, after} from "node:test";
+
 
 type Check = {
 	include: string[];
@@ -38,7 +37,7 @@ const symlinksProject: FileTree = {
 	'awesomefolder.lnk': ({symlink}) => symlink('./awesomefolder'),
 };
 
-describe('Targets', () => {
+describe('Targets', async () => {
 	before(async () => {
 		await viewig.Plugins.loadBuiltIns();
 	});
@@ -553,30 +552,23 @@ function testTarget(title: string, data: TestTargetSubtestData) {
 		const shouldPaths = should
 			.flatMap(shouldCase => shouldCase.include);
 
-		const info = `\n${
-			fileInfoList.length === 0
-				? ''
-				: `\tResults:\n\t  ${fileInfoList.map(fileInfo => fileInfo.toString({source: true})).join('\n\t  ')}\n\n`
-		}`
-			.replaceAll('\t', ' '.repeat(6));
-
 		assert.deepEqual(fileInfoList.map(String).sort(), shouldPaths.sort(), 'Bad path list.');
 
 		for (const fileInfo of fileInfoList) {
 			const {source} = fileInfo;
 			if (fileInfo.status === 'non-target') {
-				throw new AssertionError({message: 'Unexpected non-target file.' + chalk.white(info)});
+				throw new AssertionError({message: 'Unexpected non-target file.'});
 			}
 
-			assert.ok(source !== undefined, 'The source is missing, but expected.' + chalk.white(info));
+			assert.ok(source !== undefined, 'The source is missing, but expected.');
 			const comparableSource = source?.relativePath;
 			const shouldCase: Check | undefined = should.find(shouldCase => shouldCase.source === comparableSource);
 			if (shouldCase === undefined) {
 				const sourceListExpected = should.map(s => s.source);
-				throw new AssertionError({message: `The source is not right: ${comparableSource}. Expected: ${sourceListExpected.join(' or ')}. ${chalk.white(info)}`});
+				throw new AssertionError({message: `The source is not right: ${comparableSource}. Expected: ${sourceListExpected.join(' or ')}.`});
 			}
 
-			assert.strictEqual(comparableSource, shouldCase.source, 'Unexpected source.' + chalk.white(info));
+			assert.strictEqual(comparableSource, shouldCase.source, 'Unexpected source.');
 		}
 	});
 }

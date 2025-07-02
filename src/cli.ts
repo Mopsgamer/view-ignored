@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/no-process-exit */
 import {format} from 'node:util';
 import * as process from 'node:process';
 import {icons} from '@m234/nerd-fonts';

@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/prefer-event-target */
 import {
 	join, parse, relative, type ParsedPath,
 } from 'node:path';
@@ -129,7 +128,6 @@ export class Directory implements ParsedPath {
 
 		for (const path of pathList) {
 			const entryNameList = path.toString().split(/[\\/]/);
-			// eslint-disable-next-line unicorn/no-array-reduce
 			entryNameList.reduce((tree, entryName, index) => {
 				const absolutePath = join(tree.absolutePath, entryName);
 				const relativePath = relative(cwd, absolutePath);

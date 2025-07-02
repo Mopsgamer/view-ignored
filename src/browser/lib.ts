@@ -23,7 +23,7 @@ export * as Plugins from './binds/index.js';
 /**
  * ViewIgnored's package.json.
  */
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+ 
 export const package_ = createRequire(import.meta.url)('../../package.json') as typeof import('../../package.json');
 
 /**

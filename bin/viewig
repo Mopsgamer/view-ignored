@@ -1,4 +1,4 @@
 #! /usr/bin/env node
-import {programInit} from '../out/src/cli.js';
+import {programInit} from '../out/cli.js';
 
 programInit();

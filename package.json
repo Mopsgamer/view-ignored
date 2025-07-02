@@ -9,12 +9,12 @@
 	},
 	"scripts": {
 		"prerelease": "pnpm lint && pnpm build:pub && pnpm test",
-		"test": "pnpm mocha ./out/test/**/*.test.js",
-		"build": "pnpm shx rm -rf out && pnpm tsc",
-		"build:pub": "pnpm shx rm -rf out && pnpm tsc --sourceMap false",
-		"build:watch": "pnpm shx rm -rf out && pnpm tsc --watch",
-		"lint": "pnpm xo",
-		"lint:fix": "pnpm xo --fix",
+		"test": "pnpm node --test out/**/*.test.js",
+		"build": "pnpm build:clean && pnpm tsc -p src",
+		"build:pub": "pnpm build:clean && pnpm tsc -p src --sourceMap false && pnpm shx rm **/*.test.d.ts",
+		"build:watch": "pnpm build:clean && pnpm tsc -p src --watch",
+		"build:clean": "pnpm shx rm -rf out",
+		"lint": "pnpm eslint .",
 		"release:major": "pnpm release-it --increment=major",
 		"release:minor": "pnpm release-it --increment=minor",
 		"release:patch": "pnpm release-it --increment=patch"
@@ -24,9 +24,8 @@
 	"main": "./out/src/index.js",
 	"files": [
 		"/bin",
-		"/out/src",
-		"/out/typings",
-		"/out/package.json"
+		"/out",
+		"!**/*.test.js"
 	],
 	"repository": {
 		"type": "git",
@@ -38,12 +37,12 @@
 	"homepage": "https://github.com/Mopsgamer/view-ignored",
 	"exports": {
 		".": {
-			"default": "./out/src/index.js",
-			"types": "./typings/src/index.d.ts"
+			"default": "./out/index.js",
+			"types": "./out/index.d.ts"
 		},
 		"./browser": {
-			"default": "./out/src/browser/index.js",
-			"types": "./typings/src/browser/index.d.ts"
+			"default": "./out/browser/index.js",
+			"types": "./out/browser/index.d.ts"
 		}
 	},
 	"release-it": {
@@ -64,24 +63,11 @@
 			"publish": true
 		}
 	},
-	"xo": {
-		"ignores": "/out/",
-		"rules": {
-			"@typescript-eslint/promise-function-async": "off",
-			"@typescript-eslint/use-unknown-in-catch-callback-variable": "off",
-			"@typescript-eslint/no-unused-vars": "error",
-			"n/no-unpublished-bin": "off",
-			"linebreak-style": [
-				"error",
-				"unix"
-			]
-		}
-	},
 	"publishConfig": {
 		"access": "public"
 	},
 	"directories": {
-		"lib": "out/src"
+		"lib": "out"
 	},
 	"dependencies": {
 		"@humanwhocodes/gitignore-to-minimatch": "^1.0.2",
@@ -100,17 +86,17 @@
 		"yaml": "^2.8.0"
 	},
 	"devDependencies": {
+		"@eslint/js": "^9.30.1",
 		"@release-it/keep-a-changelog": "^7.0.0",
-		"@types/mocha": "^10.0.10",
 		"@types/node": "^24.0.10",
 		"@types/treeify": "^1.0.3",
+		"eslint": "^9.30.1",
 		"fs-fixture": "^2.8.1",
 		"globals": "^16.3.0",
-		"mocha": "^11.7.1",
 		"release-it": "^19.0.3",
 		"shx": "^0.4.0",
 		"typescript": "^5.8.3",
-		"xo": "^1.1.1"
+		"typescript-eslint": "^8.35.1"
 	},
 	"keywords": [
 		"tree",
