@@ -6,7 +6,6 @@ import {
 
 /**
  * The source of patterns.
- * @public
  */
 export class SourceInfo extends File {
 	static from(file: File, scanner: Scanner) {

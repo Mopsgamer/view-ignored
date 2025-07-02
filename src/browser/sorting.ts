@@ -2,32 +2,27 @@ import path from 'node:path';
 
 /**
  * Contains all file sort names.
- * @public
  */
 export const sortNameList = ['firstFolders', 'firstFiles', 'type', 'mixed', 'modified'] as const;
 
 /**
  * Contains all file sort names as a type.
- * @public
  */
 export type SortName = typeof sortNameList[number];
 
 /**
  * {@link Array.prototype.sort}'s file path comparator.
- * @public
  */
 export type SortFunction = (a: string, b: string) => number;
 
 /**
  * Checks if the value is the {@link SortName}.
- * @public
  */
 export function isSortName(value: unknown): value is SortName {
 	return typeof value === 'string' && sortNameList.includes(value as SortName);
 }
 
 /**
- * @public
  * @example
  * "path/to/the/file" -> ["path", "to/the/file", false]
  * "file" -> ["file", "file", true]
@@ -44,7 +39,6 @@ export function shiftPath(p: string): [next: string, other: string, isLast: bool
 /**
  * Files and folders are sorted by their names.
  * Folders are displayed before files.
- * @public
  */
 export function firstFolders(a: string, b: string): number {
 	let comp = 0;
@@ -73,7 +67,6 @@ export function firstFolders(a: string, b: string): number {
 /**
  * Files and folders are sorted by their names.
  * Files are displayed before folders.
- * @public
  */
 export function firstFiles(a: string, b: string): number {
 	let comp = 0;
@@ -103,7 +96,6 @@ export function firstFiles(a: string, b: string): number {
  * Files and folders are sorted by last modified date in descending order.
  * Folders are displayed before files.
  * @see {@link makeMtimeCache}
- * @public
  */
 export function modified(a: string, b: string, map: Map<{toString(): string}, number>): number {
 	let comp = 0;
@@ -132,7 +124,6 @@ export function modified(a: string, b: string, map: Map<{toString(): string}, nu
 /**
  * Files and folders are grouped by extension type then sorted by thir names.
  * Folders are displayed before files.
- * @public
  */
 export function type(a: string, b: string): number {
 	let comp = 0;
@@ -163,7 +154,6 @@ export function type(a: string, b: string): number {
 /**
  * Files and folders are sorted by their names.
  * Files are interwoven with folders.
- * @public
  */
 export function mixed(a: string, b: string): number {
 	return a.localeCompare(b, undefined, {ignorePunctuation: false});

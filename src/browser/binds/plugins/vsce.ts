@@ -14,14 +14,14 @@ const icon: TargetIcon = {...icons['nf-md-microsoft_visual_studio_code'], color:
 const testCommand = 'vsce ls';
 
 /**
- * @private
+ * @internal
  */
 export const matcherExclude: string[] = [
 	...git.matcherExclude,
 ];
 
 /**
- * @private
+ * @internal
  */
 export type ValidManifestVsce = {
 	name: string;
@@ -30,7 +30,7 @@ export type ValidManifestVsce = {
 };
 
 /**
- * @private
+ * @internal
  */
 export function isValidManifest(value: unknown): value is ValidManifestVsce {
 	if (value?.constructor !== Object) {
@@ -51,7 +51,7 @@ export function isValidManifest(value: unknown): value is ValidManifestVsce {
 }
 
 /**
- * @private
+ * @internal
  */
 export const methodologyManifestVsce: Methodology = function (tree, o) {
 	const packageJson = [...tree.deepIterator()].find(dirent => dirent instanceof File && dirent.base === 'package.json') as File | undefined;

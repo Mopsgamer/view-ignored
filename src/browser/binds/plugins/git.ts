@@ -17,7 +17,7 @@ const icon: TargetIcon = {...icons['nf-seti-git'], color: '#F44E28'};
 const testCommand = 'git ls-tree -r <git-branch-name> --name-only';
 
 /**
- * @private
+ * @internal
  */
 export const matcherExclude: string[] = [
 	'**/.git/**',
@@ -29,7 +29,7 @@ export const matcherExclude: string[] = [
  * @param map The output.
  * @param scanner The scanner.
  * @param sourceFile This file will be converted to a {@link SourceInfo}.
- * @private
+ * @internal
  */
 export function useSourceFile(map: Map<File, SourceInfo>, sourceFile: File, scanner: Scanner & {pattern: string | string[]}): Map<File, SourceInfo> {
 	const sourceInfo = SourceInfo.from(sourceFile, scanner);
@@ -46,7 +46,7 @@ export function useSourceFile(map: Map<File, SourceInfo>, sourceFile: File, scan
 
 /**
  * @param base The name for gitignore-like file.
- * @private
+ * @internal
  */
 export const methodologyGitignoreLike = (base: string): Methodology => function (tree, o) {
 	const sourceList = tree.deep(File).filter(dirent => dirent.base === base);

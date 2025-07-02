@@ -6,9 +6,6 @@ import {type ChalkInstance} from 'chalk';
 import boxen, {type Options} from 'boxen';
 import {type FileInfo} from '../index.js';
 
-/**
- * @public
- */
 export type FormatFilesOptions = {
 	/**
 	 * On posix systems, this has no effect.  But, on Windows, it means that
@@ -43,7 +40,6 @@ export type FormatFilesOptions = {
 
 /**
  * @returns Prints a readable file list. Here is '\n' ending.
- * @public
  */
 export function formatFiles(files: FileInfo[], options: FormatFilesOptions): string {
 	const {showSources = false, chalk, decor = 'normal', style, posix = false} = options ?? {};
@@ -66,19 +62,16 @@ export function formatFiles(files: FileInfo[], options: FormatFilesOptions): str
 
 /**
  * Contains all style names.
- * @public
  */
 export const styleNameList = ['tree', 'paths'] as const;
 
 /**
  * Contains all style names as a type.
- * @public
  */
 export type StyleName = typeof styleNameList[number];
 
 /**
  * Checks if the value is the {@link StyleName}.
- * @public
  */
 export function isStyleName(value: unknown): value is StyleName {
 	return typeof value === 'string' && styleNameList.includes(value as StyleName);
@@ -86,19 +79,16 @@ export function isStyleName(value: unknown): value is StyleName {
 
 /**
  * Contains all decor names.
- * @public
  */
 export const decorNameList = ['normal', 'emoji', 'nerdfonts'] as const;
 
 /**
  * Contains all decor names as a type.
- * @public
  */
 export type DecorName = typeof decorNameList[number];
 
 /**
  * Checks if the value is the {@link DecorName}.
- * @public
  */
 export function isDecorName(value: unknown): value is DecorName {
 	return typeof value === 'string' && decorNameList.includes(value as DecorName);
@@ -106,7 +96,6 @@ export function isDecorName(value: unknown): value is DecorName {
 
 /**
  * Formatting options for the {@link decorCondition}.
- * @public
  */
 export type DecorConditionOptions = {
 	/**
@@ -142,7 +131,6 @@ export type DecorConditionOptions = {
  * Formats the string for specific style types.
  * @param decor The decor name.
  * @param condition Formatting options.
- * @public
  */
 export function decorCondition(decor: DecorName, condition: DecorConditionOptions): string {
 	let result: string = condition.ifNormal ?? '';
@@ -161,7 +149,6 @@ export function decorCondition(decor: DecorName, condition: DecorConditionOption
 
 /**
  * @see {@link boxError}
- * @public
  */
 export type BoxOptions = {
 	noColor?: boolean;
@@ -169,7 +156,6 @@ export type BoxOptions = {
 
 /**
  * Make a message in a red box. Or without color.
- * @public
  */
 export function boxError(message: string, options?: BoxOptions): string {
 	let result = ('\n' + boxen(message, {

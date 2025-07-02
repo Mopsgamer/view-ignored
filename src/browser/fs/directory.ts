@@ -10,33 +10,21 @@ import {type RealScanOptions} from '../lib.js';
 import {configDefault} from '../../config.js';
 import {File} from './file.js';
 
-/**
- * @public
- */
 export type DeepStreamEventEmitter = EventEmitter<DeepStreamEventMap> & {
 	endPromise: Promise<DeepStreamDataRoot>;
 	run(): void;
 };
 
-/**
- * @public
- */
 export type DeepStreamDataRoot = {
 	tree: Directory;
 	progress: DeepStreamProgress;
 };
 
-/**
- * @public
- */
 export type DeepStreamData = {
 	target: Entry;
 	progress: DeepStreamProgress;
 };
 
-/**
- * @public
- */
 export type DeepStreamProgress = {
 	directories: number;
 	files: number;
@@ -44,22 +32,16 @@ export type DeepStreamProgress = {
 	total: number;
 };
 
-/**
- * @public
- */
 export type DeepStreamEventMap = {
 	data: [DeepStreamData];
 	end: [DeepStreamDataRoot];
 	progress: [DeepStreamProgress];
 };
 
-/**
- * @public
- */
 export type DeepStream = ReadableStream<Entry>;
 
 /**
- * @private
+ * @internal
  */
 type DeepStreamNestedOptions = DeepStreamOptions & {
 	controller?: DeepStreamEventEmitter;
@@ -67,39 +49,20 @@ type DeepStreamNestedOptions = DeepStreamOptions & {
 	progress?: DeepStreamProgress;
 };
 
-/**
- * @public
- */
 export type DeepCountOptions = Pick<DeepStreamNestedOptions, 'modules' | 'cwd' | 'concurrency' | 'progress'>;
 
-/**
- * @public
- */
 export type DeepModifiedTimeOptions = Pick<RealScanOptions, 'concurrency' | 'modules'>;
 
-/**
- * @public
- */
 export type DeepStreamOptions = Pick<RealScanOptions, 'cwd' | 'modules' | 'concurrency'>;
 
-/**
- * @public
- */
 export type Entry = Directory | File;
 
-/**
- * @public
- */
 export type EntryClass = typeof Directory | typeof File;
 
-/**
- * @public
- */
 export type EntryInstanceFrom<T extends undefined | EntryClass> = T extends undefined ? Entry : T extends typeof Directory ? Directory : File;
 
 /**
  * File system directory representation.
- * @public
  */
 export class Directory implements ParsedPath {
 	/**
@@ -212,7 +175,7 @@ export class Directory implements ParsedPath {
 
 	/**
 	 * Read directories and files progressively.
-	 * @private This function should be wrapped by {@link deepStream}.
+	 * @internal This function should be wrapped by {@link deepStream}.
 	 * @param directoryPath Relative path to the directory.
 	 * @param options The reader options.
 	 */

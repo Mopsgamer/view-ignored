@@ -11,7 +11,7 @@ const name: TargetName = 'Yarn';
 const icon: TargetIcon = {...icons['nf-seti-yarn'], color: '#2E2A65'};
 
 /**
- * @private
+ * @internal
  */
 export const matcherExclude = [
 	...npm.matcherExclude,
@@ -20,7 +20,7 @@ export const matcherExclude = [
 ];
 
 /**
- * @private
+ * @internal
  */
 export const matcherInclude = [
 	...npm.matcherInclude,

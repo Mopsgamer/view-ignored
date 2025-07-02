@@ -22,14 +22,12 @@ export * as Plugins from './binds/index.js';
 
 /**
  * ViewIgnored's package.json.
- * @public
-*/
+ */
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 export const package_ = createRequire(import.meta.url)('../../package.json') as typeof import('../../package.json');
 
 /**
  * Uses `node:fs` and `node:fs/promises` by default.
- * @public
  */
 export type FileSystemAdapter = {
 	readFileSync?: typeof FS.readFileSync;
@@ -43,7 +41,6 @@ export type FileSystemAdapter = {
 // #region scanning
 /**
  * The custom scanner.
- * @public
  */
 export type Scanner = {
 	/**
@@ -57,13 +54,11 @@ export type Scanner = {
  * @throws If the target does not allow the current ignore configurations: {@link ViewIgnoredError}.
  * For example, {@link https://www.npmjs.com/package/@vscode/vsce vsce} considers it invalid if your manifest is missing the 'engines' field.
  * Similarly, npm will raise an error if you attempt to publish a package without a basic 'package.json'.
- * @public
  */
 export type Methodology = (tree: Directory, realOptions: RealScanOptions) => Map<File, SourceInfo>;
 
 /**
  * Options with defaults and additional properties.
- * @public
  */
 export type RealScanOptions = Required<Omit<ScanOptions, 'fsa'>> & {
 	modules: {
@@ -80,7 +75,6 @@ export type RealScanOptions = Required<Omit<ScanOptions, 'fsa'>> & {
 
 /**
  * Folder deep scanning options.
- * @public
  */
 export type ScanOptions = {
 
@@ -136,7 +130,6 @@ export type ScanOptions = {
  * Gets info about the each file: it is ignored or not.
  * @param directoryPath The relative path to the directory.
  * @throws If no valid sources: {@link ErrorNoSources}.
- * @public
  */
 export async function scan(directoryPath: string, options?: ScanOptions): Promise<FileInfo[]>;
 
@@ -144,7 +137,6 @@ export async function scan(directoryPath: string, options?: ScanOptions): Promis
  * Gets info about the each file: it is ignored or not.
  * @param directory The current working directory.
  * @throws If no valid sources: {@link ErrorNoSources}.
- * @public
  */
 export async function scan(directory: Directory, options?: ScanOptions): Promise<FileInfo[]>;
 
@@ -152,7 +144,6 @@ export async function scan(directory: Directory, options?: ScanOptions): Promise
  * Gets info about the each file: it is ignored or not.
  * @param stream The stream of the current working directory reading.
  * @throws If no valid sources: {@link ErrorNoSources}.
- * @public
  */
 export async function scan(stream: DeepStreamEventEmitter, options?: ScanOptions): Promise<FileInfo[]>;
 
@@ -160,7 +151,6 @@ export async function scan(stream: DeepStreamEventEmitter, options?: ScanOptions
  * Gets info about the each file: it is ignored or not.
  * @param pathList The list of relative paths. The should be relative to the current working directory.
  * @throws If no valid sources: {@link ErrorNoSources}.
- * @public
  */
 export async function scan(pathList: string[], options?: ScanOptions): Promise<FileInfo[]>;
 export async function scan(argument0: string | string[] | Directory | DeepStreamEventEmitter, options?: ScanOptions): Promise<FileInfo[]> {
@@ -225,7 +215,6 @@ export async function scan(argument0: string | string[] | Directory | DeepStream
 
 /**
  * @returns Options with defaults and additional properties.
- * @public
  */
 export function makeOptionsReal(options?: ScanOptions): RealScanOptions {
 	options ??= {};

@@ -10,9 +10,9 @@
 	"scripts": {
 		"prerelease": "pnpm lint && pnpm build:pub && pnpm test",
 		"test": "pnpm mocha ./out/test/**/*.test.js",
-		"build": "pnpm shx rm -rf out && pnpm tsgo",
-		"build:pub": "pnpm shx rm -rf out && pnpm tsgo --sourceMap false",
-		"build:watch": "pnpm shx rm -rf out && pnpm tsgo --watch",
+		"build": "pnpm shx rm -rf out && pnpm tsc",
+		"build:pub": "pnpm shx rm -rf out && pnpm tsc --sourceMap false",
+		"build:watch": "pnpm shx rm -rf out && pnpm tsc --watch",
 		"lint": "pnpm xo",
 		"lint:fix": "pnpm xo --fix",
 		"release:major": "pnpm release-it --increment=major",
@@ -25,6 +25,7 @@
 	"files": [
 		"/bin",
 		"/out/src",
+		"/out/typings",
 		"/out/package.json"
 	],
 	"repository": {
@@ -36,8 +37,14 @@
 	},
 	"homepage": "https://github.com/Mopsgamer/view-ignored",
 	"exports": {
-		".": "./out/src/index.js",
-		"./browser": "./out/src/browser/index.js"
+		".": {
+			"default": "./out/src/index.js",
+			"types": "./typings/src/index.d.ts"
+		},
+		"./browser": {
+			"default": "./out/src/browser/index.js",
+			"types": "./typings/src/browser/index.d.ts"
+		}
 	},
 	"release-it": {
 		"hooks": {
@@ -95,15 +102,15 @@
 	"devDependencies": {
 		"@release-it/keep-a-changelog": "^7.0.0",
 		"@types/mocha": "^10.0.10",
-		"@types/node": "^24.0.3",
+		"@types/node": "^24.0.10",
 		"@types/treeify": "^1.0.3",
-		"@typescript/native-preview": "7.0.0-dev.20250702.1",
 		"fs-fixture": "^2.8.1",
-		"globals": "^16.2.0",
-		"mocha": "^11.7.0",
+		"globals": "^16.3.0",
+		"mocha": "^11.7.1",
 		"release-it": "^19.0.3",
 		"shx": "^0.4.0",
-		"xo": "^1.1.0"
+		"typescript": "^5.8.3",
+		"xo": "^1.1.1"
 	},
 	"keywords": [
 		"tree",

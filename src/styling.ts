@@ -3,9 +3,6 @@ import {type ChalkInstance} from 'chalk';
 
 export * from './browser/styling.js';
 
-/**
- * @public
- */
 export function highlight(text: string, chalk?: ChalkInstance): string {
 	if (chalk === undefined) {
 		return text;
@@ -58,9 +55,6 @@ export function highlight(text: string, chalk?: ChalkInstance): string {
 	return colored;
 }
 
-/**
- * @public
- */
 export function stringTime(time: number, chalk: ChalkInstance) {
 	if (time < 1000) {
 		return `${highlight(String(time), chalk)} milliseconds`;

@@ -27,7 +27,7 @@ import {
 import {filterNameList, type FilterName} from './browser/filtering.js';
 
 /**
- * @private
+ * @internal
  */
 export function logError(message: string, options?: BoxOptions) {
 	console.log(boxError(message, {...options}));
@@ -35,7 +35,7 @@ export function logError(message: string, options?: BoxOptions) {
 
 /**
  * Use it instead of {@link program.parse}.
- * @private
+ * @internal
  */
 export async function programInit() {
 	try {
@@ -114,7 +114,6 @@ export async function programInit() {
 
 /**
  * Command-line entire program flags.
- * @public
  */
 export type ProgramFlags = {
 	posix: boolean;
@@ -126,7 +125,6 @@ export type ProgramFlags = {
 
 /**
  * Command-line 'scan' command flags.
- * @public
  */
 export type ScanFlags = {
 	target: string;
@@ -140,7 +138,6 @@ export type ScanFlags = {
 
 /**
  * Command-line 'cfg get' command flags.
- * @public
  */
 export type ConfigGetFlags = {
 	real: boolean;
@@ -149,13 +146,11 @@ export type ConfigGetFlags = {
 
 /**
  * `view-ignored` command-line programl
- * @public
  */
 export const program = new Command();
 
 /**
  * Command-line 'scan' command.
- * @public
  */
 export const scanProgram = program
 	.command('scan')
@@ -165,7 +160,6 @@ export const scanProgram = program
 
 /**
  * Command-line 'config' command.
- * @public
  */
 export const cfgProgram = program
 	.command('config')
@@ -175,7 +169,6 @@ export const cfgProgram = program
 /**
  * Command-line argument: key=value pair.
  * @see {@link parseArgumentKeyValue}
- * @public
  */
 
 export const argumentConfigKeyValue = new Argument('[pair]', 'the configuration entry key=value\'').argParser(parseArgumentKeyValue);
@@ -183,18 +176,11 @@ export const argumentConfigKeyValue = new Argument('[pair]', 'the configuration 
 /**
  * Command-line argument: config property.
  * @see {@link Config.configKeyList}
- * @public
  */
 export const argumentConfigKey = new Argument('[key]', 'the configuration setting name').choices(Config.configKeyList);
 
-/**
- * @public
- */
 export const cfgRealOption = new Option('--real', 'use default value(s) as fallback').default(false);
 
-/**
- * @public
- */
 export const cfgTypesOption = new Option('--types', 'use default value(s) as fallback').default(false);
 
 cfgProgram
@@ -219,16 +205,10 @@ cfgProgram
 	.addArgument(argumentConfigKey)
 	.action(actionCfgGet);
 
-/**
- * @public
- */
 export function parseArgumentArrayString(argument: string): string[] {
 	return argument.split(/[ ,|]/).filter(Boolean);
 }
 
-/**
- * @public
- */
 export function parseArgumentBoolean(argument: string): boolean {
 	const errorMessage = Config.configValueSwitch()(argument);
 	if (errorMessage !== undefined) {
@@ -238,9 +218,6 @@ export function parseArgumentBoolean(argument: string): boolean {
 	return Config.switchTrueValues.includes(argument);
 }
 
-/**
- * @public
- */
 export function parseArgumentInteger(argument: string): number {
 	const value = Number.parseInt(argument, 10);
 	const errorMessage = Config.configValueInteger()(value);
@@ -251,9 +228,6 @@ export function parseArgumentInteger(argument: string): number {
 	return value;
 }
 
-/**
- * @public
- */
 export function createArgumentParserStringLiteral(choices: string[]) {
 	return function (argument: string): string {
 		const errorMessage = Config.configValueLiteral(choices)(argument);
@@ -265,9 +239,6 @@ export function createArgumentParserStringLiteral(choices: string[]) {
 	};
 }
 
-/**
- * @public
- */
 export function parseArgumentKey(key: string): string {
 	const errorMessage = Config.configManager.checkKey(key);
 	if (errorMessage !== undefined) {
@@ -277,9 +248,6 @@ export function parseArgumentKey(key: string): string {
 	return key;
 }
 
-/**
- * @public
- */
 export function parseArgumentKeyValue(pair: string): Config.ConfigPair {
 	const result = pair.split('=') as [string] | [string, string];
 	if (result.length > 2) {
@@ -306,9 +274,6 @@ export function parseArgumentKeyValue(pair: string): Config.ConfigPair {
 	return [key, value] as [Config.ConfigKey, Config.ConfigValue];
 }
 
-/**
- * @public
- */
 type ScanContext = {
 	message: string;
 	count: DeepStreamProgress;
@@ -319,7 +284,6 @@ type ScanContext = {
 
 /**
  * Command-line 'scan' command action.
- * @public
  */
 export async function actionScan(): Promise<void> {
 	const flags = scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>();
@@ -465,7 +429,6 @@ export async function actionScan(): Promise<void> {
 
 /**
  * Command-line 'config path' command action.
- * @public
  */
 export function actionCfgPath(): void {
 	console.log(Config.configManager.path);
@@ -473,7 +436,6 @@ export function actionCfgPath(): void {
 
 /**
  * Command-line 'config set' command action
- * @public
  */
 export function actionCfgSet(pair: Config.ConfigPair | undefined, options: ConfigGetFlags): void {
 	if (pair === undefined) {
@@ -498,7 +460,6 @@ export function actionCfgSet(pair: Config.ConfigPair | undefined, options: Confi
 
 /**
  * Command-line 'config unset' command action
- * @public
  */
 export function actionCfgUnset(key: Config.ConfigKey | undefined, options: ConfigGetFlags): void {
 	if (key === undefined) {
@@ -515,7 +476,6 @@ export function actionCfgUnset(key: Config.ConfigKey | undefined, options: Confi
 
 /**
  * Command-line 'config unset' command action
- * @public
  */
 export function actionCfgGet(key: Config.ConfigKey | undefined, options: ConfigGetFlags): void {
 	const flags = scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>();

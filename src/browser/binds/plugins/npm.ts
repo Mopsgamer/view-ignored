@@ -18,7 +18,7 @@ const icon: TargetIcon = {...icons['nf-seti-npm'], color: '#CA0404'};
 const testCommand = 'npm pack --dry-run';
 
 /**
- * @private
+ * @internal
  */
 export const matcherExclude = [
 	...git.matcherExclude,
@@ -40,7 +40,7 @@ export const matcherExclude = [
 ];
 
 /**
- * @private
+ * @internal
  */
 export const matcherInclude = [
 	'bin/**',
@@ -51,7 +51,7 @@ export const matcherInclude = [
 ];
 
 /**
- * @private
+ * @internal
  */
 export type ValidManifestNpm = {
 	name: string;
@@ -60,7 +60,7 @@ export type ValidManifestNpm = {
 };
 
 /**
- * @private
+ * @internal
  */
 export function isValidManifest(value: unknown): value is ValidManifestNpm {
 	if (value?.constructor !== Object) {
@@ -74,7 +74,7 @@ export function isValidManifest(value: unknown): value is ValidManifestNpm {
 }
 
 /**
- * @private
+ * @internal
  */
 export function useChildren(tree: Directory, map: Map<File, SourceInfo>, getMap: (child: Directory) => Map<File, SourceInfo>) {
 	for (const child of tree.children.values()) {
@@ -92,7 +92,7 @@ export function useChildren(tree: Directory, map: Map<File, SourceInfo>, getMap:
 }
 
 /**
- * @private
+ * @internal
  */
 export const sourceSearch = (priority: string[], scanner: PatternScanner): Methodology => function (tree, o) {
 	const map = new Map<File, SourceInfo>();
@@ -142,7 +142,7 @@ export const sourceSearch = (priority: string[], scanner: PatternScanner): Metho
 /**
  * @param priority The list of file names from highest to lowest priority.
  * @param scanner The pattern scanner.
- * @private
+ * @internal
  */
 export const methodologyManifestNpmLike = (priority: string[], scanner: PatternScanner): Methodology => function (tree, o) {
 	const packageJson = tree.get('package.json');
