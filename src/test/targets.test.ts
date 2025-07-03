@@ -148,6 +148,34 @@ describe('Targets', async () => {
         }),
       },
     })
+    testTarget('(package.json) with exclude pattern', {
+      targetId,
+      should: [{
+        include: [
+          'bin/app',
+          'out/index.js',
+          'package.json',
+        ],
+        source: 'package.json',
+      }],
+      content: {
+        'bin/app': '',
+        'out': {
+          'index.js': '',
+          'index.test.js': '',
+        },
+        'src': {
+          'index.ts': '',
+          'index.test.ts': '',
+        },
+        'package.json': JSON.stringify({
+          files: ['out', '!**/*.test.js'],
+          main: './out/index.js',
+          name: 'app',
+          version: '0.0.1',
+        }),
+      },
+    })
     testTarget('(package.json), .npmignore, .gitignore', {
       targetId,
       should: [{

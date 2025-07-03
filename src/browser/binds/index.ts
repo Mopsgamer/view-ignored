@@ -13,12 +13,13 @@ const builtInImportMap: Record<BuiltInName, string> = {
   npm: './plugins/npm.js',
   vsce: './plugins/vsce.js',
   yarn: './plugins/yarn.js',
+  jsr: './plugins/jsr.js',
 }
 
 /**
  * Built-in name list.
  */
-export const builtInNameList = ['git', 'npm', 'vsce', 'yarn'] as const
+export const builtInNameList = ['git', 'npm', 'vsce', 'yarn', 'jsr'] as const
 
 /**
  * Built-in name type.

@@ -7,67 +7,56 @@ import {
   InvalidPatternError,
   BadSourceError,
   type SourceInfo,
-  NoSourceError,
 } from '../../index.js'
 import { type PatternScanner, ScannerGitignore } from '../scanner.js'
 import { type TargetIcon, type TargetName } from '../targets.js'
 import * as git from './git.js'
 
-const id = 'npm'
-const name: TargetName = 'NPM'
-const icon: TargetIcon = { ...icons['nf-seti-npm'], color: '#CA0404' }
-const testCommand = 'npm pack --dry-run'
+const id = 'jsr'
+const name: TargetName = 'JSR'
+const icon: TargetIcon = { ...icons['nf-ple-pixelated_squares_big'], color: '#F5DD1E' }
 
 /**
  * @internal
  */
 export const matcherExclude = [
-  ...git.matcherExclude,
-  '**/node_modules/**',
-  '**/.*.swp',
-  '**/._*',
-  '**/.DS_Store/**',
-  '**/.git/**',
-  '**/.gitignore',
-  '**/.hg/**',
-  '**/.npmignore',
-  '**/.npmrc',
-  '**/.lock-wscript',
-  '**/.svn/**',
-  '**/.wafpickle-*',
-  '**/config.gypi',
-  '**/CVS/**',
-  '**/npm-debug.log',
 ]
 
 /**
  * @internal
  */
 export const matcherInclude = [
-  'bin/**',
-  'package.json',
-  'README*',
-  'LICENSE*',
-  'LICENCE*',
 ]
 
 /**
  * @internal
  */
-export type ValidManifestNpm = {
+export type ValidManifestJsr = {
   name: string
   version: string
-  files?: string[]
+  exports: string
+  exclude?: string[]
+  include?: string[]
+  publish?: {
+    exclude?: string[]
+    include?: string[]
+  }
 }
 
 /**
  * @internal
  */
-export function isValidManifestPackageJson(value: unknown): value is ValidManifestNpm {
+export function isValidManifestJsr(value: unknown): value is ValidManifestJsr {
   return z.object({
     name: z.string(),
     version: z.string(),
-    files: z.array(z.string()).optional(),
+    exports: z.string(),
+    exclude: z.array(z.string()).optional(),
+    include: z.array(z.string()).optional(),
+    publish: z.object({
+      exclude: z.array(z.string()).optional(),
+      include: z.array(z.string()).optional(),
+    }).optional(),
   }).safeParse(value).success
 }
 
@@ -102,17 +91,19 @@ export const sourceSearch = (priority: string[], scanner: PatternScanner): Metho
       continue
     }
 
-    if (sourceFile.base === 'package.json') {
+    if (/^(deno|jsr).jsonc?$/.test(sourceFile.base)) {
       const manifest = JSON.parse(o.modules.fs.readFileSync(sourceFile.absolutePath).toString()) as unknown
-      if (!isValidManifestPackageJson(manifest)) {
-        throw new BadSourceError(sourceFile, 'Must have \'name\', \'version\' and \'files\'.')
+      if (!isValidManifestJsr(manifest)) {
+        throw new BadSourceError(sourceFile, 'Must have \'name\', \'version\'.')
       }
 
-      const { files: pattern } = manifest
+      const { exclude, include, publish } = manifest
 
-      if (pattern === undefined) {
+      if (exclude === undefined && include === undefined && publish === undefined) {
         continue
       }
+
+      const pattern = publish?.include ?? include
 
       if (!scanner.isValid(pattern)) {
         throw new BadSourceError(sourceFile, `Invalid pattern, got ${JSON.stringify(pattern)}`)
@@ -120,6 +111,9 @@ export const sourceSearch = (priority: string[], scanner: PatternScanner): Metho
 
       scanner.negated = true
       scanner.pattern = pattern
+      if (Array.isArray(scanner.exclude)) {
+        scanner.exclude.push(...(publish?.exclude ?? exclude ?? []))
+      }
     }
     else {
       const content = o.modules.fs.readFileSync(sourceFile.absolutePath).toString()
@@ -138,44 +132,10 @@ export const sourceSearch = (priority: string[], scanner: PatternScanner): Metho
   return useChildren(tree, map, child => sourceSearch(priority, scanner)(child, o))
 }
 
-/**
- * @param priority The list of file names from highest to lowest priority.
- * @param scanner The pattern scanner.
- * @internal
- */
-export const methodologyManifestNpmLike = (priority: string[], scanner: PatternScanner): Methodology => function (tree, o) {
-  const packageJson = tree.get('package.json')
-  if (packageJson === undefined) {
-    throw new NoSourceError('\'package.json\' in the root')
-  }
-
-  const packageJsonContent = o.modules.fs.readFileSync(packageJson.absolutePath).toString()
-  let manifest: unknown
-  try {
-    manifest = JSON.parse(packageJsonContent)
-  }
-  catch (error) {
-    if (error instanceof Error) {
-      throw new BadSourceError(packageJson, error.message)
-    }
-
-    throw error
-  }
-
-  if (!isValidManifestPackageJson(manifest)) {
-    throw new BadSourceError(packageJson, 'Must have \'name\', \'version\' and \'files\'.')
-  }
-
-  return sourceSearch(
-    priority,
-    scanner,
-  )(tree, o)
-}
-
 const bind: Plugins.TargetBind = {
-  id, icon, name, testCommand, scanOptions: {
-    target: methodologyManifestNpmLike(
-      ['package.json', '.npmignore', '.gitignore'],
+  id, icon, name, scanOptions: {
+    target: sourceSearch(
+      ['deno.json', 'deno.jsonc', 'jsr.json', 'jsr.jsonc'],
       new ScannerGitignore({ exclude: matcherExclude, include: matcherInclude }),
     ),
   },

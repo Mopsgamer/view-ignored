@@ -8,7 +8,7 @@
 		"view-ignored": "./bin/viewig"
 	},
 	"scripts": {
-		"prerelease": "bun run lint && bun run build:pub && bun run test",
+		"prerelease": "bun run build:pub && bun run lint && bun run test",
 		"test": "bun run node --test out/**/*.test.js",
 		"build": "bun run build:clean && bun run tsc -p src",
 		"build:pub": "bun run build:clean && bun run tsc -p src --sourceMap false && rm **/*.test.d.ts",
@@ -82,7 +82,8 @@
 		"minimatch": "^10.0.3",
 		"p-limit": "^6.2.0",
 		"treeify": "^1.1.0",
-		"yaml": "^2.8.0"
+		"yaml": "^2.8.0",
+		"zod": "^3.25.71"
 	},
 	"devDependencies": {
 		"@eslint/js": "^9.30.1",
