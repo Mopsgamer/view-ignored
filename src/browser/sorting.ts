@@ -1,25 +1,25 @@
-import path from 'node:path';
+import path from 'node:path'
 
 /**
  * Contains all file sort names.
  */
-export const sortNameList = ['firstFolders', 'firstFiles', 'type', 'mixed', 'modified'] as const;
+export const sortNameList = ['firstFolders', 'firstFiles', 'type', 'mixed', 'modified'] as const
 
 /**
  * Contains all file sort names as a type.
  */
-export type SortName = typeof sortNameList[number];
+export type SortName = typeof sortNameList[number]
 
 /**
  * {@link Array.prototype.sort}'s file path comparator.
  */
-export type SortFunction = (a: string, b: string) => number;
+export type SortFunction = (a: string, b: string) => number
 
 /**
  * Checks if the value is the {@link SortName}.
  */
 export function isSortName(value: unknown): value is SortName {
-	return typeof value === 'string' && sortNameList.includes(value as SortName);
+  return typeof value === 'string' && sortNameList.includes(value as SortName)
 }
 
 /**
@@ -29,11 +29,11 @@ export function isSortName(value: unknown): value is SortName {
  * "file/" -> ["file", "", false]
  */
 export function shiftPath(p: string): [next: string, other: string, isLast: boolean] {
-	const slashIndex = p.search(/[/\\]/);
-	const next = p.slice(0, Math.max(0, slashIndex));
-	const other = p.slice(Math.max(0, slashIndex + 1));
-	const isLast = next === '';
-	return [slashIndex < 0 ? other : next, other, isLast];
+  const slashIndex = p.search(/[/\\]/)
+  const next = p.slice(0, Math.max(0, slashIndex))
+  const other = p.slice(Math.max(0, slashIndex + 1))
+  const isLast = next === ''
+  return [slashIndex < 0 ? other : next, other, isLast]
 }
 
 /**
@@ -41,27 +41,27 @@ export function shiftPath(p: string): [next: string, other: string, isLast: bool
  * Folders are displayed before files.
  */
 export function firstFolders(a: string, b: string): number {
-	let comp = 0;
-	for (; comp === 0;) {
-		const [next1, post1, last1] = shiftPath(a);
-		a = post1;
-		const [next2, post2, last2] = shiftPath(b);
-		b = post2;
-		comp = mixed(next1, next2);
-		if (last1 || last2) {
-			if (last1 === last2) {
-				break;
-			}
+  let comp = 0
+  for (; comp === 0;) {
+    const [next1, post1, last1] = shiftPath(a)
+    a = post1
+    const [next2, post2, last2] = shiftPath(b)
+    b = post2
+    comp = mixed(next1, next2)
+    if (last1 || last2) {
+      if (last1 === last2) {
+        break
+      }
 
-			if (!last1) {
-				return -1;
-			}
+      if (!last1) {
+        return -1
+      }
 
-			return +1;
-		}
-	}
+      return +1
+    }
+  }
 
-	return comp;
+  return comp
 }
 
 /**
@@ -69,27 +69,27 @@ export function firstFolders(a: string, b: string): number {
  * Files are displayed before folders.
  */
 export function firstFiles(a: string, b: string): number {
-	let comp = 0;
-	for (; comp === 0;) {
-		const [next1, post1, last1] = shiftPath(a);
-		a = post1;
-		const [next2, post2, last2] = shiftPath(b);
-		b = post2;
-		comp = mixed(next1, next2);
-		if (last1 || last2) {
-			if (last1 === last2) {
-				break;
-			}
+  let comp = 0
+  for (; comp === 0;) {
+    const [next1, post1, last1] = shiftPath(a)
+    a = post1
+    const [next2, post2, last2] = shiftPath(b)
+    b = post2
+    comp = mixed(next1, next2)
+    if (last1 || last2) {
+      if (last1 === last2) {
+        break
+      }
 
-			if (last1) {
-				return -1;
-			}
+      if (last1) {
+        return -1
+      }
 
-			return +1;
-		}
-	}
+      return +1
+    }
+  }
 
-	return comp;
+  return comp
 }
 
 /**
@@ -97,28 +97,28 @@ export function firstFiles(a: string, b: string): number {
  * Folders are displayed before files.
  * @see {@link makeMtimeCache}
  */
-export function modified(a: string, b: string, map: Map<{toString(): string}, number>): number {
-	let comp = 0;
-	for (; comp === 0;) {
-		const [, post1, last1] = shiftPath(a);
-		a = post1;
-		const [, post2, last2] = shiftPath(b);
-		b = post2;
-		comp = (map.get(a) ?? 0) - (map.get(b) ?? 0);
-		if (last1 || last2) {
-			if (last1 === last2) {
-				break;
-			}
+export function modified(a: string, b: string, map: Map<{ toString(): string }, number>): number {
+  let comp = 0
+  for (; comp === 0;) {
+    const [, post1, last1] = shiftPath(a)
+    a = post1
+    const [, post2, last2] = shiftPath(b)
+    b = post2
+    comp = (map.get(a) ?? 0) - (map.get(b) ?? 0)
+    if (last1 || last2) {
+      if (last1 === last2) {
+        break
+      }
 
-			if (!last1) {
-				return -1;
-			}
+      if (!last1) {
+        return -1
+      }
 
-			return +1;
-		}
-	}
+      return +1
+    }
+  }
 
-	return comp;
+  return comp
 }
 
 /**
@@ -126,29 +126,29 @@ export function modified(a: string, b: string, map: Map<{toString(): string}, nu
  * Folders are displayed before files.
  */
 export function type(a: string, b: string): number {
-	let comp = 0;
-	for (; comp === 0;) {
-		const [next1, post1, last1] = shiftPath(a);
-		a = post1;
-		const [next2, post2, last2] = shiftPath(b);
-		b = post2;
-		const ppa = path.parse(next1);
-		const ppb = path.parse(next2);
-		comp = mixed(ppa.ext, ppb.ext) || mixed(ppa.name, ppb.name);
-		if (last1 || last2) {
-			if (last1 === last2) {
-				break;
-			}
+  let comp = 0
+  for (; comp === 0;) {
+    const [next1, post1, last1] = shiftPath(a)
+    a = post1
+    const [next2, post2, last2] = shiftPath(b)
+    b = post2
+    const ppa = path.parse(next1)
+    const ppb = path.parse(next2)
+    comp = mixed(ppa.ext, ppb.ext) || mixed(ppa.name, ppb.name)
+    if (last1 || last2) {
+      if (last1 === last2) {
+        break
+      }
 
-			if (!last1) {
-				return -1;
-			}
+      if (!last1) {
+        return -1
+      }
 
-			return +1;
-		}
-	}
+      return +1
+    }
+  }
 
-	return comp;
+  return comp
 }
 
 /**
@@ -156,5 +156,5 @@ export function type(a: string, b: string): number {
  * Files are interwoven with folders.
  */
 export function mixed(a: string, b: string): number {
-	return a.localeCompare(b, undefined, {ignorePunctuation: false});
+  return a.localeCompare(b, undefined, { ignorePunctuation: false })
 }

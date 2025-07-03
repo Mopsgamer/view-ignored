@@ -71,7 +71,7 @@
 	},
 	"dependencies": {
 		"@humanwhocodes/gitignore-to-minimatch": "^1.0.2",
-		"@m234/nerd-fonts": "^0.3.0",
+		"@m234/nerd-fonts": "^0.3.1",
 		"ansi-regex": "^6.1.0",
 		"boxen": "^8.0.1",
 		"chalk": "^5.4.1",
@@ -87,10 +87,12 @@
 	"devDependencies": {
 		"@eslint/js": "^9.30.1",
 		"@release-it/keep-a-changelog": "^7.0.0",
+		"@stylistic/eslint-plugin": "^5.1.0",
 		"@types/node": "^24.0.10",
 		"@types/treeify": "^1.0.3",
 		"eslint": "^9.30.1",
 		"fs-fixture": "^2.8.1",
+		"globals": "^16.3.0",
 		"release-it": "^19.0.3",
 		"typescript": "^5.8.3",
 		"typescript-eslint": "^8.35.1"
