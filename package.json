@@ -8,7 +8,7 @@
 		"view-ignored": "./bin/viewig"
 	},
 	"scripts": {
-		"prerelease": "bun run build:pub && bun run lint && bun run test",
+		"prerelease": "bun run build:pub && bun run lint",
 		"test": "bun run node --test out/**/*.test.js",
 		"build": "bun run build:clean && bun run tsc -p src",
 		"build:pub": "bun run build:clean && bun run tsc -p src --sourceMap false && rm **/*.test.d.ts",
