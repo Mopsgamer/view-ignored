@@ -5,7 +5,7 @@
 [![github](https://img.shields.io/github/stars/Mopsgamer/view-ignored.svg?style=flat)](https://github.com/Mopsgamer/view-ignored)
 [![github issues](https://img.shields.io/github/issues/Mopsgamer/view-ignored.svg?style=flat)](https://github.com/Mopsgamer/view-ignored/issues)
 
-Retrieve list of files ignored/included by Git, NPM, Yarn and VSC Extension.
+Retrieve list of files ignored/included by Git, NPM, Yarn, JSR, VSCE or other tools.
 
 ## Highlights
 
@@ -88,8 +88,7 @@ const fileInfoSorted = fileInfoList.sort((a, b) => sorter(String(a), String(b)))
 ### Targets
 
 - `git`
-- `npm` (use it for PNPM and Bun)
+- `npm` (compatible with Bun, PNPM, and others)
 - `yarn`
 - `vsce`
-- `jsr` *planned*
-- `deno` *planned*
+- `jsr` (compatible with Deno)
