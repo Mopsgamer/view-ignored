@@ -1,6 +1,9 @@
-import { minimatch } from 'minimatch'
+import * as minimatch from 'minimatch'
 import { gitignoreToMinimatch } from '@humanwhocodes/gitignore-to-minimatch'
 import { type Scanner } from '../lib.js'
+import z from 'zod'
+
+const { minimatch: isMatch, makeRe } = minimatch
 
 export type PatternScannerOptions = {
   pattern?: string | string[]
@@ -18,6 +21,14 @@ export type PatternScanner = Scanner & {
   ignores(path: string, pattern: string | string[]): boolean
   ignores(path: string, options?: PatternScannerOptions): boolean
   ignores(path: string, argument?: PatternScannerOptions | string | string[]): boolean
+}
+
+export function ArrayPatternToString(pattern: string[] | string): string {
+  if (Array.isArray(pattern)) {
+    pattern = pattern.join('\n').trim()
+  }
+
+  return pattern.trim()
 }
 
 export class ScannerMinimatch implements PatternScanner {
@@ -57,16 +68,18 @@ export class ScannerMinimatch implements PatternScanner {
   }
 
   isValid(value: unknown): value is string | string[] {
-    if (Array.isArray(value)) {
-      return value.every(p => !Array.isArray(p) && this.isValid(value))
-    }
-
-    if (typeof value !== 'string') {
+    if (!z.string().or(z.array(z.string())).safeParse(value).success) {
       return false
     }
 
+    const val = ArrayPatternToString(value as string | string[])
+
+    if (val === '') {
+      return true
+    }
+
     try {
-      minimatch.makeRe(value)
+      makeRe(val)
       return true
     }
     catch {
@@ -74,33 +87,58 @@ export class ScannerMinimatch implements PatternScanner {
     }
   }
 
+  private isMatch(p: string, pattern: string, options?: minimatch.MinimatchOptions): boolean {
+    const patternList = pattern.split('\n')
+    const positiveList: string[] = [], negativeList: string[] = []
+    for (const pat of patternList) {
+      if (pat[0] === '!') {
+        negativeList.push(pat.substring(1))
+        continue
+      }
+      positiveList.push(pat)
+    }
+    for (const pat of negativeList) {
+      if (!isMatch(p, pat, options)) continue
+      return false
+    }
+    for (const pat of positiveList) {
+      if (!isMatch(p, pat, options)) continue
+      return true
+    }
+    return false
+  }
+
   ignores(path: string, pattern: string | string[]): boolean
   ignores(path: string, options?: PatternScannerOptions): boolean
   ignores(path: string, argument?: PatternScannerOptions | string | string[]): boolean {
-    if (Array.isArray(argument)) {
-      argument = argument.join('\n')
+    if (Array.isArray(argument) || typeof argument === 'string') {
+      argument = ArrayPatternToString(argument)
     }
 
-    if (typeof argument === 'string') {
-      const patternList = argument.split(/\r?\n/)
-
-      const someMatch = patternList.some(pattern => minimatch(path, pattern, { dot: true, matchBase: true }))
-      return someMatch
-    }
+    const minimatchOptions: minimatch.MinimatchOptions = { dot: true, matchBase: true }
 
     let check: boolean
-    check = this.ignores(path, argument?.exclude ?? this.exclude)
+    if (typeof argument === 'string') {
+      check = this.isMatch(path, argument, minimatchOptions)
+      return this.negated ? !check : check
+    }
+
+    let pattern = ArrayPatternToString(argument?.exclude ?? this.exclude)
+    check = this.isMatch(path, pattern, minimatchOptions)
     if (check) {
       return true
     }
 
-    check = this.ignores(path, argument?.include ?? this.include)
+    pattern = ArrayPatternToString(argument?.include ?? this.include)
+    check = this.isMatch(path, pattern, minimatchOptions)
     if (check) {
       return false
     }
 
-    check = this.ignores(path, argument?.pattern ?? this.pattern)
-    return (argument?.negated ?? this.negated) ? !check : check
+    pattern = ArrayPatternToString(argument?.pattern ?? this.pattern)
+    const negated: boolean = argument?.negated ?? this.negated
+    check = this.isMatch(path, pattern, minimatchOptions)
+    return negated ? !check : check
   }
 }
 
@@ -133,17 +171,19 @@ export class ScannerGitignore extends ScannerMinimatch {
   }
 
   isValid(value: unknown): value is string | string[] {
-    if (Array.isArray(value)) {
-      return value.every(p => !Array.isArray(p) || this.isValid(value))
-    }
-
-    if (typeof value !== 'string') {
+    if (!z.string().or(z.array(z.string())).safeParse(value).success) {
       return false
     }
 
+    const val = ArrayPatternToString(value as string | string[])
+
+    if (val === '') {
+      return true
+    }
+
     try {
-      const converted = ScannerGitignore.gitignoreToMinimatch(value)
-      minimatch.makeRe(converted)
+      const converted = ScannerGitignore.gitignoreToMinimatch(val)
+      makeRe(converted)
       return true
     }
     catch {

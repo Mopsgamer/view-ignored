@@ -1,7 +1,9 @@
 import assert, { AssertionError } from 'node:assert'
 import { type FileTree, createFixture } from 'fs-fixture'
 import * as viewig from '../index.js'
-import { describe, it, before, after } from 'node:test'
+import { describe, it } from 'node:test'
+import { inspect } from 'node:util'
+import { ScannerGitignore } from '../browser/binds/scanner.js'
 
 type Check = {
   include: string[]
@@ -37,9 +39,7 @@ const symlinksProject: FileTree = {
 }
 
 describe('Targets', async () => {
-  before(async () => {
-    await viewig.Plugins.loadBuiltIns()
-  })
+  await viewig.Plugins.loadBuiltIns()
   let targetId = 'git'
   describe(targetId, () => {
     testTarget('empty folder', {
@@ -265,7 +265,7 @@ describe('Targets', async () => {
         },
       },
     })
-    testTarget('separate should use own x/.npmignore', {
+    testTarget('app2 should use app1/app2/.npmignore, not app1/.npmignore', {
       targetId,
       should: [
         {
@@ -548,11 +548,11 @@ type TestTargetSubtestData = Case & {
 
 function testTarget(title: string, data: TestTargetSubtestData) {
   it(title, async () => {
-    after(async () => {
-      await fixture.rm()
-    })
     const { targetId, should } = data
     const fixture = await createFixture(data.content)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    await using fixtureDisposable = {
+      [Symbol.asyncDispose]() { return fixture.rm() } }
 
     const fileInfoListPromise = viewig.scan('.', {
       posix: true,
@@ -580,7 +580,16 @@ function testTarget(title: string, data: TestTargetSubtestData) {
     const shouldPaths = should
       .flatMap(shouldCase => shouldCase.include)
 
-    assert.deepEqual(fileInfoList.map(String).sort(), shouldPaths.sort(), 'Bad path list.')
+    const scanner = fileInfoList[0]?.source?.scanner as ScannerGitignore | undefined
+    const arrify = (pattern: string | string[]): string[] => Array.isArray(pattern) ? pattern : pattern.split('\n')
+    const scannerInfo = (scanner: ScannerGitignore): string => ` Excluded by ${inspect(arrify(scanner.exclude))}`
+      + `\n OR included by ${inspect(arrify(scanner.include))}.`
+      + `\n OR ${scanner.negated ? 'included' : 'excluded'} by ${inspect(arrify(scanner.pattern))}.`
+    // Symlinks issue? https://github.com/lovell/sharp/issues/1671#issuecomment-1879227385
+    assert.deepEqual(
+      fileInfoList.map(String).sort(), shouldPaths.sort(),
+      `Bad path list.${!scanner ? '' : scannerInfo(scanner)}`,
+    )
 
     for (const fileInfo of fileInfoList) {
       const { source } = fileInfo

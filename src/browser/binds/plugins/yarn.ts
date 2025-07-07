@@ -15,8 +15,8 @@ const icon: TargetIcon = { ...icons['nf-seti-yarn'], color: '#2E2A65' }
  */
 export const matcherExclude = [
   ...npm.matcherExclude,
-  '.yarnignore',
-  '.yarnrc',
+  '**/.yarnignore',
+  '**/.yarnrc',
 ]
 
 /**
