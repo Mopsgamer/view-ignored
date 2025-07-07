@@ -47,7 +47,7 @@
 	},
 	"release-it": {
 		"hooks": {
-			"before:init": "pnpm prerelease"
+			"before:init": "bun prerelease"
 		},
 		"plugins": {
 			"@release-it/keep-a-changelog": {
