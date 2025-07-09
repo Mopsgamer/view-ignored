@@ -111,6 +111,22 @@ const fileInfoSorted = fileInfoList.sort((a, b) =>
 );
 ```
 
+#### Plugin export example
+
+```ts
+const bind: Plugins.TargetBind = {
+  id,
+  icon,
+  name,
+  testCommand,
+  scanOptions: {
+    target: methodologyGitignoreLike(".gitignore"),
+  },
+};
+const git: Plugins.PluginExport = { viewignored: { addTargets: [bind] } };
+export default git;
+```
+
 ### Targets
 
 The following built-in plugins are available:
