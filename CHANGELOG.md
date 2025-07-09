@@ -9,6 +9,8 @@ and this project adheres to
 ## [Unreleased]
 
 - Update README.
+- Fix boolean cli options.
+- Use ora instead of listr2.
 
 ## [0.4.3] - 2025-07-07
 

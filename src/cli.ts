@@ -3,7 +3,6 @@ import * as process from 'node:process'
 import { icons } from '@m234/nerd-fonts'
 import { Chalk } from 'chalk'
 import { Argument, Command, InvalidArgumentError, Option } from 'commander'
-import { Listr } from 'listr2'
 import * as Config from './config.js'
 import {
   loadBuiltIns,
@@ -40,6 +39,7 @@ import {
   ViewIgnoredError,
 } from './lib.js'
 import { type FilterName, filterNameList } from './browser/filtering.js'
+import { oraPromise } from 'ora'
 
 /**
  * @internal
@@ -145,13 +145,11 @@ export async function programInit() {
       'noColor',
       program,
       new Option('--no-color', 'force disable colors'),
-      parseArgumentBoolean,
     )
     configManager.setOption(
       'posix',
       program,
       new Option('--posix', 'use unix path separator'),
-      parseArgumentBoolean,
     )
     configManager.setOption(
       'plugins',
@@ -168,8 +166,7 @@ export async function programInit() {
     configManager.setOption(
       'parsable',
       program,
-      new Option('-p, --parsable [parsable]', 'print parsable text'),
-      parseArgumentBoolean,
+      new Option('-p, --parsable', 'print parsable text'),
     )
     configManager.setOption(
       'target',
@@ -204,8 +201,7 @@ export async function programInit() {
     configManager.setOption(
       'showSources',
       scanProgram,
-      new Option('--show-sources [show]', 'show scan sources'),
-      parseArgumentBoolean,
+      new Option('--show-sources', 'show scan sources'),
     )
     configManager.setOption(
       'concurrency',
@@ -338,15 +334,6 @@ export function parseArgumentArrayString(argument: string): string[] {
   return argument.split(/[ ,|]/).filter(Boolean)
 }
 
-export function parseArgumentBoolean(argument: string): boolean {
-  const errorMessage = Config.configValueSwitch()(argument)
-  if (errorMessage !== undefined) {
-    throw new InvalidArgumentError(errorMessage)
-  }
-
-  return Config.switchTrueValues.includes(argument)
-}
-
 export function parseArgumentInteger(argument: string): number {
   const value = Number.parseInt(argument, 10)
   const errorMessage = Config.configValueInteger()(value)
@@ -404,8 +391,8 @@ export function parseArgumentKeyValue(pair: string): Config.ConfigPair {
 }
 
 type ScanContext = {
+  progress: DeepStreamProgress
   message: string
-  count: DeepStreamProgress
   stream: DeepStreamEventEmitter
   fileInfoList: FileInfo[]
   reading: Promise<DeepStreamDataRoot>
@@ -468,12 +455,7 @@ export async function actionScan(): Promise<void> {
     }
 
     const context: ScanContext = {
-      count: {
-        files: 0,
-        directories: 0,
-        current: 0,
-        total: 0,
-      },
+      progress: { current: 0, directories: 0, files: 0, total: 0 },
       fileInfoList: [],
       stream,
       message: '',
@@ -483,109 +465,85 @@ export async function actionScan(): Promise<void> {
         })
       }),
     }
-    const progress = new Listr(
-      [
-        {
-          title: `${name} ${chalk.hex('#73A7DE')(flags.filter)} ${cwd}`,
-          async task(context, task) {
-            return task.newListr([
-              {
-                title: 'Preparing',
-                async task() {
-                  const { progress } = await context.reading
-                  Object.assign(context.count, progress)
-                },
-              },
-              {
-                title: 'Scanning',
-                async task() {
-                  context.fileInfoList = await scan(
-                    context.stream,
-                    {
-                      ...optionsReal,
-                      target: flags.target,
-                      filter: flags.filter,
-                      maxDepth: flags.depth,
-                    },
-                  )
-                },
-              },
-              {
-                title: 'Printing',
-                async task() {
-                  const sorter = Sorting[flags.sort]
-                  const cache = new Map<File, number>()
-                  if (flags.sort === 'modified') {
-                    const { tree } = await context.reading
-                    await tree.deepModifiedTime(cache, optionsReal)
-                  }
 
-                  const time = Date.now() - start
-                  const fileInfoListSorted = context.fileInfoList.sort((a, b) =>
-                    sorter(String(a), String(b), cache),
-                  )
-
-                  const files = formatFiles(
-                    fileInfoListSorted,
-                    {
-                      chalk,
-                      posix: flags.posix,
-                      style: flags.style,
-                      decor: flags.decor,
-                      showSources: flags.showSources,
-                    },
-                  )
-                  const fastSymbol = decorCondition(flags.decor, {
-                    ifEmoji: '⚡',
-                    ifNerd: icons['nf-md-lightning_bolt'].value,
-                  })
-                  const infoSymbol = decorCondition(flags.decor, {
-                    ifEmoji: 'ℹ️',
-                    ifNerd: icons['nf-seti-info'].value,
-                    postfix: ' ',
-                  })
-
-                  let message = ''
-                  message += files
-                  message += '\n'
-                  message += `Done in ${
-                    time < 2000 ? chalk.yellow(fastSymbol) : ''
-                  }${stringTime(time, chalk)}.`
-                  message += '\n'
-                  message += `Listed ${
-                    highlight(String(context.fileInfoList.length), chalk)
-                  } files.`
-                  message += '\n'
-                  message += `Processed ${
-                    highlight(String(context.count.files), chalk)
-                  } files and ${
-                    highlight(String(context.count.directories), chalk)
-                  } directories.`
-                  message += '\n'
-                  if (bind.testCommand) {
-                    message += '\n'
-                    message += `${chalk.blue(infoSymbol)}You can use ${
-                      highlight(`'${bind.testCommand}'`, chalk)
-                    } to check if the list is valid.`
-                  }
-
-                  message += '\n'
-
-                  context.message = message
-                },
-              },
-            ])
-          },
-        },
-      ],
-      {
-        ctx: context,
-        exitOnError: true,
-      },
-    )
     try {
       context.stream.run()
-      await progress.run()
+      console.log(`${name} ${chalk.hex('#73A7DE')(flags.filter)} ${cwd}`)
+      await oraPromise(async (spinner) => {
+        const proc = scan(
+          context.stream,
+          {
+            ...optionsReal,
+            target: flags.target,
+            filter: flags.filter,
+            maxDepth: flags.depth,
+          },
+        )
+        context.stream.on('progress', (progress) => {
+          spinner.text = `Scanning ${progress.current}/${progress.total}`
+          context.progress = progress
+        })
+        context.fileInfoList = await proc
+      }, 'Scanning')
+      const sorter = Sorting[flags.sort]
+      const cache = new Map<File, number>()
+      if (flags.sort === 'modified') {
+        const { tree } = await context.reading
+        await tree.deepModifiedTime(cache, optionsReal)
+      }
+
+      const time = Date.now() - start
+      const fileInfoListSorted = context.fileInfoList.sort((a, b) =>
+        sorter(String(a), String(b), cache),
+      )
+
+      const files = formatFiles(
+        fileInfoListSorted,
+        {
+          chalk,
+          posix: flags.posix,
+          style: flags.style,
+          decor: flags.decor,
+          showSources: flags.showSources,
+        },
+      )
+      const fastSymbol = decorCondition(flags.decor, {
+        ifEmoji: '⚡',
+        ifNerd: icons['nf-md-lightning_bolt'].value,
+      })
+      const infoSymbol = decorCondition(flags.decor, {
+        ifEmoji: 'ℹ️',
+        ifNerd: icons['nf-seti-info'].value,
+        postfix: ' ',
+      })
+
+      let message = ''
+      message += files
+      message += '\n'
+      message += `Done in ${
+        time < 2000 ? chalk.yellow(fastSymbol) : ''
+      }${stringTime(time, chalk)}.`
+      message += '\n'
+      message += `Listed ${
+        highlight(String(context.fileInfoList.length), chalk)
+      } files.`
+      message += '\n'
+      message += `Processed ${
+        highlight(String(context.progress.files), chalk)
+      } files and ${
+        highlight(String(context.progress.directories), chalk)
+      } directories.`
+      message += '\n'
+      if (bind.testCommand) {
+        message += '\n'
+        message += `${chalk.blue(infoSymbol)}You can use ${
+          highlight(`'${bind.testCommand}'`, chalk)
+        } to check if the list is valid.`
+      }
+
+      message += '\n'
+
+      context.message = message
     }
     catch (error) {
       if (!(error instanceof ViewIgnoredError)) {
