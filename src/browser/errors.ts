@@ -27,7 +27,11 @@ export class NoSourceError extends ViewIgnoredError {
    */
   constructor(file: File)
   constructor(argument0: File | string) {
-    super(`There was no configuration file (${typeof argument0 === 'string' ? argument0 : argument0.relativePath}) in the folders and subfolders that would correctly describe the ignoring.`)
+    super(
+      `There was no configuration file (${
+        typeof argument0 === 'string' ? argument0 : argument0.relativePath
+      }) in the folders and subfolders that would correctly describe the ignoring.`,
+    )
   }
 }
 
@@ -48,14 +52,22 @@ export class BadSourceError extends ViewIgnoredError {
    */
   constructor(file: File, message: string)
   constructor(argument0: File | string, message: string) {
-    super(`Invalid ${typeof argument0 === 'string' ? argument0 : argument0.relativePath}: ${message}`)
+    super(
+      `Invalid ${
+        typeof argument0 === 'string' ? argument0 : argument0.relativePath
+      }: ${message}`,
+    )
   }
 }
 
 export class InvalidPatternError extends ViewIgnoredError {
   name = 'InvalidPatternError'
   constructor(file: File, pattern?: string | string[]) {
-    super(`Invalid pattern in ${file.relativePath}: ${pattern === undefined ? '' : ` Pattern: ${JSON.stringify(pattern)}`}`)
+    super(
+      `Invalid pattern in ${file.relativePath}: ${
+        pattern === undefined ? '' : ` Pattern: ${JSON.stringify(pattern)}`
+      }`,
+    )
   }
 }
 

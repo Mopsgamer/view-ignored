@@ -12,12 +12,10 @@ export class File implements ParsedPath {
      * The parent of the file.
      */
     public readonly parent: Directory,
-
     /**
      * The relative path to the file.
      */
     public readonly relativePath: string,
-
     /**
      * The absolute path to the file.
      */

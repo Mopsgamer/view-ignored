@@ -1,11 +1,12 @@
 import { icons } from '@m234/nerd-fonts'
 import { z } from 'zod'
 import {
-  type Plugins, type Methodology,
-  type File,
-  Directory,
-  InvalidPatternError,
   BadSourceError,
+  Directory,
+  type File,
+  InvalidPatternError,
+  type Methodology,
+  type Plugins,
   type SourceInfo,
 } from '../../index.js'
 import { type PatternScanner, ScannerGitignore } from '../scanner.js'
@@ -14,19 +15,20 @@ import * as git from './git.js'
 
 const id = 'jsr'
 const name: TargetName = 'JSR'
-const icon: TargetIcon = { ...icons['nf-ple-pixelated_squares_big'], color: '#F5DD1E' }
+const icon: TargetIcon = {
+  ...icons['nf-ple-pixelated_squares_big'],
+  color: '#F5DD1E',
+}
 
 /**
  * @internal
  */
-export const matcherExclude = [
-]
+export const matcherExclude = []
 
 /**
  * @internal
  */
-export const matcherInclude = [
-]
+export const matcherInclude = []
 
 /**
  * @internal
@@ -63,7 +65,11 @@ export function isValidManifestJsr(value: unknown): value is ValidManifestJsr {
 /**
  * @internal
  */
-export function useChildren(tree: Directory, map: Map<File, SourceInfo>, getMap: (child: Directory) => Map<File, SourceInfo>) {
+export function useChildren(
+  tree: Directory,
+  map: Map<File, SourceInfo>,
+  getMap: (child: Directory) => Map<File, SourceInfo>,
+) {
   for (const child of tree.children.values()) {
     if (!(child instanceof Directory)) {
       continue
@@ -81,62 +87,82 @@ export function useChildren(tree: Directory, map: Map<File, SourceInfo>, getMap:
 /**
  * @internal
  */
-export const sourceSearch = (priority: string[], scanner: PatternScanner): Methodology => function (tree, o) {
-  const map = new Map<File, SourceInfo>()
+export const sourceSearch = (
+  priority: string[],
+  scanner: PatternScanner,
+): Methodology =>
+  function (tree, o) {
+    const map = new Map<File, SourceInfo>()
 
-  for (const element of priority) {
-    const sourceFile = tree.get(element)
+    for (const element of priority) {
+      const sourceFile = tree.get(element)
 
-    if (sourceFile === undefined) {
-      continue
-    }
-
-    if (/^(deno|jsr).jsonc?$/.test(sourceFile.base)) {
-      const manifest = JSON.parse(o.modules.fs.readFileSync(sourceFile.absolutePath).toString()) as unknown
-      if (!isValidManifestJsr(manifest)) {
-        throw new BadSourceError(sourceFile, 'Must have \'name\', \'version\'.')
-      }
-
-      const { exclude, include, publish } = manifest
-
-      if (exclude === undefined && include === undefined && publish === undefined) {
+      if (sourceFile === undefined) {
         continue
       }
 
-      const pattern = publish?.include ?? include
+      if (/^(deno|jsr).jsonc?$/.test(sourceFile.base)) {
+        const manifest = JSON.parse(
+          o.modules.fs.readFileSync(sourceFile.absolutePath).toString(),
+        ) as unknown
+        if (!isValidManifestJsr(manifest)) {
+          throw new BadSourceError(sourceFile, 'Must have \'name\', \'version\'.')
+        }
 
-      if (!scanner.isValid(pattern)) {
-        throw new BadSourceError(sourceFile, `Invalid pattern, got ${JSON.stringify(pattern)}`)
+        const { exclude, include, publish } = manifest
+
+        if (
+          exclude === undefined && include === undefined
+          && publish === undefined
+        ) {
+          continue
+        }
+
+        const pattern = publish?.include ?? include
+
+        if (!scanner.isValid(pattern)) {
+          throw new BadSourceError(
+            sourceFile,
+            `Invalid pattern, got ${JSON.stringify(pattern)}`,
+          )
+        }
+
+        scanner.negated = true
+        scanner.pattern = pattern
+        if (Array.isArray(scanner.exclude)) {
+          scanner.exclude.push(...(publish?.exclude ?? exclude ?? []))
+        }
+      }
+      else {
+        const content = o.modules.fs.readFileSync(sourceFile.absolutePath)
+          .toString()
+        const pattern = content
+        if (!scanner.isValid(pattern)) {
+          throw new InvalidPatternError(sourceFile, pattern)
+        }
+
+        scanner.negated = false
+        scanner.pattern = pattern
       }
 
-      scanner.negated = true
-      scanner.pattern = pattern
-      if (Array.isArray(scanner.exclude)) {
-        scanner.exclude.push(...(publish?.exclude ?? exclude ?? []))
-      }
+      return git.useSourceFile(map, sourceFile, scanner)
     }
-    else {
-      const content = o.modules.fs.readFileSync(sourceFile.absolutePath).toString()
-      const pattern = content
-      if (!scanner.isValid(pattern)) {
-        throw new InvalidPatternError(sourceFile, pattern)
-      }
 
-      scanner.negated = false
-      scanner.pattern = pattern
-    }
-
-    return git.useSourceFile(map, sourceFile, scanner)
+    return useChildren(tree, map, child =>
+      sourceSearch(priority, scanner)(child, o))
   }
 
-  return useChildren(tree, map, child => sourceSearch(priority, scanner)(child, o))
-}
-
 const bind: Plugins.TargetBind = {
-  id, icon, name, scanOptions: {
+  id,
+  icon,
+  name,
+  scanOptions: {
     target: sourceSearch(
       ['deno.json', 'deno.jsonc', 'jsr.json', 'jsr.jsonc'],
-      new ScannerGitignore({ exclude: matcherExclude, include: matcherInclude }),
+      new ScannerGitignore({
+        exclude: matcherExclude,
+        include: matcherInclude,
+      }),
     ),
   },
 }

@@ -3,7 +3,8 @@
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+and this project adheres to
+[Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.4.3] - 2025-07-07
 
@@ -17,7 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Update dependencies.
 - Do not export internal API.
-- Emit to `out`, not `out/src`: package.json not duplicated. Add visible type exports.
+- Emit to `out`, not `out/src`: package.json not duplicated. Add visible type
+  exports.
 - Move to `node --test` from `mocha`.
 - Move to `eslint` from `xo`.
 - Move to Bun from PNPM.
@@ -82,5 +84,7 @@ Initial `view-ignored` release.
 
 - API - need more jsdoc comments.
 - API for Browser - `fs` and `path` required.
-- Cli throught `viewig` and `view-ignored` - command-line client with config and scan commands.
-- Plugin system - unsupported cli, bad binding api (public Map variable and functions).
+- Cli throught `viewig` and `view-ignored` - command-line client with config and
+  scan commands.
+- Plugin system - unsupported cli, bad binding api (public Map variable and
+  functions).

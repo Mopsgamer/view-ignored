@@ -1,5 +1,5 @@
 import assert, { AssertionError } from 'node:assert'
-import { type FileTree, createFixture } from 'fs-fixture'
+import { createFixture, type FileTree } from 'fs-fixture'
 import * as viewig from '../index.js'
 import { describe, it } from 'node:test'
 import { inspect } from 'node:util'
@@ -552,7 +552,10 @@ function testTarget(title: string, data: TestTargetSubtestData) {
     const fixture = await createFixture(data.content)
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     await using fixtureDisposable = {
-      [Symbol.asyncDispose]() { return fixture.rm() } }
+      [Symbol.asyncDispose]() {
+        return fixture.rm()
+      },
+    }
 
     const fileInfoListPromise = viewig.scan('.', {
       posix: true,
@@ -566,28 +569,49 @@ function testTarget(title: string, data: TestTargetSubtestData) {
         await fileInfoListPromise
       }
       catch (error) {
-        assert.ok(error instanceof Error, `Expected ViewIgnoredError, got ${String(error)}`)
-        assert.ok(error instanceof viewig.ViewIgnoredError, `Expected ViewIgnoredError, got ${error.name}`)
-        assert.ok(error.name === should, `Expected ${should}, got ${error.name}`)
+        assert.ok(
+          error instanceof Error,
+          `Expected ViewIgnoredError, got ${String(error)}`,
+        )
+        assert.ok(
+          error instanceof viewig.ViewIgnoredError,
+          `Expected ViewIgnoredError, got ${error.name}`,
+        )
+        assert.ok(
+          error.name === should,
+          `Expected ${should}, got ${error.name}`,
+        )
         return
       }
 
       const fileInfoList = await fileInfoListPromise
-      throw new AssertionError({ message: `Expected ViewIgnoredError exception, got valid file info list: ${fileInfoList.join(', ')}.` })
+      throw new AssertionError({
+        message:
+          `Expected ViewIgnoredError exception, got valid file info list: ${
+            fileInfoList.join(', ')
+          }.`,
+      })
     }
 
     const fileInfoList = await fileInfoListPromise
     const shouldPaths = should
       .flatMap(shouldCase => shouldCase.include)
 
-    const scanner = fileInfoList[0]?.source?.scanner as ScannerGitignore | undefined
-    const arrify = (pattern: string | string[]): string[] => Array.isArray(pattern) ? pattern : pattern.split('\n')
-    const scannerInfo = (scanner: ScannerGitignore): string => ` Excluded by ${inspect(arrify(scanner.exclude))}`
+    const scanner = fileInfoList[0]?.source?.scanner as
+      | ScannerGitignore
+      | undefined
+    const arrify = (pattern: string | string[]): string[] =>
+      Array.isArray(pattern) ? pattern : pattern.split('\n')
+    const scannerInfo = (scanner: ScannerGitignore): string =>
+      ` Excluded by ${inspect(arrify(scanner.exclude))}`
       + `\n OR included by ${inspect(arrify(scanner.include))}.`
-      + `\n OR ${scanner.negated ? 'included' : 'excluded'} by ${inspect(arrify(scanner.pattern))}.`
+      + `\n OR ${scanner.negated ? 'included' : 'excluded'} by ${
+        inspect(arrify(scanner.pattern))
+      }.`
     // Symlinks issue? https://github.com/lovell/sharp/issues/1671#issuecomment-1879227385
     assert.deepEqual(
-      fileInfoList.map(String).sort(), shouldPaths.sort(),
+      fileInfoList.map(String).sort(),
+      shouldPaths.sort(),
       `Bad path list.${!scanner ? '' : scannerInfo(scanner)}`,
     )
 
@@ -599,13 +623,23 @@ function testTarget(title: string, data: TestTargetSubtestData) {
 
       assert.ok(source !== undefined, 'The source is missing, but expected.')
       const comparableSource = source?.relativePath
-      const shouldCase: Check | undefined = should.find(shouldCase => shouldCase.source === comparableSource)
+      const shouldCase: Check | undefined = should.find(shouldCase =>
+        shouldCase.source === comparableSource,
+      )
       if (shouldCase === undefined) {
         const sourceListExpected = should.map(s => s.source)
-        throw new AssertionError({ message: `The source is not right: ${comparableSource}. Expected: ${sourceListExpected.join(' or ')}.` })
+        throw new AssertionError({
+          message: `The source is not right: ${comparableSource}. Expected: ${
+            sourceListExpected.join(' or ')
+          }.`,
+        })
       }
 
-      assert.strictEqual(comparableSource, shouldCase.source, 'Unexpected source.')
+      assert.strictEqual(
+        comparableSource,
+        shouldCase.source,
+        'Unexpected source.',
+      )
     }
   })
 }

@@ -55,7 +55,8 @@ export function isPluginExport(value: unknown): value is PluginExport {
 
   const vign = (value as Partial<PluginExport>).viewignored
   return (vign?.constructor === Object)
-    && 'addTargets' in vign && Array.isArray(vign.addTargets) && vign.addTargets.every(v => isTargetBind(v))
+    && 'addTargets' in vign && Array.isArray(vign.addTargets)
+    && vign.addTargets.every(v => isTargetBind(v))
 }
 
 /**
@@ -72,10 +73,20 @@ export function importPlugin(exportData: PluginExport) {
  * @param modulePath The plugin name.
  * @returns The import result for the module.
  */
-export async function loadPlugin(modulePath: string, useImport = false): Promise<PluginLoaded> {
+export async function loadPlugin(
+  modulePath: string,
+  useImport = false,
+): Promise<PluginLoaded> {
   try {
-    const exports: unknown = useImport ? Object.getOwnPropertyDescriptor(await import(modulePath), 'default')?.value : await load(modulePath)
-    const result: PluginLoaded = { resource: modulePath, isLoaded: true, exports }
+    const exports: unknown = useImport
+      ? Object.getOwnPropertyDescriptor(await import(modulePath), 'default')
+        ?.value
+      : await load(modulePath)
+    const result: PluginLoaded = {
+      resource: modulePath,
+      isLoaded: true,
+      exports,
+    }
     if (isPluginExport(exports)) {
       importPlugin(exports)
     }
@@ -89,7 +100,11 @@ export async function loadPlugin(modulePath: string, useImport = false): Promise
       reason = r.message
     }
 
-    const fail: PluginLoaded = { resource: modulePath, isLoaded: false, exports: reason }
+    const fail: PluginLoaded = {
+      resource: modulePath,
+      isLoaded: false,
+      exports: reason,
+    }
     return fail
   }
 }
@@ -98,9 +113,13 @@ export async function loadPlugin(modulePath: string, useImport = false): Promise
  * @param modulePathList The plugin name list.
  * @returns The import result for the list of modules.
  */
-export async function loadPlugins(modulePathList: string[]): Promise<PluginLoaded[]> {
+export async function loadPlugins(
+  modulePathList: string[],
+): Promise<PluginLoaded[]> {
   const limit = pLimit(5)
-  const allLoaded = await Promise.all(modulePathList.map(modulePath => limit(() => loadPlugin(modulePath))))
+  const allLoaded = await Promise.all(
+    modulePathList.map(modulePath => limit(() => loadPlugin(modulePath))),
+  )
   return allLoaded
 }
 
@@ -115,8 +134,12 @@ export function loadBuiltIn(builtIn: BuiltInName): Promise<PluginLoaded> {
  * @param modulePathList The plugin name list.
  * @returns The import result for the list of modules.
  */
-export async function loadBuiltIns(builtInList: BuiltInName[] = [...builtInNameList]): Promise<PluginLoaded[]> {
+export async function loadBuiltIns(
+  builtInList: BuiltInName[] = [...builtInNameList],
+): Promise<PluginLoaded[]> {
   const limit = pLimit(5)
-  const allLoaded = await Promise.all(builtInList.map(modulePath => limit(() => loadBuiltIn(modulePath))))
+  const allLoaded = await Promise.all(
+    builtInList.map(modulePath => limit(() => loadBuiltIn(modulePath))),
+  )
   return allLoaded
 }

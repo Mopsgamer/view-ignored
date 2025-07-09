@@ -20,7 +20,10 @@ export type PatternScanner = Scanner & {
   isValid(value: unknown): value is string | string[]
   ignores(path: string, pattern: string | string[]): boolean
   ignores(path: string, options?: PatternScannerOptions): boolean
-  ignores(path: string, argument?: PatternScannerOptions | string | string[]): boolean
+  ignores(
+    path: string,
+    argument?: PatternScannerOptions | string | string[],
+  ): boolean
 }
 
 export function ArrayPatternToString(pattern: string[] | string): string {
@@ -87,7 +90,11 @@ export class ScannerMinimatch implements PatternScanner {
     }
   }
 
-  private isMatch(p: string, pattern: string, options?: minimatch.MinimatchOptions): boolean {
+  private isMatch(
+    p: string,
+    pattern: string,
+    options?: minimatch.MinimatchOptions,
+  ): boolean {
     const patternList = pattern.split('\n')
     const positiveList: string[] = [], negativeList: string[] = []
     for (const pat of patternList) {
@@ -110,12 +117,18 @@ export class ScannerMinimatch implements PatternScanner {
 
   ignores(path: string, pattern: string | string[]): boolean
   ignores(path: string, options?: PatternScannerOptions): boolean
-  ignores(path: string, argument?: PatternScannerOptions | string | string[]): boolean {
+  ignores(
+    path: string,
+    argument?: PatternScannerOptions | string | string[],
+  ): boolean {
     if (Array.isArray(argument) || typeof argument === 'string') {
       argument = ArrayPatternToString(argument)
     }
 
-    const minimatchOptions: minimatch.MinimatchOptions = { dot: true, matchBase: true }
+    const minimatchOptions: minimatch.MinimatchOptions = {
+      dot: true,
+      matchBase: true,
+    }
 
     let check: boolean
     if (typeof argument === 'string') {
@@ -143,10 +156,15 @@ export class ScannerMinimatch implements PatternScanner {
 }
 
 export class ScannerGitignore extends ScannerMinimatch {
-  private static gitignoreToMinimatch<T extends string | string[]>(argument: T): T
-  private static gitignoreToMinimatch(argument: string | string[]): string | string[] {
+  private static gitignoreToMinimatch<T extends string | string[]>(
+    argument: T,
+  ): T
+  private static gitignoreToMinimatch(
+    argument: string | string[],
+  ): string | string[] {
     if (typeof argument === 'string') {
-      return ScannerGitignore.gitignoreToMinimatch(argument.split(/\r?\n/)).join('\n')
+      return ScannerGitignore.gitignoreToMinimatch(argument.split(/\r?\n/))
+        .join('\n')
     }
 
     return argument

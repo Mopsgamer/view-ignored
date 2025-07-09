@@ -1,16 +1,20 @@
 import { icons } from '@m234/nerd-fonts'
 import {
-  type Plugins, type Methodology,
-  NoSourceError,
-  File,
   BadSourceError,
+  File,
+  type Methodology,
+  NoSourceError,
+  type Plugins,
 } from '../../index.js'
 import { type TargetIcon, type TargetName } from '../targets.js'
 import * as git from './git.js'
 
 const id = 'vsce'
 const name: TargetName = 'VSCE'
-const icon: TargetIcon = { ...icons['nf-md-microsoft_visual_studio_code'], color: '#23A9F1' }
+const icon: TargetIcon = {
+  ...icons['nf-md-microsoft_visual_studio_code'],
+  color: '#23A9F1',
+}
 const testCommand = 'vsce ls'
 
 /**
@@ -38,9 +42,10 @@ export function isValidManifest(value: unknown): value is ValidManifestVsce {
   }
 
   const value_ = value as ValidManifestVsce
-  const isManifestBase = ('name' in value_ && typeof value_.name === 'string')
-    && ('version' in value_ && typeof value_.version === 'string')
-    && ('engines' in value_ && value_.engines?.constructor === Object)
+  const isManifestBase
+    = ('name' in value_ && typeof value_.name === 'string')
+      && ('version' in value_ && typeof value_.version === 'string')
+      && ('engines' in value_ && value_.engines?.constructor === Object)
 
   if (!isManifestBase) {
     return false
@@ -54,12 +59,15 @@ export function isValidManifest(value: unknown): value is ValidManifestVsce {
  * @internal
  */
 export const methodologyManifestVsce: Methodology = function (tree, o) {
-  const packageJson = [...tree.deepIterator()].find(dirent => dirent instanceof File && dirent.base === 'package.json') as File | undefined
+  const packageJson = [...tree.deepIterator()].find(dirent =>
+    dirent instanceof File && dirent.base === 'package.json',
+  ) as File | undefined
   if (packageJson === undefined) {
     throw new NoSourceError('package.json')
   }
 
-  const packageJsonContent = o.modules.fs.readFileSync(packageJson.absolutePath).toString()
+  const packageJsonContent = o.modules.fs.readFileSync(packageJson.absolutePath)
+    .toString()
   let manifest: unknown
   try {
     manifest = JSON.parse(packageJsonContent)
@@ -73,14 +81,21 @@ export const methodologyManifestVsce: Methodology = function (tree, o) {
   }
 
   if (!isValidManifest(manifest)) {
-    throw new BadSourceError(packageJson, 'Must have name, version and engines->vscode.')
+    throw new BadSourceError(
+      packageJson,
+      'Must have name, version and engines->vscode.',
+    )
   }
 
   return git.methodologyGitignoreLike('.vscodeignore')(tree, o)
 }
 
 const bind: Plugins.TargetBind = {
-  id, icon, name, testCommand, scanOptions: {
+  id,
+  icon,
+  name,
+  testCommand,
+  scanOptions: {
     target: methodologyManifestVsce,
   },
 }

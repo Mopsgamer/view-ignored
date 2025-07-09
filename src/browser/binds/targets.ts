@@ -1,6 +1,4 @@
-import {
-  type ScanOptions,
-} from '../lib.js'
+import { type ScanOptions } from '../lib.js'
 
 /**
  * The target icon/logo as a {@link https://www.nerdfonts.com/ NF} icon.

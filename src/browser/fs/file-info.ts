@@ -60,7 +60,12 @@ export type FileInfoStatus = 'ignored' | 'included' | 'non-target'
  */
 export class FileInfo extends File {
   static from(file: File, source?: SourceInfo) {
-    return new FileInfo(file.parent, file.relativePath, file.absolutePath, source)
+    return new FileInfo(
+      file.parent,
+      file.relativePath,
+      file.absolutePath,
+      source,
+    )
   }
 
   /**
@@ -73,17 +78,14 @@ export class FileInfo extends File {
      * The parent of the file.
      */
     parent: Directory,
-
     /**
      * The relative path to the file.
      */
     relativePath: string,
-
     /**
      * The absolute path to the file.
      */
     absolutePath: string,
-
     /**
      * The source of patterns.
      */
@@ -100,19 +102,32 @@ export class FileInfo extends File {
    * @returns Relative file path. Optionally formatted.
    */
   toString(options?: FileInfoToStringOptions): string {
-    const { fileIcon, chalk, usePrefix = false, source: useSource = false, entire = true, posix = false } = options ?? {}
+    const {
+      fileIcon,
+      chalk,
+      usePrefix = false,
+      source: useSource = false,
+      entire = true,
+      posix = false,
+    } = options ?? {}
     const patha = posix ? PATH.posix : PATH
     const parsed = PATH.parse(this.relativePath)
     const glyph = nf.Seti.fromParsedPath(parsed)
     const fIcon = fileIcon
       ? decorCondition(fileIcon, {
         ifEmoji: '📄',
-        ifNerd: chalk && glyph.color !== undefined ? chalk.hex(glyph.color)(glyph.value) : glyph.value,
+        ifNerd: chalk && glyph.color !== undefined
+          ? chalk.hex(glyph.color)(glyph.value)
+          : glyph.value,
         postfix: ' ',
       })
       : ''
-    let prefix = usePrefix && this.status !== 'non-target' ? (this.status === 'ignored' ? '!' : '+') : ''
-    let postfix = useSource && this.source !== undefined ? ' < ' + this.source.toString() : ''
+    let prefix = usePrefix && this.status !== 'non-target'
+      ? (this.status === 'ignored' ? '!' : '+')
+      : ''
+    let postfix = useSource && this.source !== undefined
+      ? ' < ' + this.source.toString()
+      : ''
 
     if (chalk) {
       prefix = chalk.dim(prefix)
@@ -124,7 +139,8 @@ export class FileInfo extends File {
         return fIcon + clr(prefix + this.relativePath + postfix)
       }
 
-      return parsed.dir + patha.sep + fIcon + clr(prefix + parsed.base + postfix)
+      return parsed.dir + patha.sep + fIcon
+        + clr(prefix + parsed.base + postfix)
     }
 
     if (entire) {
@@ -138,7 +154,9 @@ export class FileInfo extends File {
    * @param filter The group name. Default: `"all"`
    * @returns `true`, if the file is contained by the filter.
    */
-  isIncludedBy(filter?: FilterName | ((fileInfo: FileInfo) => boolean)): boolean {
+  isIncludedBy(
+    filter?: FilterName | ((fileInfo: FileInfo) => boolean),
+  ): boolean {
     if (typeof filter === 'function') {
       return filter(this)
     }

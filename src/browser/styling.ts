@@ -13,8 +13,8 @@ export type FormatFilesOptions = {
    * resolved UNC forms, eg instead of `'C:\\foo\\bar'`, it would return
    * `'//?/C:/foo/bar'`
    * @default false
-     * @returns `/` delimited paths, even on Windows.
-     */
+   * @returns `/` delimited paths, even on Windows.
+   */
   posix?: boolean
 
   /**
@@ -41,14 +41,24 @@ export type FormatFilesOptions = {
 /**
  * @returns Prints a readable file list. Here is '\n' ending.
  */
-export function formatFiles(files: FileInfo[], options: FormatFilesOptions): string {
-  const { showSources = false, chalk, decor = 'normal', style, posix = false } = options ?? {}
+export function formatFiles(
+  files: FileInfo[],
+  options: FormatFilesOptions,
+): string {
+  const { showSources = false, chalk, decor = 'normal', style, posix = false }
+    = options ?? {}
 
   const patha = posix ? PATH.posix : PATH
   const isPaths = style === 'paths'
-  const paths = files.map(f => f.toString({
-    fileIcon: decor, usePrefix: true, chalk, source: showSources, entire: isPaths,
-  }))
+  const paths = files.map(f =>
+    f.toString({
+      fileIcon: decor,
+      usePrefix: true,
+      chalk,
+      source: showSources,
+      entire: isPaths,
+    }),
+  )
 
   if (isPaths) {
     return paths.join('\n') + '\n'
@@ -74,7 +84,8 @@ export type StyleName = typeof styleNameList[number]
  * Checks if the value is the {@link StyleName}.
  */
 export function isStyleName(value: unknown): value is StyleName {
-  return typeof value === 'string' && styleNameList.includes(value as StyleName)
+  return typeof value === 'string'
+    && styleNameList.includes(value as StyleName)
 }
 
 /**
@@ -91,7 +102,8 @@ export type DecorName = typeof decorNameList[number]
  * Checks if the value is the {@link DecorName}.
  */
 export function isDecorName(value: unknown): value is DecorName {
-  return typeof value === 'string' && decorNameList.includes(value as DecorName)
+  return typeof value === 'string'
+    && decorNameList.includes(value as DecorName)
 }
 
 /**
@@ -132,7 +144,10 @@ export type DecorConditionOptions = {
  * @param decor The decor name.
  * @param condition Formatting options.
  */
-export function decorCondition(decor: DecorName, condition: DecorConditionOptions): string {
+export function decorCondition(
+  decor: DecorName,
+  condition: DecorConditionOptions,
+): string {
   let result: string = condition.ifNormal ?? ''
   if (decor === 'emoji') {
     result = condition.ifEmoji ?? result
@@ -159,13 +174,13 @@ export type BoxOptions = {
  * Make a message in a red box. Or without color.
  */
 export function boxError(message: string, options?: BoxOptions): string {
-  let result = ('\n' + boxen(message, {
+  let result = '\n' + boxen(message, {
     titleAlignment: 'left',
     padding: { left: 2, right: 2 },
     borderColor: 'redBright',
     borderStyle: 'round',
     ...options,
-  }))
+  })
   if (options?.noColor) {
     result = stripVTControlCharacters(result)
   }

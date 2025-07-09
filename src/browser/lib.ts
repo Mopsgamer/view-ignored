@@ -6,8 +6,11 @@ import EventEmitter from 'node:events'
 import pLimit, { type LimitFunction } from 'p-limit'
 import { configDefault } from '../config.js'
 import {
+  type DeepStreamEventEmitter,
   Directory,
-  File, FileInfo, type DeepStreamEventEmitter, type SourceInfo,
+  File,
+  FileInfo,
+  type SourceInfo,
 } from './fs/index.js'
 import { targetGet } from './binds/index.js'
 import { TargetNotBoundError } from './errors.js'
@@ -24,7 +27,9 @@ export * as Plugins from './binds/index.js'
  * ViewIgnored's package.json.
  */
 
-export const package_ = createRequire(import.meta.url)('../../package.json') as typeof import('../../package.json')
+export const package_ = createRequire(import.meta.url)(
+  '../../package.json',
+) as typeof import('../../package.json')
 
 /**
  * Uses `node:fs` and `node:fs/promises` by default.
@@ -33,7 +38,10 @@ export type FileSystemAdapter = {
   readFileSync?: typeof FS.readFileSync
   readdirSync?: typeof FS.readdirSync
   promises?: {
-    readdir(path: string, options: { withFileTypes: true }): Promise<FS.Dirent[]>
+    readdir(
+      path: string,
+      options: { withFileTypes: true },
+    ): Promise<FS.Dirent[]>
     stat(path: string): Promise<FS.Stats>
   }
 }
@@ -55,7 +63,10 @@ export type Scanner = {
  * For example, {@link https://www.npmjs.com/package/@vscode/vsce vsce} considers it invalid if your manifest is missing the 'engines' field.
  * Similarly, npm will raise an error if you attempt to publish a package without a basic 'package.json'.
  */
-export type Methodology = (tree: Directory, realOptions: RealScanOptions) => Map<File, SourceInfo>
+export type Methodology = (
+  tree: Directory,
+  realOptions: RealScanOptions,
+) => Map<File, SourceInfo>
 
 /**
  * Options with defaults and additional properties.
@@ -77,7 +88,6 @@ export type RealScanOptions = Required<Omit<ScanOptions, 'fsa'>> & {
  * Folder deep scanning options.
  */
 export type ScanOptions = {
-
   /**
    * The target or the scan methodology.
    * @default "git"
@@ -131,29 +141,44 @@ export type ScanOptions = {
  * @param directoryPath The relative path to the directory.
  * @throws If no valid sources: {@link ErrorNoSources}.
  */
-export async function scan(directoryPath: string, options?: ScanOptions): Promise<FileInfo[]>
+export async function scan(
+  directoryPath: string,
+  options?: ScanOptions,
+): Promise<FileInfo[]>
 
 /**
  * Gets info about the each file: it is ignored or not.
  * @param directory The current working directory.
  * @throws If no valid sources: {@link ErrorNoSources}.
  */
-export async function scan(directory: Directory, options?: ScanOptions): Promise<FileInfo[]>
+export async function scan(
+  directory: Directory,
+  options?: ScanOptions,
+): Promise<FileInfo[]>
 
 /**
  * Gets info about the each file: it is ignored or not.
  * @param stream The stream of the current working directory reading.
  * @throws If no valid sources: {@link ErrorNoSources}.
  */
-export async function scan(stream: DeepStreamEventEmitter, options?: ScanOptions): Promise<FileInfo[]>
+export async function scan(
+  stream: DeepStreamEventEmitter,
+  options?: ScanOptions,
+): Promise<FileInfo[]>
 
 /**
  * Gets info about the each file: it is ignored or not.
  * @param pathList The list of relative paths. The should be relative to the current working directory.
  * @throws If no valid sources: {@link ErrorNoSources}.
  */
-export async function scan(pathList: string[], options?: ScanOptions): Promise<FileInfo[]>
-export async function scan(argument0: string | string[] | Directory | DeepStreamEventEmitter, options?: ScanOptions): Promise<FileInfo[]> {
+export async function scan(
+  pathList: string[],
+  options?: ScanOptions,
+): Promise<FileInfo[]>
+export async function scan(
+  argument0: string | string[] | Directory | DeepStreamEventEmitter,
+  options?: ScanOptions,
+): Promise<FileInfo[]> {
   options ??= {}
   const optionsReal = makeOptionsReal(options)
 
@@ -163,7 +188,10 @@ export async function scan(argument0: string | string[] | Directory | DeepStream
       throw new TargetNotBoundError(optionsReal.target)
     }
 
-    return scan(argument0 as Directory, Object.assign(options, bind.scanOptions))
+    return scan(
+      argument0 as Directory,
+      Object.assign(options, bind.scanOptions),
+    )
   }
 
   if (typeof argument0 === 'string') {

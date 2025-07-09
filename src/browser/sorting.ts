@@ -3,7 +3,13 @@ import path from 'node:path'
 /**
  * Contains all file sort names.
  */
-export const sortNameList = ['firstFolders', 'firstFiles', 'type', 'mixed', 'modified'] as const
+export const sortNameList = [
+  'firstFolders',
+  'firstFiles',
+  'type',
+  'mixed',
+  'modified',
+] as const
 
 /**
  * Contains all file sort names as a type.
@@ -28,7 +34,9 @@ export function isSortName(value: unknown): value is SortName {
  * "file" -> ["file", "file", true]
  * "file/" -> ["file", "", false]
  */
-export function shiftPath(p: string): [next: string, other: string, isLast: boolean] {
+export function shiftPath(
+  p: string,
+): [next: string, other: string, isLast: boolean] {
   const slashIndex = p.search(/[/\\]/)
   const next = p.slice(0, Math.max(0, slashIndex))
   const other = p.slice(Math.max(0, slashIndex + 1))
@@ -97,7 +105,11 @@ export function firstFiles(a: string, b: string): number {
  * Folders are displayed before files.
  * @see {@link makeMtimeCache}
  */
-export function modified(a: string, b: string, map: Map<{ toString(): string }, number>): number {
+export function modified(
+  a: string,
+  b: string,
+  map: Map<{ toString(): string }, number>,
+): number {
   let comp = 0
   for (; comp === 0;) {
     const [, post1, last1] = shiftPath(a)

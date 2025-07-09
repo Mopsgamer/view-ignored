@@ -1,7 +1,5 @@
 import { icons } from '@m234/nerd-fonts'
-import {
-  type Plugins,
-} from '../../index.js'
+import { type Plugins } from '../../index.js'
 import { type TargetIcon, type TargetName } from '../targets.js'
 import { ScannerGitignore } from '../scanner.js'
 import * as npm from './npm.js'
@@ -27,10 +25,16 @@ export const matcherInclude = [
 ]
 
 const bind: Plugins.TargetBind = {
-  id, icon, name, scanOptions: {
+  id,
+  icon,
+  name,
+  scanOptions: {
     target: npm.methodologyManifestNpmLike(
       ['package.json', '.yarnignore', '.npmignore', '.gitignore'],
-      new ScannerGitignore({ exclude: matcherExclude, include: matcherInclude }),
+      new ScannerGitignore({
+        exclude: matcherExclude,
+        include: matcherInclude,
+      }),
     ),
   },
 }

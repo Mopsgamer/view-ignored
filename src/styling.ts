@@ -8,7 +8,8 @@ export function highlight(text: string, chalk?: ChalkInstance): string {
     return text
   }
 
-  const rtype = /^(?<=\s*)(switch|boolean|object|string|number|integer)(\[])*(?=\s*)$/
+  const rtype
+    = /^(?<=\s*)(switch|boolean|object|string|number|integer)(\[])*(?=\s*)$/
   if (rtype.test(text)) {
     return chalk.hex('#9999ff')(text)
   }
@@ -19,11 +20,14 @@ export function highlight(text: string, chalk?: ChalkInstance): string {
   const rnumber = /\d+/g
   const rspecial = /(true|false|null|Infinity)/g
 
-  const rall = new RegExp(`${
-    [ansiRegex(), rstring, rseparator, rbracketsSquare, rnumber, rspecial]
-      .map(r => `(${typeof r === 'string' ? r : r.source})`)
-      .join('|')
-  }`, 'g')
+  const rall = new RegExp(
+    `${
+      [ansiRegex(), rstring, rseparator, rbracketsSquare, rnumber, rspecial]
+        .map(r => `(${typeof r === 'string' ? r : r.source})`)
+        .join('|')
+    }`,
+    'g',
+  )
 
   const colored = text.replaceAll(rall, (match) => {
     if (match.match(ansiRegex()) !== null) {

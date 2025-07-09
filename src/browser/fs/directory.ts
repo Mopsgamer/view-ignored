@@ -1,6 +1,4 @@
-import {
-  join, parse, relative, type ParsedPath,
-} from 'node:path'
+import { join, parse, type ParsedPath, relative } from 'node:path'
 import EventEmitter from 'node:events'
 import * as FSP from 'node:fs/promises'
 import process from 'node:process'
@@ -48,17 +46,27 @@ type DeepStreamNestedOptions = DeepStreamOptions & {
   progress?: DeepStreamProgress
 }
 
-export type DeepCountOptions = Pick<DeepStreamNestedOptions, 'modules' | 'cwd' | 'concurrency' | 'progress'>
+export type DeepCountOptions = Pick<
+  DeepStreamNestedOptions,
+  'modules' | 'cwd' | 'concurrency' | 'progress'
+>
 
-export type DeepModifiedTimeOptions = Pick<RealScanOptions, 'concurrency' | 'modules'>
+export type DeepModifiedTimeOptions = Pick<
+  RealScanOptions,
+  'concurrency' | 'modules'
+>
 
-export type DeepStreamOptions = Pick<RealScanOptions, 'cwd' | 'modules' | 'concurrency'>
+export type DeepStreamOptions = Pick<
+  RealScanOptions,
+  'cwd' | 'modules' | 'concurrency'
+>
 
 export type Entry = Directory | File
 
 export type EntryClass = typeof Directory | typeof File
 
-export type EntryInstanceFrom<T extends undefined | EntryClass> = T extends undefined ? Entry : T extends typeof Directory ? Directory : File
+export type EntryInstanceFrom<T extends undefined | EntryClass> = T extends
+undefined ? Entry : T extends typeof Directory ? Directory : File
 
 /**
  * File system directory representation.
@@ -69,10 +77,19 @@ export class Directory implements ParsedPath {
    * @param directoryPath Relative path to the directory.
    * @param options The counter and reader options.
    */
-  static async deepCount(directoryPath: { toString(): string }, options: DeepCountOptions): Promise<DeepStreamProgress> {
+  static async deepCount(
+    directoryPath: { toString(): string },
+    options: DeepCountOptions,
+  ): Promise<DeepStreamProgress> {
     const {
-      modules, cwd, concurrency, progress = {
-        current: 0, total: 0, files: 0, directories: 0,
+      modules,
+      cwd,
+      concurrency,
+      progress = {
+        current: 0,
+        total: 0,
+        files: 0,
+        directories: 0,
       },
     } = options
     const limit = pLimit(concurrency)
@@ -80,18 +97,20 @@ export class Directory implements ParsedPath {
     const absolutePath = modules.path.join(cwd, String(directoryPath))
     const entryList = await readdir(absolutePath, { withFileTypes: true })
 
-    const promises = entryList.map(entry => limit(async () => {
-      ++progress.total
-      if (entry.isDirectory() && !entry.isSymbolicLink()) {
-        const absolutePath = modules.path.join(entry.parentPath, entry.name)
-        const relativePath = modules.path.relative(cwd, absolutePath)
-        await Directory.deepCount(relativePath, { ...options, progress })
-        ++progress.directories
-        return
-      }
+    const promises = entryList.map(entry =>
+      limit(async () => {
+        ++progress.total
+        if (entry.isDirectory() && !entry.isSymbolicLink()) {
+          const absolutePath = modules.path.join(entry.parentPath, entry.name)
+          const relativePath = modules.path.relative(cwd, absolutePath)
+          await Directory.deepCount(relativePath, { ...options, progress })
+          ++progress.directories
+          return
+        }
 
-      ++progress.files
-    }))
+        ++progress.files
+      }),
+    )
 
     await Promise.all(promises)
     return progress
@@ -102,7 +121,10 @@ export class Directory implements ParsedPath {
    * @param directoryPath Relative path to the directory.
    * @param options The reader options.
    */
-  static deepStream(directoryPath: string, optionsReal: DeepStreamOptions): DeepStreamEventEmitter {
+  static deepStream(
+    directoryPath: string,
+    optionsReal: DeepStreamOptions,
+  ): DeepStreamEventEmitter {
     const controller = new EventEmitter() as DeepStreamEventEmitter
     controller.endPromise = new Promise<DeepStreamDataRoot>((resolve) => {
       controller.once('end', (data) => {
@@ -110,9 +132,15 @@ export class Directory implements ParsedPath {
       })
     })
     controller.run = async function (): Promise<DeepStreamDataRoot> {
-      const data = await Directory.deepStreamNested(directoryPath, { ...optionsReal, controller })
+      const data = await Directory.deepStreamNested(directoryPath, {
+        ...optionsReal,
+        controller,
+      })
       const { progress, target } = data
-      const dataRoot: DeepStreamDataRoot = { progress, tree: target as Directory }
+      const dataRoot: DeepStreamDataRoot = {
+        progress,
+        tree: target as Directory,
+      }
       controller.emit('end', dataRoot)
       return dataRoot
     }
@@ -123,7 +151,10 @@ export class Directory implements ParsedPath {
   /**
    * Get the {@link Directory} instance from a file path list. Paths should be relative.
    */
-  static from(pathList: Array<{ toString(): string }>, cwd: string = process.cwd()): Directory {
+  static from(
+    pathList: Array<{ toString(): string }>,
+    cwd: string = process.cwd(),
+  ): Directory {
     const tree = new Directory(undefined, '.', cwd, new Map())
 
     for (const path of pathList) {
@@ -138,9 +169,16 @@ export class Directory implements ParsedPath {
           return tree
         }
 
-        let directory = [...tree.children.values()].find(c => c instanceof Directory && c.absolutePath === absolutePath) as Directory | undefined
+        let directory = [...tree.children.values()].find(c =>
+          c instanceof Directory && c.absolutePath === absolutePath,
+        ) as Directory | undefined
         if (directory === undefined) {
-          directory = new Directory(tree, relativePath, absolutePath, new Map())
+          directory = new Directory(
+            tree,
+            relativePath,
+            absolutePath,
+            new Map(),
+          )
           tree.set(`${directory.base}/`, directory)
         }
 
@@ -154,7 +192,10 @@ export class Directory implements ParsedPath {
   /**
    * Get deep iterator for the directory.
    */
-  public static deepIterator = function* <T extends undefined | EntryClass>(directory: Directory, instanceOf?: T): IterableIterator<EntryInstanceFrom<T>> {
+  public static deepIterator = function* <T extends undefined | EntryClass>(
+    directory: Directory,
+    instanceOf?: T,
+  ): IterableIterator<EntryInstanceFrom<T>> {
     const subDirectories: Directory[] = []
     for (const element of directory.children.values()) {
       if (instanceOf === undefined || element instanceof instanceOf) {
@@ -177,43 +218,61 @@ export class Directory implements ParsedPath {
    * @param directoryPath Relative path to the directory.
    * @param options The reader options.
    */
-  private static async deepStreamNested(directoryPath: { toString(): string }, options: DeepStreamNestedOptions): Promise<DeepStreamData> {
+  private static async deepStreamNested(
+    directoryPath: { toString(): string },
+    options: DeepStreamNestedOptions,
+  ): Promise<DeepStreamData> {
     const { modules, cwd, concurrency, parent } = options
-    const controller = options.controller ?? new EventEmitter() as DeepStreamEventEmitter
-    const progress = options.progress ?? await Directory.deepCount(directoryPath, options)
+    const controller = options.controller
+      ?? new EventEmitter() as DeepStreamEventEmitter
+    const progress = options.progress
+      ?? await Directory.deepCount(directoryPath, options)
     controller.emit('progress', progress)
     const limit = pLimit(concurrency)
     const readdir = modules.fs.promises.readdir ?? FSP.readdir
     const absolutePath = modules.path.join(cwd, String(directoryPath))
     const relativePath = modules.path.relative(cwd, absolutePath)
-    const directory = new Directory(parent, relativePath, absolutePath, new Map())
+    const directory = new Directory(
+      parent,
+      relativePath,
+      absolutePath,
+      new Map(),
+    )
     const entryList = await readdir(absolutePath, { withFileTypes: true })
 
-    const promises = entryList.map(entry => limit(async (): Promise<DeepStreamData> => {
-      const parent = directory
-      const absolutePath = modules.path.join(entry.parentPath, entry.name)
-      const relativePath = modules.path.relative(cwd, absolutePath)
+    const promises = entryList.map(entry =>
+      limit(async (): Promise<DeepStreamData> => {
+        const parent = directory
+        const absolutePath = modules.path.join(entry.parentPath, entry.name)
+        const relativePath = modules.path.relative(cwd, absolutePath)
 
-      if (entry.isDirectory() && !entry.isSymbolicLink()) {
-        const data = await Directory.deepStreamNested(relativePath, {
-          ...options, controller, progress, parent,
-        })
+        if (entry.isDirectory() && !entry.isSymbolicLink()) {
+          const data = await Directory.deepStreamNested(relativePath, {
+            ...options,
+            controller,
+            progress,
+            parent,
+          })
+          ++progress.current
+          controller.emit('progress', progress)
+          return data
+        }
+
+        const file = new File(parent, relativePath, absolutePath)
+        const data: DeepStreamData = { target: file, progress }
         ++progress.current
         controller.emit('progress', progress)
+        controller.emit('data', data)
         return data
-      }
-
-      const file = new File(parent, relativePath, absolutePath)
-      const data: DeepStreamData = { target: file, progress }
-      ++progress.current
-      controller.emit('progress', progress)
-      controller.emit('data', data)
-      return data
-    }))
+      }),
+    )
 
     const dataList = await Promise.all(promises)
     for (const { target: entry } of dataList) {
-      directory.children.set(`${entry.base}${entry instanceof Directory ? '/' : ''}`, entry)
+      directory.children.set(
+        `${entry.base}${entry instanceof Directory ? '/' : ''}`,
+        entry,
+      )
     }
 
     const data: DeepStreamData = { target: directory, progress }
@@ -232,17 +291,14 @@ export class Directory implements ParsedPath {
      * The parent of the directory.
      */
     public readonly parent: Directory | undefined,
-
     /**
      * The relative path to the directory.
      */
     public readonly relativePath: string,
-
     /**
      * The absolute path to the file.
      */
     public readonly absolutePath: string,
-
     /**
      * The content of the directory. It is a Map for performance reasons: you can find any file or folder without a loop if you know the name.
      *
@@ -263,7 +319,9 @@ export class Directory implements ParsedPath {
   /**
    * @param instanceOf Optionally filter children by type.
    */
-  deepIterator<T extends undefined | typeof File | typeof Directory>(instanceOf?: T) {
+  deepIterator<T extends undefined | typeof File | typeof Directory>(
+    instanceOf?: T,
+  ) {
     return Directory.deepIterator<T>(this, instanceOf)
   }
 
@@ -281,11 +339,18 @@ export class Directory implements ParsedPath {
     return this.relativePath
   }
 
-  get<T extends string>(key: T): (T extends `${string}/` ? Directory : File) | undefined {
-    return this.children.get(key) as (T extends `${string}/` ? Directory : File) | undefined
+  get<T extends string>(
+    key: T,
+  ): (T extends `${string}/` ? Directory : File) | undefined {
+    return this.children.get(key) as
+      | (T extends `${string}/` ? Directory : File)
+      | undefined
   }
 
-  set<T extends string>(key: T, value: (T extends `${string}/` ? Directory : File)): typeof this.children {
+  set<T extends string>(
+    key: T,
+    value: T extends `${string}/` ? Directory : File,
+  ): typeof this.children {
     return this.children.set(key, value)
   }
 
@@ -293,7 +358,10 @@ export class Directory implements ParsedPath {
    * @returns The cache for each file of the directory with last time edited number.
    * @see {@link modified}.
    */
-  async deepModifiedTime(out: Map<File, number>, realOptions: DeepModifiedTimeOptions): Promise<Map<File, number>> {
+  async deepModifiedTime(
+    out: Map<File, number>,
+    realOptions: DeepModifiedTimeOptions,
+  ): Promise<Map<File, number>> {
     const { concurrency = configDefault.concurrency, modules } = realOptions
     const limit = pLimit(concurrency)
     const promiseList: Array<Promise<void>> = []

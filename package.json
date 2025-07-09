@@ -1,115 +1,115 @@
 {
-	"name": "view-ignored",
-	"version": "0.4.3",
-	"description": "Retrieve list of files ignored/included by Git, NPM, Yarn, JSR, VSCE or other tools.",
-	"type": "module",
-	"bin": {
-		"viewig": "./bin/viewig",
-		"view-ignored": "./bin/viewig"
-	},
-	"scripts": {
-		"prerelease": "bun run build:pub && bun run lint",
-		"test": "bun run node --test out/**/*.test.js",
-		"build": "bun run build:clean && bun run tsc -p src",
-		"build:pub": "bun run build:clean && bun run tsc -p src --sourceMap false && rm **/*.test.d.ts",
-		"build:watch": "bun run build:clean && bun run tsc -p src --watch",
-		"build:clean": "rm -rf out",
-		"lint": "bun run eslint .",
-		"release:major": "bun run release-it --increment=major",
-		"release:minor": "bun run release-it --increment=minor",
-		"release:patch": "bun run release-it --increment=patch"
-	},
-	"author": "Mopsgamer",
-	"license": "ISC",
-	"main": "./out/src/index.js",
-	"files": [
-		"/bin",
-		"/out",
-		"!**/*.test.js"
-	],
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/Mopsgamer/view-ignored.git"
-	},
-	"bugs": {
-		"url": "https://github.com/Mopsgamer/view-ignored/issues"
-	},
-	"homepage": "https://github.com/Mopsgamer/view-ignored",
-	"exports": {
-		".": {
-			"default": "./out/index.js",
-			"types": "./out/index.d.ts"
-		},
-		"./browser": {
-			"default": "./out/browser/index.js",
-			"types": "./out/browser/index.d.ts"
-		}
-	},
-	"release-it": {
-		"hooks": {
-			"before:init": "bun prerelease"
-		},
-		"plugins": {
-			"@release-it/keep-a-changelog": {
-				"filename": "CHANGELOG.md"
-			}
-		},
-		"github": {
-			"release": true,
-			"draft": false,
-			"releaseName": "${version}"
-		},
-		"npm": {
-			"publish": true
-		}
-	},
-	"publishConfig": {
-		"access": "public"
-	},
-	"directories": {
-		"lib": "out"
-	},
-	"dependencies": {
-		"@humanwhocodes/gitignore-to-minimatch": "^1.0.2",
-		"@m234/nerd-fonts": "^0.3.1",
-		"ansi-regex": "^6.1.0",
-		"boxen": "^8.0.1",
-		"chalk": "^5.4.1",
-		"commander": "^14.0.0",
-		"jsonify-paths": "^1.1.0",
-		"listr2": "^8.3.3",
-		"load-plugin": "^6.0.3",
-		"minimatch": "^10.0.3",
-		"p-limit": "^6.2.0",
-		"treeify": "^1.1.0",
-		"yaml": "^2.8.0",
-		"zod": "^3.25.75"
-	},
-	"devDependencies": {
-		"@eslint/js": "^9.30.1",
-		"@release-it/keep-a-changelog": "^7.0.0",
-		"@stylistic/eslint-plugin": "^5.1.0",
-		"@types/node": "^24.0.10",
-		"@types/treeify": "^1.0.3",
-		"eslint": "^9.30.1",
-		"fs-fixture": "^2.8.1",
-		"globals": "^16.3.0",
-		"release-it": "^19.0.3",
-		"typescript": "^5.8.3",
-		"typescript-eslint": "^8.36.0"
-	},
-	"keywords": [
-		"tree",
-		"ls-tree",
-		"ignore",
-		"gitignore",
-		"npmignore",
-		"vscodeignore",
-		"cli",
-		"fs",
-		"file-system",
-		"output",
-		"project",
-		"migration"
-	]
+  "name": "view-ignored",
+  "version": "0.4.3",
+  "description": "Retrieve list of files ignored/included by Git, NPM, Yarn, JSR, VSCE or other tools.",
+  "type": "module",
+  "bin": {
+    "viewig": "./bin/viewig",
+    "view-ignored": "./bin/viewig"
+  },
+  "scripts": {
+    "prerelease": "bun run build:pub && bun run lint",
+    "test": "bun run node --test out/**/*.test.js",
+    "build": "bun run build:clean && bun run tsc -p src",
+    "build:pub": "bun run build:clean && bun run tsc -p src --sourceMap false && rm **/*.test.d.ts",
+    "build:watch": "bun run build:clean && bun run tsc -p src --watch",
+    "build:clean": "rm -rf out",
+    "lint": "bun run eslint .",
+    "release:major": "bun run release-it --increment=major",
+    "release:minor": "bun run release-it --increment=minor",
+    "release:patch": "bun run release-it --increment=patch"
+  },
+  "author": "Mopsgamer",
+  "license": "ISC",
+  "main": "./out/src/index.js",
+  "files": [
+    "/bin",
+    "/out",
+    "!**/*.test.js"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Mopsgamer/view-ignored.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Mopsgamer/view-ignored/issues"
+  },
+  "homepage": "https://github.com/Mopsgamer/view-ignored",
+  "exports": {
+    ".": {
+      "default": "./out/index.js",
+      "types": "./out/index.d.ts"
+    },
+    "./browser": {
+      "default": "./out/browser/index.js",
+      "types": "./out/browser/index.d.ts"
+    }
+  },
+  "release-it": {
+    "hooks": {
+      "before:init": "bun prerelease"
+    },
+    "plugins": {
+      "@release-it/keep-a-changelog": {
+        "filename": "CHANGELOG.md"
+      }
+    },
+    "github": {
+      "release": true,
+      "draft": false,
+      "releaseName": "${version}"
+    },
+    "npm": {
+      "publish": true
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "directories": {
+    "lib": "out"
+  },
+  "dependencies": {
+    "@humanwhocodes/gitignore-to-minimatch": "^1.0.2",
+    "@m234/nerd-fonts": "^0.3.1",
+    "ansi-regex": "^6.1.0",
+    "boxen": "^8.0.1",
+    "chalk": "^5.4.1",
+    "commander": "^14.0.0",
+    "jsonify-paths": "^1.1.0",
+    "listr2": "^8.3.3",
+    "load-plugin": "^6.0.3",
+    "minimatch": "^10.0.3",
+    "p-limit": "^6.2.0",
+    "treeify": "^1.1.0",
+    "yaml": "^2.8.0",
+    "zod": "^3.25.75"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.30.1",
+    "@release-it/keep-a-changelog": "^7.0.0",
+    "@stylistic/eslint-plugin": "^5.1.0",
+    "@types/node": "^24.0.10",
+    "@types/treeify": "^1.0.3",
+    "eslint": "^9.30.1",
+    "fs-fixture": "^2.8.1",
+    "globals": "^16.3.0",
+    "release-it": "^19.0.3",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.36.0"
+  },
+  "keywords": [
+    "tree",
+    "ls-tree",
+    "ignore",
+    "gitignore",
+    "npmignore",
+    "vscodeignore",
+    "cli",
+    "fs",
+    "file-system",
+    "output",
+    "project",
+    "migration"
+  ]
 }

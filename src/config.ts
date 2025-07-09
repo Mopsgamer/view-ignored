@@ -1,18 +1,20 @@
 import * as os from 'node:os'
 import path from 'node:path'
-import {
-  existsSync, readFileSync, rmSync, writeFileSync,
-} from 'node:fs'
+import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { format } from 'node:util'
 import * as yaml from 'yaml'
 import { type ChalkInstance } from 'chalk'
 import { type Command, type Option } from 'commander'
 import {
-  type DecorName, decorNameList, highlight, type StyleName, styleNameList,
+  type DecorName,
+  decorNameList,
+  highlight,
+  type StyleName,
+  styleNameList,
 } from './styling.js'
 import { type ConfigCheckMap } from './errors.js'
 import { type SortName, sortNameList } from './browser/sorting.js'
-import { filterNameList, type FilterName } from './browser/filtering.js'
+import { type FilterName, filterNameList } from './browser/filtering.js'
 
 /**
  * The full config file name - `".view-ignored"`.
@@ -60,7 +62,10 @@ export function isShowSources(value: unknown): value is ShowSourcesType {
 /**
  * Represents array with the key nad the value.
  */
-export type ConfigPair<KeyT extends ConfigKey = ConfigKey> = [key: KeyT, value: ConfigValue<KeyT>]
+export type ConfigPair<KeyT extends ConfigKey = ConfigKey> = [
+  key: KeyT,
+  value: ConfigValue<KeyT>,
+]
 
 /**
  * Command-line configuration structure.
@@ -114,9 +119,13 @@ export const configValueArray = <T extends ConfigValidator>(type?: T) => {
         return
       }
 
-      const badElementList = value.map(element => type(element)).filter(element => element !== undefined)
+      const badElementList = value.map(element => type(element)).filter(
+        element => element !== undefined,
+      )
       if (badElementList.length > 0) {
-        const list = badElementList.map((element, index) => `${index}: ${element}`).join('\n')
+        const list = badElementList.map((element, index) =>
+          `${index}: ${element}`,
+        ).join('\n')
         return `The value should be a typed array. Found bad elements:\n${list}`
       }
 
@@ -131,7 +140,9 @@ export const configValueArray = <T extends ConfigValidator>(type?: T) => {
   return validator
 }
 
-export const configValueLiteral = (choices: readonly unknown[]): ConfigValidator => {
+export const configValueLiteral = (
+  choices: readonly unknown[],
+): ConfigValidator => {
   const validator: ConfigValidator = (value) => {
     if (choices.includes(value)) {
       return
@@ -145,9 +156,25 @@ export const configValueLiteral = (choices: readonly unknown[]): ConfigValidator
   return validator
 }
 
-export const switchTrueValues = ['true', 'on', 'yes', 'y', 'enable', 'enabled', '1']
+export const switchTrueValues = [
+  'true',
+  'on',
+  'yes',
+  'y',
+  'enable',
+  'enabled',
+  '1',
+]
 
-export const switchFalseValues = ['false', 'off', 'no', 'n', 'disable', 'disabled', '0']
+export const switchFalseValues = [
+  'false',
+  'off',
+  'no',
+  'n',
+  'disable',
+  'disabled',
+  '0',
+]
 
 export const booleanValues = [...switchTrueValues, ...switchFalseValues]
 
@@ -157,7 +184,9 @@ export const configValueSwitch = (): ConfigValidator => {
       return
     }
 
-    return `The value should be a boolean. Available boolean literals: ${booleanValues.join(', ')}.`
+    return `The value should be a boolean. Available boolean literals: ${
+      booleanValues.join(', ')
+    }.`
   }
 
   validator.typeName = 'switch'
@@ -219,7 +248,10 @@ export const configValueNumber = (): ConfigValidator => {
 
 export const configValueInteger = (): ConfigValidator => {
   const validator: ConfigValidator = (value) => {
-    if (typeof value === 'number' && (Number.isSafeInteger(value) || Math.abs(value) === Infinity)) {
+    if (
+      typeof value === 'number'
+      && (Number.isSafeInteger(value) || Math.abs(value) === Infinity)
+    ) {
       return
     }
 
@@ -267,21 +299,57 @@ export class ConfigManager<ConfigType extends Config = Config> {
    * @see {@link configManager}.
    */
   private data: Record<string, unknown> = {}
-  private readonly configValidation = new Map<keyof ConfigType, ConfigValidator>()
+  private readonly configValidation = new Map<
+    keyof ConfigType,
+    ConfigValidator
+  >()
+
   private readonly cliOptionLinkMap = new Map<string, Option>()
   private readonly dataDefault: Record<string, unknown> = {}
 
   constructor(public readonly path: string) {
-    this.keySetValidator('parsable', configDefault.parsable, configValueBoolean())
-    this.keySetValidator('noColor', configDefault.noColor, configValueBoolean())
+    this.keySetValidator(
+      'parsable',
+      configDefault.parsable,
+      configValueBoolean(),
+    )
+    this.keySetValidator(
+      'noColor',
+      configDefault.noColor,
+      configValueBoolean(),
+    )
     this.keySetValidator('posix', configDefault.posix, configValueBoolean())
-    this.keySetValidator('filter', configDefault.filter, configValueLiteral(filterNameList))
-    this.keySetValidator('sort', configDefault.sort, configValueLiteral(sortNameList))
-    this.keySetValidator('style', configDefault.style, configValueLiteral(styleNameList))
-    this.keySetValidator('decor', configDefault.decor, configValueLiteral(decorNameList))
+    this.keySetValidator(
+      'filter',
+      configDefault.filter,
+      configValueLiteral(filterNameList),
+    )
+    this.keySetValidator(
+      'sort',
+      configDefault.sort,
+      configValueLiteral(sortNameList),
+    )
+    this.keySetValidator(
+      'style',
+      configDefault.style,
+      configValueLiteral(styleNameList),
+    )
+    this.keySetValidator(
+      'decor',
+      configDefault.decor,
+      configValueLiteral(decorNameList),
+    )
     this.keySetValidator('depth', configDefault.depth, configValueInteger())
-    this.keySetValidator('showSources', configDefault.showSources, configValueBoolean())
-    this.keySetValidator('concurrency', configDefault.concurrency, configValueInteger())
+    this.keySetValidator(
+      'showSources',
+      configDefault.showSources,
+      configValueBoolean(),
+    )
+    this.keySetValidator(
+      'concurrency',
+      configDefault.concurrency,
+      configValueInteger(),
+    )
   }
 
   dataCheck(data: unknown): ConfigCheckMap | string {
@@ -321,7 +389,9 @@ export class ConfigManager<ConfigType extends Config = Config> {
   /**
    * Get type checker for the key.
    */
-  keyGetValidator<T extends keyof ConfigType>(key: T): ConfigValidator | undefined
+  keyGetValidator<T extends keyof ConfigType>(
+    key: T,
+  ): ConfigValidator | undefined
   keyGetValidator(key: string): ConfigValidator | undefined {
     return this.configValidation.get(key)
   }
@@ -329,11 +399,19 @@ export class ConfigManager<ConfigType extends Config = Config> {
   /**
    * Define type checker for the key.
    */
-  keySetValidator<T extends keyof ConfigType & string>(key: T, defaultValue: ConfigType[T], type: ConfigValidator): this {
+  keySetValidator<T extends keyof ConfigType & string>(
+    key: T,
+    defaultValue: ConfigType[T],
+    type: ConfigValidator,
+  ): this {
     this.configValidation.set(key, type)
     const errorMessage = type(defaultValue)
     if (errorMessage !== undefined) {
-      throw new TypeError(`Invalid default value preset for configuration key ${format(key)} - ${errorMessage}`)
+      throw new TypeError(
+        `Invalid default value preset for configuration key ${
+          format(key)
+        } - ${errorMessage}`,
+      )
     }
 
     this.dataDefault[key] = defaultValue
@@ -349,13 +427,18 @@ export class ConfigManager<ConfigType extends Config = Config> {
       return
     }
 
-    return `Unknown config key '${key}'. Choices: ${[...this.configValidation.keys()].join(', ')}`
+    return `Unknown config key '${key}'. Choices: ${
+      [...this.configValidation.keys()].join(', ')
+    }`
   }
 
   /**
    * Call the type checker for the key.
    */
-  checkValue<T extends keyof ConfigType>(key: T, value: unknown): string | undefined
+  checkValue<T extends keyof ConfigType>(
+    key: T,
+    value: unknown,
+  ): string | undefined
   checkValue(key: string, value: unknown): string | undefined {
     const validate = this.configValidation.get(key)
     if (validate === undefined) {
@@ -368,8 +451,18 @@ export class ConfigManager<ConfigType extends Config = Config> {
   /**
    * Link a configuration property with a command-line option.
    */
-  setOption<T extends keyof ConfigType>(key: T, command: Command, option: Option, parseArgument?: (argument: string) => unknown): this
-  setOption(key: string, command: Command, option: Option, parseArgument?: (argument: string) => unknown): this {
+  setOption<T extends keyof ConfigType>(
+    key: T,
+    command: Command,
+    option: Option,
+    parseArgument?: (argument: string) => unknown,
+  ): this
+  setOption(
+    key: string,
+    command: Command,
+    option: Option,
+    parseArgument?: (argument: string) => unknown,
+  ): this {
     if (parseArgument) {
       option.argParser(parseArgument)
     }
@@ -395,7 +488,9 @@ export class ConfigManager<ConfigType extends Config = Config> {
    * @returns The error message for each invalid property.
    */
   load(): ConfigCheckMap | string | undefined {
-    const parsed: unknown = existsSync(this.path) ? yaml.parse(readFileSync(this.path).toString()) : undefined
+    const parsed: unknown = existsSync(this.path)
+      ? yaml.parse(readFileSync(this.path).toString())
+      : undefined
     if (parsed === undefined) {
       return
     }
@@ -441,7 +536,10 @@ export class ConfigManager<ConfigType extends Config = Config> {
    * @param key The name of the config property.
    * @param value The new value for the config property.
    */
-  set<T extends keyof ConfigType>(key: T, value: ConfigType[T]): string | undefined
+  set<T extends keyof ConfigType>(
+    key: T,
+    value: ConfigType[T],
+  ): string | undefined
   set(key: string, value: unknown): string | undefined
   set(key: string, value: unknown): string | undefined {
     const errorMessage = this.checkValue(key, value)
@@ -476,7 +574,9 @@ export class ConfigManager<ConfigType extends Config = Config> {
    * @returns An array of properties which defined in the configuration file.
    */
   keyList(real = true): Array<keyof ConfigType> {
-    const keys = real ? [...this.configValidation.keys()] : Object.keys(this.data)
+    const keys = real
+      ? [...this.configValidation.keys()]
+      : Object.keys(this.data)
     return keys
   }
 
@@ -485,8 +585,14 @@ export class ConfigManager<ConfigType extends Config = Config> {
    * @param real The options.
    * @returns The value for the specified property.
    */
-  get<T extends keyof ConfigType>(key: T, options: ConfigManagerGetOptions & { real?: false }): ConfigType[T] | undefined
-  get<T extends keyof ConfigType>(key: T, options?: ConfigManagerGetOptions & { real: true }): ConfigType[T]
+  get<T extends keyof ConfigType>(
+    key: T,
+    options: ConfigManagerGetOptions & { real?: false },
+  ): ConfigType[T] | undefined
+  get<T extends keyof ConfigType>(
+    key: T,
+    options?: ConfigManagerGetOptions & { real: true },
+  ): ConfigType[T]
   get(key: string, options?: ConfigManagerGetOptions): unknown
   get(key: string, options?: ConfigManagerGetOptions): unknown {
     const { real = true } = options ?? {}
@@ -494,16 +600,27 @@ export class ConfigManager<ConfigType extends Config = Config> {
     if (real && value === undefined) {
       value = this.dataDefault[key]
       if (value === undefined) {
-        throw new Error(`Excpected default value for config property '${key}'.`)
+        throw new Error(
+          `Excpected default value for config property '${key}'.`,
+        )
       }
     }
 
     return value
   }
 
-  getPairString<T extends keyof ConfigType>(keys?: T | T[], options?: ConfigManagerGetPairStringOptions): string
-  getPairString(keys?: string | string[], options?: ConfigManagerGetPairStringOptions): string
-  getPairString(keys?: string | string[], options?: ConfigManagerGetPairStringOptions): string {
+  getPairString<T extends keyof ConfigType>(
+    keys?: T | T[],
+    options?: ConfigManagerGetPairStringOptions,
+  ): string
+  getPairString(
+    keys?: string | string[],
+    options?: ConfigManagerGetPairStringOptions,
+  ): string
+  getPairString(
+    keys?: string | string[],
+    options?: ConfigManagerGetPairStringOptions,
+  ): string {
     const { real = true, types = true, chalk, parsable } = options ?? {}
     if (keys === undefined) {
       return this.getPairString(this.keyList(real), options)
@@ -525,21 +642,26 @@ export class ConfigManager<ConfigType extends Config = Config> {
       }).join('\n')
     }
 
-    const keyMaxLength: number = keys.reduce((maxLength, key) => Math.max(maxLength, key.length), 0)
+    const keyMaxLength: number = keys.reduce(
+      (maxLength, key) => Math.max(maxLength, key.length),
+      0,
+    )
     return keys.map((key: string): string => {
       const value = format('%o', this.get(key, options))
       const type = this.getType(key)
       const pad = keyMaxLength - key.length
       const line = types
         ? format(
-          `${' '.repeat(pad)}%s ${highlight('=', chalk)} %s${highlight(':', chalk)} %s`,
-          (chalk ? chalk.hex('#FFBC42')(key) : key),
+          `${' '.repeat(pad)}%s ${highlight('=', chalk)} %s${
+            highlight(':', chalk)
+          } %s`,
+          chalk ? chalk.hex('#FFBC42')(key) : key,
           chalk ? highlight(value, chalk) : value,
-          (chalk ? chalk.dim(highlight(type, chalk)) : type),
+          chalk ? chalk.dim(highlight(type, chalk)) : type,
         )
         : format(
           `${' '.repeat(pad)}%s ${highlight('=', chalk)} %s`,
-          (chalk ? chalk.hex('#FFBC42')(key) : key),
+          chalk ? chalk.hex('#FFBC42')(key) : key,
           chalk ? highlight(value, chalk) : value,
         )
 

@@ -1,12 +1,13 @@
 import { icons } from '@m234/nerd-fonts'
 import {
-  type Plugins, type Methodology,
-  File,
-  NoSourceError,
-  SourceInfo,
-  type Scanner,
-  InvalidPatternError,
   Directory,
+  File,
+  InvalidPatternError,
+  type Methodology,
+  NoSourceError,
+  type Plugins,
+  type Scanner,
+  SourceInfo,
 } from '../../index.js'
 import { ScannerGitignore } from '../scanner.js'
 import { type TargetIcon, type TargetName } from '../targets.js'
@@ -31,7 +32,11 @@ export const matcherExclude: string[] = [
  * @param sourceFile This file will be converted to a {@link SourceInfo}.
  * @internal
  */
-export function useSourceFile(map: Map<File, SourceInfo>, sourceFile: File, scanner: Scanner & { pattern: string | string[] }): Map<File, SourceInfo> {
+export function useSourceFile(
+  map: Map<File, SourceInfo>,
+  sourceFile: File,
+  scanner: Scanner & { pattern: string | string[] },
+): Map<File, SourceInfo> {
   const sourceInfo = SourceInfo.from(sourceFile, scanner)
   for (const file of sourceFile.parent.deepIterator()) {
     if (file instanceof Directory) {
@@ -48,30 +53,36 @@ export function useSourceFile(map: Map<File, SourceInfo>, sourceFile: File, scan
  * @param base The name for gitignore-like file.
  * @internal
  */
-export const methodologyGitignoreLike = (base: string): Methodology => function (tree, o) {
-  const sourceList = tree.deep(File).filter(dirent => dirent.base === base)
-  const map = new Map<File, SourceInfo>()
-  if (sourceList.length === 0) {
-    throw new NoSourceError(base)
-  }
-
-  for (const sourceFile of sourceList) {
-    const scanner = new ScannerGitignore({ exclude: matcherExclude })
-    const content = o.modules.fs.readFileSync(sourceFile.absolutePath).toString()
-    const pattern = content
-    if (!scanner.isValid(pattern)) {
-      throw new InvalidPatternError(sourceFile, pattern)
+export const methodologyGitignoreLike = (base: string): Methodology =>
+  function (tree, o) {
+    const sourceList = tree.deep(File).filter(dirent => dirent.base === base)
+    const map = new Map<File, SourceInfo>()
+    if (sourceList.length === 0) {
+      throw new NoSourceError(base)
     }
 
-    scanner.pattern = pattern
-    useSourceFile(map, sourceFile, scanner)
+    for (const sourceFile of sourceList) {
+      const scanner = new ScannerGitignore({ exclude: matcherExclude })
+      const content = o.modules.fs.readFileSync(sourceFile.absolutePath)
+        .toString()
+      const pattern = content
+      if (!scanner.isValid(pattern)) {
+        throw new InvalidPatternError(sourceFile, pattern)
+      }
+
+      scanner.pattern = pattern
+      useSourceFile(map, sourceFile, scanner)
+    }
+
+    return map
   }
 
-  return map
-}
-
 const bind: Plugins.TargetBind = {
-  id, icon, name, testCommand, scanOptions: {
+  id,
+  icon,
+  name,
+  testCommand,
+  scanOptions: {
     target: methodologyGitignoreLike('.gitignore'),
   },
 }

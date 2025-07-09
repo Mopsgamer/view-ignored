@@ -16,7 +16,7 @@
         "./out/**/*.test.js"
       ],
       "console": "integratedTerminal",
-      "sourceMaps": true,
+      "sourceMaps": true
     },
     {
       "type": "node",
@@ -32,7 +32,7 @@
       "console": "integratedTerminal",
       "program": "${workspaceFolder}/bin/viewig",
       "cwd": "${workspaceFolder}",
-      "sourceMaps": true,
+      "sourceMaps": true
     },
     {
       "type": "node",
@@ -47,7 +47,7 @@
       "console": "integratedTerminal",
       "program": "${workspaceFolder}/bin/viewig",
       "cwd": "${workspaceFolder}",
-      "sourceMaps": true,
+      "sourceMaps": true
     },
     {
       "type": "node",
@@ -58,12 +58,12 @@
       ],
       "args": [
         "scan",
-        "--sort=modified",
+        "--sort=modified"
       ],
       "console": "integratedTerminal",
       "program": "${workspaceFolder}/bin/viewig",
       "cwd": "${workspaceFolder}",
-      "sourceMaps": true,
+      "sourceMaps": true
     },
     {
       "type": "node",
@@ -74,12 +74,12 @@
       ],
       "args": [
         "scan",
-        "--target=npm",
+        "--target=npm"
       ],
       "console": "integratedTerminal",
       "program": "${workspaceFolder}/bin/viewig",
       "cwd": "${workspaceFolder}",
-      "sourceMaps": true,
+      "sourceMaps": true
     },
     {
       "type": "node",
@@ -90,12 +90,12 @@
       ],
       "args": [
         "scan",
-        "--plugins=t",
+        "--plugins=t"
       ],
       "console": "integratedTerminal",
       "program": "${workspaceFolder}/bin/viewig",
       "cwd": "${workspaceFolder}",
-      "sourceMaps": true,
-    },
+      "sourceMaps": true
+    }
   ]
 }

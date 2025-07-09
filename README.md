@@ -5,14 +5,25 @@
 [![github](https://img.shields.io/github/stars/Mopsgamer/view-ignored.svg?style=flat)](https://github.com/Mopsgamer/view-ignored)
 [![github issues](https://img.shields.io/github/issues/Mopsgamer/view-ignored.svg?style=flat)](https://github.com/Mopsgamer/view-ignored/issues)
 
-Retrieve list of files ignored/included by Git, NPM, Yarn, JSR, VSCE or other tools.
+Retrieve list of files ignored/included by Git, NPM, Yarn, JSR, VSCE or other
+tools.
+
+## Requirements
+
+Requires Node.js vXX or later.
 
 ## Highlights
 
-- **Multi-target.** Get list of included files, using configuration files reader, not command-line wrapper.
-- **Use in browser.** view-ignored supports file system adapter.
-- **Command-line.** Supports no-color and multiple output styles, including [nerd fonts](https://github.com/ryanoasis/nerd-fonts).
-- **Plugins.** view-ignored allows you to add new [targets](#targets) programmatically. Command-line interface supports plugins throught `--plugin` option.
+- **Multi-target.** Get a list of included files using configuration file
+  readers, not command-line wrappers.
+- **Use in browser.** view-ignored can run in the browser using a file system
+  adapter.
+- **Command-line.** Supports no-color and multiple output styles (tree, list,
+  parsable, etc.), including
+  [Nerd Fonts](https://github.com/ryanoasis/nerd-fonts).
+- **Plugins.** view-ignored allows you to add new [targets](#targets)
+  programmatically. Command-line interface supports plugins through `--plugins`
+  option.
 
 ## Install
 
@@ -20,9 +31,13 @@ Retrieve list of files ignored/included by Git, NPM, Yarn, JSR, VSCE or other to
 npm i view-ignored
 ```
 
+TypeScript types are included.
+
 ## Usage
 
 ### Command-line
+
+After installing globally, you can use the following commands:
 
 ```bash
 # get started
@@ -31,26 +46,27 @@ viewig --help
 view-ignored --help
 
 # scan: git (default) and npm
-viewig scan .
-viewig scan . --target=npm
-viewig scan . --parsable
+viewig scan
+viewig scan --target=npm
+viewig scan --parsable
 
 # scan: plugins (space, comma or pipe separated)
 # all built-in plugins loaded automatically
-viewig scan . --plugins="example1, example2"
-viewig scan . --plugins="example1 example2"
-viewig scan . --plugins example1 example2
-viewig scan . --plugins example1, example2
+# Replace example1/example2 with real plugin names
+viewig scan --plugins="example1, example2"
+viewig scan --plugins="example1 example2"
+viewig scan --plugins example1 example2
+viewig scan --plugins example1, example2
 
 # config: print configuration entries
 viewig config get
 viewig config get --real
 # config: set npm as default target and scan for npm
 viewig config set target=npm
-viewig scan .
+viewig scan
 # config: always use nerdfonts
 viewig config set style=tree
-# config: always use nerdfonts
+# config: always use Nerd Fonts for decoration
 viewig config set decor=nerdfonts
 # config: always use plugins
 viewig config set plugins=example1,example2
@@ -58,7 +74,7 @@ viewig config set plugins=example1,example2
 
 ### Programmatically
 
-All you need it to add
+To use programmatically:
 
 ```js
 import * as vign from "view-ignored"; // or "view-ignored/browser"
@@ -68,12 +84,20 @@ await vign.Plugins.loadBuiltIns(); // load all built-in plugins
 await vign.Plugins.loadPlugins(["example"]); // load third-party plugins
 
 // scan - options available
-const fileInfoList = await vign.scan(".", { target: "git", cwd: process.cwd() });
-const fileInfoList = await vign.scan(["./path/to/file"], { target: "git", cwd: process.cwd() });
+const fileInfoList = await vign.scan(".", {
+  target: "git",
+  cwd: process.cwd(),
+});
+const fileInfoList2 = await vign.scan(["./path/to/file"], {
+  target: "git",
+  cwd: process.cwd(),
+});
 
 // use results
-if (fileInfo.ignored) {
+for (const fileInfo of fileInfoList) {
+  if (fileInfo.ignored) {
     superCodeEditor.explorer.colorFile(fileInfo.relativePath, "gray");
+  }
 }
 ```
 
@@ -81,14 +105,22 @@ if (fileInfo.ignored) {
 
 ```js
 const sorter = vign.Sorting.firstFolders;
-const fileInfoList = await vign.scan(".", {target: "npm"});
-const fileInfoSorted = fileInfoList.sort((a, b) => sorter(String(a), String(b)));
+const fileInfoList = await vign.scan(".", { target: "npm" });
+const fileInfoSorted = fileInfoList.sort((a, b) =>
+  sorter(String(a), String(b))
+);
 ```
 
 ### Targets
+
+The following built-in plugins are available:
 
 - `git`
 - `npm` (compatible with Bun, PNPM, and others)
 - `yarn`
 - `vsce`
 - `jsr` (compatible with Deno)
+
+## License
+
+MIT License. See [LICENSE.txt](LICENSE.txt) for details.
