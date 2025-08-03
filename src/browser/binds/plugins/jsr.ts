@@ -12,6 +12,7 @@ import {
 import { type PatternScanner, ScannerGitignore } from '../scanner.js'
 import { type TargetIcon, type TargetName } from '../targets.js'
 import * as git from './git.js'
+import stripJsonComments from 'strip-json-comments'
 
 const id = 'jsr'
 const name: TargetName = 'JSR'
@@ -36,7 +37,7 @@ export const matcherInclude = []
 export type ValidManifestJsr = {
   name: string
   version: string
-  exports: string
+  exports?: string | Record<string, string>
   exclude?: string[]
   include?: string[]
   publish?: {
@@ -52,7 +53,10 @@ export function isValidManifestJsr(value: unknown): value is ValidManifestJsr {
   return z.object({
     name: z.string(),
     version: z.string(),
-    exports: z.string(),
+    exports: z.union([
+      z.string(),
+      z.record(z.string(), z.string()),
+    ]).optional(),
     exclude: z.array(z.string()).optional(),
     include: z.array(z.string()).optional(),
     publish: z.object({
@@ -102,14 +106,16 @@ export const sourceSearch = (
       }
 
       if (/^(deno|jsr).jsonc?$/.test(sourceFile.base)) {
-        const manifest = JSON.parse(
-          o.modules.fs.readFileSync(sourceFile.absolutePath).toString(),
-        ) as unknown
+        let manifestString = o.modules.fs.readFileSync(sourceFile.absolutePath).toString()
+        if (sourceFile.base[sourceFile.base.length - 1] === 'c') {
+          manifestString = stripJsonComments(manifestString, { whitespace: false, trailingCommas: false })
+        }
+        const manifest = JSON.parse(manifestString) as unknown
         if (!isValidManifestJsr(manifest)) {
-          throw new BadSourceError(sourceFile, 'Must have \'name\', \'version\'.')
+          throw new BadSourceError(sourceFile, 'Must have \'name\', \'version\', valid \'export\', \'exclude\' and \'include\'.')
         }
 
-        const { exclude, include, publish } = manifest
+        const { exclude, include, publish } = manifest as ValidManifestJsr
 
         if (
           exclude === undefined && include === undefined

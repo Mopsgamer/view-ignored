@@ -540,6 +540,28 @@ describe('Targets', async () => {
       },
     })
   })
+  targetId = 'jsr'
+  describe(targetId, () => {
+    testTarget('normal project', {
+      targetId,
+      should: [{ include: ['deno.jsonc', 'main.ts'], source: 'deno.jsonc' }],
+      content: {
+        'deno.jsonc': `{
+          "name": "@m234/logger",
+          "version": "1.4.0",
+          "publish": {
+            // comment
+            "include": ["README.*", "deno.*", "**/*.ts"],
+            "exclude": ["**/*.*.ts", "scripts"]
+          }
+        }`,
+        'scripts': { 'run.ts': '' },
+        'main.ts': '',
+        'main.test.ts': '',
+        'main.bench.ts': '',
+      },
+    })
+  })
 })
 
 type TestTargetSubtestData = Case & {

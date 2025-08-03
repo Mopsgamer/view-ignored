@@ -96,19 +96,15 @@ export class ScannerMinimatch implements PatternScanner {
     options?: minimatch.MinimatchOptions,
   ): boolean {
     const patternList = pattern.split('\n')
-    const positiveList: string[] = [], negativeList: string[] = []
-    for (const pat of patternList) {
-      if (pat[0] === '!') {
-        negativeList.push(pat.substring(1))
-        continue
+    while (patternList.length) {
+      const pat = patternList.pop()!
+      if (!/^[*/]$/.test(pat[pat.length - 1]!)) {
+        patternList.push(pat + '/**')
       }
-      positiveList.push(pat)
-    }
-    for (const pat of negativeList) {
-      if (!isMatch(p, pat, options)) continue
-      return false
-    }
-    for (const pat of positiveList) {
+      if (pat[0] === '!') {
+        if (!isMatch(p, pat.substring(1), options)) continue
+        return false
+      }
       if (!isMatch(p, pat, options)) continue
       return true
     }
