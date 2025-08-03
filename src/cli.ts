@@ -539,9 +539,8 @@ export async function actionScan(): Promise<void> {
         message += `${chalk.blue(infoSymbol)}You can use ${
           highlight(`'${bind.testCommand}'`, chalk)
         } to check if the list is valid.`
+        message += '\n'
       }
-
-      message += '\n'
 
       context.message = message
     }

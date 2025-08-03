@@ -21,11 +21,9 @@ export function highlight(text: string, chalk?: ChalkInstance): string {
   const rspecial = /(true|false|null|Infinity)/g
 
   const rall = new RegExp(
-    `${
-      [ansiRegex(), rstring, rseparator, rbracketsSquare, rnumber, rspecial]
-        .map(r => `(${typeof r === 'string' ? r : r.source})`)
-        .join('|')
-    }`,
+    [ansiRegex(), rstring, rseparator, rbracketsSquare, rnumber, rspecial]
+      .map(r => `(${typeof r === 'string' ? r : r.source})`)
+      .join('|'),
     'g',
   )
 
