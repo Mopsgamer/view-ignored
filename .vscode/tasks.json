@@ -6,40 +6,38 @@
         "id": "versions",
         "color": "terminal.ansiRed"
       },
-      "type": "npm",
+      "type": "bun",
       "script": "release:major",
       "label": "Release major - any backward incompatible changes",
-      "detail": "pnpm release-it --increment=major"
     },
     {
       "icon": {
         "id": "versions",
         "color": "terminal.ansiGreen"
       },
-      "type": "npm",
+      "type": "bun",
       "script": "release:minor",
       "label": "Release minor - any new public functionality or deprecation",
-      "detail": "pnpm release-it --increment=minor"
     },
     {
       "icon": {
         "id": "versions",
         "color": "terminal.ansiYellow"
       },
-      "type": "npm",
+      "type": "bun",
       "script": "release:patch",
       "label": "Release patch - any backward compatible bug fixes",
-      "detail": "pnpm release-it --increment=patch"
     },
     {
       "icon": {
         "id": "package",
         "color": "terminal.ansiWhite"
       },
-      "type": "npm",
+      "problemMatcher": "$tsc",
+      "type": "bun",
       "script": "build",
       "label": "Build",
-      "detail": "pnpm shx rm -rf out && pnpm tsc"
+      "detail": "bun run build"
     },
     {
       "icon": {
@@ -47,30 +45,31 @@
         "color": "terminal.ansiWhite"
       },
       "problemMatcher": "$tsc-watch",
-      "type": "npm",
-      "script": "build:watch",
+      "type": "shell",
+      "command": "bun",
       "label": "Build & Watch",
-      "detail": "pnpm shx rm -rf out && pnpm tsc --watch"
+      "detail": "bun run build --watch",
+      "args": ["run", "build", "--watch"]
     },
     {
       "icon": {
         "id": "sparkle",
         "color": "terminal.ansiWhite"
       },
-      "type": "npm",
+      "type": "bun",
       "script": "lint",
       "label": "Lint",
-      "detail": "pnpm xo"
+      "detail": "bun run lint"
     },
     {
       "icon": {
         "id": "check-all",
         "color": "terminal.ansiWhite"
       },
-      "type": "npm",
+      "type": "bun",
       "script": "test",
       "label": "Test",
-      "detail": "pnpm mocha --require tsx ./test/**/*.test.ts"
+      "detail": "bun run node --test out/**/*.test.js"
     }
   ]
 }

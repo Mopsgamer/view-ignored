@@ -18,7 +18,7 @@
         "strip-json-comments": "^5.0.2",
         "treeify": "^1.1.0",
         "yaml": "^2.8.0",
-        "zod": "latest",
+        "zod": "^4.0.14",
       },
       "devDependencies": {
         "@eslint/js": "^9.30.1",

@@ -11,8 +11,7 @@
     "prerelease": "bun run build:pub && bun run lint",
     "test": "bun run node --test out/**/*.test.js",
     "build": "bun run build:clean && bun run tsc -p src",
-    "build:pub": "bun run build:clean && bun run tsc -p src --sourceMap false && rm -rf **/*.test.*",
-    "build:watch": "bun run build:clean && bun run tsc -p src --watch",
+    "build:pub": "bun run build:clean && bun run tsc -p src/tsconfig.pub.json --sourceMap false",
     "build:clean": "rm -rf out",
     "lint": "bun run eslint .",
     "release:major": "bun run release-it --increment=major",
@@ -87,7 +86,7 @@
     "strip-json-comments": "^5.0.2",
     "treeify": "^1.1.0",
     "yaml": "^2.8.0",
-    "zod": "^3.25.75"
+    "zod": "^4.0.14"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",
