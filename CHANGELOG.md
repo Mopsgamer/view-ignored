@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+- Remove extra new line for cli output.
+- Improve performance: faster `isMatch`.
+- Fix directory edge case: `scripts` now matches `scripts/run.ts`.
+- Fix jsonc and manifest validation for jsr. Add test.
+
+
 ## [0.4.4] - 2025-07-09
 
 - Update README.

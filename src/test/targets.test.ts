@@ -1,7 +1,7 @@
 import assert, { AssertionError } from 'node:assert'
 import { createFixture, type FileTree } from 'fs-fixture'
 import * as viewig from '../index.js'
-import { describe, it } from 'node:test'
+import { after, describe, it } from 'node:test'
 import { inspect } from 'node:util'
 import { ScannerGitignore } from '../browser/binds/scanner.js'
 
@@ -570,14 +570,9 @@ type TestTargetSubtestData = Case & {
 
 function testTarget(title: string, data: TestTargetSubtestData) {
   it(title, async () => {
+    after(() => fixture.rm())
     const { targetId, should } = data
     const fixture = await createFixture(data.content)
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    await using fixtureDisposable = {
-      [Symbol.asyncDispose]() {
-        return fixture.rm()
-      },
-    }
 
     const fileInfoListPromise = viewig.scan('.', {
       posix: true,

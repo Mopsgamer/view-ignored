@@ -35,6 +35,9 @@
     "url": "https://github.com/Mopsgamer/view-ignored/issues"
   },
   "homepage": "https://github.com/Mopsgamer/view-ignored",
+  "engines": {
+    "node": ">=18"
+  },
   "exports": {
     ".": {
       "default": "./out/index.js",

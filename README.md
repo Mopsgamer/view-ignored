@@ -10,7 +10,7 @@ tools.
 
 ## Requirements
 
-Requires Node.js vXX or later.
+Requires Node.js v18 or later.
 
 ## Highlights
 
@@ -48,6 +48,7 @@ view-ignored --help
 # scan: git (default) and npm
 viewig scan
 viewig scan --target=npm
+viewig sc -t npm
 viewig scan --parsable
 
 # scan: plugins (space, comma or pipe separated)
