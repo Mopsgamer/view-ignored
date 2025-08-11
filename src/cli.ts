@@ -429,45 +429,46 @@ export async function actionScan(): Promise<void> {
     cwd: optionsReal.cwd,
     modules: optionsReal.modules,
   })
-  if (flags.parsable) {
-    const fileInfoList: FileInfo[] = await scan(stream, {
-      ...optionsReal,
-      target: flags.target,
-      filter: flags.filter,
-      maxDepth: flags.depth,
-    })
-    console.log(
-      fileInfoList.map(fileInfo =>
-        fileInfo.relativePath + (
-          flags.showSources && fileInfo.source !== undefined
-            ? '<' + (fileInfo.source.relativePath)
-            : ''
-        ),
-      ).join(','),
-    )
-  }
-  else {
-    let name: string
+  try {
+    if (flags.parsable) {
+      await stream.run()
+      const fileInfoList: FileInfo[] = await scan(stream, {
+        ...optionsReal,
+        target: flags.target,
+        filter: flags.filter,
+        maxDepth: flags.depth,
+      })
+      console.log(
+        fileInfoList.map(fileInfo =>
+          fileInfo.relativePath + (
+            flags.showSources && fileInfo.source !== undefined
+              ? '<' + (fileInfo.source.relativePath)
+              : ''
+          ),
+        ).join(','),
+      )
+    }
+    else {
+      let name: string
       = decorCondition(flags.decor, { ifNerd: bind.icon?.value, postfix: ' ' })
         + bind.name
-    if (bind.icon?.color !== undefined) {
-      name = chalk.hex('#' + bind.icon.color)(name)
-    }
+      if (bind.icon?.color !== undefined) {
+        name = chalk.hex('#' + bind.icon.color)(name)
+      }
 
-    const context: ScanContext = {
-      progress: { current: 0, directories: 0, files: 0, total: 0 },
-      fileInfoList: [],
-      stream,
-      message: '',
-      reading: new Promise<DeepStreamDataRoot>((resolve) => {
-        stream.on('end', (data) => {
-          resolve(data)
-        })
-      }),
-    }
+      const context: ScanContext = {
+        progress: { current: 0, directories: 0, files: 0, total: 0 },
+        fileInfoList: [],
+        stream,
+        message: '',
+        reading: new Promise<DeepStreamDataRoot>((resolve) => {
+          stream.on('end', (data) => {
+            resolve(data)
+          })
+        }),
+      }
 
-    try {
-      context.stream.run()
+      await context.stream.run()
       console.log(`${name} ${chalk.hex('#73A7DE')(flags.filter)} ${cwd}`)
       await oraPromise(async (spinner) => {
         const proc = scan(
@@ -543,14 +544,14 @@ export async function actionScan(): Promise<void> {
       }
 
       context.message = message
-    }
-    catch (error) {
-      if (!(error instanceof ViewIgnoredError)) {
-        logError(format(error), { title: 'view-ignored - Error while scan.' })
-      }
-    }
 
-    console.log(context.message)
+      console.log(context.message)
+    }
+  }
+  catch (error) {
+    if (!(error instanceof ViewIgnoredError)) {
+      logError(format(error), { title: 'view-ignored - Error while scan.' })
+    }
   }
 }
 

@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- Fixed incorrect interface implementation for `stream.run()`.
+This fix changes return type for this method
+from `void` to `Promise<DeepStreamDataRoot>`.
+Command-line now awaits this method, which
+fixes `--parsable` and some other related crashes.
+
 ## [0.4.5] - 2025-08-03
 
 - Remove extra new line for cli output.

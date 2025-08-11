@@ -9,7 +9,7 @@ import { File } from './file.js'
 
 export type DeepStreamEventEmitter = EventEmitter<DeepStreamEventMap> & {
   endPromise: Promise<DeepStreamDataRoot>
-  run(): void
+  run(): Promise<DeepStreamDataRoot>
 }
 
 export type DeepStreamDataRoot = {
