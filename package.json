@@ -22,8 +22,7 @@
   "main": "./out/src/index.js",
   "files": [
     "/bin",
-    "/out",
-    "!**/*.test.js"
+    "/out"
   ],
   "repository": {
     "type": "git",
