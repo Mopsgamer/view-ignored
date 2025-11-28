@@ -548,6 +548,7 @@ export class ConfigManager<ConfigType extends Config = Config> {
     }
 
     this.data[key] = value
+    return
   }
 
   /**

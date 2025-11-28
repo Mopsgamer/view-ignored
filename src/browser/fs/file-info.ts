@@ -101,7 +101,7 @@ export class FileInfo extends File {
    * @param options Styling options.
    * @returns Relative file path. Optionally formatted.
    */
-  toString(options?: FileInfoToStringOptions): string {
+  override toString(options?: FileInfoToStringOptions): string {
     const {
       fileIcon,
       chalk,
@@ -112,7 +112,7 @@ export class FileInfo extends File {
     } = options ?? {}
     const patha = posix ? PATH.posix : PATH
     const parsed = PATH.parse(this.relativePath)
-    const glyph = nf.Seti.fromParsedPath(parsed)
+    const glyph = nf.Seti.fromPath(parsed)
     const fIcon = fileIcon
       ? decorCondition(fileIcon, {
         ifEmoji: '📄',

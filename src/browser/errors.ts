@@ -1,7 +1,7 @@
 import { type File } from './lib.js'
 
 export class ViewIgnoredError extends Error {
-  name = 'ViewIgnoredError'
+  override name = 'ViewIgnoredError'
 }
 
 export class NoSourceError extends ViewIgnoredError {
@@ -13,7 +13,7 @@ export class NoSourceError extends ViewIgnoredError {
     return fileBaseList.map(base => `'${base}'`).join(' and ')
   }
 
-  name = 'NoSourceError'
+  override name = 'NoSourceError'
   /**
    * @param fileBase Excpected message in the brackets. Describes which files was expected (e.g. 'config.json').
    * @example
@@ -36,7 +36,7 @@ export class NoSourceError extends ViewIgnoredError {
 }
 
 export class BadSourceError extends ViewIgnoredError {
-  name = 'BadSourceError'
+  override name = 'BadSourceError'
   /**
    * @param fileBase The base of the file (e.g. 'config.json').
    * @param message The following message after the colon. First letter uppercase, no dot.
@@ -61,7 +61,7 @@ export class BadSourceError extends ViewIgnoredError {
 }
 
 export class InvalidPatternError extends ViewIgnoredError {
-  name = 'InvalidPatternError'
+  override name = 'InvalidPatternError'
   constructor(file: File, pattern?: string | string[]) {
     super(
       `Invalid pattern in ${file.relativePath}: ${
@@ -72,7 +72,7 @@ export class InvalidPatternError extends ViewIgnoredError {
 }
 
 export class TargetNotBoundError extends ViewIgnoredError {
-  name = 'TargetNotBoundError'
+  override name = 'TargetNotBoundError'
   constructor(targetId: string) {
     super(`The target has no bound: '${targetId}'.`)
   }

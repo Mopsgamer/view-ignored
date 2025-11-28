@@ -184,7 +184,7 @@ export class ScannerGitignore extends ScannerMinimatch {
     super(options)
   }
 
-  isValid(value: unknown): value is string | string[] {
+  override isValid(value: unknown): value is string | string[] {
     if (!z.string().or(z.array(z.string())).safeParse(value).success) {
       return false
     }
@@ -205,29 +205,29 @@ export class ScannerGitignore extends ScannerMinimatch {
     }
   }
 
-  get pattern() {
+  override get pattern() {
     return this._pattern
   }
 
-  set pattern(value: string | string[]) {
+  override set pattern(value: string | string[]) {
     const newPattern = ScannerGitignore.gitignoreToMinimatch(value)
     this._pattern = newPattern
   }
 
-  get include() {
+  override get include() {
     return this._include
   }
 
-  set include(value: string | string[]) {
+  override set include(value: string | string[]) {
     const newPattern = ScannerGitignore.gitignoreToMinimatch(value)
     this._include = newPattern
   }
 
-  get exclude() {
+  override get exclude() {
     return this._exclude
   }
 
-  set exclude(value: string | string[]) {
+  override set exclude(value: string | string[]) {
     const newPattern = ScannerGitignore.gitignoreToMinimatch(value)
     this._exclude = newPattern
   }

@@ -1,9 +1,9 @@
 import assert, { AssertionError } from 'node:assert'
 import { createFixture, type FileTree } from 'fs-fixture'
-import * as viewig from '../index.js'
-import { after, describe, it } from 'node:test'
+import { Plugins, NoSourceError, scan, ViewIgnoredError } from '../index.js'
+import { describe, it } from 'node:test'
 import { inspect } from 'node:util'
-import { ScannerGitignore } from '../browser/binds/scanner.js'
+import { ScannerGitignore } from './scanner.js'
 
 type Check = {
   include: string[]
@@ -39,17 +39,17 @@ const symlinksProject: FileTree = {
 }
 
 describe('Targets', async () => {
-  await viewig.Plugins.loadBuiltIns()
+  await Plugins.loadBuiltIns()
   let targetId = 'git'
   describe(targetId, () => {
     testTarget('empty folder', {
       targetId,
-      should: viewig.NoSourceError.name,
+      should: NoSourceError.name,
       content: {},
     })
     testTarget('single file', {
       targetId,
-      should: viewig.NoSourceError.name,
+      should: NoSourceError.name,
       content: {
         'file.txt': '',
       },
@@ -106,12 +106,12 @@ describe('Targets', async () => {
   describe(targetId, () => {
     testTarget('empty project', {
       targetId,
-      should: viewig.NoSourceError.name,
+      should: NoSourceError.name,
       content: {},
     })
     testTarget('single file', {
       targetId,
-      should: viewig.NoSourceError.name,
+      should: NoSourceError.name,
       content: {
         'file.txt': '',
       },
@@ -344,12 +344,12 @@ describe('Targets', async () => {
   describe(targetId, () => {
     testTarget('empty project', {
       targetId,
-      should: viewig.NoSourceError.name,
+      should: NoSourceError.name,
       content: {},
     })
     testTarget('single file', {
       targetId,
-      should: viewig.NoSourceError.name,
+      should: NoSourceError.name,
       content: {
         'file.txt': '',
       },
@@ -485,12 +485,12 @@ describe('Targets', async () => {
   describe(targetId, () => {
     testTarget('empty project', {
       targetId,
-      should: viewig.NoSourceError.name,
+      should: NoSourceError.name,
       content: {},
     })
     testTarget('single file', {
       targetId,
-      should: viewig.NoSourceError.name,
+      should: NoSourceError.name,
       content: {
         'file.txt': '',
       },
@@ -570,11 +570,12 @@ type TestTargetSubtestData = Case & {
 
 function testTarget(title: string, data: TestTargetSubtestData) {
   it(title, async () => {
-    after(() => fixture.rm())
     const { targetId, should } = data
     const fixture = await createFixture(data.content)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    using _ = { [Symbol.dispose]: () => fixture.rm() }
 
-    const fileInfoListPromise = viewig.scan('.', {
+    const fileInfoListPromise = scan('.', {
       posix: true,
       target: targetId,
       cwd: fixture.getPath(),
@@ -591,7 +592,7 @@ function testTarget(title: string, data: TestTargetSubtestData) {
           `Expected ViewIgnoredError, got ${String(error)}`,
         )
         assert.ok(
-          error instanceof viewig.ViewIgnoredError,
+          error instanceof ViewIgnoredError,
           `Expected ViewIgnoredError, got ${error.name}`,
         )
         assert.ok(
