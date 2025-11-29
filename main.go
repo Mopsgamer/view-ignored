@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/Mopsgamer/view-ignored/targets"
 )
@@ -21,36 +22,43 @@ func main() {
 			fmt.Printf("error: unsupported target: %s, supported targets are "+targets.SupportedTargetsList()+"\n", *target)
 			os.Exit(1)
 		}
-		mainScan(target)
+		mainScan(targets.Target(*target))
 	case "":
 		fmt.Println("See -h for help.")
 		os.Exit(1)
 	}
 }
 
-func walkCollect(match func(path string) (bool, error), p *[]string) fs.WalkDirFunc {
+func walkIgnore(ignores targets.Matcher, ctx *targets.MatcherContext) fs.WalkDirFunc {
 	return func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		matches, err := match(path)
-		if err != nil || matches {
+		ignored, err := ignores(path, d.IsDir(), ctx)
+		if err != nil || ignored {
 			return err
 		}
 
 		if d.IsDir() {
 			path += "/"
 		}
-		*p = append(*p, path)
+		ctx.Paths = append(ctx.Paths, path)
 		return nil
 	}
 }
 
-func mainScan(target *string) {
-	fmt.Println(*target)
-	paths := new([]string)
-	fs.WalkDir(os.DirFS("."), ".", walkCollect(targets.MatchGit, paths))
-	fmt.Println(strings.Join(*paths, "\n"))
-	fmt.Printf("\n%d\n", len(*paths))
+func mainScan(target targets.Target) {
+	fmt.Println(target)
+
+	start := time.Now()
+	ctx := targets.MatcherContext{
+		Paths:    []string{},
+		Sources:  make(map[string]any),
+		External: &targets.Pattern{},
+	}
+
+	fs.WalkDir(os.DirFS("."), ".", walkIgnore(targets.IgnoresFor(target), &ctx))
+	fmt.Println(strings.Join(ctx.Paths, "\n"))
+	fmt.Printf("\n%d %v\n", len(ctx.Paths), time.Since(start))
 }
