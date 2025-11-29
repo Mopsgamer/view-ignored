@@ -1,10 +1,13 @@
 package targets
 
-import "path/filepath"
+type Pattern struct {
+	exclude []string
+	include []string
+}
 
 func MatchAny(patterns []string, path string) (bool, error) {
 	for _, pattern := range patterns {
-		matched, err := filepath.Match(pattern, path)
+		matched, err := GitignoreMatch(pattern, path)
 		if err != nil {
 			return false, err
 		}
@@ -16,11 +19,11 @@ func MatchAny(patterns []string, path string) (bool, error) {
 }
 
 // Is ignored for `exclude` or `include` or `fallback`.
-func Ignores(exclude, include, fallback []string, path string) (bool, error) {
+func Ignores(internal, external Pattern, path string, def bool) (bool, error) {
 	check := false
 	var err error
 
-	check, err = MatchAny(exclude, path)
+	check, err = MatchAny(internal.exclude, path)
 	if err != nil {
 		goto Error
 	}
@@ -28,7 +31,7 @@ func Ignores(exclude, include, fallback []string, path string) (bool, error) {
 		return false, nil
 	}
 
-	check, err = MatchAny(include, path)
+	check, err = MatchAny(internal.include, path)
 	if err != nil {
 		goto Error
 	}
@@ -36,11 +39,23 @@ func Ignores(exclude, include, fallback []string, path string) (bool, error) {
 		return true, nil
 	}
 
-	check, err = MatchAny(fallback, path)
+	check, err = MatchAny(external.exclude, path)
 	if err != nil {
 		goto Error
 	}
-	return check, nil
+	if check {
+		return false, nil
+	}
+
+	check, err = MatchAny(external.include, path)
+	if err != nil {
+		goto Error
+	}
+	if check {
+		return true, nil
+	}
+
+	return def, nil
 
 Error:
 	return false, err
