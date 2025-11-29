@@ -1,6 +1,6 @@
 package targets
 
-var IgnoreGit Matcher = func(entry string, isDir bool, ctx *MatcherContext) (bool, error) {
+var IgnoreVsce Matcher = func(entry string, isDir bool, ctx *MatcherContext) (bool, error) {
 	internal := Pattern{
 		exclude: []string{
 			".git/**",

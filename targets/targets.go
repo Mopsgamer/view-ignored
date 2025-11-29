@@ -35,3 +35,28 @@ func SupportedTargetsList() string {
 	}
 	return strings.Join(result[:], ", ")
 }
+
+type MatcherContext struct {
+	Paths    []string
+	Sources  map[string]any
+	External *Pattern
+}
+
+type Matcher = func(path string, isDir bool, ctx *MatcherContext) (bool, error)
+
+func IgnoresFor(target Target) Matcher {
+	matcher := IgnoreGit
+	switch target {
+	case TargetGit:
+		matcher = IgnoreGit
+	case TargetNpm:
+		matcher = IgnoreNpm
+	case TargetVsce:
+		matcher = IgnoreVsce
+	case TargetYarn:
+		matcher = IgnoreYarn
+	case TargetJsr:
+		matcher = IgnoreJsr
+	}
+	return matcher
+}
