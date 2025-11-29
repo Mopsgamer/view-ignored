@@ -1,9 +1,11 @@
 import assert, { AssertionError } from 'node:assert'
 import { createFixture, type FileTree } from 'fs-fixture'
-import { Plugins, NoSourceError, scan, ViewIgnoredError } from '../index.js'
 import { describe, it } from 'node:test'
 import { inspect } from 'node:util'
 import { ScannerGitignore } from './scanner.js'
+import { loadBuiltIns } from './index.js'
+import { NoSourceError, ViewIgnoredError } from '../errors.js'
+import { scan } from '../lib.js'
 
 type Check = {
   include: string[]
@@ -39,7 +41,7 @@ const symlinksProject: FileTree = {
 }
 
 describe('Targets', async () => {
-  await Plugins.loadBuiltIns()
+  await loadBuiltIns()
   let targetId = 'git'
   describe(targetId, () => {
     testTarget('empty folder', {

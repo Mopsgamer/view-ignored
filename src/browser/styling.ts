@@ -1,8 +1,8 @@
 import PATH from 'node:path'
 import tree from 'treeify'
 import jsonifyPaths from 'jsonify-paths'
-import { type ChalkInstance } from 'chalk'
-import { type FileInfo } from '../index.js'
+import type { ChalkInstance } from 'chalk'
+import type { FileInfo } from './lib.js'
 
 export type FormatFilesOptions = {
   /**

@@ -8,8 +8,8 @@
     "view-ignored": "./bin/viewig"
   },
   "scripts": {
-    "prerelease": "bun run test && bun run build:pub && bun run lint",
-    "test": "bun test src",
+    "prerelease": "bun run test && bun run build:prod && bun run lint",
+    "test": "bun run build && node --test out/**/*.test.js",
     "build": "rm -rf out && tsc -p .",
     "build:prod": "bun run build && rm out/**/*.test.*",
     "lint": "bun run eslint .",
