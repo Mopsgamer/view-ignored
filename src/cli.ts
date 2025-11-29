@@ -430,8 +430,8 @@ export async function actionScan(): Promise<void> {
     }
     else {
       let name: string
-      = decorCondition(flags.decor, { ifNerd: bind.icon?.value, postfix: ' ' })
-        + bind.name
+        = decorCondition(flags.decor, { ifNerd: bind.icon?.value, postfix: ' ' })
+          + bind.name
       if (bind.icon?.color !== undefined) {
         name = chalk.hex('#' + bind.icon.color)(name)
       }
