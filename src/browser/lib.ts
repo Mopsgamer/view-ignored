@@ -3,9 +3,9 @@ import process from 'node:process'
 import * as FS from 'node:fs'
 import { createRequire } from 'node:module'
 import EventEmitter from 'node:events'
-import pLimit, { type LimitFunction } from 'p-limit'
 import { configDefault } from '../config.js'
 import {
+  type DeepStreamDataRoot,
   type DeepStreamEventEmitter,
   Directory,
   File,
@@ -15,6 +15,7 @@ import {
 import { targetGet } from './binds/index.js'
 import { TargetNotBoundError } from './errors.js'
 import { type FilterName } from './filtering.js'
+import { conc } from './conc.js'
 
 export * from './errors.js'
 export * from './fs/index.js'
@@ -168,6 +169,16 @@ export async function scan(
 
 /**
  * Gets info about the each file: it is ignored or not.
+ * @param treeRoot Completed {@link DeepStreamEventEmitter}.
+ * @throws If no valid sources: {@link ErrorNoSources}.
+ */
+export async function scan(
+  treeRoot: DeepStreamDataRoot,
+  options?: ScanOptions,
+): Promise<FileInfo[]>
+
+/**
+ * Gets info about the each file: it is ignored or not.
  * @param pathList The list of relative paths. The should be relative to the current working directory.
  * @throws If no valid sources: {@link ErrorNoSources}.
  */
@@ -176,7 +187,7 @@ export async function scan(
   options?: ScanOptions,
 ): Promise<FileInfo[]>
 export async function scan(
-  argument0: string | string[] | Directory | DeepStreamEventEmitter,
+  argument0: string | string[] | Directory | DeepStreamEventEmitter | DeepStreamDataRoot,
   options?: ScanOptions,
 ): Promise<FileInfo[]> {
   options ??= {}
@@ -208,21 +219,20 @@ export async function scan(
 
   if (argument0 instanceof EventEmitter) {
     const { tree } = await argument0.endPromise
-    return scan(tree, options)
+    argument0 = tree
+  }
+
+  if ('progress' in argument0) {
+    argument0 = argument0.tree
   }
 
   const tree = argument0
   const cache = optionsReal.target(tree, optionsReal)
   const fileInfoList: FileInfo[] = []
-  const promiseList: Array<Promise<void>> = []
-  const cacheDirectories = new Map<Directory, LimitFunction>()
-  for (const directory of [tree, ...tree.deep(Directory)]) {
-    cacheDirectories.set(directory, pLimit(optionsReal.concurrency))
-  }
 
+  const promises: Array<() => Promise<void>> = []
   for (const entry of tree.deepIterator(File)) {
-    const limit = cacheDirectories.get(entry.parent)!
-    promiseList.push(limit(async () => {
+    promises.push(async () => {
       const sourceInfo = cache.get(entry)
 
       const fileInfo = FileInfo.from(entry, sourceInfo)
@@ -233,10 +243,10 @@ export async function scan(
       }
 
       fileInfoList.push(fileInfo)
-    }))
+    })
   }
 
-  await Promise.all(promiseList)
+  await conc(promises, optionsReal.concurrency)
 
   return fileInfoList
 }

@@ -25,14 +25,6 @@ Requires Node.js v18 or later.
   programmatically. Command-line interface supports plugins through `--plugins`
   option.
 
-## Install
-
-```bash
-npm i view-ignored
-```
-
-TypeScript types are included.
-
 ## Usage
 
 ### Command-line

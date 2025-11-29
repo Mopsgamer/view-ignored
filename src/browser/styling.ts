@@ -1,9 +1,7 @@
 import PATH from 'node:path'
-import { stripVTControlCharacters } from 'node:util'
 import tree from 'treeify'
 import jsonifyPaths from 'jsonify-paths'
 import { type ChalkInstance } from 'chalk'
-import boxen, { type Options } from 'boxen'
 import { type FileInfo } from '../index.js'
 
 export type FormatFilesOptions = {
@@ -158,31 +156,6 @@ export function decorCondition(
 
   if (result !== '') {
     result = (condition.prefix ?? '') + result + (condition.postfix ?? '')
-  }
-
-  return result
-}
-
-/**
- * @see {@link boxError}
- */
-export type BoxOptions = {
-  noColor?: boolean
-} & Options
-
-/**
- * Make a message in a red box. Or without color.
- */
-export function boxError(message: string, options?: BoxOptions): string {
-  let result = '\n' + boxen(message, {
-    titleAlignment: 'left',
-    padding: { left: 2, right: 2 },
-    borderColor: 'redBright',
-    borderStyle: 'round',
-    ...options,
-  })
-  if (options?.noColor) {
-    result = stripVTControlCharacters(result)
   }
 
   return result

@@ -9,6 +9,8 @@ and this project adheres to
 ## [Unreleased]
 
 - Update dependencies.
+- Implement concurrency correctly.
+- Refactor.
 
 ## [0.4.6] - 2025-08-11
 

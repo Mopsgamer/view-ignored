@@ -2,10 +2,10 @@ import { join, parse, type ParsedPath, relative } from 'node:path'
 import EventEmitter from 'node:events'
 import * as FSP from 'node:fs/promises'
 import process from 'node:process'
-import pLimit from 'p-limit'
 import { type RealScanOptions } from '../lib.js'
 import { configDefault } from '../../config.js'
 import { File } from './file.js'
+import { conc } from '../conc.js'
 
 export type DeepStreamEventEmitter = EventEmitter<DeepStreamEventMap> & {
   endPromise: Promise<DeepStreamDataRoot>
@@ -92,13 +92,12 @@ export class Directory implements ParsedPath {
         directories: 0,
       },
     } = options
-    const limit = pLimit(concurrency)
     const readdir = modules.fs.promises.readdir ?? FSP.readdir
     const absolutePath = modules.path.join(cwd, String(directoryPath))
     const entryList = await readdir(absolutePath, { withFileTypes: true })
 
     const promises = entryList.map(entry =>
-      limit(async () => {
+      async () => {
         ++progress.total
         if (entry.isDirectory() && !entry.isSymbolicLink()) {
           const absolutePath = modules.path.join(entry.parentPath, entry.name)
@@ -109,10 +108,10 @@ export class Directory implements ParsedPath {
         }
 
         ++progress.files
-      }),
+      },
     )
 
-    await Promise.all(promises)
+    await conc(promises, concurrency)
     return progress
   }
 
@@ -228,7 +227,6 @@ export class Directory implements ParsedPath {
     const progress = options.progress
       ?? await Directory.deepCount(directoryPath, options)
     controller.emit('progress', progress)
-    const limit = pLimit(concurrency)
     const readdir = modules.fs.promises.readdir ?? FSP.readdir
     const absolutePath = modules.path.join(cwd, String(directoryPath))
     const relativePath = modules.path.relative(cwd, absolutePath)
@@ -241,7 +239,7 @@ export class Directory implements ParsedPath {
     const entryList = await readdir(absolutePath, { withFileTypes: true })
 
     const promises = entryList.map(entry =>
-      limit(async (): Promise<DeepStreamData> => {
+      async (): Promise<DeepStreamData> => {
         const parent = directory
         const absolutePath = modules.path.join(entry.parentPath, entry.name)
         const relativePath = modules.path.relative(cwd, absolutePath)
@@ -255,26 +253,27 @@ export class Directory implements ParsedPath {
           })
           ++progress.current
           controller.emit('progress', progress)
+          directory.children.set(
+            `${data.target.base}/`,
+            data.target,
+          )
           return data
         }
 
         const file = new File(parent, relativePath, absolutePath)
         const data: DeepStreamData = { target: file, progress }
+        directory.children.set(
+          `${file.base}`,
+          file,
+        )
         ++progress.current
         controller.emit('progress', progress)
         controller.emit('data', data)
         return data
-      }),
+      },
     )
 
-    const dataList = await Promise.all(promises)
-    for (const { target: entry } of dataList) {
-      directory.children.set(
-        `${entry.base}${entry instanceof Directory ? '/' : ''}`,
-        entry,
-      )
-    }
-
+    await conc(promises, concurrency)
     const data: DeepStreamData = { target: directory, progress }
     controller.emit('progress', progress)
     controller.emit('data', data)
@@ -363,21 +362,19 @@ export class Directory implements ParsedPath {
     realOptions: DeepModifiedTimeOptions,
   ): Promise<Map<File, number>> {
     const { concurrency = configDefault.concurrency, modules } = realOptions
-    const limit = pLimit(concurrency)
-    const promiseList: Array<Promise<void>> = []
+    const promises: (() => Promise<void>)[] = []
     for (const entry of this.deepIterator()) {
       if (entry instanceof Directory) {
         continue
       }
 
-      promiseList.push(limit(async () => {
+      promises.push(async () => {
         const fileStat = await modules.fs.promises.stat(entry.absolutePath)
         out.set(entry, fileStat.mtime.getTime())
-      }))
+      })
     }
 
-    void await Promise.all(promiseList)
-
+    await conc(promises, concurrency)
     return out
   }
 }

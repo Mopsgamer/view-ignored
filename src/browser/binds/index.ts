@@ -1,6 +1,6 @@
 import { loadPlugin as load } from 'load-plugin'
-import pLimit from 'p-limit'
 import { isTargetBind, type TargetBind, targetSet } from './targets.js'
+import { conc } from '../conc.js'
 
 export * from './scanner.js'
 export * from './targets.js'
@@ -116,11 +116,9 @@ export async function loadPlugin(
 export async function loadPlugins(
   modulePathList: string[],
 ): Promise<PluginLoaded[]> {
-  const limit = pLimit(5)
-  const allLoaded = await Promise.all(
-    modulePathList.map(modulePath => limit(() => loadPlugin(modulePath))),
-  )
-  return allLoaded
+  return await conc(modulePathList.map(modulePath =>
+    async () => await loadPlugin(modulePath),
+  ), 4)
 }
 
 /**
@@ -137,9 +135,7 @@ export function loadBuiltIn(builtIn: BuiltInName): Promise<PluginLoaded> {
 export async function loadBuiltIns(
   builtInList: BuiltInName[] = [...builtInNameList],
 ): Promise<PluginLoaded[]> {
-  const limit = pLimit(5)
-  const allLoaded = await Promise.all(
-    builtInList.map(modulePath => limit(() => loadBuiltIn(modulePath))),
-  )
-  return allLoaded
+  return await conc(builtInList.map(modulePath =>
+    async () => await loadBuiltIn(modulePath),
+  ), 4)
 }

@@ -18,8 +18,6 @@ import {
 } from './browser/styling.js'
 import { type SortName, sortNameList } from './browser/sorting.js'
 import {
-  boxError,
-  type BoxOptions,
   decorNameList,
   highlight,
   stringTime,
@@ -27,8 +25,6 @@ import {
 } from './styling.js'
 import {
   type DeepStreamDataRoot,
-  type DeepStreamEventEmitter,
-  type DeepStreamProgress,
   Directory,
   type File,
   type FileInfo,
@@ -39,13 +35,10 @@ import {
   ViewIgnoredError,
 } from './lib.js'
 import { type FilterName, filterNameList } from './browser/filtering.js'
-import { oraPromise } from 'ora'
+import ora from 'ora'
 
-/**
- * @internal
- */
-export function logError(message: string, options?: BoxOptions) {
-  console.log(boxError(message, { ...options }))
+export function logError(message: string, title: string) {
+  console.log('ERROR: ' + title + '\n', message)
 }
 
 /**
@@ -82,16 +75,13 @@ export async function programInit() {
         continue
       }
 
-      logError(format(loadResult.exports), {
-        title:
-          `view-ignored - Plugin loading failed: '${loadResult.resource}' ${
-            builtInPlugins.includes(loadResult)
-              ? '(imported from built-ins)'
-              : (configPlugins.includes(loadResult.resource)
-                ? '(imported by ' + configManager.path + ')'
-                : '(imported by --plugins option)')
-          }.`,
-      })
+      logError(format(loadResult.exports), `view-ignored - Plugin loading failed: '${loadResult.resource}' ${
+        builtInPlugins.includes(loadResult)
+          ? '(imported from built-ins)'
+          : (configPlugins.includes(loadResult.resource)
+            ? '(imported by ' + configManager.path + ')'
+            : '(imported by --plugins option)')
+      }.`)
     }
 
     const targets = targetList()
@@ -117,7 +107,7 @@ export async function programInit() {
         chalk.blue(infoSymbol)
       }Configuration path: ${Config.configManager.path}`
       if (typeof loadResultConfig === 'string') {
-        logError(loadResultConfig + footer, { title })
+        logError(loadResultConfig + footer, title)
         process.exit(1)
       }
 
@@ -133,9 +123,7 @@ export async function programInit() {
           },
         ).join('\n')
 
-        logError(`Invalid properties:\n${propertiesErrors}${footer}`, {
-          title,
-        })
+        logError(`Invalid properties:\n${propertiesErrors}${footer}`, title)
         process.exit(1)
       }
     }
@@ -216,7 +204,7 @@ export async function programInit() {
     program.parse()
   }
   catch (error) {
-    logError(format(error), { title: 'view-ignored - Fatal error.' })
+    logError(format(error), 'view-ignored - Fatal error.')
     process.exit(1)
   }
 }
@@ -390,14 +378,6 @@ export function parseArgumentKeyValue(pair: string): Config.ConfigPair {
   return [key, value] as [Config.ConfigKey, Config.ConfigValue]
 }
 
-type ScanContext = {
-  progress: DeepStreamProgress
-  message: string
-  stream: DeepStreamEventEmitter
-  fileInfoList: FileInfo[]
-  reading: Promise<DeepStreamDataRoot>
-}
-
 /**
  * Command-line 'scan' command action.
  */
@@ -415,7 +395,7 @@ export async function actionScan(): Promise<void> {
           targetList().join(', ')
         }.`,
       ),
-      { title: 'view-ignored - Fatal error.' },
+      'view-ignored - Fatal error.',
     )
     process.exit(1)
   }
@@ -456,45 +436,38 @@ export async function actionScan(): Promise<void> {
         name = chalk.hex('#' + bind.icon.color)(name)
       }
 
-      const context: ScanContext = {
-        progress: { current: 0, directories: 0, files: 0, total: 0 },
-        fileInfoList: [],
-        stream,
-        message: '',
-        reading: new Promise<DeepStreamDataRoot>((resolve) => {
-          stream.on('end', (data) => {
-            resolve(data)
-          })
-        }),
-      }
-
-      await context.stream.run()
-      console.log(`${name} ${chalk.hex('#73A7DE')(flags.filter)} ${cwd}`)
-      await oraPromise(async (spinner) => {
-        const proc = scan(
-          context.stream,
-          {
-            ...optionsReal,
-            target: flags.target,
-            filter: flags.filter,
-            maxDepth: flags.depth,
-          },
-        )
-        context.stream.on('progress', (progress) => {
-          spinner.text = `Scanning ${progress.current}/${progress.total}`
-          context.progress = progress
+      const progress = { current: 0, directories: 0, files: 0, total: 0 }
+      const reading = new Promise<DeepStreamDataRoot>((resolve) => {
+        stream.on('end', (data) => {
+          resolve(data)
         })
-        context.fileInfoList = await proc
-      }, 'Scanning')
+      })
+
+      console.log(`${name} ${chalk.hex('#73A7DE')(flags.filter)} ${cwd}`)
+      const spinner = ora('Scanning')
+      await stream.run()
+      stream.on('progress', (prog) => {
+        spinner.text = `Scanning ${prog.current}/${prog.total}`
+        Object.assign(progress, prog)
+      })
+      const fileInfoList = await scan(
+        await stream.endPromise,
+        {
+          ...optionsReal,
+          target: flags.target,
+          filter: flags.filter,
+          maxDepth: flags.depth,
+        },
+      )
       const sorter = Sorting[flags.sort]
       const cache = new Map<File, number>()
       if (flags.sort === 'modified') {
-        const { tree } = await context.reading
+        const { tree } = await reading
         await tree.deepModifiedTime(cache, optionsReal)
       }
 
       const time = Date.now() - start
-      const fileInfoListSorted = context.fileInfoList.sort((a, b) =>
+      const fileInfoListSorted = fileInfoList.sort((a, b) =>
         sorter(String(a), String(b), cache),
       )
 
@@ -526,13 +499,13 @@ export async function actionScan(): Promise<void> {
       }${stringTime(time, chalk)}.`
       message += '\n'
       message += `Listed ${
-        highlight(String(context.fileInfoList.length), chalk)
+        highlight(String(fileInfoList.length), chalk)
       } files.`
       message += '\n'
       message += `Processed ${
-        highlight(String(context.progress.files), chalk)
+        highlight(String(progress.files), chalk)
       } files and ${
-        highlight(String(context.progress.directories), chalk)
+        highlight(String(progress.directories), chalk)
       } directories.`
       message += '\n'
       if (bind.testCommand) {
@@ -543,15 +516,14 @@ export async function actionScan(): Promise<void> {
         message += '\n'
       }
 
-      context.message = message
-
-      console.log(context.message)
+      console.log(message)
     }
   }
   catch (error) {
-    if (!(error instanceof ViewIgnoredError)) {
-      logError(format(error), { title: 'view-ignored - Error while scan.' })
-    }
+    logError(
+      format(error instanceof ViewIgnoredError ? error.message : error),
+      'view-ignored - Error while scan.',
+    )
   }
 }
 
@@ -577,7 +549,7 @@ export function actionCfgSet(
   const [key, value] = pair
   const errorMessage = Config.configManager.set(key, value)
   if (errorMessage !== undefined) {
-    logError(errorMessage)
+    console.log(errorMessage)
     return
   }
 
