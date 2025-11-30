@@ -40,7 +40,6 @@ var IgnoreNpm Matcher = func(entry string, isDir bool, ctx *MatcherContext) bool
 		".gitignore":   ExtractGitignore,
 	}
 
-	// TODO: package.json, .npmignore. see other targets
 	if isDir {
 		FindAndExtract(entry, npmFiles, m, ctx)
 		return true
