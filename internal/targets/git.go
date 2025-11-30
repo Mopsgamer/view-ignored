@@ -4,7 +4,9 @@ import (
 	"path"
 )
 
-var IgnoreGit Matcher = func(entry string, isDir bool, ctx *MatcherContext) (bool, error) {
+var gitFiles = []string{".gitignore"}
+
+var IgnoreGit Matcher = func(entry string, isDir bool, ctx *MatcherContext) bool {
 	internal := Pattern{
 		Exclude: []string{
 			".git/**",
@@ -12,15 +14,19 @@ var IgnoreGit Matcher = func(entry string, isDir bool, ctx *MatcherContext) (boo
 		},
 	}
 
-	if !isDir {
-		parent := path.Dir(entry)
-		external, ok := ctx.External[parent]
-		if !ok {
-			FindAndProcessGitignore(entry, ctx)
-			external = ctx.External[parent]
-		}
-		return Ignores(internal, *external, entry, false)
+	if isDir {
+		FindAndExtract(entry, gitFiles, ExtractGitignore, ctx)
+		return true
 	}
 
-	return FindAndProcessGitignore(entry, ctx)
+	parent := path.Dir(entry)
+	external, ok := ctx.External[parent]
+	if !ok {
+		FindAndExtract(entry, gitFiles, ExtractGitignore, ctx)
+		if len(ctx.SourceErrors) > 0 {
+			return false
+		}
+		external = ctx.External[parent]
+	}
+	return Ignores(internal, *external, ctx, entry, false)
 }

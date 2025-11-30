@@ -55,5 +55,13 @@ func mainScan(target targets.Target, invert bool) {
 	})
 	slices.SortFunc(ctx.Paths, internal.FirstFolders)
 	fmt.Println(strings.Join(ctx.Paths, "\n"))
+	fmt.Printf("\nLooked through %d files and %d dirs", ctx.TotalFiles, ctx.TotalDirs)
 	fmt.Printf("\nMatched %d files in %v\n", len(ctx.Paths), time.Since(start))
+
+	if len(ctx.SourceErrors) > 0 {
+		fmt.Printf("\nFound %d errors\n", len(ctx.SourceErrors))
+		for _, err := range ctx.SourceErrors {
+			fmt.Println(err.Error())
+		}
+	}
 }

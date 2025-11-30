@@ -37,11 +37,14 @@ func SupportedTargetsList() string {
 }
 
 type MatcherContext struct {
-	Paths    []string
-	External map[string]*Pattern // Ignore patterns for each dir
+	Paths        []string
+	External     map[string]*Pattern // Ignore patterns for each dir
+	SourceErrors []error
+	TotalFiles   int
+	TotalDirs    int
 }
 
-type Matcher = func(path string, isDir bool, ctx *MatcherContext) (bool, error)
+type Matcher = func(path string, isDir bool, ctx *MatcherContext) (ignores bool)
 
 func IgnoresFor(target Target) Matcher {
 	matcher := IgnoreGit
