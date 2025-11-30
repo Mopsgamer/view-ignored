@@ -37,12 +37,22 @@ func walkIncludes(ignores targets.Matcher, invert bool, ctx *targets.MatcherCont
 			return err
 		}
 
-		ignored, err := ignores(path, d.IsDir(), ctx)
+		ignored := ignores(path, d.IsDir(), ctx)
+		if len(ctx.SourceErrors) > 0 {
+			return fs.SkipAll
+		}
+
+		if !d.IsDir() {
+			ctx.TotalFiles++
+		} else {
+			ctx.TotalDirs++
+		}
+
 		if invert && !d.IsDir() {
 			ignored = !ignored
 		}
 
-		if err != nil || ignored {
+		if ignored {
 			// ctx.Paths = append(ctx.Paths, path)
 			return err
 		}
