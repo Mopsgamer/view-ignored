@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -52,6 +53,7 @@ func mainScan(target targets.Target, invert bool) {
 	ctx := internal.Scan(target, internal.ScanOptions{
 		Invert: &invert,
 	})
+	slices.SortFunc(ctx.Paths, internal.FirstFolders)
 	fmt.Println(strings.Join(ctx.Paths, "\n"))
 	fmt.Printf("\nMatched %d files in %v\n", len(ctx.Paths), time.Since(start))
 }
