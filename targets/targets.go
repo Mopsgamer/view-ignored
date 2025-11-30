@@ -38,8 +38,7 @@ func SupportedTargetsList() string {
 
 type MatcherContext struct {
 	Paths    []string
-	Sources  map[string]any
-	External *Pattern
+	External map[string]*Pattern // Ignore patterns for each dir
 }
 
 type Matcher = func(path string, isDir bool, ctx *MatcherContext) (bool, error)

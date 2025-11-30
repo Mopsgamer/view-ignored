@@ -4,26 +4,40 @@ import (
 	"os"
 	"path"
 	"strings"
+
+	"github.com/bmatcuk/doublestar/v4"
 )
 
 const dotgitignore = ".gitignore"
 
 func FindAndProcessGitignore(entry string, ctx *MatcherContext) (bool, error) {
-	for entry != "." {
-		bytes, err := os.ReadFile(entry + dotgitignore)
+	keys := []string{}
+	looped := false
+	for entry != "." || !looped {
+		looped = entry == "."
+		bytes, err := os.ReadFile(entry + "/" + dotgitignore)
 		if err != nil && !os.IsNotExist(err) {
 			return false, nil
 		}
 
+		dir := path.Dir(entry)
+		keys = append(keys, dir)
 		if os.IsNotExist(err) {
-			entry = path.Dir(entry)
+			entry = dir
 			continue
 		}
 
 		// put gitignore into patterns
 		in, ex := GitignorePatterns(string(bytes))
-		ctx.External.exclude = append(ctx.External.exclude, ex...)
-		ctx.External.include = append(ctx.External.include, in...)
+		for _, key := range keys {
+			m, ok := ctx.External[key]
+			if !ok {
+				m = &Pattern{}
+				ctx.External[key] = m
+			}
+			m.exclude = append(m.exclude, ex...)
+			m.include = append(m.include, in...)
+		}
 		break
 	}
 
@@ -50,6 +64,15 @@ func GitignorePatterns(content string) (include, exclude []string) {
 }
 
 // .gitignore implementation
-func GitignoreMatch(pattern, path string) (bool, error) {
-	return true, nil
+func GitignoreMatch(pattern, name string) (bool, error) {
+	if strings.HasPrefix(pattern, "/") {
+		pattern = pattern[1:]
+	} else if !strings.HasPrefix(pattern, "**/") {
+		pattern = "**/" + pattern
+	}
+	if !strings.HasSuffix(pattern, "/**") {
+		pattern = pattern + "/**"
+	}
+	matched, err := doublestar.Match(pattern, name)
+	return matched, err
 }
