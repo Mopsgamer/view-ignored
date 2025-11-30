@@ -36,9 +36,15 @@ func SupportedTargetsList() string {
 	return strings.Join(result[:], ", ")
 }
 
+type Source struct {
+	Pattern
+	Name     string
+	Inverted bool
+}
+
 type MatcherContext struct {
 	Paths        []string
-	External     map[string]*Pattern // Ignore patterns for each dir
+	External     map[string]*Source // Ignore patterns for each dir
 	SourceErrors []error
 	TotalFiles   int
 	TotalDirs    int

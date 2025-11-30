@@ -34,19 +34,24 @@ var IgnoreYarn Matcher = func(entry string, isDir bool, ctx *MatcherContext) boo
 		},
 	}
 
+	var m = map[string]SourceExtractor{
+		"package.json":  ExtractPackageJson,
+		".vscodeignore": ExtractGitignore,
+	}
+
 	if isDir {
-		FindAndExtract(entry, gitFiles, ExtractGitignore, ctx)
+		FindAndExtract(entry, gitFiles, m, ctx)
 		return true
 	}
 
 	parent := path.Dir(entry)
 	external, ok := ctx.External[parent]
 	if !ok {
-		FindAndExtract(entry, gitFiles, ExtractGitignore, ctx)
+		FindAndExtract(entry, gitFiles, m, ctx)
 		if len(ctx.SourceErrors) > 0 {
 			return false
 		}
 		external = ctx.External[parent]
 	}
-	return Ignores(internal, *external, ctx, entry, false)
+	return Ignores(internal, external.Pattern, ctx, entry, external.Inverted)
 }

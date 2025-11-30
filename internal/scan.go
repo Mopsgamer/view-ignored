@@ -25,7 +25,7 @@ func Scan(target targets.Target, options ScanOptions) targets.MatcherContext {
 	invert := optional(options.Invert, false)
 	ctx := targets.MatcherContext{
 		Paths:    []string{},
-		External: make(map[string]*targets.Pattern),
+		External: make(map[string]*targets.Source),
 	}
 	fs.WalkDir(os.DirFS("."), entry, walkIncludes(targets.IgnoresFor(target), invert, &ctx))
 	return ctx
