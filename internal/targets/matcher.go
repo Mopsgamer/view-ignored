@@ -1,8 +1,8 @@
 package targets
 
 type Pattern struct {
-	exclude []string
-	include []string
+	Exclude []string
+	Include []string
 }
 
 func MatchAny(patterns []string, path string) (bool, error) {
@@ -23,7 +23,7 @@ func Ignores(internal, external Pattern, name string, def bool) (bool, error) {
 	check := false
 	var err error
 
-	check, err = MatchAny(internal.exclude, name)
+	check, err = MatchAny(internal.Exclude, name)
 	if err != nil {
 		goto Error
 	}
@@ -31,7 +31,7 @@ func Ignores(internal, external Pattern, name string, def bool) (bool, error) {
 		return true, nil
 	}
 
-	check, err = MatchAny(internal.include, name)
+	check, err = MatchAny(internal.Include, name)
 	if err != nil {
 		goto Error
 	}
@@ -39,7 +39,7 @@ func Ignores(internal, external Pattern, name string, def bool) (bool, error) {
 		return false, nil
 	}
 
-	check, err = MatchAny(external.exclude, name)
+	check, err = MatchAny(external.Exclude, name)
 	if err != nil {
 		goto Error
 	}
@@ -47,7 +47,7 @@ func Ignores(internal, external Pattern, name string, def bool) (bool, error) {
 		return true, nil
 	}
 
-	check, err = MatchAny(external.include, name)
+	check, err = MatchAny(external.Include, name)
 	if err != nil {
 		goto Error
 	}

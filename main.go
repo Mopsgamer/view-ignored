@@ -3,23 +3,27 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/fs"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/Mopsgamer/view-ignored/targets"
+	"github.com/Mopsgamer/view-ignored/internal"
+	"github.com/Mopsgamer/view-ignored/internal/targets"
 )
 
 func main() {
 	scan := flag.NewFlagSet("scan", flag.ExitOnError)
 	target := scan.String("target", targets.TargetGit.String(), "the scan `target`. Supported targets: "+targets.SupportedTargetsList())
+	invert := scan.Bool("invert", false, "invert the scan results")
 	flag.Usage = func() {
 		fmt.Println("Usage of view-ignored:")
 		fmt.Println("")
 		fmt.Println("viewig scan\t\tscan for git")
 		fmt.Println("viewig scan -target npm\tscan for npm")
+		fmt.Println("viewig scan -invert\tinvert the scan results")
 		fmt.Println("viewig scan -h\t\tprinting help")
+		fmt.Println("")
+		fmt.Println("Supported targets: " + targets.SupportedTargetsList())
 		fmt.Println("")
 		fmt.Println("GitHub: github.com/Mopsgamer/view-ignored")
 		os.Exit(1)
@@ -32,45 +36,22 @@ func main() {
 			fmt.Printf("error: unsupported target: %s, supported targets are "+targets.SupportedTargetsList()+"\n", *target)
 			os.Exit(1)
 		}
-		mainScan(targets.Target(*target))
+		mainScan(targets.Target(*target), *invert)
 	case "help", "":
 		flag.Usage()
 	}
 }
 
-func walkIgnore(ignores targets.Matcher, ctx *targets.MatcherContext) fs.WalkDirFunc {
-	return func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		ignored, err := ignores(path, d.IsDir(), ctx)
-		if err != nil || ignored {
-			// ctx.Paths = append(ctx.Paths, path)
-			return err
-		}
-
-		if d.IsDir() {
-			path += "/"
-		}
-		ctx.Paths = append(ctx.Paths, path)
-		return nil
-	}
-}
-
-func mainScan(target targets.Target) {
+func mainScan(target targets.Target, invert bool) {
 	fmt.Println("Target: " + target)
 	pwd, _ := os.Getwd()
 	fmt.Println("PWD: " + pwd)
 	fmt.Println("")
 
 	start := time.Now()
-	ctx := targets.MatcherContext{
-		Paths:    []string{},
-		External: make(map[string]*targets.Pattern),
-	}
-
-	fs.WalkDir(os.DirFS("."), ".", walkIgnore(targets.IgnoresFor(target), &ctx))
+	ctx := internal.Scan(target, internal.ScanOptions{
+		Invert: &invert,
+	})
 	fmt.Println(strings.Join(ctx.Paths, "\n"))
 	fmt.Printf("\nMatched %d files in %v\n", len(ctx.Paths), time.Since(start))
 }

@@ -2,9 +2,9 @@ package targets
 
 import "path"
 
-var IgnoreNpm Matcher = func(entry string, isDir bool, ctx *MatcherContext) (bool, error) {
+var IgnoreYarn Matcher = func(entry string, isDir bool, ctx *MatcherContext) (bool, error) {
 	internal := Pattern{
-		exclude: []string{
+		Exclude: []string{
 			".git/**",
 			".DS_Store/**",
 			"node_modules/**",
@@ -22,8 +22,10 @@ var IgnoreNpm Matcher = func(entry string, isDir bool, ctx *MatcherContext) (boo
 			"config.gypi",
 			"CVS/**",
 			"npm-debug.log",
+			".yarnignore",
+			".yarnrc",
 		},
-		include: []string{
+		Include: []string{
 			"bin/**",
 			"package.json",
 			"README*",
@@ -32,7 +34,6 @@ var IgnoreNpm Matcher = func(entry string, isDir bool, ctx *MatcherContext) (boo
 		},
 	}
 
-	// TODO: package.json, .npmignore. see other targets
 	if !isDir {
 		parent := path.Dir(entry)
 		external, ok := ctx.External[parent]

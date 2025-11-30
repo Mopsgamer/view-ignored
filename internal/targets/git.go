@@ -6,7 +6,7 @@ import (
 
 var IgnoreGit Matcher = func(entry string, isDir bool, ctx *MatcherContext) (bool, error) {
 	internal := Pattern{
-		exclude: []string{
+		Exclude: []string{
 			".git/**",
 			".DS_Store/**",
 		},
