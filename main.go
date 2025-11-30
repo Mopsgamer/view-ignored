@@ -37,6 +37,7 @@ func walkIgnore(ignores targets.Matcher, ctx *targets.MatcherContext) fs.WalkDir
 
 		ignored, err := ignores(path, d.IsDir(), ctx)
 		if err != nil || ignored {
+			// ctx.Paths = append(ctx.Paths, path)
 			return err
 		}
 
@@ -49,16 +50,18 @@ func walkIgnore(ignores targets.Matcher, ctx *targets.MatcherContext) fs.WalkDir
 }
 
 func mainScan(target targets.Target) {
-	fmt.Println(target)
+	fmt.Println("Target: " + target)
+	pwd, _ := os.Getwd()
+	fmt.Println("PWD: " + pwd)
+	fmt.Println("")
 
 	start := time.Now()
 	ctx := targets.MatcherContext{
 		Paths:    []string{},
-		Sources:  make(map[string]any),
-		External: &targets.Pattern{},
+		External: make(map[string]*targets.Pattern),
 	}
 
 	fs.WalkDir(os.DirFS("."), ".", walkIgnore(targets.IgnoresFor(target), &ctx))
 	fmt.Println(strings.Join(ctx.Paths, "\n"))
-	fmt.Printf("\n%d %v\n", len(ctx.Paths), time.Since(start))
+	fmt.Printf("\nMatched %d files in %v\n", len(ctx.Paths), time.Since(start))
 }

@@ -1,5 +1,7 @@
 package targets
 
+import "path"
+
 var IgnoreVsce Matcher = func(entry string, isDir bool, ctx *MatcherContext) (bool, error) {
 	internal := Pattern{
 		exclude: []string{
@@ -9,7 +11,13 @@ var IgnoreVsce Matcher = func(entry string, isDir bool, ctx *MatcherContext) (bo
 	}
 
 	if !isDir {
-		return Ignores(internal, *ctx.External, entry, false)
+		parent := path.Dir(entry)
+		external, ok := ctx.External[parent]
+		if !ok {
+			FindAndProcessGitignore(entry, ctx)
+			external = ctx.External[parent]
+		}
+		return Ignores(internal, *external, entry, false)
 	}
 
 	return FindAndProcessGitignore(entry, ctx)
