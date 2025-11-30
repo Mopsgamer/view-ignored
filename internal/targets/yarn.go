@@ -2,6 +2,8 @@ package targets
 
 import "path"
 
+var yarnFiles = []string{"package.json", ".yarnignore", ".npmignore", ".gitignore"}
+
 var IgnoreYarn Matcher = func(entry string, isDir bool, ctx *MatcherContext) bool {
 	internal := Pattern{
 		Exclude: []string{
@@ -42,18 +44,22 @@ var IgnoreYarn Matcher = func(entry string, isDir bool, ctx *MatcherContext) boo
 	}
 
 	if isDir {
-		FindAndExtract(entry, gitFiles, m, ctx)
+		FindAndExtract(entry, yarnFiles, m, ctx)
 		return true
 	}
 
 	parent := path.Dir(entry)
 	external, ok := ctx.External[parent]
 	if !ok {
-		FindAndExtract(entry, gitFiles, m, ctx)
+		FindAndExtract(entry, yarnFiles, m, ctx)
 		if len(ctx.SourceErrors) > 0 {
 			return false
 		}
-		external = ctx.External[parent]
+		external, ok = ctx.External[parent]
 	}
+	if !ok {
+		return false
+	}
+
 	return Ignores(internal, external.Pattern, ctx, entry, external.Inverted)
 }

@@ -26,7 +26,11 @@ var IgnoreGit Matcher = func(entry string, isDir bool, ctx *MatcherContext) bool
 		if len(ctx.SourceErrors) > 0 {
 			return false
 		}
-		external = ctx.External[parent]
+		external, ok = ctx.External[parent]
 	}
+	if !ok {
+		return false
+	}
+
 	return Ignores(internal, external.Pattern, ctx, entry, external.Inverted)
 }
