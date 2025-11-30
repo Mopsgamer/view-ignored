@@ -19,7 +19,7 @@ func MatchAny(patterns []string, path string) (bool, error) {
 }
 
 // Is ignored for `exclude` or `include` or `fallback`.
-func Ignores(internal, external Pattern, name string, def bool) (bool, error) {
+func Ignores(internal, external Pattern, ctx *MatcherContext, name string, def bool) bool {
 	check := false
 	var err error
 
@@ -28,7 +28,7 @@ func Ignores(internal, external Pattern, name string, def bool) (bool, error) {
 		goto Error
 	}
 	if check {
-		return true, nil
+		return true
 	}
 
 	check, err = MatchAny(internal.Include, name)
@@ -36,7 +36,7 @@ func Ignores(internal, external Pattern, name string, def bool) (bool, error) {
 		goto Error
 	}
 	if check {
-		return false, nil
+		return false
 	}
 
 	check, err = MatchAny(external.Exclude, name)
@@ -44,7 +44,7 @@ func Ignores(internal, external Pattern, name string, def bool) (bool, error) {
 		goto Error
 	}
 	if check {
-		return true, nil
+		return true
 	}
 
 	check, err = MatchAny(external.Include, name)
@@ -52,11 +52,12 @@ func Ignores(internal, external Pattern, name string, def bool) (bool, error) {
 		goto Error
 	}
 	if check {
-		return false, nil
+		return false
 	}
 
-	return def, nil
+	return def
 
 Error:
-	return false, err
+	ctx.SourceErrors = append(ctx.SourceErrors, err)
+	return false
 }

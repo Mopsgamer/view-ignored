@@ -1,60 +1,13 @@
 package targets
 
 import (
-	"os"
-	"path"
 	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
 )
 
-const dotgitignore = ".gitignore"
-
-func FindAndProcessGitignore(entry string, ctx *MatcherContext) (bool, error) {
-	keys := []string{}
-	for {
-		bytes, err := os.ReadFile(entry + "/" + dotgitignore)
-		if err != nil && !os.IsNotExist(err) {
-			return false, nil
-		}
-
-		dir := path.Dir(entry)
-		_, exists := ctx.External[entry]
-		if !exists {
-			keys = append(keys, entry)
-		}
-		if os.IsNotExist(err) {
-			if entry == "." {
-				break
-			}
-			entry = dir
-			continue
-		}
-
-		if entry == "." && len(keys) == 0 {
-			break
-		}
-
-		// put gitignore into patterns
-		in, ex := GitignorePatterns(string(bytes))
-		for _, key := range keys {
-			m, ok := ctx.External[key]
-			if !ok {
-				m = &Pattern{}
-				ctx.External[key] = m
-			}
-			m.Exclude = append(m.Exclude, ex...)
-			m.Include = append(m.Include, in...)
-		}
-		keys = []string{}
-		entry = dir
-	}
-
-	return true, nil
-}
-
-func GitignorePatterns(content string) (include, exclude []string) {
-	for line := range strings.SplitSeq(content, "\n") {
+var ExtractGitignore SourceExtractor = func(source string, content []byte) (include, exclude []string, err error) {
+	for line := range strings.SplitSeq(string(content), "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
@@ -69,7 +22,7 @@ func GitignorePatterns(content string) (include, exclude []string) {
 			exclude = append(exclude, line)
 		}
 	}
-	return include, exclude
+	return include, exclude, nil // TODO: validate gitignore
 }
 
 // .gitignore implementation
