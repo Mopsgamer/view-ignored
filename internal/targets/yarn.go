@@ -35,8 +35,10 @@ var IgnoreYarn Matcher = func(entry string, isDir bool, ctx *MatcherContext) boo
 	}
 
 	var m = map[string]SourceExtractor{
-		"package.json":  ExtractPackageJson,
-		".vscodeignore": ExtractGitignore,
+		"package.json": ExtractPackageJson,
+		".yarnignore":  ExtractGitignore,
+		".npmignore":   ExtractGitignore,
+		".gitignore":   ExtractGitignore,
 	}
 
 	if isDir {

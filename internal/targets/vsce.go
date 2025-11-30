@@ -12,15 +12,20 @@ var IgnoreVsce Matcher = func(entry string, isDir bool, ctx *MatcherContext) boo
 		},
 	}
 
+	m := map[string]SourceExtractor{
+		"package.json":  ExtractPackageJson,
+		".vscodeignore": ExtractGitignore,
+	}
+
 	if isDir {
-		FindAndExtract(entry, vsceFiles, map[string]SourceExtractor{".gitignore": ExtractGitignore}, ctx)
+		FindAndExtract(entry, vsceFiles, m, ctx)
 		return true
 	}
 
 	parent := path.Dir(entry)
 	external, ok := ctx.External[parent]
 	if !ok {
-		FindAndExtract(entry, vsceFiles, map[string]SourceExtractor{".gitignore": ExtractGitignore}, ctx)
+		FindAndExtract(entry, vsceFiles, m, ctx)
 		if len(ctx.SourceErrors) > 0 {
 			return false
 		}
