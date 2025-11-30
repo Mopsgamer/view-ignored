@@ -14,6 +14,16 @@ import (
 func main() {
 	scan := flag.NewFlagSet("scan", flag.ExitOnError)
 	target := scan.String("target", targets.TargetGit.String(), "the scan `target`. Supported targets: "+targets.SupportedTargetsList())
+	flag.Usage = func() {
+		fmt.Println("Usage of view-ignored:")
+		fmt.Println("")
+		fmt.Println("viewig scan\t\tscan for git")
+		fmt.Println("viewig scan -target npm\tscan for npm")
+		fmt.Println("viewig scan -h\t\tprinting help")
+		fmt.Println("")
+		fmt.Println("GitHub: github.com/Mopsgamer/view-ignored")
+		os.Exit(1)
+	}
 	flag.Parse()
 	switch flag.Arg(0) {
 	case "scan":
@@ -23,9 +33,8 @@ func main() {
 			os.Exit(1)
 		}
 		mainScan(targets.Target(*target))
-	case "":
-		fmt.Println("See -h for help.")
-		os.Exit(1)
+	case "help", "":
+		flag.Usage()
 	}
 }
 
