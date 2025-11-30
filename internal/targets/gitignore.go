@@ -43,8 +43,8 @@ func FindAndProcessGitignore(entry string, ctx *MatcherContext) (bool, error) {
 				m = &Pattern{}
 				ctx.External[key] = m
 			}
-			m.exclude = append(m.exclude, ex...)
-			m.include = append(m.include, in...)
+			m.Exclude = append(m.Exclude, ex...)
+			m.Include = append(m.Include, in...)
 		}
 		keys = []string{}
 		entry = dir

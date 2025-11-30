@@ -2,9 +2,9 @@ package targets
 
 import "path"
 
-var IgnoreVsce Matcher = func(entry string, isDir bool, ctx *MatcherContext) (bool, error) {
+var IgnoreJsr Matcher = func(entry string, isDir bool, ctx *MatcherContext) (bool, error) {
 	internal := Pattern{
-		exclude: []string{
+		Exclude: []string{
 			".git/**",
 			".DS_Store/**",
 		},
