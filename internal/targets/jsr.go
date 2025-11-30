@@ -11,18 +11,18 @@ var IgnoreJsr Matcher = func(entry string, isDir bool, ctx *MatcherContext) bool
 	}
 
 	if isDir {
-		FindAndExtract(entry, gitFiles, ExtractGitignore, ctx)
+		FindAndExtract(entry, gitFiles, map[string]SourceExtractor{".gitignore": ExtractGitignore}, ctx)
 		return true
 	}
 
 	parent := path.Dir(entry)
 	external, ok := ctx.External[parent]
 	if !ok {
-		FindAndExtract(entry, gitFiles, ExtractGitignore, ctx)
+		FindAndExtract(entry, gitFiles, map[string]SourceExtractor{".gitignore": ExtractGitignore}, ctx)
 		if len(ctx.SourceErrors) > 0 {
 			return false
 		}
 		external = ctx.External[parent]
 	}
-	return Ignores(internal, *external, ctx, entry, false)
+	return Ignores(internal, external.Pattern, ctx, entry, external.Inverted)
 }

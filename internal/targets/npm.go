@@ -2,6 +2,8 @@ package targets
 
 import "path"
 
+var npmFiles = []string{"package.json", ".npmignore", ".gitignore"}
+
 var IgnoreNpm Matcher = func(entry string, isDir bool, ctx *MatcherContext) bool {
 	internal := Pattern{
 		Exclude: []string{
@@ -32,20 +34,26 @@ var IgnoreNpm Matcher = func(entry string, isDir bool, ctx *MatcherContext) bool
 		},
 	}
 
+	var m = map[string]SourceExtractor{
+		"package.json": ExtractPackageJson,
+		".npmignore":   ExtractGitignore,
+		".gitignore":   ExtractGitignore,
+	}
+
 	// TODO: package.json, .npmignore. see other targets
 	if isDir {
-		FindAndExtract(entry, gitFiles, ExtractGitignore, ctx)
+		FindAndExtract(entry, npmFiles, m, ctx)
 		return true
 	}
 
 	parent := path.Dir(entry)
 	external, ok := ctx.External[parent]
 	if !ok {
-		FindAndExtract(entry, gitFiles, ExtractGitignore, ctx)
+		FindAndExtract(entry, npmFiles, m, ctx)
 		if len(ctx.SourceErrors) > 0 {
 			return false
 		}
 		external = ctx.External[parent]
 	}
-	return Ignores(internal, *external, ctx, entry, false)
+	return Ignores(internal, external.Pattern, ctx, entry, external.Inverted)
 }

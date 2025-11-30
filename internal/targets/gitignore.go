@@ -6,7 +6,7 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 )
 
-var ExtractGitignore SourceExtractor = func(source string, content []byte) (include, exclude []string, err error) {
+var ExtractGitignore SourceExtractor = func(source string, content []byte) (include, exclude []string, def bool, err error) {
 	for line := range strings.SplitSeq(string(content), "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "#") {
@@ -22,7 +22,7 @@ var ExtractGitignore SourceExtractor = func(source string, content []byte) (incl
 			exclude = append(exclude, line)
 		}
 	}
-	return include, exclude, nil // TODO: validate gitignore
+	return include, exclude, false, nil // TODO: validate gitignore
 }
 
 // .gitignore implementation
