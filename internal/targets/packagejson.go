@@ -17,15 +17,16 @@ var ExtractPackageJson SourceExtractor = func(source string, content []byte) (in
 		return
 	}
 
-	if dist.Files != nil {
-		for _, pattern := range *dist.Files {
-			if strings.HasPrefix(pattern, "!") {
-				exclude = append(exclude, pattern[1:])
-			} else {
-				include = append(include, pattern)
-			}
-		}
+	if dist.Files == nil {
+		return
 	}
 
+	for _, pattern := range *dist.Files {
+		if strings.HasPrefix(pattern, "!") {
+			exclude = append(exclude, pattern[1:])
+		} else {
+			include = append(include, pattern)
+		}
+	}
 	return
 }

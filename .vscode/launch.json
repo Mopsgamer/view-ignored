@@ -31,6 +31,19 @@
       }
     },
     {
+      "name": "go run . scan -target jsr",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": ".",
+      "args": ["scan", "-target", "jsr"],
+      "presentation": {
+        "hidden": false,
+        "group": "go",
+        "order": 1
+      }
+    },
+    {
       "name": "tests",
       "type": "node",
       "request": "launch",
