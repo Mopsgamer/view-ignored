@@ -1,6 +1,8 @@
 package targets
 
-import "path"
+import (
+	"path"
+)
 
 var IgnoreGit Matcher = func(entry string, isDir bool, ctx *MatcherContext) (bool, error) {
 	internal := Pattern{

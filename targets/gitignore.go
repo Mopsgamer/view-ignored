@@ -12,19 +12,27 @@ const dotgitignore = ".gitignore"
 
 func FindAndProcessGitignore(entry string, ctx *MatcherContext) (bool, error) {
 	keys := []string{}
-	looped := false
-	for entry != "." || !looped {
-		looped = entry == "."
+	for {
 		bytes, err := os.ReadFile(entry + "/" + dotgitignore)
 		if err != nil && !os.IsNotExist(err) {
 			return false, nil
 		}
 
 		dir := path.Dir(entry)
-		keys = append(keys, dir)
+		_, exists := ctx.External[entry]
+		if !exists {
+			keys = append(keys, entry)
+		}
 		if os.IsNotExist(err) {
+			if entry == "." {
+				break
+			}
 			entry = dir
 			continue
+		}
+
+		if entry == "." && len(keys) == 0 {
+			break
 		}
 
 		// put gitignore into patterns
@@ -38,7 +46,8 @@ func FindAndProcessGitignore(entry string, ctx *MatcherContext) (bool, error) {
 			m.exclude = append(m.exclude, ex...)
 			m.include = append(m.include, in...)
 		}
-		break
+		keys = []string{}
+		entry = dir
 	}
 
 	return true, nil
