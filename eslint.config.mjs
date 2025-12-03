@@ -7,7 +7,7 @@ export default tseslint.config(
   eslint.configs.recommended,
   stylistic.configs.recommended,
   tseslint.configs.recommended,
-  { ignores: ['out/'] },
+  { ignores: ['out/', 'wasm/'] },
   {
     rules: {
       '@stylistic/indent': ['error', 2],

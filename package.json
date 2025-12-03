@@ -12,6 +12,8 @@
     "test": "bun run build && node --test out/**/*.test.js",
     "build": "rm -rf out && tsc -p .",
     "build:prod": "bun run build && rm out/**/*.test.*",
+    "build:wasm": "GOOS=js GOARCH=wasm go build -o wasm/viewig.wasm external/main.go && cp \"$(go env GOROOT)/lib/wasm/wasm_exec.js\" \"$(go env GOROOT)/lib/wasm/wasm_exec_node.js\" wasm/",
+    "wasm": "node src_temp_wasm.ts",
     "lint": "bun run eslint .",
     "release:major": "bun run release-it --increment=major",
     "release:minor": "bun run release-it --increment=minor",

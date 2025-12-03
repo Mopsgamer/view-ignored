@@ -1,4 +1,6 @@
 node_modules
 out
+wasm/**
+!wasm/package.json
 dist
 *.tgz
