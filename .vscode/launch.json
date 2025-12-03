@@ -57,6 +57,23 @@
       }
     },
     {
+      "name": "node src_temp_wasm.ts",
+      "type": "node",
+      "request": "launch",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "args": [
+        "src_temp_wasm.ts"
+      ],
+      "console": "integratedTerminal",
+      "presentation": {
+        "hidden": false,
+        "group": "go",
+        "order": 1
+      }
+    },
+    {
       "name": "tests",
       "type": "node",
       "request": "launch",
