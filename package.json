@@ -8,7 +8,7 @@
     "test": "bun run build && node --test out/**/*.test.js",
     "build": "rm -rf out && tsgo -p .",
     "build:prod": "rm -rf out && tsgo -p tsconfig.prod.json",
-    "build:wasi": "GOOS=wasip1 GOARCH=wasm go build -o wasi/viewig.wasm external/main.go",
+    "build:wasi": "GOOS=wasip1 GOARCH=wasm go build -o wasi/viewig.wasm main.go",
     "wasi": "node src_temp_wasi.ts",
     "lint": "bun run eslint .",
     "release:major": "bun run release-it --increment=major",

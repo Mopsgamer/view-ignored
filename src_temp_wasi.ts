@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { WASI } from 'node:wasi'
-import { env, argv as args, platform } from 'node:process'
+import { env, argv, platform } from 'node:process'
 
 // Passing env to WASI overrides "preopens" by PWD key.
 // preopens: { [process.cwd()]: process.cwd() }
@@ -8,6 +8,8 @@ import { env, argv as args, platform } from 'node:process'
 if (platform === 'win32' && env['PWD']) {
   delete env['PWD']
 }
+
+const args = argv.slice(1)
 
 const wasi = new WASI({ version: 'preview1', args, env, preopens: { [process.cwd()]: process.cwd() } })
 
