@@ -10,7 +10,7 @@ import (
 	"github.com/Mopsgamer/view-ignored/internal/targets"
 )
 
-func Print(target targets.Target, options ScanOptions) {
+func Print(target targets.Target, options *ScanOptions) {
 	fmt.Println("Target: " + target)
 	pwd, _ := os.Getwd()
 	fmt.Println("PWD: " + pwd)

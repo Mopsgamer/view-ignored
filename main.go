@@ -48,7 +48,7 @@ func main() {
 			fmt.Printf("error: unsupported target: %s, supported targets are "+targets.SupportedTargetsList()+"\n", *target)
 			os.Exit(1)
 		}
-		internal.Print(targets.Target(*target), internal.ScanOptions{
+		internal.Print(targets.Target(*target), &internal.ScanOptions{
 			Invert: invert,
 			Depth:  depth,
 		})
