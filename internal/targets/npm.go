@@ -1,6 +1,8 @@
 package targets
 
-import "path"
+import (
+	"path"
+)
 
 var npmFiles = []string{"package.json", ".npmignore", ".gitignore"}
 
