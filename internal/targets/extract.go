@@ -45,7 +45,7 @@ func FindAndExtract(directory string, sources []string, matcher map[string]Sourc
 			for _, key := range keys {
 				m, ok := ctx.External[key]
 				if !ok {
-					m = &Source{}
+					m = Source{}
 					ctx.External[key] = m
 				}
 				m.Exclude = append(m.Exclude, exclude...)
