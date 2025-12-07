@@ -5,22 +5,10 @@ import (
 	"fmt"
 	"math"
 	"os"
-	"runtime"
 
 	"github.com/Mopsgamer/view-ignored/internal"
 	"github.com/Mopsgamer/view-ignored/internal/targets"
 )
-
-var ARGINC = 0
-
-func init() {
-	if runtime.GOARCH != "wasm" {
-		return
-	}
-
-	ARGINC++
-
-}
 
 func main() {
 	scan := flag.NewFlagSet("scan", flag.ExitOnError)
@@ -42,9 +30,9 @@ func main() {
 		os.Exit(1)
 	}
 	flag.Parse()
-	switch flag.Arg(ARGINC + 0) {
+	switch flag.Arg(0) {
 	case "scan":
-		scan.Parse(flag.Args()[ARGINC+1:])
+		scan.Parse(flag.Args()[1:])
 		if !targets.IsTarget(target) {
 			fmt.Printf("error: unsupported target: %s, supported targets are "+targets.SupportedTargetsList()+"\n", *target)
 			os.Exit(1)

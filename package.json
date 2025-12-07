@@ -5,7 +5,9 @@
   "type": "module",
   "bin": {
     "viewig": "./bin/viewig",
-    "view-ignored": "./bin/viewig"
+    "view-ignored": "./bin/viewig",
+    "viewig-go": "./bin/viewig-native",
+    "view-ignored-go": "./bin/viewig-native"
   },
   "scripts": {
     "prerelease": "bun run test && bun run build:prod && bun run lint",
@@ -24,7 +26,8 @@
   "main": "./out/index.js",
   "files": [
     "/bin",
-    "/out"
+    "/out",
+    "/wasi"
   ],
   "repository": {
     "type": "git",
