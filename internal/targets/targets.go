@@ -44,7 +44,7 @@ type Source struct {
 
 type MatcherContext struct {
 	Paths        []string
-	External     map[string]*Source // Ignore patterns for each dir
+	External     map[string]Source // Ignore patterns for each dir
 	SourceErrors []error
 	TotalFiles   int
 	TotalDirs    int
