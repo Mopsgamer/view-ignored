@@ -1,8 +1,9 @@
+#! /usr/bin/env node
 import { readFileSync } from 'node:fs'
 import { WASI } from 'node:wasi'
 import { env, argv } from 'node:process'
 
-const args = argv
+const args = argv.slice(1)
 
 const wasi = new WASI({
   version: 'preview1',
@@ -11,8 +12,8 @@ const wasi = new WASI({
 })
 
 const { instance } = await WebAssembly.instantiate(
-  readFileSync('./wasi/viewig.wasm'),
-  wasi.getImportObject() as WebAssembly.Imports,
+  readFileSync(new URL("../wasi/viewig.wasm", import.meta.url)),
+  wasi.getImportObject(),
 )
 
 wasi.start(instance)
