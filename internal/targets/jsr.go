@@ -27,7 +27,7 @@ var IgnoreJsr Matcher = func(entry string, isDir bool, ctx *MatcherContext) bool
 	parent := path.Dir(entry)
 	external, ok := ctx.External[parent]
 	if !ok {
-		FindAndExtract(entry, denoFiles, m, ctx)
+		FindAndExtract(parent, denoFiles, m, ctx)
 		if len(ctx.SourceErrors) > 0 {
 			return false
 		}

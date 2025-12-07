@@ -25,7 +25,7 @@ var IgnoreVsce Matcher = func(entry string, isDir bool, ctx *MatcherContext) boo
 	parent := path.Dir(entry)
 	external, ok := ctx.External[parent]
 	if !ok {
-		FindAndExtract(entry, vsceFiles, m, ctx)
+		FindAndExtract(parent, vsceFiles, m, ctx)
 		if len(ctx.SourceErrors) > 0 {
 			return false
 		}
