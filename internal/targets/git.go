@@ -22,7 +22,7 @@ var IgnoreGit Matcher = func(entry string, isDir bool, ctx *MatcherContext) bool
 	parent := path.Dir(entry)
 	external, ok := ctx.External[parent]
 	if !ok {
-		FindAndExtract(entry, gitFiles, map[string]SourceExtractor{".gitignore": ExtractGitignore}, ctx)
+		FindAndExtract(parent, gitFiles, map[string]SourceExtractor{".gitignore": ExtractGitignore}, ctx)
 		if len(ctx.SourceErrors) > 0 {
 			return false
 		}

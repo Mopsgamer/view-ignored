@@ -50,7 +50,7 @@ var IgnoreNpm Matcher = func(entry string, isDir bool, ctx *MatcherContext) bool
 	parent := path.Dir(entry)
 	external, ok := ctx.External[parent]
 	if !ok {
-		FindAndExtract(entry, npmFiles, m, ctx)
+		FindAndExtract(parent, npmFiles, m, ctx)
 		if len(ctx.SourceErrors) > 0 {
 			return false
 		}
