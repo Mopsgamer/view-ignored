@@ -8,11 +8,28 @@ import (
 
 type Target string
 
+var _ fmt.Stringer = (*Target)(nil)
+
 func (t Target) String() string {
 	return string(t)
 }
 
-var _ fmt.Stringer = (*Target)(nil)
+func (t Target) Macher() Matcher {
+	matcher := IgnoreGit
+	switch t {
+	case TargetGit:
+		matcher = IgnoreGit
+	case TargetNpm:
+		matcher = IgnoreNpm
+	case TargetVsce:
+		matcher = IgnoreVsce
+	case TargetYarn:
+		matcher = IgnoreYarn
+	case TargetJsr:
+		matcher = IgnoreJsr
+	}
+	return matcher
+}
 
 const (
 	TargetGit  Target = "git"
@@ -51,20 +68,3 @@ type MatcherContext struct {
 }
 
 type Matcher = func(path string, isDir bool, ctx *MatcherContext) (ignores bool)
-
-func IgnoresFor(target Target) Matcher {
-	matcher := IgnoreGit
-	switch target {
-	case TargetGit:
-		matcher = IgnoreGit
-	case TargetNpm:
-		matcher = IgnoreNpm
-	case TargetVsce:
-		matcher = IgnoreVsce
-	case TargetYarn:
-		matcher = IgnoreYarn
-	case TargetJsr:
-		matcher = IgnoreJsr
-	}
-	return matcher
-}
