@@ -92,10 +92,6 @@ func walkIncludes(ignores targets.Matcher, options *ScanOptions, ctx *targets.Ma
 }
 
 func hasIncluded(path string, ignores targets.Matcher, options *ScanOptions, ctx *targets.MatcherContext) bool {
-	sctx := &targets.MatcherContext{
-		Paths:    []string{},
-		External: make(map[string]targets.Source),
-	}
 	foundFile := false
 	_ = fs.WalkDir(
 		os.DirFS("."),
@@ -115,8 +111,8 @@ func hasIncluded(path string, ignores targets.Matcher, options *ScanOptions, ctx
 				return nil
 			}
 
-			ignored := ignores(path, d.IsDir(), sctx)
-			if len(sctx.SourceErrors) > 0 {
+			ignored := ignores(path, d.IsDir(), ctx)
+			if len(ctx.SourceErrors) > 0 {
 				return fs.SkipAll
 			}
 
