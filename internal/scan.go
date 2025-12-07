@@ -36,7 +36,7 @@ func Scan(target targets.Target, options ScanOptions) targets.MatcherContext {
 	fs.WalkDir(
 		os.DirFS("."),
 		entry,
-		walkIncludes(targets.IgnoresFor(target), &options, &ctx),
+		walkIncludes(target.Macher(), &options, &ctx),
 	)
 
 	return ctx
