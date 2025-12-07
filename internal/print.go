@@ -10,16 +10,23 @@ import (
 	"github.com/Mopsgamer/view-ignored/internal/targets"
 )
 
-func Print(target targets.Target, options *ScanOptions) {
+type PrintOptions struct {
+	ScanOptions
+	Summary *bool
+}
+
+func Print(target targets.Target, options *PrintOptions) {
 	fmt.Println("Target: " + target)
 	pwd, _ := os.Getwd()
 	fmt.Println("PWD: " + pwd)
-	fmt.Println("")
 
 	start := time.Now()
-	ctx := Scan(target, options)
+	ctx := Scan(target, &options.ScanOptions)
 	slices.SortFunc(ctx.Paths, FirstFolders)
-	fmt.Println(strings.Join(ctx.Paths, "\n"))
+	if !*options.Summary {
+		fmt.Println("")
+		fmt.Println(strings.Join(ctx.Paths, "\n"))
+	}
 	fmt.Printf("\nLooked through %d files and %d dirs", ctx.TotalFiles, ctx.TotalDirs)
 	fmt.Printf("\nMatched %d files in %v\n", len(ctx.Paths), time.Since(start))
 

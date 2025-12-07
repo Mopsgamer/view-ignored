@@ -27,6 +27,7 @@ func main() {
 	target := scan.String("target", targets.TargetGit.String(), "the scan `target`. Supported targets: "+targets.SupportedTargetsList())
 	invert := scan.Bool("invert", false, "invert the scan results")
 	depth := scan.Int("depth", math.MaxInt, "the scan depth for nested dirs")
+	summary := scan.Bool("sum", false, "print only the number of matched files and errors")
 	flag.Usage = func() {
 		fmt.Println("Usage of view-ignored:")
 		fmt.Println("")
@@ -48,9 +49,12 @@ func main() {
 			fmt.Printf("error: unsupported target: %s, supported targets are "+targets.SupportedTargetsList()+"\n", *target)
 			os.Exit(1)
 		}
-		internal.Print(targets.Target(*target), &internal.ScanOptions{
-			Invert: invert,
-			Depth:  depth,
+		internal.Print(targets.Target(*target), &internal.PrintOptions{
+			ScanOptions: internal.ScanOptions{
+				Invert: invert,
+				Depth:  depth,
+			},
+			Summary: summary,
 		})
 	case "help", "":
 		flag.Usage()
