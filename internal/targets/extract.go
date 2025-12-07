@@ -36,8 +36,8 @@ func FindAndExtract(directory string, sources []string, matcher map[string]Sourc
 				break
 			}
 
-			// put gitignore into patterns
-			include, exclude, def, err := matcher[source](source, bytes)
+			extractor := matcher[source]
+			include, exclude, def, err := extractor(source, bytes)
 			if err != nil {
 				ctx.SourceErrors = append(ctx.SourceErrors, err)
 				break
@@ -46,12 +46,12 @@ func FindAndExtract(directory string, sources []string, matcher map[string]Sourc
 				m, ok := ctx.External[key]
 				if !ok {
 					m = Source{}
-					ctx.External[key] = m
 				}
 				m.Exclude = append(m.Exclude, exclude...)
 				m.Include = append(m.Include, include...)
 				m.Inverted = def
 				m.Name = source
+				ctx.External[key] = m
 			}
 			if directory == "." {
 				return
