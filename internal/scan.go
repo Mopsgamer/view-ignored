@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	"io/fs"
 	"math"
 	"os"
@@ -76,11 +77,16 @@ func walkIncludes(ignores targets.Matcher, options *ScanOptions, ctx *targets.Ma
 		}
 
 		if isDir {
-			if depth == *options.Depth && hasIncluded(path, ignores, options, ctx) {
-				ctx.Paths = append(ctx.Paths, path+"/")
+			count := walkCount(path, ignores, options, ctx)
+			if depth == *options.Depth && count > 0 {
+				ctx.TotalMatchedFiles += count
+				ctx.Paths = append(ctx.Paths, fmt.Sprintf(path+"/\t..%d", count))
 			}
-		} else if !ignored && depth <= *options.Depth {
-			ctx.Paths = append(ctx.Paths, path)
+		} else if !ignored {
+			if depth <= *options.Depth {
+				ctx.TotalMatchedFiles++
+				ctx.Paths = append(ctx.Paths, path)
+			}
 		}
 
 		if depth > *options.Depth {
@@ -91,42 +97,41 @@ func walkIncludes(ignores targets.Matcher, options *ScanOptions, ctx *targets.Ma
 	}
 }
 
-func hasIncluded(path string, ignores targets.Matcher, options *ScanOptions, ctx *targets.MatcherContext) bool {
-	foundFile := false
+func walkCount(path string, ignores targets.Matcher, options *ScanOptions, ctx *targets.MatcherContext) int {
+	count := 0
+	fn := func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		isDir := d.IsDir()
+
+		if isDir {
+			ctx.TotalDirs++
+			return nil
+		} else {
+			ctx.TotalFiles++
+		}
+
+		ignored := ignores(path, isDir, ctx)
+		if len(ctx.SourceErrors) > 0 {
+			return fs.SkipAll
+		}
+
+		if *options.Invert {
+			ignored = !ignored
+		}
+
+		if !ignored {
+			count++
+		}
+
+		return nil
+	}
 	_ = fs.WalkDir(
 		os.DirFS("."),
 		path,
-		func(path string, d fs.DirEntry, err error) error {
-			if err != nil {
-				return err
-			}
-
-			if d.IsDir() {
-				ctx.TotalDirs++
-			} else {
-				ctx.TotalFiles++
-			}
-
-			if d.IsDir() {
-				return nil
-			}
-
-			ignored := ignores(path, d.IsDir(), ctx)
-			if len(ctx.SourceErrors) > 0 {
-				return fs.SkipAll
-			}
-
-			if *options.Invert {
-				ignored = !ignored
-			}
-
-			if !ignored {
-				foundFile = true
-				return fs.SkipAll
-			}
-
-			return nil
-		},
+		fn,
 	)
-	return foundFile
+	return count
 }
