@@ -16,6 +16,7 @@ func main() {
 	invert := scan.Bool("invert", false, "invert the scan results")
 	depth := scan.Int("depth", math.MaxInt, "the scan depth for nested dirs")
 	summary := scan.Bool("sum", false, "print only the number of matched files and errors")
+	paths := scan.Bool("paths", false, "print only parsable paths, one per line")
 	flag.Usage = func() {
 		fmt.Println("Usage of view-ignored:")
 		fmt.Println("")
@@ -43,6 +44,7 @@ func main() {
 				Depth:  depth,
 			},
 			Summary: summary,
+			Paths:   paths,
 		})
 	case "help", "":
 		flag.Usage()

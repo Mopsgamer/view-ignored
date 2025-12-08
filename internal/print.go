@@ -13,9 +13,23 @@ import (
 type PrintOptions struct {
 	ScanOptions
 	Summary *bool
+	Paths   *bool
 }
 
 func Print(target targets.Target, options *PrintOptions) {
+	if *options.Paths {
+		ctx := Scan(target, &options.ScanOptions)
+		slices.SortFunc(ctx.Paths, FirstFolders)
+		for i, p := range ctx.Paths {
+			t := strings.IndexAny(p, "\t")
+			if t <= 0 {
+				continue
+			}
+			ctx.Paths[i] = p[:t]
+		}
+		fmt.Println(strings.Join(ctx.Paths, "\n"))
+		return
+	}
 	fmt.Println("Target: " + target)
 	pwd, _ := os.Getwd()
 	fmt.Println("PWD: " + pwd)
