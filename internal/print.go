@@ -28,7 +28,7 @@ func Print(target targets.Target, options *PrintOptions) {
 		fmt.Println(strings.Join(ctx.Paths, "\n"))
 	}
 	fmt.Printf("\nLooked through %d files and %d dirs", ctx.TotalFiles, ctx.TotalDirs)
-	fmt.Printf("\nMatched %d files in %v\n", len(ctx.Paths), time.Since(start))
+	fmt.Printf("\nMatched %d files in %v\n", ctx.TotalMatchedFiles, time.Since(start))
 
 	if len(ctx.SourceErrors) > 0 {
 		fmt.Printf("\nFound %d errors\n", len(ctx.SourceErrors))

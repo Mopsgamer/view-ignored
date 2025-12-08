@@ -60,11 +60,12 @@ type Source struct {
 }
 
 type MatcherContext struct {
-	Paths        []string
-	External     map[string]Source // Ignore patterns for each dir
-	SourceErrors []error
-	TotalFiles   int
-	TotalDirs    int
+	Paths             []string
+	External          map[string]Source // Ignore patterns for each dir
+	SourceErrors      []error
+	TotalFiles        int
+	TotalMatchedFiles int
+	TotalDirs         int
 }
 
 type Matcher = func(path string, isDir bool, ctx *MatcherContext) (ignores bool)
