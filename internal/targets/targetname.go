@@ -48,7 +48,7 @@ func IsTarget(target *string) bool {
 func SupportedTargetsList() string {
 	result := [len(SupportedTargets)]string{}
 	for i, t := range SupportedTargets {
-		result[i] = t.String()
+		result[i] = t.Target().Color.Sprint(t.String())
 	}
 	return strings.Join(result[:], ", ")
 }

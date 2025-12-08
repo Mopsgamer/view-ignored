@@ -14,6 +14,7 @@ type PrintOptions struct {
 	ScanOptions
 	Summary *bool
 	Paths   *bool
+	Nerd    *bool
 }
 
 func Print(targetName targets.TargetName, options *PrintOptions) {
@@ -38,7 +39,11 @@ func Print(targetName targets.TargetName, options *PrintOptions) {
 		includeInfo = "ignores"
 	}
 
-	fmt.Println(target.Icon.Color.Sprint(target.Icon.Icon+" "+target.Name) + " " + includeInfo + "..")
+	head := target.Color.Sprint(target.Name) + " " + includeInfo
+	if *options.Nerd {
+		head = target.Color.Sprint(target.Icon+" "+target.Name) + " " + includeInfo
+	}
+	fmt.Println(head + "..")
 
 	start := time.Now()
 	ctx := Scan(targetName, &options.ScanOptions)
@@ -47,8 +52,13 @@ func Print(targetName targets.TargetName, options *PrintOptions) {
 		fmt.Println("")
 		fmt.Println(strings.Join(ctx.Paths, "\n"))
 	}
-	fmt.Printf("\nLooked through %s files and %s dirs", colorNumber(ctx.TotalFiles), colorNumber(ctx.TotalDirs))
-	fmt.Printf("\nMatched %s files in %s\n", colorNumber(ctx.TotalMatchedFiles), colorNumber(time.Since(start)))
+	if *options.Summary {
+		head = ""
+	} else {
+		head += " "
+	}
+	fmt.Printf("\n%s%s files - %s", head, colorNumber(ctx.TotalMatchedFiles), colorNumber(time.Since(start)))
+	fmt.Printf("\nLooked through %s files and %s dirs\n", colorNumber(ctx.TotalFiles), colorNumber(ctx.TotalDirs))
 
 	if target.Check != "" {
 		fmt.Print("\nYou can use " + color.Magenta.Sprint("'"+target.Check+"'") + " to check if the list is valid.\n")

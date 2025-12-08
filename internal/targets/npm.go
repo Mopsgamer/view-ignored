@@ -12,10 +12,8 @@ var Npm = Target{
 	Name:       "NPM",
 	TargetName: TargetNpm,
 	Check:      "npm pack --dry-run",
-	Icon: TargetIcon{
-		Icon:  "",
-		Color: color.Hex("#CA0404"),
-	},
+	Icon:       "",
+	Color:      color.Hex("#CA0404"),
 	Matcher: func(entry string, isDir bool, ctx *MatcherContext) bool {
 		internal := Pattern{
 			Exclude: []string{
