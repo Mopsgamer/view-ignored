@@ -89,10 +89,6 @@ func walkIncludes(ignores targets.Matcher, options *ScanOptions, ctx *targets.Ma
 			}
 		}
 
-		if depth > *options.Depth {
-			return fs.SkipDir
-		}
-
 		return nil
 	}
 }
