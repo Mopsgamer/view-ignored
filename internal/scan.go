@@ -1,13 +1,13 @@
 package internal
 
 import (
-	"fmt"
 	"io/fs"
 	"math"
 	"os"
 	"strings"
 
 	"github.com/Mopsgamer/view-ignored/internal/targets"
+	"github.com/gookit/color"
 )
 
 type ScanOptions struct {
@@ -21,7 +21,7 @@ func new2[T any](value T) *T {
 }
 
 // Scans the given file or directory path recursively and returns
-func Scan(target targets.Target, options *ScanOptions) targets.MatcherContext {
+func Scan(target targets.TargetName, options *ScanOptions) targets.MatcherContext {
 	if options == nil {
 		options = &ScanOptions{}
 	}
@@ -43,7 +43,7 @@ func Scan(target targets.Target, options *ScanOptions) targets.MatcherContext {
 	fs.WalkDir(
 		os.DirFS("."),
 		*options.Entry,
-		walkIncludes(target.Macher(), options, &ctx),
+		walkIncludes(target.Target().Matcher, options, &ctx),
 	)
 
 	return ctx
@@ -80,7 +80,7 @@ func walkIncludes(ignores targets.Matcher, options *ScanOptions, ctx *targets.Ma
 			count := walkCount(path, ignores, options, ctx)
 			if depth == *options.Depth && count > 0 {
 				ctx.TotalMatchedFiles += count
-				ctx.Paths = append(ctx.Paths, fmt.Sprintf(path+"/\t..%d", count))
+				ctx.Paths = append(ctx.Paths, path+"/..."+color.Gray.Sprintf("+%d", count))
 			}
 		} else if !ignored {
 			if depth <= *options.Depth {
