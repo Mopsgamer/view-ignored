@@ -19,7 +19,6 @@ type PrintOptions struct {
 func Print(target targets.Target, options *PrintOptions) {
 	if *options.Paths {
 		ctx := Scan(target, &options.ScanOptions)
-		slices.SortFunc(ctx.Paths, FirstFolders)
 		for i, p := range ctx.Paths {
 			t := strings.IndexAny(p, "\t")
 			if t <= 0 {
@@ -27,6 +26,7 @@ func Print(target targets.Target, options *PrintOptions) {
 			}
 			ctx.Paths[i] = p[:t]
 		}
+		slices.SortFunc(ctx.Paths, FirstFolders)
 		fmt.Println(strings.Join(ctx.Paths, "\n"))
 		return
 	}
