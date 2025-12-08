@@ -16,8 +16,8 @@ var Jsr = Target{
 	Matcher: func(entry string, isDir bool, ctx *MatcherContext) bool {
 		internal := Pattern{
 			Exclude: []string{
-				".git/**",
-				".DS_Store/**",
+				".git",
+				".DS_Store",
 			},
 		}
 
