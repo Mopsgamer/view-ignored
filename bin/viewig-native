@@ -1,14 +1,19 @@
 #! /usr/bin/env node
 import { readFileSync } from 'node:fs'
 import { WASI } from 'node:wasi'
-import { env, argv } from 'node:process'
+import { env, argv, cwd, platform } from 'node:process'
 
 const args = argv.slice(1)
+
+let wd = cwd()
+if (platform === "win32") {
+    wd = "/"+wd.replace(/(\w+):/, (_, disk) => disk.toLowerCase()).replaceAll("\\", "/")
+}
 
 const wasi = new WASI({
   version: 'preview1',
   args, env,
-  preopens: { [process.cwd()]: process.cwd() },
+  preopens: { [wd]: cwd() },
 })
 
 const { instance } = await WebAssembly.instantiate(
