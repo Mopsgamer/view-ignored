@@ -11,10 +11,8 @@ var yarnFiles = []string{"package.json", ".yarnignore", ".npmignore", ".gitignor
 var Yarn = Target{
 	Name:       "Yarn",
 	TargetName: TargetYarn,
-	Icon: TargetIcon{
-		Icon:  "",
-		Color: color.Hex("#2E2A65"),
-	},
+	Icon:       "",
+	Color:      color.Hex("#2E2A65"),
 	Matcher: func(entry string, isDir bool, ctx *MatcherContext) bool {
 		internal := Pattern{
 			Exclude: []string{

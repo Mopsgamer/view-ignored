@@ -8,6 +8,7 @@ import (
 
 	"github.com/Mopsgamer/view-ignored/internal"
 	"github.com/Mopsgamer/view-ignored/internal/targets"
+	"github.com/gookit/color"
 )
 
 func main() {
@@ -15,19 +16,15 @@ func main() {
 	target := scan.String("target", targets.TargetGit.String(), "the scan `target`. Supported targets: "+targets.SupportedTargetsList())
 	invert := scan.Bool("invert", false, "invert the scan results")
 	depth := scan.Int("depth", math.MaxInt, "the scan depth for nested dirs")
+	nerd := scan.Bool("nerd", false, "print with NF icons")
 	summary := scan.Bool("sum", false, "print only the number of matched files and errors")
 	paths := scan.Bool("paths", false, "print only parsable paths, one per line")
 	flag.Usage = func() {
 		fmt.Println("Usage of view-ignored:")
 		fmt.Println("")
-		fmt.Println("viewig scan\t\tscan for git")
-		fmt.Println("viewig scan -target npm\tscan for npm")
-		fmt.Println("viewig scan -invert\tinvert the scan results")
-		fmt.Println("viewig scan -h\t\tprint scan usage")
+		fmt.Println("viewig " + color.Green.Sprint("scan") + " -h\t\tprint scan usage")
 		fmt.Println("")
-		fmt.Println("Supported targets: " + targets.SupportedTargetsList())
-		fmt.Println("")
-		fmt.Println("GitHub: github.com/Mopsgamer/view-ignored")
+		fmt.Println("GitHub: " + color.Blue.Sprint("github.com/Mopsgamer/view-ignored"))
 		os.Exit(1)
 	}
 	flag.Parse()
@@ -35,7 +32,7 @@ func main() {
 	case "scan":
 		scan.Parse(flag.Args()[1:])
 		if !targets.IsTarget(target) {
-			fmt.Printf("error: unsupported target: %s, supported targets are "+targets.SupportedTargetsList()+"\n", *target)
+			fmt.Printf("Given target %s is not supported. Supported targets are "+targets.SupportedTargetsList()+"\n", *target)
 			os.Exit(1)
 		}
 		internal.Print(targets.TargetName(*target), &internal.PrintOptions{
@@ -45,6 +42,7 @@ func main() {
 			},
 			Summary: summary,
 			Paths:   paths,
+			Nerd:    nerd,
 		})
 	case "help", "":
 		flag.Usage()

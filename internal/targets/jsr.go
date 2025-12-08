@@ -11,10 +11,8 @@ var jsrFiles = []string{"deno.json", "deno.jsonc", "jsr.json", "jsr.jsonc"}
 var Jsr = Target{
 	Name:       "JSR",
 	TargetName: TargetJsr,
-	Icon: TargetIcon{
-		Icon:  "",
-		Color: color.Hex("#F5DD1E"),
-	},
+	Icon:       "",
+	Color:      color.Hex("#F5DD1E"),
 	Matcher: func(entry string, isDir bool, ctx *MatcherContext) bool {
 		internal := Pattern{
 			Exclude: []string{

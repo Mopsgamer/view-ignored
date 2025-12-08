@@ -12,10 +12,8 @@ var Vsce = Target{
 	Name:       "VSCE",
 	TargetName: TargetVsce,
 	Check:      "vsce ls",
-	Icon: TargetIcon{
-		Icon:  "󰨞",
-		Color: color.Hex("#23A9F1"),
-	},
+	Icon:       "󰨞",
+	Color:      color.Hex("#23A9F1"),
 	Matcher: func(entry string, isDir bool, ctx *MatcherContext) bool {
 		internal := Pattern{
 			Exclude: []string{

@@ -12,10 +12,8 @@ var Git = Target{
 	Name:       "Git",
 	TargetName: TargetGit,
 	Check:      "git ls-tree -r <git-branch-name> --name-only",
-	Icon: TargetIcon{
-		Icon:  "",
-		Color: color.Hex("#F44E28"),
-	},
+	Icon:       "",
+	Color:      color.Hex("#F44E28"),
 	Matcher: func(entry string, isDir bool, ctx *MatcherContext) bool {
 		internal := Pattern{
 			Exclude: []string{
