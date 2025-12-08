@@ -5,6 +5,17 @@ type Pattern struct {
 	Include []string
 }
 
+type MatcherContext struct {
+	Paths             []string
+	External          map[string]Source // Ignore patterns for each dir
+	SourceErrors      []error
+	TotalFiles        int
+	TotalMatchedFiles int
+	TotalDirs         int
+}
+
+type Matcher = func(path string, isDir bool, ctx *MatcherContext) (ignores bool)
+
 func MatchAny(patterns []string, path string) (bool, error) {
 	for _, pattern := range patterns {
 		matched, err := GitignoreMatch(pattern, path)

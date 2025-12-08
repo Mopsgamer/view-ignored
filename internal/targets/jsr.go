@@ -1,41 +1,53 @@
 package targets
 
-import "path"
+import (
+	"path"
 
-var denoFiles = []string{"deno.json", "deno.jsonc", "jsr.json", "jsr.jsonc"}
+	"github.com/gookit/color"
+)
 
-var IgnoreJsr Matcher = func(entry string, isDir bool, ctx *MatcherContext) bool {
-	internal := Pattern{
-		Exclude: []string{
-			".git/**",
-			".DS_Store/**",
-		},
-	}
+var jsrFiles = []string{"deno.json", "deno.jsonc", "jsr.json", "jsr.jsonc"}
 
-	m := map[string]SourceExtractor{
-		"deno.json":  ExtractJsrJson,
-		"deno.jsonc": ExtractJsrJsonc,
-		"jsr.json":   ExtractJsrJson,
-		"jsr.jsonc":  ExtractJsrJsonc,
-	}
+var Jsr = Target{
+	Name:       "JSR",
+	TargetName: TargetJsr,
+	Icon: TargetIcon{
+		Icon:  "",
+		Color: color.Hex("#F5DD1E"),
+	},
+	Matcher: func(entry string, isDir bool, ctx *MatcherContext) bool {
+		internal := Pattern{
+			Exclude: []string{
+				".git/**",
+				".DS_Store/**",
+			},
+		}
 
-	if isDir {
-		FindAndExtract(entry, denoFiles, m, ctx)
-		return true
-	}
+		m := map[string]SourceExtractor{
+			"deno.json":  ExtractJsrJson,
+			"deno.jsonc": ExtractJsrJsonc,
+			"jsr.json":   ExtractJsrJson,
+			"jsr.jsonc":  ExtractJsrJsonc,
+		}
 
-	parent := path.Dir(entry)
-	external, ok := ctx.External[parent]
-	if !ok {
-		FindAndExtract(parent, denoFiles, m, ctx)
-		if len(ctx.SourceErrors) > 0 {
+		if isDir {
+			FindAndExtract(entry, jsrFiles, m, ctx)
+			return true
+		}
+
+		parent := path.Dir(entry)
+		external, ok := ctx.External[parent]
+		if !ok {
+			FindAndExtract(parent, jsrFiles, m, ctx)
+			if len(ctx.SourceErrors) > 0 {
+				return false
+			}
+			external, ok = ctx.External[parent]
+		}
+		if !ok {
 			return false
 		}
-		external, ok = ctx.External[parent]
-	}
-	if !ok {
-		return false
-	}
 
-	return Ignores(internal, external.Pattern, ctx, entry, external.Inverted)
+		return Ignores(internal, external.Pattern, ctx, entry, external.Inverted)
+	},
 }
