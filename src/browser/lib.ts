@@ -235,6 +235,12 @@ export async function scan(
     promises.push(async () => {
       const sourceInfo = cache.get(entry)
 
+      const depth = entry.relativePath.split(/[/\\]/).length - 1
+
+      if (depth > optionsReal.maxDepth) {
+        return
+      }
+
       const fileInfo = FileInfo.from(entry, sourceInfo)
       const ignored = !fileInfo.isIncludedBy(optionsReal.filter)
 

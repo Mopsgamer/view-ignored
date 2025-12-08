@@ -383,7 +383,6 @@ export function parseArgumentKeyValue(pair: string): Config.ConfigPair {
  */
 export async function actionScan(): Promise<void> {
   const flags = scanProgram.optsWithGlobals<ProgramFlags & ScanFlags>()
-  const cwd = process.cwd()
   const start = Date.now()
   const chalk = new Chalk()
 
@@ -443,13 +442,13 @@ export async function actionScan(): Promise<void> {
         })
       })
 
-      console.log(`${name} ${chalk.hex('#73A7DE')(flags.filter)} ${cwd}`)
+      console.log(`${name} ${chalk.hex('#73A7DE')(flags.filter)}`)
       const spinner = ora('Scanning')
-      await stream.run()
       stream.on('progress', (prog) => {
         spinner.text = `Scanning ${prog.current}/${prog.total}`
         Object.assign(progress, prog)
       })
+      await stream.run()
       const fileInfoList = await scan(
         await stream.endPromise,
         {
