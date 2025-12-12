@@ -1,6 +1,9 @@
 package targets
 
-import "github.com/gookit/color"
+import (
+	"github.com/Mopsgamer/view-ignored/internal/patterns"
+	"github.com/gookit/color"
+)
 
 type Target struct {
 	Name       string
@@ -9,14 +12,5 @@ type Target struct {
 	Icon       string
 	Color      color.RGBColor
 
-	Matcher PathChecker
-}
-
-type TargetContext struct {
-	Paths             []string
-	External          map[string]*Source // Ignore patterns for each dir
-	SourceErrors      []error
-	TotalFiles        int
-	TotalMatchedFiles int
-	TotalDirs         int
+	Matcher patterns.PathChecker
 }

@@ -1,4 +1,4 @@
-package targets
+package patterns
 
 import (
 	"errors"
@@ -6,6 +6,15 @@ import (
 	"path"
 	"slices"
 )
+
+type MatcherContext struct {
+	Paths             []string
+	External          map[string]*Source // Ignore patterns for each dir
+	SourceErrors      []error
+	TotalFiles        int
+	TotalMatchedFiles int
+	TotalDirs         int
+}
 
 type Pattern []string
 
@@ -30,7 +39,7 @@ type PatternMatcher struct {
 	Internal, External SignedPattern
 }
 
-type PathChecker = func(path string, isDir bool, ctx *TargetContext) (ignores bool)
+type PathChecker = func(path string, isDir bool, ctx *MatcherContext) (ignores bool)
 
 type Source struct {
 	Pattern  SignedPattern
@@ -40,7 +49,7 @@ type Source struct {
 
 type SourceExtractor = func(source *Source, content []byte) (err error)
 
-func FindAndExtract(directory string, sources []string, matcher map[string]SourceExtractor, ctx *TargetContext) {
+func FindAndExtract(directory string, sources []string, matcher map[string]SourceExtractor, ctx *MatcherContext) {
 	keys := []string{}
 	ctx.SourceErrors = []error{}
 	for sourceFileName := range slices.Values(sources) {
@@ -98,7 +107,7 @@ func FindAndExtract(directory string, sources []string, matcher map[string]Sourc
 }
 
 // Is ignored for `exclude` or `include` or `fallback`.
-func (internal SignedPattern) Ignores(file string, sources []string, sourceMap map[string]SourceExtractor, ctx *TargetContext) bool {
+func (internal SignedPattern) Ignores(file string, sources []string, sourceMap map[string]SourceExtractor, ctx *MatcherContext) bool {
 	parent := path.Dir(file)
 	source, ok := ctx.External[parent]
 	if !ok {

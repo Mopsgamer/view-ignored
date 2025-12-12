@@ -1,16 +1,17 @@
 package targets
 
 import (
+	"github.com/Mopsgamer/view-ignored/internal/patterns"
 	"github.com/gookit/color"
 )
 
 var npmSources = []string{"package.json", ".npmignore", ".gitignore"}
-var npmSourceMap = map[string]SourceExtractor{
-	"package.json": ExtractPackageJson,
-	".npmignore":   ExtractGitignore,
-	".gitignore":   ExtractGitignore,
+var npmSourceMap = map[string]patterns.SourceExtractor{
+	"package.json": patterns.ExtractPackageJson,
+	".npmignore":   patterns.ExtractGitignore,
+	".gitignore":   patterns.ExtractGitignore,
 }
-var npmPattern = SignedPattern{
+var npmPattern = patterns.SignedPattern{
 	Exclude: []string{
 		".git",
 		".DS_Store",
@@ -45,9 +46,9 @@ var Npm = Target{
 	Check:      "npm pack --dry-run",
 	Icon:       "",
 	Color:      color.Hex("#CA0404"),
-	Matcher: func(entry string, isDir bool, ctx *TargetContext) bool {
+	Matcher: func(entry string, isDir bool, ctx *patterns.MatcherContext) bool {
 		if isDir {
-			FindAndExtract(entry, npmSources, npmSourceMap, ctx)
+			patterns.FindAndExtract(entry, npmSources, npmSourceMap, ctx)
 			return true
 		}
 

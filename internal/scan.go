@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Mopsgamer/view-ignored/internal/patterns"
 	"github.com/Mopsgamer/view-ignored/internal/targets"
 	"github.com/gookit/color"
 )
@@ -21,7 +22,7 @@ func new2[T any](value T) *T {
 }
 
 // Scans the given file or directory path recursively and returns
-func Scan(target targets.TargetName, options *ScanOptions) targets.TargetContext {
+func Scan(target targets.TargetName, options *ScanOptions) patterns.MatcherContext {
 	if options == nil {
 		options = &ScanOptions{}
 	}
@@ -35,9 +36,9 @@ func Scan(target targets.TargetName, options *ScanOptions) targets.TargetContext
 		options.Depth = new2(math.MaxInt)
 	}
 
-	ctx := targets.TargetContext{
+	ctx := patterns.MatcherContext{
 		Paths:    []string{},
-		External: make(map[string]*targets.Source),
+		External: make(map[string]*patterns.Source),
 	}
 
 	fs.WalkDir(
@@ -49,7 +50,7 @@ func Scan(target targets.TargetName, options *ScanOptions) targets.TargetContext
 	return ctx
 }
 
-func walkIncludes(ignores targets.PathChecker, options *ScanOptions, ctx *targets.TargetContext) fs.WalkDirFunc {
+func walkIncludes(ignores patterns.PathChecker, options *ScanOptions, ctx *patterns.MatcherContext) fs.WalkDirFunc {
 	return func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -93,7 +94,7 @@ func walkIncludes(ignores targets.PathChecker, options *ScanOptions, ctx *target
 	}
 }
 
-func walkCount(path string, ignores targets.PathChecker, options *ScanOptions, ctx *targets.TargetContext) int {
+func walkCount(path string, ignores patterns.PathChecker, options *ScanOptions, ctx *patterns.MatcherContext) int {
 	count := 0
 	fn := func(path string, d fs.DirEntry, err error) error {
 		if err != nil {

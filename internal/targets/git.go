@@ -1,12 +1,13 @@
 package targets
 
 import (
+	"github.com/Mopsgamer/view-ignored/internal/patterns"
 	"github.com/gookit/color"
 )
 
 var gitSources = []string{".gitignore"}
-var gitSourceMap = map[string]SourceExtractor{".gitignore": ExtractGitignore}
-var gitPattern = SignedPattern{
+var gitSourceMap = map[string]patterns.SourceExtractor{".gitignore": patterns.ExtractGitignore}
+var gitPattern = patterns.SignedPattern{
 	Exclude: []string{
 		".git",
 		".DS_Store",
@@ -19,9 +20,9 @@ var Git = Target{
 	Check:      "git ls-tree -r <git-branch-name> --name-only",
 	Icon:       "",
 	Color:      color.Hex("#F44E28"),
-	Matcher: func(entry string, isDir bool, ctx *TargetContext) bool {
+	Matcher: func(entry string, isDir bool, ctx *patterns.MatcherContext) bool {
 		if isDir {
-			FindAndExtract(entry, gitSources, gitSourceMap, ctx)
+			patterns.FindAndExtract(entry, gitSources, gitSourceMap, ctx)
 			return true
 		}
 

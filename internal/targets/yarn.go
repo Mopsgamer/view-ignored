@@ -1,17 +1,18 @@
 package targets
 
 import (
+	"github.com/Mopsgamer/view-ignored/internal/patterns"
 	"github.com/gookit/color"
 )
 
 var yarnSources = []string{"package.json", ".yarnignore", ".npmignore", ".gitignore"}
-var yarnSourceMap = map[string]SourceExtractor{
-	"package.json": ExtractPackageJson,
-	".yarnignore":  ExtractGitignore,
-	".npmignore":   ExtractGitignore,
-	".gitignore":   ExtractGitignore,
+var yarnSourceMap = map[string]patterns.SourceExtractor{
+	"package.json": patterns.ExtractPackageJson,
+	".yarnignore":  patterns.ExtractGitignore,
+	".npmignore":   patterns.ExtractGitignore,
+	".gitignore":   patterns.ExtractGitignore,
 }
-var yarnPattern = SignedPattern{
+var yarnPattern = patterns.SignedPattern{
 	Exclude: []string{
 		".git",
 		".DS_Store",
@@ -47,9 +48,9 @@ var Yarn = Target{
 	TargetName: TargetYarn,
 	Icon:       "",
 	Color:      color.Hex("#2E2A65"),
-	Matcher: func(entry string, isDir bool, ctx *TargetContext) bool {
+	Matcher: func(entry string, isDir bool, ctx *patterns.MatcherContext) bool {
 		if isDir {
-			FindAndExtract(entry, yarnSources, yarnSourceMap, ctx)
+			patterns.FindAndExtract(entry, yarnSources, yarnSourceMap, ctx)
 			return true
 		}
 

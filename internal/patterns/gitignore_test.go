@@ -1,4 +1,4 @@
-package targets
+package patterns
 
 import (
 	"testing"
