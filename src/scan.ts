@@ -47,7 +47,7 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
       }
 
       if (isDir) {
-        const count = walkCount(path, ignores, options, result)
+        const count = await walkCount(path, ignores, options, result)
         if (dpth === depth && count > 0) {
           result.totalMatchedFiles += count
           result.paths.add(`${path}/...+${count}`)
@@ -65,6 +65,37 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
   return scanResult
 }
 
+async function walkCount(path: string, ignores: PathChecker, options ScanOptions, ctx MatcherContext): Promise<number> {
+	let count = 0
+	const dir = fsp.opendir(cwd, { recursive: true })
+	for await (const enrty of await dir) {
+      		const path = `${entry.parentPath}/${entry.name}`
+		const isDir = entry.isDirectory()
+	
+		if (isDir) {
+			ctx.totalDirs++
+			continue
+		}
+		else {
+			ctx.totalFiles++
+		}
+
+		const ignored = ignores(path, isDir, ctx)
+		if (ctx.sourceErrors.length > 0) {
+			break
+		}
+
+		if (options.invert) {
+			ignored = !ignored
+		}
+
+		if (ignored) {
+			count++
+		}
+	}
+	return count
+}
+
 function countSlashes(path: string): number {
   let count = 0
   for (let i = 0; i < path.length; i++) {
@@ -72,3 +103,4 @@ function countSlashes(path: string): number {
   }
   return count
 }
+
