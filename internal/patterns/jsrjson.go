@@ -15,7 +15,6 @@ type JsrManifest struct {
 
 func ExtractJsrJson(source *Source, content []byte) (err error) {
 	dist := JsrManifest{}
-	source.Inverted = true
 	err = json.Unmarshal(content, &dist)
 	if err != nil {
 		return

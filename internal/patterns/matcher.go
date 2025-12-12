@@ -116,9 +116,9 @@ func (internal SignedPattern) Ignores(file string, sources []string, sourceMap m
 			return false
 		}
 		source, ok = ctx.External[parent]
-	}
-	if !ok {
-		return false
+		if !ok {
+			return false
+		}
 	}
 
 	matcher := PatternMatcher{
