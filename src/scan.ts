@@ -1,46 +1,7 @@
 import fsp from 'node:fs/promises'
+import type { MatcherContext, Source } from './patterns/matcher.js'
 
-export type SourceMap = Map<string, SourceContent>
-export type Extractor = (path: string, isDir: boolean, ctx: TargetContext) => boolean
-export type Pattern = {
-  exclude: string[]
-  include: string[]
-}
-export type Matcher = {
-  external: Pattern
-  internal: Pattern
-}
-
-export type Scanner = (path: string) => boolean
-export type Source = {
-  pattern: Pattern
-  name: string
-  inverted: boolean
-}
-export type SourceContent = { toString(): string }
-export type SourceCache = {
-  globs: Matcher
-}
-export type SourceError = {
-  error: Error
-}
-export type SourceGetter = (dirPath: string) => SourceCache | SourceError | null
-export type Target = {
-  /**
-   * Get the source content and directories for a given path.
-   */
-  getSource: SourceGetter
-}
-
-export type TargetContext = {
-  paths: Set<string>
-  external: Map<string, Source>
-  sourceErrors: Error[]
-  totalFiles: number
-  totalMatchedFiles: number
-  totalDirs: number
-}
-export type ScanResult = Map<Target, TargetContext>
+export type ScanResult = Map<Target, MatcherContext>
 
 export type ScanOptions = {
   targets: [Target, ...Target[]]
@@ -52,10 +13,10 @@ export type ScanOptions = {
 export async function scan(options: ScanOptions): Promise<ScanResult> {
   const { targets, cwd = process.cwd(), depth = Infinity, invert = false } = options
   const dir = fsp.opendir(cwd, { recursive: true })
-  const scanResult: ScanResult = new Map<Target, TargetContext>()
+  const scanResult: ScanResult = new Map<Target, MatcherContext>()
 
   for (const target of targets) {
-    const result: TargetContext = {
+    const result: MatcherContext = {
       paths: new Set<string>(),
       external: new Map<string, Source>(),
       sourceErrors: [],
