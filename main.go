@@ -35,7 +35,7 @@ func main() {
 			fmt.Printf("Given target %s is not supported. Supported targets are "+targets.SupportedTargetsList()+"\n", *target)
 			os.Exit(1)
 		}
-		internal.Print(targets.TargetName(*target), &internal.PrintOptions{
+		ok := internal.Print(targets.TargetName(*target), &internal.PrintOptions{
 			ScanOptions: internal.ScanOptions{
 				Invert: invert,
 				Depth:  depth,
@@ -44,6 +44,9 @@ func main() {
 			Paths:   paths,
 			Nerd:    nerd,
 		})
+		if !ok {
+			os.Exit(1)
+		}
 	case "help", "":
 		flag.Usage()
 	}

@@ -23,9 +23,9 @@ func ExtractPackageJson(source *Source, content []byte) (err error) {
 
 	for _, p := range *dist.Files {
 		if strings.HasPrefix(p, "!") {
-			source.Exclude = append(source.Exclude, p[1:])
+			source.Pattern.Exclude = append(source.Pattern.Exclude, p[1:])
 		} else {
-			source.Include = append(source.Include, p)
+			source.Pattern.Include = append(source.Pattern.Include, p)
 		}
 	}
 	return

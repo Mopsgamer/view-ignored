@@ -23,18 +23,18 @@ func ExtractJsrJson(source *Source, content []byte) (err error) {
 
 	if dist.Publish == nil {
 		if dist.Exclude != nil {
-			source.Exclude = append(source.Exclude, *dist.Exclude...)
+			source.Pattern.Exclude = append(source.Pattern.Exclude, *dist.Exclude...)
 		}
 	} else if dist.Publish.Exclude != nil {
-		source.Exclude = append(source.Exclude, *dist.Publish.Exclude...)
+		source.Pattern.Exclude = append(source.Pattern.Exclude, *dist.Publish.Exclude...)
 	}
 
 	if dist.Publish == nil {
 		if dist.Include != nil {
-			source.Include = append(source.Include, *dist.Include...)
+			source.Pattern.Include = append(source.Pattern.Include, *dist.Include...)
 		}
 	} else if dist.Publish.Include != nil {
-		source.Include = append(source.Include, *dist.Publish.Include...)
+		source.Pattern.Include = append(source.Pattern.Include, *dist.Publish.Include...)
 	}
 
 	return

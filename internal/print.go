@@ -17,9 +17,17 @@ type PrintOptions struct {
 	Nerd    *bool
 }
 
-func Print(targetName targets.TargetName, options *PrintOptions) {
+func Print(targetName targets.TargetName, options *PrintOptions) bool {
 	if *options.Paths {
 		ctx := Scan(targetName, &options.ScanOptions)
+		perrors := pluralizeErrors(len(ctx.SourceErrors))
+		if len(ctx.SourceErrors) > 0 {
+			fmt.Printf("\nFound %d "+perrors+"\n", len(ctx.SourceErrors))
+			for _, err := range ctx.SourceErrors {
+				fmt.Println(err)
+			}
+			return false
+		}
 		for i, p := range ctx.Paths {
 			t := strings.Index(p, "...")
 			if t <= 0 {
@@ -29,7 +37,7 @@ func Print(targetName targets.TargetName, options *PrintOptions) {
 		}
 		slices.SortFunc(ctx.Paths, FirstFolders)
 		fmt.Println(strings.Join(ctx.Paths, "\n"))
-		return
+		return true
 	}
 
 	target := targetName.Target()
@@ -47,6 +55,15 @@ func Print(targetName targets.TargetName, options *PrintOptions) {
 
 	start := time.Now()
 	ctx := Scan(targetName, &options.ScanOptions)
+	perrors := pluralizeErrors(len(ctx.SourceErrors))
+	if len(ctx.SourceErrors) > 0 {
+		color.Red.Printf("\n%d "+perrors+"\n", len(ctx.SourceErrors))
+		for _, err := range ctx.SourceErrors {
+			fmt.Println(color.Red.Sprint(err))
+		}
+		return false
+	}
+
 	slices.SortFunc(ctx.Paths, FirstFolders)
 	if !*options.Summary {
 		fmt.Println("")
@@ -64,12 +81,14 @@ func Print(targetName targets.TargetName, options *PrintOptions) {
 		fmt.Print("\nYou can use " + color.Magenta.Sprint("'"+target.Check+"'") + " to check if the list is valid.\n")
 	}
 
-	if len(ctx.SourceErrors) > 0 {
-		fmt.Printf("\nFound %d errors\n", len(ctx.SourceErrors))
-		for _, err := range ctx.SourceErrors {
-			fmt.Println(err.Error())
-		}
+	return true
+}
+
+func pluralizeErrors(count int) string {
+	if count == 1 {
+		return "error"
 	}
+	return "errors"
 }
 
 func colorNumber[T ~int | ~int64 | ~float64](n T) string {

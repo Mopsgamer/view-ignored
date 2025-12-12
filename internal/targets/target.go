@@ -9,7 +9,7 @@ type Target struct {
 	Icon       string
 	Color      color.RGBColor
 
-	Matcher Matcher
+	Matcher PathChecker
 }
 
 type TargetContext struct {

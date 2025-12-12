@@ -1,12 +1,17 @@
 package targets
 
 import (
-	"path"
-
 	"github.com/gookit/color"
 )
 
-var gitFiles = []string{".gitignore"}
+var gitSources = []string{".gitignore"}
+var gitSourceMap = map[string]SourceExtractor{".gitignore": ExtractGitignore}
+var gitPattern = SignedPattern{
+	Exclude: []string{
+		".git",
+		".DS_Store",
+	},
+}
 
 var Git = Target{
 	Name:       "Git",
@@ -15,31 +20,11 @@ var Git = Target{
 	Icon:       "",
 	Color:      color.Hex("#F44E28"),
 	Matcher: func(entry string, isDir bool, ctx *TargetContext) bool {
-		internal := Pattern{
-			Exclude: []string{
-				".git",
-				".DS_Store",
-			},
-		}
-
 		if isDir {
-			FindAndExtract(entry, gitFiles, map[string]SourceExtractor{".gitignore": ExtractGitignore}, ctx)
+			FindAndExtract(entry, gitSources, gitSourceMap, ctx)
 			return true
 		}
 
-		parent := path.Dir(entry)
-		external, ok := ctx.External[parent]
-		if !ok {
-			FindAndExtract(parent, gitFiles, map[string]SourceExtractor{".gitignore": ExtractGitignore}, ctx)
-			if len(ctx.SourceErrors) > 0 {
-				return false
-			}
-			external, ok = ctx.External[parent]
-		}
-		if !ok {
-			return false
-		}
-
-		return Ignores(internal, external.Pattern, ctx, entry, external.Inverted)
+		return gitPattern.Ignores(entry, gitSources, gitSourceMap, ctx)
 	},
 }

@@ -49,7 +49,7 @@ func Scan(target targets.TargetName, options *ScanOptions) targets.TargetContext
 	return ctx
 }
 
-func walkIncludes(ignores targets.Matcher, options *ScanOptions, ctx *targets.TargetContext) fs.WalkDirFunc {
+func walkIncludes(ignores targets.PathChecker, options *ScanOptions, ctx *targets.TargetContext) fs.WalkDirFunc {
 	return func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -93,7 +93,7 @@ func walkIncludes(ignores targets.Matcher, options *ScanOptions, ctx *targets.Ta
 	}
 }
 
-func walkCount(path string, ignores targets.Matcher, options *ScanOptions, ctx *targets.TargetContext) int {
+func walkCount(path string, ignores targets.PathChecker, options *ScanOptions, ctx *targets.TargetContext) int {
 	count := 0
 	fn := func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
