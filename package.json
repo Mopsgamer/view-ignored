@@ -3,10 +3,6 @@
   "version": "0.4.8",
   "description": "Retrieve list of files ignored/included by Git, NPM, Yarn, JSR, VSCE or other tools.",
   "type": "module",
-  "bin": {
-    "viewig": "./bin/viewig",
-    "view-ignored": "./bin/viewig"
-  },
   "scripts": {
     "prerelease": "bun run test && bun run build:prod && bun run lint",
     "test": "bun run build && node --test out/**/*.test.js",
@@ -21,7 +17,6 @@
   "license": "ISC",
   "main": "./out/index.js",
   "files": [
-    "/bin",
     "/out"
   ],
   "repository": {
