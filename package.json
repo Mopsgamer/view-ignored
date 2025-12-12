@@ -65,26 +65,15 @@
     "lib": "out"
   },
   "dependencies": {
-    "@humanwhocodes/gitignore-to-minimatch": "^1.0.2",
-    "@m234/nerd-fonts": "^0.4.0",
-    "ansi-regex": "^6.2.2",
-    "chalk": "^5.6.2",
-    "commander": "^14.0.2",
-    "jsonify-paths": "^1.1.0",
-    "load-plugin": "^6.0.3",
+    "arktype": "^2.1.28",
     "minimatch": "^10.1.1",
-    "ora": "^9.0.0",
-    "strip-json-comments": "^5.0.3",
-    "treeify": "^1.1.0",
-    "yaml": "^2.8.2",
-    "zod": "^4.1.13"
+    "strip-json-comments": "^5.0.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@release-it/keep-a-changelog": "^7.0.0",
     "@stylistic/eslint-plugin": "^5.6.1",
     "@types/node": "24.10.1",
-    "@types/treeify": "^1.0.3",
     "eslint": "^9.39.1",
     "fs-fixture": "^2.11.0",
     "globals": "^16.5.0",
