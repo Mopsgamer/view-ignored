@@ -9,7 +9,7 @@ type NodeJsManifest struct {
 	Files *[]string `json:"files"`
 }
 
-var ExtractPackageJson SourceExtractor = func(source *Source, content []byte) (err error) {
+func ExtractPackageJson(source *Source, content []byte) (err error) {
 	dist := NodeJsManifest{}
 	source.Inverted = true
 	err = json.Unmarshal(content, &dist)
@@ -30,3 +30,5 @@ var ExtractPackageJson SourceExtractor = func(source *Source, content []byte) (e
 	}
 	return
 }
+
+var _ SourceExtractor = (SourceExtractor)(ExtractPackageJson)

@@ -13,7 +13,7 @@ type JsrManifest struct {
 	} `json:"publish"`
 }
 
-var ExtractJsrJson SourceExtractor = func(source *Source, content []byte) (err error) {
+func ExtractJsrJson(source *Source, content []byte) (err error) {
 	dist := JsrManifest{}
 	source.Inverted = true
 	err = json.Unmarshal(content, &dist)
@@ -40,10 +40,14 @@ var ExtractJsrJson SourceExtractor = func(source *Source, content []byte) (err e
 	return
 }
 
-var ExtractJsrJsonc SourceExtractor = func(source *Source, content []byte) (err error) {
+var _ SourceExtractor = (SourceExtractor)(ExtractJsrJson)
+
+func ExtractJsrJsonc(source *Source, content []byte) (err error) {
 	content = StripJSONC(content)
 	return ExtractJsrJson(source, content)
 }
+
+var _ SourceExtractor = (SourceExtractor)(ExtractJsrJsonc)
 
 func StripJSONC(src []byte) []byte {
 	out := make([]byte, 0, len(src))
