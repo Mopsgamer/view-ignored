@@ -13,7 +13,7 @@ type JsrManifest struct {
 	} `json:"publish"`
 }
 
-var ExtractJsrJson SourceExtractor = func(source string, content []byte) (include, exclude []string, def bool, err error) {
+var ExtractJsrJson SourceExtractor = func(source string, content []byte) (pattern Pattern, def bool, err error) {
 	dist := JsrManifest{}
 	def = true
 	err = json.Unmarshal(content, &dist)
@@ -23,24 +23,24 @@ var ExtractJsrJson SourceExtractor = func(source string, content []byte) (includ
 
 	if dist.Publish == nil {
 		if dist.Exclude != nil {
-			exclude = append(exclude, *dist.Exclude...)
+			pattern.Exclude = append(pattern.Exclude, *dist.Exclude...)
 		}
 	} else if dist.Publish.Exclude != nil {
-		exclude = append(exclude, *dist.Publish.Exclude...)
+		pattern.Exclude = append(pattern.Exclude, *dist.Publish.Exclude...)
 	}
 
 	if dist.Publish == nil {
 		if dist.Include != nil {
-			include = append(include, *dist.Include...)
+			pattern.Include = append(pattern.Include, *dist.Include...)
 		}
 	} else if dist.Publish.Include != nil {
-		include = append(include, *dist.Publish.Include...)
+		pattern.Include = append(pattern.Include, *dist.Publish.Include...)
 	}
 
 	return
 }
 
-var ExtractJsrJsonc SourceExtractor = func(source string, content []byte) (include, exclude []string, def bool, err error) {
+var ExtractJsrJsonc SourceExtractor = func(source string, content []byte) (pattern Pattern, def bool, err error) {
 	content = StripJSONC(content)
 	return ExtractJsrJson(source, content)
 }

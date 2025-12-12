@@ -52,9 +52,3 @@ func SupportedTargetsList() string {
 	}
 	return strings.Join(result[:], ", ")
 }
-
-type Source struct {
-	Pattern
-	Name     string
-	Inverted bool
-}

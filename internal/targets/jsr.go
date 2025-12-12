@@ -13,7 +13,7 @@ var Jsr = Target{
 	TargetName: TargetJsr,
 	Icon:       "",
 	Color:      color.Hex("#F5DD1E"),
-	Matcher: func(entry string, isDir bool, ctx *MatcherContext) bool {
+	Matcher: func(entry string, isDir bool, ctx *TargetContext) bool {
 		internal := Pattern{
 			Exclude: []string{
 				".git",

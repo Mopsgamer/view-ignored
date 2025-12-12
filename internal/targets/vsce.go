@@ -14,7 +14,7 @@ var Vsce = Target{
 	Check:      "vsce ls",
 	Icon:       "󰨞",
 	Color:      color.Hex("#23A9F1"),
-	Matcher: func(entry string, isDir bool, ctx *MatcherContext) bool {
+	Matcher: func(entry string, isDir bool, ctx *TargetContext) bool {
 		internal := Pattern{
 			Exclude: []string{
 				".git",

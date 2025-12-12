@@ -9,7 +9,7 @@ type NodeJsManifest struct {
 	Files *[]string `json:"files"`
 }
 
-var ExtractPackageJson SourceExtractor = func(source string, content []byte) (include, exclude []string, def bool, err error) {
+var ExtractPackageJson SourceExtractor = func(source string, content []byte) (pattern Pattern, def bool, err error) {
 	dist := NodeJsManifest{}
 	def = true
 	err = json.Unmarshal(content, &dist)
@@ -21,11 +21,11 @@ var ExtractPackageJson SourceExtractor = func(source string, content []byte) (in
 		return
 	}
 
-	for _, pattern := range *dist.Files {
-		if strings.HasPrefix(pattern, "!") {
-			exclude = append(exclude, pattern[1:])
+	for _, p := range *dist.Files {
+		if strings.HasPrefix(p, "!") {
+			pattern.Exclude = append(pattern.Exclude, p[1:])
 		} else {
-			include = append(include, pattern)
+			pattern.Include = append(pattern.Include, p)
 		}
 	}
 	return

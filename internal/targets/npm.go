@@ -14,7 +14,7 @@ var Npm = Target{
 	Check:      "npm pack --dry-run",
 	Icon:       "",
 	Color:      color.Hex("#CA0404"),
-	Matcher: func(entry string, isDir bool, ctx *MatcherContext) bool {
+	Matcher: func(entry string, isDir bool, ctx *TargetContext) bool {
 		internal := Pattern{
 			Exclude: []string{
 				".git",

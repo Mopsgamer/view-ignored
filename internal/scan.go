@@ -21,7 +21,7 @@ func new2[T any](value T) *T {
 }
 
 // Scans the given file or directory path recursively and returns
-func Scan(target targets.TargetName, options *ScanOptions) targets.MatcherContext {
+func Scan(target targets.TargetName, options *ScanOptions) targets.TargetContext {
 	if options == nil {
 		options = &ScanOptions{}
 	}
@@ -35,7 +35,7 @@ func Scan(target targets.TargetName, options *ScanOptions) targets.MatcherContex
 		options.Depth = new2(math.MaxInt)
 	}
 
-	ctx := targets.MatcherContext{
+	ctx := targets.TargetContext{
 		Paths:    []string{},
 		External: make(map[string]targets.Source),
 	}
@@ -49,7 +49,7 @@ func Scan(target targets.TargetName, options *ScanOptions) targets.MatcherContex
 	return ctx
 }
 
-func walkIncludes(ignores targets.Matcher, options *ScanOptions, ctx *targets.MatcherContext) fs.WalkDirFunc {
+func walkIncludes(ignores targets.Matcher, options *ScanOptions, ctx *targets.TargetContext) fs.WalkDirFunc {
 	return func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -93,7 +93,7 @@ func walkIncludes(ignores targets.Matcher, options *ScanOptions, ctx *targets.Ma
 	}
 }
 
-func walkCount(path string, ignores targets.Matcher, options *ScanOptions, ctx *targets.MatcherContext) int {
+func walkCount(path string, ignores targets.Matcher, options *ScanOptions, ctx *targets.TargetContext) int {
 	count := 0
 	fn := func(path string, d fs.DirEntry, err error) error {
 		if err != nil {

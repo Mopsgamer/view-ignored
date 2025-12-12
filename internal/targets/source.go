@@ -6,9 +6,15 @@ import (
 	"slices"
 )
 
-type SourceExtractor = func(source string, content []byte) (exclude, include []string, def bool, err error)
+type Source struct {
+	Pattern
+	Name     string
+	Inverted bool
+}
 
-func FindAndExtract(directory string, sources []string, matcher map[string]SourceExtractor, ctx *MatcherContext) {
+type SourceExtractor = func(source string, content []byte) (pattern Pattern, def bool, err error)
+
+func FindAndExtract(directory string, sources []string, matcher map[string]SourceExtractor, ctx *TargetContext) {
 	keys := []string{}
 	ctx.SourceErrors = []error{}
 	for source := range slices.Values(sources) {
@@ -36,8 +42,8 @@ func FindAndExtract(directory string, sources []string, matcher map[string]Sourc
 				break
 			}
 
-			extractor := matcher[source]
-			include, exclude, def, err := extractor(source, bytes)
+			sourceExtractor := matcher[source]
+			pattern, def, err := sourceExtractor(source, bytes)
 			if err != nil {
 				ctx.SourceErrors = append(ctx.SourceErrors, err)
 				break
@@ -47,8 +53,8 @@ func FindAndExtract(directory string, sources []string, matcher map[string]Sourc
 				if !ok {
 					m = Source{}
 				}
-				m.Exclude = append(m.Exclude, exclude...)
-				m.Include = append(m.Include, include...)
+				m.Exclude = append(m.Exclude, pattern.Exclude...)
+				m.Include = append(m.Include, pattern.Include...)
 				m.Inverted = def
 				m.Name = source
 				ctx.External[key] = m

@@ -5,16 +5,7 @@ type Pattern struct {
 	Include []string
 }
 
-type MatcherContext struct {
-	Paths             []string
-	External          map[string]Source // Ignore patterns for each dir
-	SourceErrors      []error
-	TotalFiles        int
-	TotalMatchedFiles int
-	TotalDirs         int
-}
-
-type Matcher = func(path string, isDir bool, ctx *MatcherContext) (ignores bool)
+type Matcher = func(path string, isDir bool, ctx *TargetContext) (ignores bool)
 
 func MatchAny(patterns []string, path string) (bool, error) {
 	for _, pattern := range patterns {
@@ -30,7 +21,7 @@ func MatchAny(patterns []string, path string) (bool, error) {
 }
 
 // Is ignored for `exclude` or `include` or `fallback`.
-func Ignores(internal, external Pattern, ctx *MatcherContext, name string, def bool) bool {
+func Ignores(internal, external Pattern, ctx *TargetContext, name string, def bool) bool {
 	check := false
 	var err error
 

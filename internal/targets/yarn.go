@@ -13,7 +13,7 @@ var Yarn = Target{
 	TargetName: TargetYarn,
 	Icon:       "",
 	Color:      color.Hex("#2E2A65"),
-	Matcher: func(entry string, isDir bool, ctx *MatcherContext) bool {
+	Matcher: func(entry string, isDir bool, ctx *TargetContext) bool {
 		internal := Pattern{
 			Exclude: []string{
 				".git",
