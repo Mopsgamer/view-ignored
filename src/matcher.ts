@@ -1,4 +1,15 @@
+import { gitignoreMatch } from './gitignore.js'
 import type { Matcher, TargetContext } from './scan.js'
+
+function matchAny(patterns: string[], path: string): boolean {
+  for (const pattern of patterns) {
+    const matched = gitignoreMatch(pattern, path)
+    if (matched) {
+      return true
+    }
+  }
+  return false
+}
 
 export function ignores(matcher: Matcher, ctx: TargetContext, name: string, def: boolean): boolean {
   let check = false

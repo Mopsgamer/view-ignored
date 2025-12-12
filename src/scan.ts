@@ -1,6 +1,7 @@
 import fsp from 'node:fs/promises'
-import { ignores } from './matcher.js'
 
+export type SourceMap = Map<string, SourceContent>
+export type Extractor = (path: string, isDir: boolean, ctx: TargetContext) => boolean
 export type Pattern = {
   exclude: string[]
   include: string[]
