@@ -37,7 +37,7 @@ func Scan(target targets.TargetName, options *ScanOptions) targets.TargetContext
 
 	ctx := targets.TargetContext{
 		Paths:    []string{},
-		External: make(map[string]targets.Source),
+		External: make(map[string]*targets.Source),
 	}
 
 	fs.WalkDir(

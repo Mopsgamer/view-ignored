@@ -12,14 +12,14 @@ type Source struct {
 	Inverted bool
 }
 
-type SourceExtractor = func(source string, content []byte) (pattern Pattern, def bool, err error)
+type SourceExtractor = func(source *Source, content []byte) (err error)
 
 func FindAndExtract(directory string, sources []string, matcher map[string]SourceExtractor, ctx *TargetContext) {
 	keys := []string{}
 	ctx.SourceErrors = []error{}
-	for source := range slices.Values(sources) {
+	for sourceFileName := range slices.Values(sources) {
 		for {
-			bytes, err := os.ReadFile(directory + "/" + source)
+			bytes, err := os.ReadFile(directory + "/" + sourceFileName)
 			if err != nil && !os.IsNotExist(err) {
 				ctx.SourceErrors = append(ctx.SourceErrors, err)
 				return
@@ -42,22 +42,20 @@ func FindAndExtract(directory string, sources []string, matcher map[string]Sourc
 				break
 			}
 
-			sourceExtractor := matcher[source]
-			pattern, def, err := sourceExtractor(source, bytes)
+			sourceExtractor := matcher[sourceFileName]
+
+			source := new(Source)
+			source.Name = sourceFileName
+			err = sourceExtractor(source, bytes)
 			if err != nil {
 				ctx.SourceErrors = append(ctx.SourceErrors, err)
 				break
 			}
 			for _, key := range keys {
-				m, ok := ctx.External[key]
-				if !ok {
-					m = Source{}
+				m := ctx.External[key]
+				if m == nil {
+					ctx.External[key] = source
 				}
-				m.Exclude = append(m.Exclude, pattern.Exclude...)
-				m.Include = append(m.Include, pattern.Include...)
-				m.Inverted = def
-				m.Name = source
-				ctx.External[key] = m
 			}
 			if directory == "." {
 				return
