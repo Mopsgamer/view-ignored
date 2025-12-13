@@ -24,11 +24,11 @@ export const JSR: Target = {
   icon: '',
   color: '#f5dd1e',
 
-  matcher(entry, isDir, ctx) {
+  async matcher(entry, isDir, ctx) {
     if (isDir) {
-      findAndExtract(entry, jsrSources, jsrSourceMap, ctx)
+      await findAndExtract(entry, jsrSources, jsrSourceMap, ctx)
       return true
     }
-    return signedPatternIgnores(vscePattern, entry, jsrSources, jsrSourceMap, ctx)
+    return await signedPatternIgnores(vscePattern, entry, jsrSources, jsrSourceMap, ctx)
   },
 }

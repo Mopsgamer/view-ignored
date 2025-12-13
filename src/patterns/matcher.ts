@@ -33,7 +33,7 @@ export type PatternMatcher = {
   external: SignedPattern
 }
 
-export type PathChecker = (path: string, isDir: boolean, ctx: MatcherContext) => boolean
+export type PathChecker = (path: string, isDir: boolean, ctx: MatcherContext) => Promise<boolean>
 
 export type Source = {
   pattern: SignedPattern
@@ -63,17 +63,23 @@ export async function findAndExtract(directory: string, sources: string[], match
       const dir = dirname(directory)
       if (!ctx.external.has(directory)) {
         keys.push(directory)
-        return
       }
-
       if (!buff) {
+        if (directory == '.') {
+          break
+        }
         directory = dir
         continue
       }
 
-      const sourceExtractor = matcher.get(sourceFileName)!
+      if (directory == '.' && !keys.length) {
+        break
+      }
+
+      const sourceExtractor = matcher.get(sourceFileName)
       if (!sourceExtractor) {
-        throw new Error('No extractor for source file: ' + sourceFileName)
+        ctx.sourceErrors.push(new Error('No extractor for source file: ' + sourceFileName))
+        break
       }
 
       const source: Source = {
@@ -96,17 +102,20 @@ export async function findAndExtract(directory: string, sources: string[], match
           ctx.external.set(key, source)
         }
       }
+      if (directory == '.') {
+        return
+      }
       keys.length = 0
       directory = dir
     }
   }
 }
 
-export function signedPatternIgnores(internal: SignedPattern, file: string, sources: string[], sourceMap: Map<string, SourceExtractor>, ctx: MatcherContext): boolean {
+export async function signedPatternIgnores(internal: SignedPattern, file: string, sources: string[], sourceMap: Map<string, SourceExtractor>, ctx: MatcherContext): Promise<boolean> {
   const parent = dirname(file)
   let source = ctx.external.get(parent)
   if (!source) {
-    findAndExtract(parent, sources, sourceMap, ctx)
+    await findAndExtract(parent, sources, sourceMap, ctx)
     if (ctx.sourceErrors.length) {
       return false
     }

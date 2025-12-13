@@ -23,11 +23,11 @@ export const VSCE: Target = {
   icon: '󰨞',
   color: '#23a9f1',
 
-  matcher(entry, isDir, ctx) {
+  async matcher(entry, isDir, ctx) {
     if (isDir) {
-      findAndExtract(entry, vsceSources, vsceSourceMap, ctx)
+      await findAndExtract(entry, vsceSources, vsceSourceMap, ctx)
       return true
     }
-    return signedPatternIgnores(vscePattern, entry, vsceSources, vsceSourceMap, ctx)
+    return await signedPatternIgnores(vscePattern, entry, vsceSources, vsceSourceMap, ctx)
   },
 }
