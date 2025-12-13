@@ -41,8 +41,8 @@ const (
 
 var SupportedTargets = [...]TargetName{TargetGit, TargetNpm, TargetVsce, TargetYarn, TargetJsr}
 
-func IsTarget(target *string) bool {
-	return slices.Contains(SupportedTargets[:], TargetName(*target))
+func IsTarget[T ~string](target *T) bool {
+	return slices.Contains(SupportedTargets[:], TargetName((string)(*target)))
 }
 
 func SupportedTargetsList() string {

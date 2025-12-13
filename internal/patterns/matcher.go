@@ -51,7 +51,6 @@ type SourceExtractor = func(source *Source, content []byte) (err error)
 
 func FindAndExtract(directory string, sources []string, matcher map[string]SourceExtractor, ctx *MatcherContext) {
 	keys := []string{}
-	ctx.SourceErrors = []error{}
 	for sourceFileName := range slices.Values(sources) {
 		for {
 			bytes, err := os.ReadFile(directory + "/" + sourceFileName)

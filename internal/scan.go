@@ -11,10 +11,18 @@ import (
 	"github.com/gookit/color"
 )
 
+type DepthMode int
+
+const (
+	DepthNone DepthMode = iota
+	DepthFiles
+)
+
 type ScanOptions struct {
-	Entry  *string // The file or directory path to scan
-	Invert *bool   // Invert the matching logic
-	Depth  *int    // The maximum depth for nested directories
+	Entry      *string // The file or directory path to scan
+	Invert     *bool   // Invert the matching logic
+	Depth      *int    // The maximum depth for nested directories
+	DepthPaths *DepthMode
 }
 
 func new2[T any](value T) *T {
@@ -34,6 +42,9 @@ func Scan(target targets.TargetName, options *ScanOptions) patterns.MatcherConte
 	}
 	if options.Depth == nil {
 		options.Depth = new2(math.MaxInt)
+	}
+	if options.DepthPaths == nil {
+		options.DepthPaths = new2(DepthNone)
 	}
 
 	ctx := patterns.MatcherContext{
@@ -81,7 +92,11 @@ func walkIncludes(ignores patterns.PathChecker, options *ScanOptions, ctx *patte
 			count := walkCount(path, ignores, options, ctx)
 			if depth == *options.Depth && count > 0 {
 				ctx.TotalMatchedFiles += count
-				ctx.Paths = append(ctx.Paths, path+"/..."+color.Gray.Sprintf("+%d", count))
+				p := path + "/"
+				if *options.DepthPaths == DepthFiles {
+					p += "..." + color.Gray.Sprintf("+%d", count)
+				}
+				ctx.Paths = append(ctx.Paths, p)
 			}
 		} else if !ignored {
 			if depth <= *options.Depth {
