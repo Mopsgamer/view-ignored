@@ -5,6 +5,7 @@ import { gitignoreMatch } from './gitignore.js'
 export type MatcherContext = {
   paths: Set<string>
   external: Map<string, Source>
+  depthPaths: Map<string, number>
   sourceErrors: Error[]
   totalFiles: number
   totalMatchedFiles: number
@@ -45,7 +46,6 @@ export type SourceExtractor = (source: Source, content: Buffer<ArrayBuffer>) => 
 
 export async function findAndExtract(directory: string, sources: string[], matcher: Map<string, SourceExtractor>, ctx: MatcherContext): Promise<void> {
   const keys: string[] = []
-  ctx.sourceErrors = []
   for (const sourceFileName of sources) {
     for (;;) {
       let buff: Buffer<ArrayBuffer> | undefined
