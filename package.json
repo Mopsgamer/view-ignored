@@ -6,8 +6,8 @@
   "scripts": {
     "prerelease": "bun run test && bun run build:prod && bun run lint",
     "test": "bun run build && node --test out/**/*.test.js",
-    "build": "rm -rf out && tsc -p .",
-    "build:prod": "bun run build && rm out/**/*.test.*",
+    "build": "rm -rf out && tsgo -p .",
+    "build:prod": "rm -rf out && tsgo -p tsconfig.prod.json",
     "lint": "bun run eslint .",
     "release:major": "bun run release-it --increment=major",
     "release:minor": "bun run release-it --increment=minor",
@@ -65,20 +65,19 @@
     "lib": "out"
   },
   "dependencies": {
-    "arktype": "^2.1.28",
+    "arktype": "^2.1.29",
     "minimatch": "^10.1.1",
     "strip-json-comments": "^5.0.3"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.1",
+    "@eslint/js": "^9.39.2",
     "@release-it/keep-a-changelog": "^7.0.0",
     "@stylistic/eslint-plugin": "^5.6.1",
-    "@types/node": "24.10.1",
-    "eslint": "^9.39.1",
+    "@types/node": "25.0.1",
+    "@typescript/native-preview": "^7.0.0-dev.20251213.1",
+    "eslint": "^9.39.2",
     "fs-fixture": "^2.11.0",
-    "globals": "^16.5.0",
-    "release-it": "^19.0.6",
-    "typescript": "^5.9.3",
+    "release-it": "^19.1.0",
     "typescript-eslint": "^8.49.0"
   },
   "keywords": [
