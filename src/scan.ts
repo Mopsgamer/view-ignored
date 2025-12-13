@@ -1,9 +1,10 @@
 import fsp from 'node:fs/promises'
 import { posix } from 'node:path'
-import type { MatcherContext, Source, PathChecker } from './patterns/matcher.js'
+import type { MatcherContext, Source } from './patterns/matcher.js'
 import type { Target } from './targets/target.js'
 
 export type ScanResult = Map<Target, MatcherContext>
+export type DepthMode = 'files' | undefined
 
 export type ScanOptions = {
   /**
@@ -28,7 +29,7 @@ export type ScanOptions = {
    * at the maximum depth that contain
    * matched dir.-paths will be represented as `dir/...+N`.
    */
-  depthPaths?: 'files' | undefined
+  depthPaths?: DepthMode
 }
 
 /**
@@ -44,38 +45,39 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
   const {
     targets,
     cwd: cwdo = (await import('node:process')).cwd(),
-    depth = Infinity,
+    depth: maxDepth = Infinity,
     invert = false,
-    depthPaths = false,
+    depthPaths,
   } = options
   const cwd = cwdo.replaceAll('\\', '/')
   const dir = fsp.opendir(cwd, { recursive: true })
   const scanResult: ScanResult = new Map<Target, MatcherContext>()
 
   for (const target of targets) {
-    const result: MatcherContext = {
+    const ctx: MatcherContext = {
       paths: new Set<string>(),
       external: new Map<string, Source>(),
+      depthPaths: new Map<string, number>(),
       sourceErrors: [],
       totalFiles: 0,
       totalMatchedFiles: 0,
       totalDirs: 0,
     }
-    scanResult.set(target, result)
+    scanResult.set(target, ctx)
     for await (const entry of await dir) {
       const path = posix.join(posix.relative(cwd, entry.parentPath.replaceAll('\\', '/')), entry.name)
-      const dpth = countSlashes(path)
+      const { depth, depthSlash } = getDepth(path, maxDepth)
       const isDir = entry.isDirectory()
 
       if (isDir) {
-        result.totalDirs++
+        ctx.totalDirs++
       }
       else {
-        result.totalFiles++
+        ctx.totalFiles++
       }
 
-      let ignored = await target.matcher(path, isDir, result)
-      if (result.sourceErrors.length > 0) {
+      let ignored = await target.matcher(path, isDir, ctx)
+      if (ctx.sourceErrors.length > 0) {
         break
       }
 
@@ -84,64 +86,64 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
       }
 
       if (isDir) {
-        const count = await walkCount(path, target.matcher, options, result)
-        if (dpth === depth && count > 0) {
-          result.totalMatchedFiles += count
-          let p = path + '/'
-          if (depthPaths === 'files') {
-            p += '...+' + count
-          }
-          result.paths.add(p)
+        if (depth > maxDepth) {
+          continue
         }
+        continue
       }
-      else if (!ignored) {
-        if (dpth <= depth) {
-          result.totalMatchedFiles++
-          result.paths.add(path)
-        }
+
+      if (ignored) {
+        continue
       }
+
+      ctx.totalMatchedFiles++
+      if (depth > maxDepth) {
+        const dir = path.substring(0, depthSlash)
+        ctx.depthPaths.set(dir, (ctx.depthPaths.get(dir) ?? 0) + 1)
+      }
+      else {
+        ctx.paths.add(path)
+      }
+    }
+
+    for (const [dir, count] of ctx.depthPaths) {
+      if (count === 0) {
+        continue
+      }
+      ctx.paths.add(dirPath(dir, count, depthPaths))
     }
   }
 
   return scanResult
 }
 
-async function walkCount(path: string, ignores: PathChecker, options: ScanOptions, ctx: MatcherContext): Promise<number> {
-  const { invert = false } = options
-  let count = 0
-  const dir = fsp.opendir(path, { recursive: true })
-  for await (const entry of await dir) {
-    const path = posix.join(posix.relative('.', entry.parentPath.replaceAll('\\', '/')), entry.name)
-    const isDir = entry.isDirectory()
-
-    if (isDir) {
-      ctx.totalDirs++
-      continue
-    }
-    else {
-      ctx.totalFiles++
-    }
-
-    let ignored = await ignores(path, isDir, ctx)
-    if (ctx.sourceErrors.length > 0) {
-      break
-    }
-
-    if (invert) {
-      ignored = !ignored
-    }
-
-    if (!ignored) {
-      count++
-    }
+function dirPath(path: string, count: number, depthMode: DepthMode): string {
+  let dirPath = path + '/'
+  if (depthMode === 'files') {
+    dirPath += '...+' + count
   }
-  return count
+  return dirPath
 }
 
-function countSlashes(path: string): number {
-  let count = 0
-  for (let i = 0; i < path.length; i++) {
-    if (path[i] === '/') count++
+function getDepth(path: string, maxDepth: number) {
+  const result = {
+    depth: 0,
+    depthSlash: 0,
   }
-  return count
+  result.depthSlash = -1
+  if (maxDepth < 0) {
+    return result
+  }
+  for (const [i, c] of Array.from(path).entries()) {
+    if (c !== '/') {
+      continue
+    }
+    result.depth++
+    if (result.depth < maxDepth) {
+      continue
+    }
+    result.depthSlash = i
+    return result
+  }
+  return result
 }
