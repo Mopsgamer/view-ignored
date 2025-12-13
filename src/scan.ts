@@ -1,5 +1,6 @@
 import fsp from 'node:fs/promises'
-import type { MatcherContext, Source } from './patterns/matcher.js'
+import type { MatcherContext, Source, PathChecker } from './patterns/matcher.js'
+import type { Target } from './targets/target.js'
 
 export type ScanResult = Map<Target, MatcherContext>
 
@@ -37,7 +38,7 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
         result.totalFiles++
       }
 
-      let ignored = ignores(path, isDir, result)
+      let ignored = target.matcher(path, isDir, result)
       if (result.sourceErrors.length > 0) {
         break
       }
@@ -47,7 +48,7 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
       }
 
       if (isDir) {
-        const count = await walkCount(path, ignores, options, result)
+        const count = await walkCount(path, target.matcher, options, result)
         if (dpth === depth && count > 0) {
           result.totalMatchedFiles += count
           result.paths.add(`${path}/...+${count}`)
@@ -65,10 +66,10 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
   return scanResult
 }
 
-async function walkCount(path: string, ignores: PathChecker, options ScanOptions, ctx MatcherContext): Promise<number> {
+async function walkCount(path: string, ignores: PathChecker, options: ScanOptions, ctx: MatcherContext): Promise<number> {
 	let count = 0
-	const dir = fsp.opendir(cwd, { recursive: true })
-	for await (const enrty of await dir) {
+	const dir = fsp.opendir(path, { recursive: true })
+	for await (const entry of await dir) {
       		const path = `${entry.parentPath}/${entry.name}`
 		const isDir = entry.isDirectory()
 	
@@ -80,7 +81,7 @@ async function walkCount(path: string, ignores: PathChecker, options ScanOptions
 			ctx.totalFiles++
 		}
 
-		const ignored = ignores(path, isDir, ctx)
+		let ignored = ignores(path, isDir, ctx)
 		if (ctx.sourceErrors.length > 0) {
 			break
 		}
