@@ -19,11 +19,11 @@ export const Git: Target = {
   icon: '',
   color: '#f44e28',
 
-  matcher(entry, isDir, ctx) {
+  async matcher(entry, isDir, ctx) {
     if (isDir) {
-      findAndExtract(entry, gitSources, gitSourceMap, ctx)
+      await findAndExtract(entry, gitSources, gitSourceMap, ctx)
       return true
     }
-    return signedPatternIgnores(gitPattern, entry, gitSources, gitSourceMap, ctx)
+    return await signedPatternIgnores(gitPattern, entry, gitSources, gitSourceMap, ctx)
   },
 }

@@ -45,11 +45,11 @@ export const NPM: Target = {
   icon: '',
   color: '#ca0404',
 
-  matcher(entry, isDir, ctx) {
+  async matcher(entry, isDir, ctx) {
     if (isDir) {
-      findAndExtract(entry, npmSources, npmSourceMap, ctx)
+      await findAndExtract(entry, npmSources, npmSourceMap, ctx)
       return true
     }
-    return signedPatternIgnores(npmPattern, entry, npmSources, npmSourceMap, ctx)
+    return await signedPatternIgnores(npmPattern, entry, npmSources, npmSourceMap, ctx)
   },
 }

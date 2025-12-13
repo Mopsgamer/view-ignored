@@ -48,11 +48,11 @@ export const Yarn: Target = {
   check: '',
   color: '#2e2a65',
 
-  matcher(entry, isDir, ctx) {
+  async matcher(entry, isDir, ctx) {
     if (isDir) {
-      findAndExtract(entry, yarnSources, yarnSourceMap, ctx)
+      await findAndExtract(entry, yarnSources, yarnSourceMap, ctx)
       return true
     }
-    return signedPatternIgnores(yarnPattern, entry, yarnSources, yarnSourceMap, ctx)
+    return await signedPatternIgnores(yarnPattern, entry, yarnSources, yarnSourceMap, ctx)
   },
 }

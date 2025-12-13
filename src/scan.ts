@@ -8,12 +8,13 @@ export type ScanResult = Map<Target, MatcherContext>
 export type ScanOptions = {
   targets: [Target, ...Target[]]
   cwd?: string
-  invert?: false
+  invert?: boolean
   depth?: number
 }
 
 export async function scan(options: ScanOptions): Promise<ScanResult> {
-  const { targets, cwd = process.cwd(), depth = Infinity, invert = false } = options
+  const { targets, cwd: cwdo = process.cwd(), depth = Infinity, invert = false } = options
+  const cwd = cwdo.replaceAll('\\', '/')
   const dir = fsp.opendir(cwd, { recursive: true })
   const scanResult: ScanResult = new Map<Target, MatcherContext>()
 
@@ -28,7 +29,7 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
     }
     scanResult.set(target, result)
     for await (const entry of await dir) {
-      const path = posix.join(posix.relative(cwd, entry.parentPath), entry.name)
+      const path = posix.join(posix.relative(cwd, entry.parentPath.replaceAll('\\', '/')), entry.name)
       const dpth = countSlashes(path)
       const isDir = entry.isDirectory()
 
@@ -39,7 +40,7 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
         result.totalFiles++
       }
 
-      let ignored = target.matcher(path, isDir, result)
+      let ignored = await target.matcher(path, isDir, result)
       if (result.sourceErrors.length > 0) {
         break
       }
@@ -68,11 +69,11 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
 }
 
 async function walkCount(path: string, ignores: PathChecker, options: ScanOptions, ctx: MatcherContext): Promise<number> {
+  const { invert = false } = options
   let count = 0
   const dir = fsp.opendir(path, { recursive: true })
-  const patho = path
   for await (const entry of await dir) {
-    const path = posix.join(posix.relative(patho, entry.parentPath), entry.name)
+    const path = posix.join(posix.relative('.', entry.parentPath.replaceAll('\\', '/')), entry.name)
     const isDir = entry.isDirectory()
 
     if (isDir) {
@@ -83,12 +84,12 @@ async function walkCount(path: string, ignores: PathChecker, options: ScanOption
       ctx.totalFiles++
     }
 
-    let ignored = ignores(path, isDir, ctx)
+    let ignored = await ignores(path, isDir, ctx)
     if (ctx.sourceErrors.length > 0) {
       break
     }
 
-    if (options.invert) {
+    if (invert) {
       ignored = !ignored
     }
 
