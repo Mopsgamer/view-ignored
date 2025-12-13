@@ -93,7 +93,7 @@ async function walkCount(path: string, ignores: PathChecker, options: ScanOption
       ignored = !ignored
     }
 
-    if (ignored) {
+    if (!ignored) {
       count++
     }
   }
