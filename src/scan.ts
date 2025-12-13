@@ -13,7 +13,12 @@ export type ScanOptions = {
 }
 
 export async function scan(options: ScanOptions): Promise<ScanResult> {
-  const { targets, cwd: cwdo = process.cwd(), depth = Infinity, invert = false } = options
+  const {
+    targets,
+    cwd: cwdo = (await import('node:process')).cwd(),
+    depth = Infinity,
+    invert = false,
+  } = options
   const cwd = cwdo.replaceAll('\\', '/')
   const dir = fsp.opendir(cwd, { recursive: true })
   const scanResult: ScanResult = new Map<Target, MatcherContext>()
