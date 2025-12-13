@@ -54,10 +54,11 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
           result.totalMatchedFiles += count
           result.paths.add(`${path}/...+${count}`)
         }
-      } else if (!ignored) {
+      }
+      else if (!ignored) {
         if (dpth <= depth) {
           result.totalMatchedFiles++
-           result.paths.add(path)
+          result.paths.add(path)
         }
       }
     }
@@ -67,35 +68,35 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
 }
 
 async function walkCount(path: string, ignores: PathChecker, options: ScanOptions, ctx: MatcherContext): Promise<number> {
-	let count = 0
-	const dir = fsp.opendir(path, { recursive: true })
-	const patho = path
-	for await (const entry of await dir) {
-                const path = posix.join(posix.relative(patho, entry.parentPath), entry.name)
-		const isDir = entry.isDirectory()
-	
-		if (isDir) {
-			ctx.totalDirs++
-			continue
-		}
-		else {
-			ctx.totalFiles++
-		}
+  let count = 0
+  const dir = fsp.opendir(path, { recursive: true })
+  const patho = path
+  for await (const entry of await dir) {
+    const path = posix.join(posix.relative(patho, entry.parentPath), entry.name)
+    const isDir = entry.isDirectory()
 
-		let ignored = ignores(path, isDir, ctx)
-		if (ctx.sourceErrors.length > 0) {
-			break
-		}
+    if (isDir) {
+      ctx.totalDirs++
+      continue
+    }
+    else {
+      ctx.totalFiles++
+    }
 
-		if (options.invert) {
-			ignored = !ignored
-		}
+    let ignored = ignores(path, isDir, ctx)
+    if (ctx.sourceErrors.length > 0) {
+      break
+    }
 
-		if (ignored) {
-			count++
-		}
-	}
-	return count
+    if (options.invert) {
+      ignored = !ignored
+    }
+
+    if (ignored) {
+      count++
+    }
+  }
+  return count
 }
 
 function countSlashes(path: string): number {
@@ -105,4 +106,3 @@ function countSlashes(path: string): number {
   }
   return count
 }
-
