@@ -23,5 +23,16 @@ export function extractGitignore(source: Source, content: Buffer<ArrayBuffer>): 
 }
 
 export function gitignoreMatch(pattern: string, path: string): boolean {
-  return minimatch(path, pattern, { dot: true })
+  const o = { dot: true }
+  if (pattern.startsWith('/')) {
+	  pattern = pattern.substring(1)
+  }
+  else if (!pattern.startsWith('**/')) {
+	  if (minimatch(path, '**/'+pattern, o)) return true
+  }
+  if (pattern.endsWith('/')) {
+	  pattern = pattern.substring(-1)
+  }
+  return minimatch(path, pattern, o) || minimatch(path, pattern + '/**', o)
+
 }
