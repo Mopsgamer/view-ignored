@@ -39,12 +39,6 @@ const npmPattern: SignedPattern = {
 }
 
 export const NPM: Target = {
-  name: 'NPM',
-  targetName: 'npm',
-  check: 'npm pack --dry-run',
-  icon: '',
-  color: '#ca0404',
-
   async matcher(entry, isDir, ctx) {
     if (isDir) {
       await findAndExtract(entry, npmSources, npmSourceMap, ctx)

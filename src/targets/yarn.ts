@@ -42,12 +42,6 @@ const yarnPattern: SignedPattern = {
 }
 
 export const Yarn: Target = {
-  name: 'Yarn',
-  targetName: 'yarn',
-  icon: '',
-  check: '',
-  color: '#2e2a65',
-
   async matcher(entry, isDir, ctx) {
     if (isDir) {
       await findAndExtract(entry, yarnSources, yarnSourceMap, ctx)

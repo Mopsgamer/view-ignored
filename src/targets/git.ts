@@ -13,12 +13,6 @@ const gitPattern: SignedPattern = {
 }
 
 export const Git: Target = {
-  name: 'Git',
-  targetName: 'git',
-  check: 'git ls-tree -r HEAD --name-only',
-  icon: '',
-  color: '#f44e28',
-
   async matcher(entry, isDir, ctx) {
     if (isDir) {
       await findAndExtract(entry, gitSources, gitSourceMap, ctx)

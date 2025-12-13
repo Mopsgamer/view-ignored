@@ -18,12 +18,6 @@ const vscePattern: SignedPattern = {
 }
 
 export const JSR: Target = {
-  name: 'JSR',
-  targetName: 'jsr',
-  check: '',
-  icon: '',
-  color: '#f5dd1e',
-
   async matcher(entry, isDir, ctx) {
     if (isDir) {
       await findAndExtract(entry, jsrSources, jsrSourceMap, ctx)

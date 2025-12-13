@@ -12,6 +12,20 @@ export type ScanOptions = {
   depth?: number
 }
 
+/**
+ * Scan the directory for included files based on the provided targets.
+ *
+ * Note that this function uses `fs/promises.opendir` with recursive option,
+ * and `fs/promises.readFile`. It also normalizes paths to use forward slashes.
+ *
+ * When `depth` is specified, directories at the maximum depth that contain
+ * matched files will be represented as `dir/...+N`, where `N` is the number
+ * of matched files within that directory. Starting from depth 0 means
+ * you will see children of the current working directory.
+ *
+ * @param options Scan options.
+ * @returns A promise that resolves to a map of targets to their matcher contexts.
+ */
 export async function scan(options: ScanOptions): Promise<ScanResult> {
   const {
     targets,

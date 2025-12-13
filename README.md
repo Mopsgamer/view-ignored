@@ -14,110 +14,29 @@ Requires Node.js v18 or later.
 
 ## Highlights
 
-- **Multi-target.** Get a list of included files using configuration file
+- **Native.** Get a list of included files using configuration file
   readers, not command-line wrappers.
-- **Use in browser.** view-ignored can run in the browser using a file system
-  adapter.
-- **Command-line.** Supports no-color and multiple output styles (tree, list,
-  parsable, etc.), including
-  [Nerd Fonts](https://github.com/ryanoasis/nerd-fonts).
 - **Plugins.** view-ignored allows you to add new [targets](#targets)
-  programmatically. Command-line interface supports plugins through `--plugins`
-  option.
+  programmatically.
+- **TypeScript.** Written in TypeScript with type definitions included.
+
+> [!NOTE]
+> Despite the name of the package being "view-ignored",
+> the primary purpose is to get the list of
+> **included** files, i.e., files that are **not ignored**.
+> You can invert the results if you need the ignored files
+> by setting the `invert` option to `true`.
 
 ## Usage
 
-### Command-line
-
-After installing globally, you can use the following commands:
-
-```bash
-# get started
-npm i -g view-ignored
-viewig --help
-view-ignored --help
-
-# scan: git (default) and npm
-viewig scan
-viewig scan --target=npm
-viewig sc -t npm
-viewig scan --parsable
-
-# scan: plugins (space, comma or pipe separated)
-# all built-in plugins loaded automatically
-# Replace example1/example2 with real plugin names
-viewig scan --plugins="example1, example2"
-viewig scan --plugins="example1 example2"
-viewig scan --plugins example1 example2
-viewig scan --plugins example1, example2
-
-# config: print configuration entries
-viewig config get
-viewig config get --real
-# config: set npm as default target and scan for npm
-viewig config set target=npm
-viewig scan
-# config: always use nerdfonts
-viewig config set style=tree
-# config: always use Nerd Fonts for decoration
-viewig config set decor=nerdfonts
-# config: always use plugins
-viewig config set plugins=example1,example2
-```
-
-### Programmatically
-
-To use programmatically:
-
-```js
-import * as vign from "view-ignored"; // or "view-ignored/browser"
-
-await vign.Plugins.loadBuiltIns(["git", "npm"]); // load built-in plugins
-await vign.Plugins.loadBuiltIns(); // load all built-in plugins
-await vign.Plugins.loadPlugins(["example"]); // load third-party plugins
-
-// scan - options available
-const fileInfoList = await vign.scan(".", {
-  target: "git",
-  cwd: process.cwd(),
-});
-const fileInfoList2 = await vign.scan(["./path/to/file"], {
-  target: "git",
-  cwd: process.cwd(),
-});
-
-// use results
-for (const fileInfo of fileInfoList) {
-  if (fileInfo.ignored) {
-    superCodeEditor.explorer.colorFile(fileInfo.relativePath, "gray");
-  }
-}
-```
-
-#### Sorting
-
-```js
-const sorter = vign.Sorting.firstFolders;
-const fileInfoList = await vign.scan(".", { target: "npm" });
-const fileInfoSorted = fileInfoList.sort((a, b) =>
-  sorter(String(a), String(b))
-);
-```
-
-#### Plugin export example
-
 ```ts
-const bind: Plugins.TargetBind = {
-  id,
-  icon,
-  name,
-  testCommand,
-  scanOptions: {
-    target: methodologyGitignoreLike(".gitignore"),
-  },
-};
-const git: Plugins.PluginExport = { viewignored: { addTargets: [bind] } };
-export default git;
+import * as vign from "view-ignored";
+import { Git } from "view-ignored/targets";
+
+const results = await vign.scan({ targets: [ Git ] });
+const gitResults = results.get(Git)!;
+
+const isGitFolderIncluded = gitResults.paths.has(".git/HEAD");
 ```
 
 ### Targets
