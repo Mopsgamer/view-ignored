@@ -17,12 +17,6 @@ const vscePattern: SignedPattern = {
 }
 
 export const VSCE: Target = {
-  name: 'VSCE',
-  targetName: 'vsce',
-  check: 'vsce ls',
-  icon: '󰨞',
-  color: '#23a9f1',
-
   async matcher(entry, isDir, ctx) {
     if (isDir) {
       await findAndExtract(entry, vsceSources, vsceSourceMap, ctx)

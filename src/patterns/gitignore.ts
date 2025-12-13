@@ -1,4 +1,4 @@
-import type { Source } from './matcher.js'
+import type { Source, SourceExtractor } from './matcher.js'
 import { minimatch } from 'minimatch'
 
 export function extractGitignore(source: Source, content: Buffer<ArrayBuffer>): void {
@@ -21,6 +21,8 @@ export function extractGitignore(source: Source, content: Buffer<ArrayBuffer>): 
   }
   // TODO: validate gitignore
 }
+
+extractGitignore satisfies SourceExtractor
 
 export function gitignoreMatch(pattern: string, path: string): boolean {
   const o = { dot: true }
