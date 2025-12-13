@@ -4,5 +4,6 @@ import * as assert from 'node:assert/strict'
 import { Git } from './targets/git.js'
 
 it('scan primitive git', async () => {
-  assert.deepEqual(await scan({ targets: [Git] }), [])
+  const r = await scan({ targets: [Git], depth: 0 })
+  assert.deepEqual(Array.from(r.get(Git).paths), [''])
 })

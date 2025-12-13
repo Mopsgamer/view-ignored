@@ -1,4 +1,5 @@
 import fsp from 'node:fs/promises'
+import { posix } from 'node:path'
 import type { MatcherContext, Source, PathChecker } from './patterns/matcher.js'
 import type { Target } from './targets/target.js'
 
@@ -27,7 +28,7 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
     }
     scanResult.set(target, result)
     for await (const entry of await dir) {
-      const path = `${entry.parentPath}/${entry.name}`
+      const path = posix.join(posix.relative(cwd, entry.parentPath), entry.name)
       const dpth = countSlashes(path)
       const isDir = entry.isDirectory()
 
@@ -53,11 +54,10 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
           result.totalMatchedFiles += count
           result.paths.add(`${path}/...+${count}`)
         }
-        else if (!ignored) {
-          if (dpth <= depth) {
-            result.totalMatchedFiles++
-            result.paths.add(path)
-          }
+      } else if (!ignored) {
+        if (dpth <= depth) {
+          result.totalMatchedFiles++
+           result.paths.add(path)
         }
       }
     }
@@ -69,8 +69,9 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
 async function walkCount(path: string, ignores: PathChecker, options: ScanOptions, ctx: MatcherContext): Promise<number> {
 	let count = 0
 	const dir = fsp.opendir(path, { recursive: true })
+	const patho = path
 	for await (const entry of await dir) {
-      		const path = `${entry.parentPath}/${entry.name}`
+                const path = posix.join(posix.relative(patho, entry.parentPath), entry.name)
 		const isDir = entry.isDirectory()
 	
 		if (isDir) {
