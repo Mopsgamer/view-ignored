@@ -65,20 +65,21 @@ export async function findAndExtract(directory: string, sources: string[], match
         keys.push(directory)
       }
       if (!buff) {
-        if (directory == '.') {
+        if (directory === '.') {
           break
         }
         directory = dir
         continue
       }
 
-      if (directory == '.' && !keys.length) {
+      if (directory === '.' && !keys.length) {
         break
       }
 
       const sourceExtractor = matcher.get(sourceFileName)
       if (!sourceExtractor) {
-        ctx.sourceErrors.push(new Error('No extractor for source file: ' + sourceFileName))
+        const err = new Error('No extractor for source file: ' + sourceFileName)
+        ctx.sourceErrors.push(err)
         break
       }
 
@@ -95,6 +96,7 @@ export async function findAndExtract(directory: string, sources: string[], match
       }
       catch (err) {
         ctx.sourceErrors.push(err as Error)
+        break
       }
       for (const key of keys) {
         const m = ctx.external.get(key)
@@ -102,7 +104,7 @@ export async function findAndExtract(directory: string, sources: string[], match
           ctx.external.set(key, source)
         }
       }
-      if (directory == '.') {
+      if (directory === '.') {
         return
       }
       keys.length = 0
@@ -130,9 +132,9 @@ export async function signedPatternIgnores(internal: SignedPattern, file: string
     external: source.pattern,
   }
 
-  let check = false
-
   try {
+    let check = false
+
     check = patternMatches(matcher.internal.exclude, file)
     if (check) {
       return true
