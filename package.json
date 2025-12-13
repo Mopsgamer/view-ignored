@@ -35,9 +35,13 @@
       "default": "./out/index.js",
       "types": "./out/index.d.ts"
     },
-    "./browser": {
-      "default": "./out/browser/index.js",
-      "types": "./out/browser/index.d.ts"
+    "./patterns": {
+      "default": "./out/patterns/index.js",
+      "types": "./out/patterns/index.d.ts"
+    },
+    "./targets": {
+      "default": "./out/targets/index.js",
+      "types": "./out/targets/index.d.ts"
     }
   },
   "release-it": {
