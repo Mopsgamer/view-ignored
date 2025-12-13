@@ -6,18 +6,47 @@ import type { Target } from './targets/target.js'
 export type ScanResult = Map<Target, MatcherContext>
 
 export type ScanOptions = {
+  /**
+   * Targets to scan for.
+   */
   targets: [Target, ...Target[]]
+  /**
+   * Current working directory to start the scan from.
+   */
   cwd?: string
+  /**
+   * If enabled, the scan will return files that are ignored by the target matchers.
+   */
   invert?: boolean
+  /**
+   * Starting from depth `0` means you will see
+   * children of the current working directory.
+   */
   depth?: number
+  /**
+   * When `depth` is specified, directories
+   * at the maximum depth that contain
+   * matched dir.-paths will be represented as `dir/...+N`.
+   */
+  depthPaths?: 'files' | undefined
 }
 
+/**
+ * Scan the directory for included files based on the provided targets.
+ *
+ * Note that this function uses `fs/promises.opendir` with recursive option,
+ * and `fs/promises.readFile`. It also normalizes paths to use forward slashes..
+ *
+ * @param options Scan options.
+ * @returns A promise that resolves to a map of targets to their matcher contexts.
+ */
 export async function scan(options: ScanOptions): Promise<ScanResult> {
   const {
     targets,
     cwd: cwdo = (await import('node:process')).cwd(),
     depth = Infinity,
     invert = false,
+    depthPaths = false,
   } = options
   const cwd = cwdo.replaceAll('\\', '/')
   const dir = fsp.opendir(cwd, { recursive: true })
@@ -58,7 +87,11 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
         const count = await walkCount(path, target.matcher, options, result)
         if (dpth === depth && count > 0) {
           result.totalMatchedFiles += count
-          result.paths.add(`${path}/...+${count}`)
+          let p = path + '/'
+          if (depthPaths === 'files') {
+            p += '...+' + count
+          }
+          result.paths.add(p)
         }
       }
       else if (!ignored) {
