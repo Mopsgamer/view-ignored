@@ -30,6 +30,11 @@ export type ScanOptions = {
    * matched dir.-paths will be represented as `dir/...+N`.
    */
   depthPaths?: DepthMode
+
+  /**
+   * Return as soon as possible.
+   */
+  abortSignal?: AbortSignal
 }
 
 /**
@@ -48,6 +53,7 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
     depth: maxDepth = Infinity,
     invert = false,
     depthPaths,
+    abortSignal,
   } = options
   const cwd = cwdo.replaceAll('\\', '/')
   const dir = fsp.opendir(cwd, { recursive: true })
@@ -65,6 +71,9 @@ export async function scan(options: ScanOptions): Promise<ScanResult> {
     }
     scanResult.set(target, ctx)
     for await (const entry of await dir) {
+      if (abortSignal?.aborted) {
+        return scanResult
+      }
       const path = posix.join(posix.relative(cwd, entry.parentPath.replaceAll('\\', '/')), entry.name)
       const { depth, depthSlash } = getDepth(path, maxDepth)
       const isDir = entry.isDirectory()
