@@ -12,6 +12,9 @@ export type MatcherContext = {
   totalDirs: number
 }
 
+/**
+ * Represents a list of positive minimatch patterns.
+ */
 export type Pattern = string[]
 
 export function patternMatches(pattern: Pattern, path: string): boolean {
@@ -24,11 +27,19 @@ export function patternMatches(pattern: Pattern, path: string): boolean {
   return false
 }
 
+/**
+ * Represents a set of include and exclude patterns.
+ * These patterns are positive minimatch patterns.
+ */
 export type SignedPattern = {
   include: Pattern
   exclude: Pattern
 }
 
+/**
+ * Combined internal and external patterns for matching.
+ * Used in {@link signedPatternIgnores} function.
+ */
 export type PatternMatcher = {
   internal: SignedPattern
   external: SignedPattern

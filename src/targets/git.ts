@@ -3,7 +3,9 @@ import { extractGitignore } from '../patterns/gitignore.js'
 import type { Target } from './target.js'
 
 const gitSources = ['.gitignore']
-const gitSourceMap = new Map<string, SourceExtractor>([['.gitignore', extractGitignore]])
+const gitSourceMap = new Map<string, SourceExtractor>([
+  ['.gitignore', extractGitignore],
+])
 const gitPattern: SignedPattern = {
   exclude: [
     '.git',

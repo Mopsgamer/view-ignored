@@ -5,20 +5,24 @@
 [![github](https://img.shields.io/github/stars/Mopsgamer/view-ignored.svg?style=flat)](https://github.com/Mopsgamer/view-ignored)
 [![github issues](https://img.shields.io/github/issues/Mopsgamer/view-ignored.svg?style=flat)](https://github.com/Mopsgamer/view-ignored/issues)
 
-Retrieve list of files ignored/included by Git, NPM, Yarn, JSR, VSCE or other
-tools.
+Retrieve list of files ignored/included
+by Git, NPM, Yarn, JSR, VSCE or other tools.
 
 ## Requirements
 
-Requires Node.js v18 or later.
+- Node.js 18 or later for production
+- Node.js 20 or later for production type definitions
+- Node.js 22 or later for development type definitions
 
 ## Highlights
 
 - **Native.** Get a list of included files using configuration file
   readers, not command-line wrappers.
-- **Plugins.** view-ignored allows you to add new [targets](#targets)
-  programmatically.
+- **Plugins.** Built-in [targets](#targets) for popular tools. Use custom
+  targets by implementing the `Target` interface.
 - **TypeScript.** Written in TypeScript with type definitions included.
+- **Lightweight.** Minimal dependencies for fast performance and small bundle size.
+- **Easy-to-modify.** Well-written and MIT-licensed.
 
 > [!NOTE]
 > Despite the name of the package being "view-ignored",
@@ -29,6 +33,8 @@ Requires Node.js v18 or later.
 
 ## Usage
 
+### Basic example
+
 ```ts
 import * as vign from "view-ignored";
 import { Git } from "view-ignored/targets";
@@ -37,9 +43,50 @@ const results = await vign.scan({ target: Git });
 results.paths.has(".git/HEAD");
 ```
 
-### Targets
+### Using custom target
 
-The following built-in plugins are available:
+```ts
+import * as vign from "view-ignored";
+import {
+  type SourceExtractor,
+  type SignedPattern,
+  extractGitignore
+  findAndExtract,
+  signedPatternIgnores,
+} from "view-ignored/patterns";
+import type { Target } from "view-ignored/targets";
+
+const gitSources = ['.gitignore'];
+const gitSourceMap = new Map<string, SourceExtractor>([
+  ['.gitignore', extractGitignore]
+]);
+const gitPattern: SignedPattern = {
+  exclude: [
+    '.git',
+    '.DS_Store',
+  ],
+  include: []
+};
+
+export const Git: Target = {
+  async matcher(entry, isDir, ctx) {
+    if (isDir) {
+      await findAndExtract(entry, gitSources, gitSourceMap, ctx);
+      return true;
+    }
+    return await signedPatternIgnores(gitPattern, entry, gitSources, gitSourceMap, ctx);
+  }
+};
+```
+
+```ts
+vign.scan({ target: Git });
+```
+
+## Targets
+
+
+The following built-in targets are available:
 
 - `git`
 - `npm` (compatible with Bun, PNPM, and others)
@@ -50,3 +97,7 @@ The following built-in plugins are available:
 ## License
 
 MIT License. See [LICENSE.txt](LICENSE.txt) for details.
+
+## Target implementations
+<!-- .ts links -->
+See [Target implementations](src/targets/README.md) for details.
