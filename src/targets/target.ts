@@ -1,6 +1,6 @@
 import type { PathChecker } from '../patterns/matcher.js'
 
-export type Target = {
+export interface Target {
   /**
    * Glob-pattern parser.
    */
