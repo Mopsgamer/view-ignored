@@ -3,14 +3,13 @@ import { posix } from 'node:path'
 import type { MatcherContext, Source } from './patterns/matcher.js'
 import type { Target } from './targets/target.js'
 
-export type ScanResult = Map<Target, MatcherContext>
 export type DepthMode = 'files' | undefined
 
 export type ScanOptions = {
   /**
-   * Targets to scan for.
+   * Provides the matcher to use for scanning.
    */
-  targets: [Target, ...Target[]]
+  target: Target
   /**
    * Current working directory to start the scan from.
    */
@@ -34,7 +33,7 @@ export type ScanOptions = {
   /**
    * Return as soon as possible.
    */
-  abortSignal?: AbortSignal
+  signal?: AbortSignal
 }
 
 /**
@@ -46,84 +45,80 @@ export type ScanOptions = {
  * @param options Scan options.
  * @returns A promise that resolves to a map of targets to their matcher contexts.
  */
-export async function scan(options: ScanOptions): Promise<ScanResult> {
+export async function scan(options: ScanOptions): Promise<MatcherContext> {
   const {
-    targets,
+    target,
     cwd: cwdo = (await import('node:process')).cwd(),
     depth: maxDepth = Infinity,
     invert = false,
     depthPaths,
-    abortSignal,
+    signal,
   } = options
   const cwd = cwdo.replaceAll('\\', '/')
   const dir = fsp.opendir(cwd, { recursive: true })
-  const scanResult: ScanResult = new Map<Target, MatcherContext>()
 
-  for (const target of targets) {
-    const ctx: MatcherContext = {
-      paths: new Set<string>(),
-      external: new Map<string, Source>(),
-      depthPaths: new Map<string, number>(),
-      sourceErrors: [],
-      totalFiles: 0,
-      totalMatchedFiles: 0,
-      totalDirs: 0,
+  const ctx: MatcherContext = {
+    paths: new Set<string>(),
+    external: new Map<string, Source>(),
+    depthPaths: new Map<string, number>(),
+    sourceErrors: [],
+    totalFiles: 0,
+    totalMatchedFiles: 0,
+    totalDirs: 0,
+  }
+  for await (const entry of await dir) {
+    if (signal?.aborted) {
+      return ctx
     }
-    scanResult.set(target, ctx)
-    for await (const entry of await dir) {
-      if (abortSignal?.aborted) {
-        return scanResult
-      }
-      const path = posix.join(posix.relative(cwd, entry.parentPath.replaceAll('\\', '/')), entry.name)
-      const { depth, depthSlash } = getDepth(path, maxDepth)
-      const isDir = entry.isDirectory()
+    const path = posix.join(posix.relative(cwd, entry.parentPath.replaceAll('\\', '/')), entry.name)
+    const { depth, depthSlash } = getDepth(path, maxDepth)
+    const isDir = entry.isDirectory()
 
-      if (isDir) {
-        ctx.totalDirs++
-      }
-      else {
-        ctx.totalFiles++
-      }
+    if (isDir) {
+      ctx.totalDirs++
+    }
+    else {
+      ctx.totalFiles++
+    }
 
-      let ignored = await target.matcher(path, isDir, ctx)
-      if (ctx.sourceErrors.length > 0) {
-        break
-      }
+    let ignored = await target.matcher(path, isDir, ctx)
+    if (ctx.sourceErrors.length > 0) {
+      break
+    }
 
-      if (invert) {
-        ignored = !ignored
-      }
+    if (invert) {
+      ignored = !ignored
+    }
 
-      if (isDir) {
-        if (depth > maxDepth) {
-          continue
-        }
-        continue
-      }
-
-      if (ignored) {
-        continue
-      }
-
-      ctx.totalMatchedFiles++
+    if (isDir) {
       if (depth > maxDepth) {
-        const dir = path.substring(0, depthSlash)
-        ctx.depthPaths.set(dir, (ctx.depthPaths.get(dir) ?? 0) + 1)
-      }
-      else {
-        ctx.paths.add(path)
-      }
-    }
-
-    for (const [dir, count] of ctx.depthPaths) {
-      if (count === 0) {
         continue
       }
-      ctx.paths.add(dirPath(dir, count, depthPaths))
+      continue
+    }
+
+    if (ignored) {
+      continue
+    }
+
+    ctx.totalMatchedFiles++
+    if (depth > maxDepth) {
+      const dir = path.substring(0, depthSlash)
+      ctx.depthPaths.set(dir, (ctx.depthPaths.get(dir) ?? 0) + 1)
+    }
+    else {
+      ctx.paths.add(path)
     }
   }
 
-  return scanResult
+  for (const [dir, count] of ctx.depthPaths) {
+    if (count === 0) {
+      continue
+    }
+    ctx.paths.add(dirPath(dir, count, depthPaths))
+  }
+
+  return ctx
 }
 
 function dirPath(path: string, count: number, depthMode: DepthMode): string {
