@@ -62,7 +62,7 @@ export async function scan(options: ScanOptions): Promise<MatcherContext> {
     fastDepth = false,
   } = options
   const cwd = cwdo.replaceAll('\\', '/')
-  const dir = fsp.opendir(cwd, { recursive: true })
+  const d = await fsp.opendir(cwd, { recursive: true })
 
   const ctx: MatcherContext = {
     paths: new Set<string>(),
@@ -73,7 +73,7 @@ export async function scan(options: ScanOptions): Promise<MatcherContext> {
     totalMatchedFiles: 0,
     totalDirs: 0,
   }
-  for await (const entry of await dir) {
+  for await (const entry of d) {
     if (signal?.aborted) {
       return ctx
     }
@@ -99,6 +99,7 @@ export async function scan(options: ScanOptions): Promise<MatcherContext> {
       if (depth > maxDepth) {
         let ignored = await target.matcher(path, false, ctx)
         if (ctx.sourceErrors.length > 0) {
+          await d.close().catch(() => {})
           break
         }
 
@@ -118,6 +119,7 @@ export async function scan(options: ScanOptions): Promise<MatcherContext> {
 
     let ignored = await target.matcher(path, false, ctx)
     if (ctx.sourceErrors.length > 0) {
+      await d.close().catch(() => {})
       break
     }
 
