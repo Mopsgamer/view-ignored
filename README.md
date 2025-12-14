@@ -33,10 +33,8 @@ Requires Node.js v18 or later.
 import * as vign from "view-ignored";
 import { Git } from "view-ignored/targets";
 
-const results = await vign.scan({ targets: [ Git ] });
-const gitResults = results.get(Git)!;
-
-const isGitFolderIncluded = gitResults.paths.has(".git/HEAD");
+const results = await vign.scan({ target: Git });
+results.paths.has(".git/HEAD");
 ```
 
 ### Targets
