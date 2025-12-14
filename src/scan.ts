@@ -10,25 +10,22 @@ export type ScanOptions = {
    * Provides the matcher to use for scanning.
    */
   target: Target
+
   /**
    * Current working directory to start the scan from.
    */
   cwd?: string
+
   /**
    * If enabled, the scan will return files that are ignored by the target matchers.
    */
   invert?: boolean
+
   /**
    * Starting from depth `0` means you will see
    * children of the current working directory.
    */
   depth?: number
-  /**
-   * When `depth` is specified, directories
-   * at the maximum depth that contain
-   * matched dir.-paths will be represented as `dir/...+N`.
-   */
-  depthPaths?: DepthMode
 
   /**
    * Return as soon as possible.
@@ -51,7 +48,6 @@ export async function scan(options: ScanOptions): Promise<MatcherContext> {
     cwd: cwdo = (await import('node:process')).cwd(),
     depth: maxDepth = Infinity,
     invert = false,
-    depthPaths,
     signal,
   } = options
   const cwd = cwdo.replaceAll('\\', '/')
@@ -115,18 +111,10 @@ export async function scan(options: ScanOptions): Promise<MatcherContext> {
     if (count === 0) {
       continue
     }
-    ctx.paths.add(dirPath(dir, count, depthPaths))
+    ctx.paths.add(dir + '/')
   }
 
   return ctx
-}
-
-function dirPath(path: string, count: number, depthMode: DepthMode): string {
-  let dirPath = path + '/'
-  if (depthMode === 'files') {
-    dirPath += '...+' + count
-  }
-  return dirPath
 }
 
 function getDepth(path: string, maxDepth: number) {
