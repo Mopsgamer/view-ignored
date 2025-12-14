@@ -42,24 +42,6 @@
       "types": "./out/targets/index.d.ts"
     }
   },
-  "release-it": {
-    "hooks": {
-      "before:init": "bun prerelease"
-    },
-    "plugins": {
-      "@release-it/keep-a-changelog": {
-        "filename": "CHANGELOG.md"
-      }
-    },
-    "github": {
-      "release": true,
-      "draft": false,
-      "releaseName": "${version}"
-    },
-    "npm": {
-      "publish": true
-    }
-  },
   "publishConfig": {
     "access": "public"
   },
