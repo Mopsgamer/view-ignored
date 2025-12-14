@@ -1,6 +1,6 @@
 {
   "name": "view-ignored",
-  "version": "0.4.8",
+  "version": "0.5.0",
   "description": "Retrieve list of files ignored/included by Git, NPM, Yarn, JSR, VSCE or other tools.",
   "type": "module",
   "scripts": {
@@ -14,8 +14,7 @@
     "release:patch": "bun run release-it --increment=patch"
   },
   "author": "Mopsgamer",
-  "license": "ISC",
-  "main": "./out/index.js",
+  "license": "MIT",
   "files": [
     "/out"
   ],
@@ -87,14 +86,13 @@
     "tree",
     "ls-tree",
     "ignore",
+    "match",
     "gitignore",
     "npmignore",
+    "yarnignore",
     "vscodeignore",
-    "cli",
     "fs",
-    "file-system",
-    "output",
-    "project",
+    "files",
     "migration"
   ]
 }
