@@ -31,6 +31,16 @@ export type ScanOptions = {
    * Return as soon as possible.
    */
   signal?: AbortSignal
+  /**
+   * If enabled, Depth will be calculated faster by skipping
+   * other files after first match.
+   * This makes the scan faster but affects
+   * {@link MatcherContext.totalDirs},
+   * {@link MatcherContext.totalFiles},
+   * {@link MatcherContext.totalMatchedFiles}
+   * and {@link MatcherContext.depthPaths}.
+   */
+  fastDepth?: boolean
 }
 
 /**
@@ -48,7 +58,8 @@ export async function scan(options: ScanOptions): Promise<MatcherContext> {
     cwd: cwdo = (await import('node:process')).cwd(),
     depth: maxDepth = Infinity,
     invert = false,
-    signal,
+    signal = undefined,
+    fastDepth = false,
   } = options
   const cwd = cwdo.replaceAll('\\', '/')
   const dir = fsp.opendir(cwd, { recursive: true })
@@ -67,17 +78,45 @@ export async function scan(options: ScanOptions): Promise<MatcherContext> {
       return ctx
     }
     const path = posix.join(posix.relative(cwd, entry.parentPath.replaceAll('\\', '/')), entry.name)
-    const { depth, depthSlash } = getDepth(path, maxDepth)
-    const isDir = entry.isDirectory()
 
-    if (isDir) {
+    if (entry.isDirectory()) {
       ctx.totalDirs++
-    }
-    else {
-      ctx.totalFiles++
+      // if (!fastDepth) {
+      //   continue
+      // }
+      // const { depth } = getDepth(path, maxDepth)
+
+      // if (depth <= maxDepth) {
+      //   continue
+      // }
+      continue // TODO: (perf) skip dir
     }
 
-    let ignored = await target.matcher(path, isDir, ctx)
+    ctx.totalFiles++
+
+    if (fastDepth) {
+      const { depth, depthSlash } = getDepth(path, maxDepth)
+      if (depth > maxDepth) {
+        let ignored = await target.matcher(path, false, ctx)
+        if (ctx.sourceErrors.length > 0) {
+          break
+        }
+
+        if (invert) {
+          ignored = !ignored
+        }
+
+        if (ignored) {
+          continue
+        }
+
+        const dir = path.substring(0, depthSlash)
+        ctx.depthPaths.set(dir, (ctx.depthPaths.get(dir) ?? 0) + 1)
+        continue // TODO: (perf) skip dir
+      }
+    }
+
+    let ignored = await target.matcher(path, false, ctx)
     if (ctx.sourceErrors.length > 0) {
       break
     }
@@ -86,18 +125,12 @@ export async function scan(options: ScanOptions): Promise<MatcherContext> {
       ignored = !ignored
     }
 
-    if (isDir) {
-      if (depth > maxDepth) {
-        continue
-      }
-      continue
-    }
-
     if (ignored) {
       continue
     }
 
     ctx.totalMatchedFiles++
+    const { depth, depthSlash } = getDepth(path, maxDepth)
     if (depth > maxDepth) {
       const dir = path.substring(0, depthSlash)
       ctx.depthPaths.set(dir, (ctx.depthPaths.get(dir) ?? 0) + 1)
@@ -114,6 +147,7 @@ export async function scan(options: ScanOptions): Promise<MatcherContext> {
     ctx.paths.add(dir + '/')
   }
 
+  console.log(ctx.paths)
   return ctx
 }
 
