@@ -1,5 +1,5 @@
 import type { Source, SourceExtractor } from './matcher.js'
-import { minimatch } from 'minimatch'
+import { minimatch, type MinimatchOptions } from 'minimatch'
 
 export function extractGitignore(source: Source, content: Buffer<ArrayBuffer>): void {
   for (let line of content.toString().split('\n')) {
@@ -25,7 +25,7 @@ export function extractGitignore(source: Source, content: Buffer<ArrayBuffer>): 
 extractGitignore satisfies SourceExtractor
 
 export function gitignoreMatch(pattern: string, path: string): boolean {
-  const o = { dot: true }
+  const o: MinimatchOptions = { dot: true }
   if (pattern.startsWith('/')) {
     pattern = pattern.substring(1)
   }
