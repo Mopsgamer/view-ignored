@@ -14,8 +14,7 @@
     "release:patch": "bun run release-it --increment=patch"
   },
   "author": "Mopsgamer",
-  "license": "ISC",
-  "main": "./out/index.js",
+  "license": "MIT",
   "files": [
     "/out"
   ],
@@ -87,14 +86,13 @@
     "tree",
     "ls-tree",
     "ignore",
+    "match",
     "gitignore",
     "npmignore",
+    "yarnignore",
     "vscodeignore",
-    "cli",
     "fs",
-    "file-system",
-    "output",
-    "project",
+    "files",
     "migration"
   ]
 }
