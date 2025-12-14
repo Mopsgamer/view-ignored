@@ -1,7 +1,7 @@
-import fsp from 'node:fs/promises'
 import { posix } from 'node:path'
 import type { MatcherContext, Source } from './patterns/matcher.js'
 import type { Target } from './targets/target.js'
+import { opendir } from './walk.js'
 
 export type DepthMode = 'files' | undefined
 
@@ -62,8 +62,6 @@ export async function scan(options: ScanOptions): Promise<MatcherContext> {
     fastDepth = false,
   } = options
   const cwd = cwdo.replaceAll('\\', '/')
-  const d = await fsp.opendir(cwd, { recursive: true })
-
   const ctx: MatcherContext = {
     paths: new Set<string>(),
     external: new Map<string, Source>(),
@@ -73,23 +71,24 @@ export async function scan(options: ScanOptions): Promise<MatcherContext> {
     totalMatchedFiles: 0,
     totalDirs: 0,
   }
-  for await (const entry of d) {
+
+  await opendir(cwd, async (entry) => {
     if (signal?.aborted) {
-      return ctx
+      return 2
     }
     const path = posix.join(posix.relative(cwd, entry.parentPath.replaceAll('\\', '/')), entry.name)
 
     if (entry.isDirectory()) {
       ctx.totalDirs++
-      // if (!fastDepth) {
-      //   continue
-      // }
-      // const { depth } = getDepth(path, maxDepth)
+      if (!fastDepth) {
+        return 0
+      }
+      const { depth } = getDepth(path, maxDepth)
 
-      // if (depth <= maxDepth) {
-      //   continue
-      // }
-      continue // TODO: (perf) skip dir
+      if (depth <= maxDepth) {
+        return 0
+      }
+      return 1
     }
 
     ctx.totalFiles++
@@ -99,8 +98,7 @@ export async function scan(options: ScanOptions): Promise<MatcherContext> {
       if (depth > maxDepth) {
         let ignored = await target.matcher(path, false, ctx)
         if (ctx.sourceErrors.length > 0) {
-          await d.close().catch(() => {})
-          break
+          return 2
         }
 
         if (invert) {
@@ -108,19 +106,18 @@ export async function scan(options: ScanOptions): Promise<MatcherContext> {
         }
 
         if (ignored) {
-          continue
+          return 0
         }
 
         const dir = path.substring(0, depthSlash)
         ctx.depthPaths.set(dir, (ctx.depthPaths.get(dir) ?? 0) + 1)
-        continue // TODO: (perf) skip dir
+        return 1
       }
     }
 
     let ignored = await target.matcher(path, false, ctx)
     if (ctx.sourceErrors.length > 0) {
-      await d.close().catch(() => {})
-      break
+      return 2
     }
 
     if (invert) {
@@ -128,7 +125,7 @@ export async function scan(options: ScanOptions): Promise<MatcherContext> {
     }
 
     if (ignored) {
-      continue
+      return 0
     }
 
     ctx.totalMatchedFiles++
@@ -140,6 +137,11 @@ export async function scan(options: ScanOptions): Promise<MatcherContext> {
     else {
       ctx.paths.add(path)
     }
+    return 0
+  })
+
+  if (signal?.aborted) {
+    return ctx
   }
 
   for (const [dir, count] of ctx.depthPaths) {
