@@ -11,9 +11,14 @@
 	"github": {
 		"release": true,
 		"draft": false,
-		"releaseName": "${version}"
+		"releaseName": "${version}",
+		"skipChecks": true
 	},
 	"npm": {
-		"publish": true
+		"publish": true,
+		"skipChecks": true
+	},
+	"git": {
+		"requireBranch": "main"
 	}
 }
