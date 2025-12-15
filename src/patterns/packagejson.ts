@@ -1,5 +1,6 @@
 import { type } from 'arktype'
-import type { Source, SourceExtractor } from './matcher.js'
+import { sourcePushNegatable,
+type Source, type SourceExtractor } from './matcher.js'
 
 const nodeJsManifest = type({
   files: 'string[]?',
@@ -18,13 +19,8 @@ export function extractPackageJson(source: Source, content: Buffer<ArrayBuffer>)
     return
   }
 
-  for (const p of dist.files) {
-    if (p.startsWith('!')) {
-      source.pattern.exclude.push(...p.substring(1))
-    }
-    else {
-      source.pattern.include.push(...p)
-    }
+  for (const pattern of dist.files) {
+    sourcePushNegatable(source, pattern)
   }
 
   return

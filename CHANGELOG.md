@@ -10,6 +10,8 @@ and this project adheres to
 
 - Disallow negative depth values.
 - Use the `AbortSignal.throwIfAborted` method.
+- Fix potentially broken `package.json` `files` pattern processing.
+- Add `sourcePushNegatable` helper function.
 
 ## [0.5.1] - 2025-12-15
 

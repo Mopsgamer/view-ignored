@@ -61,6 +61,8 @@ export function patternMatches(pattern: Pattern, path: string): boolean {
 /**
  * Represents a set of include and exclude patterns.
  * These patterns are positive minimatch patterns.
+ *
+ * @see {@link PatternMatcher}
  */
 export type SignedPattern = {
   include: Pattern
@@ -69,7 +71,11 @@ export type SignedPattern = {
 
 /**
  * Combined internal and external patterns for matching.
- * Used in {@link signedPatternIgnores} function.
+ *
+ * `exclude` patterns take precedence over `include` patterns.
+ *
+ * `internal` patterns take precedence over `external` patterns.
+ * @see {@link signedPatternIgnores}
  */
 export type PatternMatcher = {
   internal: SignedPattern
@@ -103,6 +109,22 @@ export type Source = {
    * because it specifies files to include rather than exclude.
    */
   inverted: boolean
+}
+
+/**
+ * Adds a negatable pattern to the source's pattern lists.
+ * Strips the leading '!' for include patterns,
+ * and adds to exclude patterns otherwise.
+ */
+export function sourcePushNegatable(
+  source: Source,
+  pattern: string,
+): void {
+  if (pattern.startsWith('!')) {
+    source.pattern.include.push(pattern.substring(1))
+    return
+  }
+  source.pattern.exclude.push(pattern)
 }
 
 /**

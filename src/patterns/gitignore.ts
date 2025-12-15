@@ -1,4 +1,4 @@
-import type { Source, SourceExtractor } from './matcher.js'
+import { sourcePushNegatable, type Source, type SourceExtractor } from './matcher.js'
 import { minimatch, type MinimatchOptions } from 'minimatch'
 
 export function extractGitignore(source: Source, content: Buffer<ArrayBuffer>): void {
@@ -12,12 +12,7 @@ export function extractGitignore(source: Source, content: Buffer<ArrayBuffer>): 
       line = line.substring(-cdx)
     }
 
-    if (line.startsWith('!')) {
-      source.pattern.include.push(line.substring(1))
-    }
-    else {
-      source.pattern.exclude.push(line)
-    }
+    sourcePushNegatable(source, line)
   }
   // TODO: validate gitignore
 }

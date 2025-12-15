@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import { ok, match, partialDeepStrictEqual } from 'node:assert/strict'
 import { Git } from './targets/git.js'
 
-test('scan primitive git', async () => {
+test('scan self git .vscode/ and src/ are first', async () => {
   const r = await scan({ target: Git, depth: 0, invert: false, fastDepth: true })
   ok(r.totalDirs > 230)
   ok(r.totalDirs < 400)
