@@ -1,11 +1,12 @@
 import { scan } from './scan.js'
-import { it } from 'node:test'
-import { match, partialDeepStrictEqual } from 'node:assert/strict'
+import { test } from 'node:test'
+import { ok, match, partialDeepStrictEqual } from 'node:assert/strict'
 import { Git } from './targets/git.js'
 
-it('scan primitive git', async () => {
+test('scan primitive git', async () => {
   const r = await scan({ target: Git, depth: 0, invert: false, fastDepth: true })
-  console.log(r.totalDirs)
+  ok(r.totalDirs > 230)
+  ok(r.totalDirs < 400)
   // this test uses sortFirstFolders implementation
   // provided by https://jsr.io/@m234/path/0.1.4/sort-cmp.ts
   // you can install this jsr package in your project

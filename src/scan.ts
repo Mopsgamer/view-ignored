@@ -64,6 +64,9 @@ export async function scan(options: ScanOptions): Promise<MatcherContext> {
     signal = undefined,
     fastDepth = false,
   } = options
+  if (maxDepth < 0) {
+    throw new TypeError('Depth must be a non-negative integer')
+  }
   const cwd = cwdo.replaceAll('\\', '/')
   const ctx: MatcherContext = {
     paths: new Set<string>(),
@@ -76,9 +79,7 @@ export async function scan(options: ScanOptions): Promise<MatcherContext> {
   }
 
   await opendir(cwd, async (entry) => {
-    if (signal?.aborted) {
-      return 2
-    }
+    signal?.throwIfAborted()
     const path = posix.join(posix.relative(cwd, entry.parentPath.replaceAll('\\', '/')), entry.name)
 
     if (entry.isDirectory()) {
@@ -143,9 +144,7 @@ export async function scan(options: ScanOptions): Promise<MatcherContext> {
     return 0
   })
 
-  if (signal?.aborted) {
-    return ctx
-  }
+  signal?.throwIfAborted()
 
   for (const [dir, count] of ctx.depthPaths) {
     if (count === 0) {
