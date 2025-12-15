@@ -85,19 +85,32 @@ vign.scan({ target: Git });
 
 ## Targets
 
+> [!NOTE]
+> Each scanner expects minimal configurations, but the actual tool can have
+> more/less complex rules. Refer to the documentation of each tool for details.
 
-The following built-in targets are available:
+The following built-in scanners are available:
 
-- `git`
-- `npm` (compatible with Bun, PNPM, and others)
-- `yarn`
-- `vsce`
-- `jsr` (compatible with Deno)
+- Git
+  - Reads `.gitignore` files but does not consider global settings.
+  - Check this scanner by running `git ls-tree -r HEAD --name-only`.
+  - See the implementation of [Git target](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/git.ts) for details.
+- NPM (compatible with Bun, PNPM, and others)
+  - Reads `.npmignore` and `package.json` `files` field.
+  - No additional checks for `name`, `version` or `publishConfig`.
+  - Check this scanner by running `npm pack --dry-run`.
+  - See the implementation of [NPM target](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/npm.ts) for details.
+- Yarn
+  - Same behavior as `npm`, but also reads `.yarnignore`.
+  - See the implementation of [Yarn target](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/yarn.ts) for details.
+- VSCE
+  - Reads `.vscodeignore` and `package.json` `files` field.
+  - Check this scanner by running `vsce ls`.
+  - See the implementation of [VSCE target](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/vsce.ts) for details.
+- JSR (compatible with Deno)
+  - Reads `jsr.json(c)` and `deno.json(c)` `include` and `exclude` fields.
+  - See the implementation of [JSR target](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/jsr.ts) for details.
 
 ## License
 
 MIT License. See [LICENSE.txt](LICENSE.txt) for details.
-
-## Target implementations
-<!-- .ts links -->
-See [Target implementations](src/targets/README.md) for details.
