@@ -1,6 +1,9 @@
 import { type } from 'arktype'
-import { sourcePushNegatable,
-type Source, type SourceExtractor } from './matcher.js'
+import {
+  sourcePushNegatable,
+  type Source,
+  type SourceExtractor,
+} from './matcher.js'
 
 const nodeJsManifest = type({
   files: 'string[]?',
