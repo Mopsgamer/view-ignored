@@ -28,14 +28,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      
-     - name: Configure git author
-       run: |
-        git fetch origin main
-        git checkout main
-        git reset --hard origin/main
-        git config user.name "github-actions[bot]"
-        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Configure git author
+        run: |
+          git fetch origin main
+          git checkout main
+          git reset --hard origin/main
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - uses: oven-sh/setup-bun@v2
         with:
