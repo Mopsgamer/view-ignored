@@ -1,0 +1,38 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: Select release type
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      dry_run:
+        description: Enable dry run
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.x"
+
+      - name: Run release
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            bun run release:${{ inputs.release_type }} --dry-run
+          else
+            bun run release:${{ inputs.release_type }}
+          fi
+
