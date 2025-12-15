@@ -17,7 +17,7 @@ export type ScanOptions = {
   cwd?: string
 
   /**
-   * If enabled, the scan will return files that are ignored by the target matchers.
+   * If enabled, the scan will return files that are ignored by the target matcher.
    */
   invert?: boolean
 
@@ -32,8 +32,9 @@ export type ScanOptions = {
    */
   signal?: AbortSignal
   /**
-   * If enabled, Depth will be calculated faster by skipping
-   * other files after first match.
+   * Requires depth >= 0.
+   * If enabled, directories will be processed faster
+   * by skipping files after first match.
    * This makes the scan faster but affects
    * {@link MatcherContext.totalDirs},
    * {@link MatcherContext.totalFiles},
@@ -46,11 +47,13 @@ export type ScanOptions = {
 /**
  * Scan the directory for included files based on the provided targets.
  *
- * Note that this function uses `fs/promises.opendir` with recursive option,
- * and `fs/promises.readFile`. It also normalizes paths to use forward slashes..
+ * Note that this function uses `fs/promises.readFile` and `fs/promises.opendir` without options within
+ * custom recursion, instead of `fs.promises.readdir` with `{ withFileTypes: true }.
+ * It also normalizes paths to use forward slashes.
+ * Please report any issues if you encounter problems related to this behavior.
  *
  * @param options Scan options.
- * @returns A promise that resolves to a map of targets to their matcher contexts.
+ * @returns A promise that resolves to a {@link MatcherContext} containing the scan results.
  */
 export async function scan(options: ScanOptions): Promise<MatcherContext> {
   const {
