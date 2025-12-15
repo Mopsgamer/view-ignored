@@ -154,7 +154,6 @@ export async function scan(options: ScanOptions): Promise<MatcherContext> {
     ctx.paths.add(dir + '/')
   }
 
-  console.log(ctx.paths)
   return ctx
 }
 
