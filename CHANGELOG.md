@@ -6,6 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- BREAKING CHANGE: Target fixes and related refactorings,
+  including some renamings.
+- BREAKING CHANGE: Change implementations of some pattern extractors.
+- BREAKING CHANGE: Show directories.
+- Add `Source.error` and `MatcherContext.failed`.
+- BREAKING CHANGE: Improve and fix `SourceExtractor`.
+  Remove `MatcherContext.sourceErrors`.
+- Replace eslint with oxlint.
+- Add tests for Git and NPM targets.
+  Also, test outputs for them for the project itself.
+
 ## [0.5.2] - 2025-12-15
 
 - Disallow negative depth values.
@@ -41,10 +54,10 @@ and this project adheres to
 ## [0.4.6] - 2025-08-11
 
 - Fixed incorrect interface implementation for `stream.run()`.
-This fix changes return type for this method
-from `void` to `Promise<DeepStreamDataRoot>`.
-Command-line now awaits this method, which
-fixes `--parsable` and some other related crashes.
+  This fix changes return type for this method
+  from `void` to `Promise<DeepStreamDataRoot>`.
+  Command-line now awaits this method, which
+  fixes `--parsable` and some other related crashes.
 
 ## [0.4.5] - 2025-08-03
 

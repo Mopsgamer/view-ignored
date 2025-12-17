@@ -1,32 +1,38 @@
-import { type } from 'arktype'
+import { type } from "arktype";
 import {
   sourcePushNegatable,
   type Source,
   type SourceExtractor,
-} from './matcher.js'
+  type SourceExtractorResult,
+} from "./matcher.js";
 
 const nodeJsManifest = type({
-  files: 'string[]?',
-})
+  files: "string[]?",
+});
 
-const parse = nodeJsManifest.pipe((s: string): typeof nodeJsManifest.infer => JSON.parse(s))
+const parse = type("string")
+  .pipe((s) => JSON.parse(s))
+  .pipe(nodeJsManifest);
 
-export function extractPackageJson(source: Source, content: Buffer<ArrayBuffer>): type.errors | undefined {
-  source.inverted = true
-  const dist = parse(content.toString())
+export function extractPackageJson(
+  source: Source,
+  content: Buffer<ArrayBuffer>,
+): SourceExtractorResult {
+  source.inverted = true;
+  const dist = parse(content.toString());
   if (dist instanceof type.errors) {
-    return dist
+    return { errors: dist, extraction: "continue" };
   }
 
   if (!dist.files) {
-    return
+    return;
   }
 
   for (const pattern of dist.files) {
-    sourcePushNegatable(source, pattern)
+    sourcePushNegatable(source, pattern);
   }
 
-  return
+  return;
 }
 
-extractPackageJson satisfies SourceExtractor
+extractPackageJson satisfies SourceExtractor;

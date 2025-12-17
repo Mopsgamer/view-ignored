@@ -1,102 +1,83 @@
-import { scan } from './scan.js'
-import { test } from 'node:test'
-import { ok, match, partialDeepStrictEqual } from 'node:assert/strict'
-import { Git } from './targets/git.js'
+import { scan } from "./scan.js";
+import { test } from "node:test";
+import { deepEqual } from "node:assert/strict";
+import { Git as target } from "./targets/git.js";
+import { sortFirstFolders } from "./scan_sort.test.js";
 
-test('scan self git .vscode/ and src/ are first', async () => {
-  const r = await scan({ target: Git, depth: 0, invert: false, fastDepth: true })
-  ok(r.totalDirs > 230)
-  ok(r.totalDirs < 400)
+void test("scan Git (self, flat)", async () => {
+  const r = await scan({ target, depth: 0, fastDepth: true });
+  deepEqual(
+    sortFirstFolders(r.paths),
+    sortFirstFolders([
+      ".gitattributes",
+      ".github/",
+      ".gitignore",
+      ".oxlintrc.json",
+      ".release-it.json",
+      ".vscode/",
+      "CHANGELOG.md",
+      "LICENSE.txt",
+      "README.md",
+      "bun.lock",
+      "package.json",
+      "src/",
+      "tsconfig.json",
+      "tsconfig.prod.json",
+    ]),
+  );
+});
+
+void test("scan Git (self)", async () => {
+  const r = await scan({ target });
   // this test uses sortFirstFolders implementation
   // provided by https://jsr.io/@m234/path/0.1.4/sort-cmp.ts
   // you can install this jsr package in your project
   // for sorting - new Set(sorted) keeps sorting :),
   // but your package and dependents should also declare
   // @jsr:registry=https://npm.jsr.io in .npmrc or something.
-  const paths = sortFirstFolders(r.paths)
-  partialDeepStrictEqual(paths, [
-    '.gitattributes',
-    '.gitignore',
-    'bun.lock',
-    'CHANGELOG.md',
-    'eslint.config.mjs',
-    'LICENSE.txt',
-    'package.json',
-    'README.md',
-    'tsconfig.json',
-  ])
-  match(paths[0]!, /.vscode\//)
-  match(paths[1]!, /src\//)
-})
-
-/**
- * Creates new array.
- * Files and folders are sorted by their names.
- * Folders are displayed before files.
- */
-function sortFirstFolders(iterable: Iterable<string>): string[] {
-  return Array.from(iterable).sort(cmpFirstFolders)
-}
-
-/**
- * Files and folders are sorted by their names.
- * Folders are displayed before files.
- */
-function cmpFirstFolders(a: string, b: string): number {
-  if (a === b) return 0
-  let comp = 0
-  while (comp === 0) {
-    const { next: next1, other: post1, isLast: last1 } = shiftPath(a)
-    a = post1
-    const { next: next2, other: post2, isLast: last2 } = shiftPath(b)
-    b = post2
-
-    comp = cmpMixed(next1, next2)
-
-    if (last1 === last2) {
-      if (last1) break
-      continue
-    }
-    if (next1 === '') return -1
-    if (next2 === '') return +1
-    if (last2) return -1
-    return +1
-  }
-
-  return comp
-}
-
-/**
- * Files and folders are sorted by their names.
- * Files are interwoven with folders.
- */
-function cmpMixed(a: string, b: string): number {
-  return a.localeCompare(b, undefined, { ignorePunctuation: false })
-}
-
-type ShiftResult = {
-  next: string
-  other: string
-  isLast: boolean
-}
-
-/**
- * @example
- * "path/to/the/file" -> ["path", "to/the/file", false]
- * "file" -> ["file", "file", true]
- * "file/" -> ["file", "", false]
- */
-function shiftPath(p: string): ShiftResult {
-  const slashIndex = p.search(/[/\\]/)
-  const next = p.slice(0, Math.max(0, slashIndex))
-  const other = p.slice(Math.max(0, slashIndex + 1))
-  const r: ShiftResult = {
-    next: next,
-    other: other,
-    isLast: next == '',
-  }
-  if (slashIndex < 0) {
-    r.next = r.other
-  }
-  return r
-}
+  deepEqual(
+    sortFirstFolders(r.paths).filter((path) => !path.endsWith("/")),
+    sortFirstFolders([
+      ".gitattributes",
+      ".github/workflows/release.yml",
+      ".gitignore",
+      ".oxlintrc.json",
+      ".release-it.json",
+      ".vscode/extensions.json",
+      ".vscode/launch.json",
+      ".vscode/settings.json",
+      ".vscode/tasks.json",
+      "CHANGELOG.md",
+      "LICENSE.txt",
+      "README.md",
+      "bun.lock",
+      "package.json",
+      "src/fsp.ts",
+      "src/index.ts",
+      "src/patterns/gitignore.test.ts",
+      "src/patterns/gitignore.ts",
+      "src/patterns/index.ts",
+      "src/patterns/jsrjson.ts",
+      "src/patterns/matcher.ts",
+      "src/patterns/packagejson.ts",
+      "src/scan.ts",
+      "src/scan_invalid_depth.test.ts",
+      "src/scan_self_git.test.ts",
+      "src/scan_self_npm.test.ts",
+      "src/scan_sort.test.ts",
+      "src/targets/git.test.ts",
+      "src/targets/git.ts",
+      "src/targets/index.ts",
+      "src/targets/jsr.ts",
+      "src/targets/npm.test.ts",
+      "src/targets/npm.ts",
+      "src/targets/target.ts",
+      "src/targets/testScanPaths.test.ts",
+      "src/targets/vsce.ts",
+      "src/targets/yarn.ts",
+      "src/walk.ts",
+      "tsconfig.json",
+      "tsconfig.prod.json",
+    ]),
+  );
+});

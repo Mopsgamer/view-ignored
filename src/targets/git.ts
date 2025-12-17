@@ -1,25 +1,20 @@
-import { type SourceExtractor, type SignedPattern, signedPatternIgnores, findAndExtract } from '../patterns/matcher.js'
-import { extractGitignore } from '../patterns/gitignore.js'
-import type { Target } from './target.js'
+import {
+  type SourceExtractor,
+  type SignedPattern,
+  signedPatternIgnores,
+} from "../patterns/matcher.js";
+import { extractGitignore } from "../patterns/gitignore.js";
+import type { Target } from "./target.js";
 
-const gitSources = ['.gitignore']
-const gitSourceMap = new Map<string, SourceExtractor>([
-  ['.gitignore', extractGitignore],
-])
+const gitSources = [".gitignore"];
+const gitSourceMap = new Map<string, SourceExtractor>([[".gitignore", extractGitignore]]);
 const gitPattern: SignedPattern = {
-  exclude: [
-    '.git',
-    '.DS_Store',
-  ],
+  exclude: [".git", ".DS_Store"],
   include: [],
-}
+};
 
 export const Git: Target = {
-  async matcher(entry, isDir, ctx) {
-    if (isDir) {
-      await findAndExtract(entry, gitSources, gitSourceMap, ctx)
-      return true
-    }
-    return await signedPatternIgnores(gitPattern, entry, gitSources, gitSourceMap, ctx)
+  async ignores(cwd, entry, ctx) {
+    return await signedPatternIgnores(gitPattern, cwd, entry, gitSources, gitSourceMap, ctx);
   },
-}
+};

@@ -1,36 +1,37 @@
-import { posix } from 'node:path'
-import type { MatcherContext, Source } from './patterns/matcher.js'
-import type { Target } from './targets/target.js'
-import { opendir } from './walk.js'
+import { posix } from "node:path";
+import type { MatcherContext, Source } from "./patterns/matcher.js";
+import type { Target } from "./targets/target.js";
+import { opendir } from "./walk.js";
+import type { FsPromises } from "./fsp.js";
 
-export type DepthMode = 'files' | undefined
+export type DepthMode = "files" | undefined;
 
 export type ScanOptions = {
   /**
    * Provides the matcher to use for scanning.
    */
-  target: Target
+  target: Target;
 
   /**
    * Current working directory to start the scan from.
    */
-  cwd?: string
+  cwd?: string;
 
   /**
    * If enabled, the scan will return files that are ignored by the target matcher.
    */
-  invert?: boolean
+  invert?: boolean;
 
   /**
    * Starting from depth `0` means you will see
    * children of the current working directory.
    */
-  depth?: number
+  depth?: number;
 
   /**
    * Return as soon as possible.
    */
-  signal?: AbortSignal
+  signal?: AbortSignal;
   /**
    * Requires depth >= 0.
    * If enabled, directories will be processed faster
@@ -41,8 +42,13 @@ export type ScanOptions = {
    * {@link MatcherContext.totalMatchedFiles}
    * and {@link MatcherContext.depthPaths}.
    */
-  fastDepth?: boolean
-}
+  fastDepth?: boolean;
+
+  /**
+   * Filesystem promises adapter.
+   */
+  fsp?: FsPromises;
+};
 
 /**
  * Scan the directory for included files based on the provided targets.
@@ -58,123 +64,136 @@ export type ScanOptions = {
 export async function scan(options: ScanOptions): Promise<MatcherContext> {
   const {
     target,
-    cwd: cwdo = (await import('node:process')).cwd(),
+    cwd: cwdo = (await import("node:process")).cwd(),
     depth: maxDepth = Infinity,
     invert = false,
     signal = undefined,
     fastDepth = false,
-  } = options
+    fsp = await import("node:fs/promises"),
+  } = options;
   if (maxDepth < 0) {
-    throw new TypeError('Depth must be a non-negative integer')
+    throw new TypeError("Depth must be a non-negative integer");
   }
-  const cwd = cwdo.replaceAll('\\', '/')
+  const cwd = cwdo.replaceAll("\\", "/");
   const ctx: MatcherContext = {
     paths: new Set<string>(),
     external: new Map<string, Source>(),
+    failed: false,
     depthPaths: new Map<string, number>(),
-    sourceErrors: [],
     totalFiles: 0,
     totalMatchedFiles: 0,
     totalDirs: 0,
-  }
+    fsp,
+  };
 
-  await opendir(cwd, async (entry) => {
-    signal?.throwIfAborted()
-    const path = posix.join(posix.relative(cwd, entry.parentPath.replaceAll('\\', '/')), entry.name)
+  await opendir(fsp, cwd, async (entry) => {
+    signal?.throwIfAborted();
+    const path = posix.join(
+      posix.relative(cwd, entry.parentPath.replaceAll("\\", "/")),
+      entry.name,
+    );
 
-    if (entry.isDirectory()) {
-      ctx.totalDirs++
-      if (!fastDepth) {
-        return 0
-      }
-      const { depth } = getDepth(path, maxDepth)
-
-      if (depth <= maxDepth) {
-        return 0
-      }
-      return 1
+    const isDir = entry.isDirectory();
+    if (isDir) {
+      ctx.totalDirs++;
+    } else {
+      ctx.totalFiles++;
     }
 
-    ctx.totalFiles++
-
     if (fastDepth) {
-      const { depth, depthSlash } = getDepth(path, maxDepth)
+      const { depth, depthSlash } = getDepth(path, maxDepth);
       if (depth > maxDepth) {
-        let ignored = await target.matcher(path, false, ctx)
-        if (ctx.sourceErrors.length > 0) {
-          return 2
+        let ignored = await target.ignores(cwd, path, ctx);
+        if (ctx.failed) {
+          return 2;
         }
 
         if (invert) {
-          ignored = !ignored
+          ignored = !ignored;
         }
 
         if (ignored) {
-          return 0
+          return 0;
         }
 
-        const dir = path.substring(0, depthSlash)
-        ctx.depthPaths.set(dir, (ctx.depthPaths.get(dir) ?? 0) + 1)
-        return 1
+        if (isDir) {
+          // ctx.totalMatchedDirs++;
+          // ctx.depthPaths.set(path, (ctx.depthPaths.get(path) ?? 0) + 1);
+          return 0;
+        }
+
+        ctx.totalMatchedFiles++;
+        const dir = path.substring(0, depthSlash);
+        ctx.depthPaths.set(dir, (ctx.depthPaths.get(dir) ?? 0) + 1);
+        return 1;
       }
     }
 
-    let ignored = await target.matcher(path, false, ctx)
-    if (ctx.sourceErrors.length > 0) {
-      return 2
+    let ignored = await target.ignores(cwd, path, ctx);
+    if (ctx.failed) {
+      return 2;
     }
 
     if (invert) {
-      ignored = !ignored
+      ignored = !ignored;
     }
 
     if (ignored) {
-      return 0
+      return 0;
     }
 
-    ctx.totalMatchedFiles++
-    const { depth, depthSlash } = getDepth(path, maxDepth)
+    if (isDir) {
+      // ctx.totalMatchedDirs++;
+      // ctx.depthPaths.set(path, (ctx.depthPaths.get(path) ?? 0) + 1);
+      const { depth } = getDepth(path, maxDepth);
+      if (depth <= maxDepth) {
+        ctx.paths.add(path + "/");
+      }
+      return 0;
+    }
+
+    ctx.totalMatchedFiles++;
+    const { depth, depthSlash } = getDepth(path, maxDepth);
     if (depth > maxDepth) {
-      const dir = path.substring(0, depthSlash)
-      ctx.depthPaths.set(dir, (ctx.depthPaths.get(dir) ?? 0) + 1)
+      const dir = path.substring(0, depthSlash);
+      ctx.depthPaths.set(dir, (ctx.depthPaths.get(dir) ?? 0) + 1);
+    } else {
+      ctx.paths.add(path);
     }
-    else {
-      ctx.paths.add(path)
-    }
-    return 0
-  })
+    return 0;
+  });
 
-  signal?.throwIfAborted()
+  signal?.throwIfAborted();
 
   for (const [dir, count] of ctx.depthPaths) {
     if (count === 0) {
-      continue
+      continue;
     }
-    ctx.paths.add(dir + '/')
+    ctx.paths.add(dir + "/");
   }
 
-  return ctx
+  return ctx;
 }
 
 function getDepth(path: string, maxDepth: number) {
   const result = {
     depth: 0,
     depthSlash: 0,
-  }
-  result.depthSlash = -1
+  };
+  result.depthSlash = -1;
   if (maxDepth < 0) {
-    return result
+    return result;
   }
   for (const [i, c] of Array.from(path).entries()) {
-    if (c !== '/') {
-      continue
+    if (c !== "/") {
+      continue;
     }
-    result.depth++
+    result.depth++;
     if (result.depth < maxDepth) {
-      continue
+      continue;
     }
-    result.depthSlash = i
-    return result
+    result.depthSlash = i;
+    return result;
   }
-  return result
+  return result;
 }

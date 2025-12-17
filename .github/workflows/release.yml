@@ -56,4 +56,3 @@ jobs:
           else
             bun run release:${{ inputs.release_type }} --ci
           fi
-

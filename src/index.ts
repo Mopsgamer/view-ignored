@@ -1,1 +1,1 @@
-export * from './scan.js'
+export * from "./scan.js";

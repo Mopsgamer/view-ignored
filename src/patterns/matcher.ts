@@ -1,6 +1,7 @@
-import * as fsp from 'node:fs/promises'
-import { dirname } from 'node:path'
-import { gitignoreMatch } from './gitignore.js'
+import { dirname } from "node:path";
+import { gitignoreMatch } from "./gitignore.js";
+import type { FsPromises } from "../fsp.js";
+import { ArkErrors } from "arktype";
 
 /**
  * The results and statistics of a scanning operation.
@@ -12,50 +13,57 @@ export type MatcherContext = {
    * @example
    * new Set(sort(new Set(['a/b', 'a/a'])))
    */
-  paths: Set<string>
+  paths: Set<string>;
   /**
    * Maps directory paths to their corresponding sources.
    * @example
    * "src" => Source
    */
-  external: Map<string, Source>
+  external: Map<string, Source>;
   /**
-   * Maps directory paths to the quantity of path segments they contain.
+   * If any fatal errors were encountered during source extraction.
+   */
+  failed: boolean;
+  /**
+   * Maps directory paths to the quantity of files they contain.
    * @example
-   * "src/components" => 2
+   * "src/" => 1
+   * "src/components/" => 0
+   * "src/views/" => 1
+   * "src/views/index.html" => undefined
    */
-  depthPaths: Map<string, number>
-  /**
-   * Any errors encountered while processing source files.
-   */
-  sourceErrors: Error[]
+  depthPaths: Map<string, number>;
   /**
    * Total number of files scanned.
    */
-  totalFiles: number
+  totalFiles: number;
   /**
    * Total number of files matched by the target.
    */
-  totalMatchedFiles: number
+  totalMatchedFiles: number;
   /**
    * Total number of directories scanned.
    */
-  totalDirs: number
-}
+  totalDirs: number;
+  /**
+   * File system promises interface.
+   */
+  fsp: FsPromises;
+};
 
 /**
  * Represents a list of positive minimatch patterns.
  */
-export type Pattern = string[]
+export type Pattern = string[];
 
 export function patternMatches(pattern: Pattern, path: string): boolean {
   for (const p of pattern) {
-    const matched = gitignoreMatch(p, path)
+    const matched = gitignoreMatch(p, path);
     if (matched) {
-      return true
+      return true;
     }
   }
-  return false
+  return false;
 }
 
 /**
@@ -65,9 +73,9 @@ export function patternMatches(pattern: Pattern, path: string): boolean {
  * @see {@link PatternMatcher}
  */
 export type SignedPattern = {
-  include: Pattern
-  exclude: Pattern
-}
+  include: Pattern;
+  exclude: Pattern;
+};
 
 /**
  * Combined internal and external patterns for matching.
@@ -78,17 +86,17 @@ export type SignedPattern = {
  * @see {@link signedPatternIgnores}
  */
 export type PatternMatcher = {
-  internal: SignedPattern
-  external: SignedPattern
-}
+  internal: SignedPattern;
+  external: SignedPattern;
+};
 
 /**
- * Checks whether a given path should be ignored based on its patterns.
+ * Checks whether a given entry path should be ignored based on its patterns.
  * @see {@link findAndExtract}
  * @see {@link signedPatternIgnores}
  * @see {@link https://github.com/Mopsgamer/view-ignored/tree/main/src/targets} for usage examples.
  */
-export type PathChecker = (path: string, isDir: boolean, ctx: MatcherContext) => Promise<boolean>
+export type Ignores = (cwd: string, entry: string, ctx: MatcherContext) => Promise<boolean>;
 
 /**
  * Represents a source of patterns for matching paths.
@@ -98,174 +106,220 @@ export type Source = {
    * Patterns defined within the source file.
    * Those patterns are for ignoring files.
    */
-  pattern: SignedPattern
+  pattern: SignedPattern;
   /**
    * Name of the source file.
    */
-  name: string
+  name: string;
+  /**
+   * Relative path to the source file.
+   */
+  path: string;
   /**
    * Indicates if the matching logic is inverted.
    * For example, `package.json` `files` field inverts the matching logic,
    * because it specifies files to include rather than exclude.
    */
-  inverted: boolean
-}
+  inverted: boolean;
+  /**
+   * Error encountered during extraction, if any.
+   * @see {@link SourceExtractor}
+   */
+  error?: ArkErrors | Error;
+};
 
 /**
  * Adds a negatable pattern to the source's pattern lists.
  * Strips the leading '!' for include patterns,
  * and adds to exclude patterns otherwise.
  */
-export function sourcePushNegatable(
-  source: Source,
-  pattern: string,
-): void {
-  if (pattern.startsWith('!')) {
-    source.pattern.include.push(pattern.substring(1))
-    return
+export function sourcePushNegatable(source: Source, pattern: string): void {
+  if (pattern.startsWith("!")) {
+    source.pattern.include.push(pattern.substring(1));
+    return;
   }
-  source.pattern.exclude.push(pattern)
+  source.pattern.exclude.push(pattern);
 }
+
+export type Extraction = "stop" | "continue";
+
+/**
+ * The result of a source extraction operation.
+ * Continues extraction unless `extraction` is set to `'stop'`.
+ * If `extraction` is `'stop'`, the context will be marked as failed.
+ * `undefined` is equivalent to `{ extraction: 'continue' }`.
+ * @see {@link SourceExtractor}
+ */
+export type SourceExtractorResult =
+  | undefined
+  | { errors?: Source["error"]; extraction: Extraction };
 
 /**
  * Populates a `Source` object from the content of a source file.
  * @see {@link Source.pattern} for more details.
+ * @throws Error if extraction fails. Processing stops.
  */
-export type SourceExtractor = (source: Source, content: Buffer<ArrayBuffer>) => void
+export type SourceExtractor = (
+  source: Source,
+  content: Buffer<ArrayBuffer>,
+) => SourceExtractorResult;
 
 /**
  * Populates the {@link MatcherContext.external} map with {@link Source} objects.
  */
 export async function findAndExtract(
+  cwd: string,
   directory: string,
   sources: string[],
   matcher: Map<string, SourceExtractor>,
   ctx: MatcherContext,
 ): Promise<void> {
-  const keys: string[] = []
-  for (const sourceFileName of sources) {
-    for (;;) {
-      let buff: Buffer<ArrayBuffer> | undefined
-      try {
-        buff = await fsp.readFile(directory + '/' + sourceFileName)
-      }
-      catch (err) {
-        const error = err as NodeJS.ErrnoException
-        if (error.code !== 'ENOENT') {
-          ctx.sourceErrors.push(error)
-          return
-        }
-      }
+  const parent = dirname(directory);
+  if (directory !== ".") {
+    await findAndExtract(cwd, parent, sources, matcher, ctx);
+  }
 
-      const dir = dirname(directory)
-      if (!ctx.external.has(directory)) {
-        keys.push(directory)
-      }
-      if (!buff) {
-        if (directory === '.') {
-          break
-        }
-        directory = dir
-        continue
-      }
+  for (const name of sources) {
+    let path = "";
+    path = directory === "." ? name : directory + "/" + name;
 
-      if (directory === '.' && !keys.length) {
-        break
-      }
+    const source: Source = {
+      inverted: false,
+      name,
+      path,
+      pattern: {
+        exclude: [],
+        include: [],
+      },
+    };
 
-      const sourceExtractor = matcher.get(sourceFileName)
-      if (!sourceExtractor) {
-        const err = new Error('No extractor for source file: ' + sourceFileName)
-        ctx.sourceErrors.push(err)
-        break
+    let buff: Buffer<ArrayBuffer> | undefined;
+    try {
+      buff = await ctx.fsp.readFile(cwd + "/" + path)!;
+    } catch (err) {
+      const error = err as NodeJS.ErrnoException;
+      if (error.code === "ENOENT") {
+        continue;
       }
-
-      const source: Source = {
-        inverted: false,
-        name: sourceFileName,
-        pattern: {
-          exclude: [],
-          include: [],
-        },
-      }
-      try {
-        sourceExtractor(source, buff!)
-      }
-      catch (err) {
-        ctx.sourceErrors.push(err as Error)
-        break
-      }
-      for (const key of keys) {
-        const m = ctx.external.get(key)
-        if (!m) {
-          ctx.external.set(key, source)
-        }
-      }
-      if (directory === '.') {
-        return
-      }
-      keys.length = 0
-      directory = dir
+      source.error = error;
+      ctx.external.set(directory, source);
+      ctx.failed = true;
+      break;
     }
+
+    ctx.external.set(directory, source);
+
+    const sourceExtractor = matcher.get(name);
+    if (!sourceExtractor) {
+      const err = new Error("No extractor for source file: " + name);
+      source.error = err;
+      ctx.failed = true;
+      break;
+    }
+
+    let r: SourceExtractorResult;
+    try {
+      r = sourceExtractor(source, buff!);
+    } catch (err) {
+      ctx.failed = true;
+      s: switch (true) {
+        case err instanceof Error:
+        case err instanceof ArkErrors:
+          source.error = err;
+          break s;
+        default:
+          source.error = new Error("Unknown error during source extraction", { cause: err });
+          break s;
+      }
+      break;
+    }
+
+    if (r?.errors) {
+      source.error = r.errors;
+      continue;
+    }
+
+    if (r?.extraction === "stop") {
+      ctx.failed = true;
+      break;
+    }
+
+    break;
+  }
+
+  if (!ctx.external.has(directory)) {
+    ctx.external.set(directory, ctx.external.get(parent)!);
   }
 }
 
 /**
- * Checks whether a given file should be ignored based on internal and external patterns.
+ * Checks whether a given entry should be ignored based on internal and external patterns.
  * Populates unknown sources using {@link findAndExtract}.
  */
 export async function signedPatternIgnores(
   internal: SignedPattern,
-  file: string,
+  cwd: string,
+  entry: string,
   sources: string[],
   sourceMap: Map<string, SourceExtractor>,
   ctx: MatcherContext,
 ): Promise<boolean> {
-  const parent = dirname(file)
-  let source = ctx.external.get(parent)
+  const parent = dirname(entry);
+  let source = ctx.external.get(parent);
   if (!source) {
-    await findAndExtract(parent, sources, sourceMap, ctx)
-    if (ctx.sourceErrors.length) {
-      return false
+    await findAndExtract(cwd, parent, sources, sourceMap, ctx);
+    if (ctx.failed) {
+      return false;
     }
-    source = ctx.external.get(parent)
+    source = ctx.external.get(parent);
     if (!source) {
-      return false
+      return false;
     }
   }
 
   const matcher: PatternMatcher = {
     internal,
     external: source.pattern,
-  }
+  };
 
   try {
-    let check = false
+    let check = false;
 
-    check = patternMatches(matcher.internal.exclude, file)
+    check = patternMatches(matcher.internal.exclude, entry);
     if (check) {
-      return true
+      return true;
     }
 
-    check = patternMatches(matcher.internal.include, file)
+    check = patternMatches(matcher.internal.include, entry);
     if (check) {
-      return false
+      return false;
     }
 
-    check = patternMatches(matcher.external.exclude, file)
-    if (check) {
-      return true
-    }
+    if (!source.inverted) {
+      check = patternMatches(matcher.external.include, entry);
+      if (check) {
+        return source.inverted;
+      }
 
-    check = patternMatches(matcher.external.include, file)
-    if (check) {
-      return false
+      check = patternMatches(matcher.external.exclude, entry);
+      if (check) {
+        return !source.inverted;
+      }
+    } else {
+      check = patternMatches(matcher.external.exclude, entry);
+      if (check) {
+        return !source.inverted;
+      }
+
+      check = patternMatches(matcher.external.include, entry);
+      if (check) {
+        return source.inverted;
+      }
     }
+  } catch (err) {
+    source.error = err as Error;
+    return false;
   }
-  catch (err) {
-    ctx.sourceErrors.push(err as Error)
-    return false
-  }
 
-  return source.inverted
+  return source.inverted;
 }

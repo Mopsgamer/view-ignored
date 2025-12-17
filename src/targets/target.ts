@@ -1,4 +1,4 @@
-import type { PathChecker } from '../patterns/matcher.js'
+import type { Ignores } from "../patterns/matcher.js";
 
 /**
  * Contains the matcher used for target scanning.
@@ -6,6 +6,7 @@ import type { PathChecker } from '../patterns/matcher.js'
 export interface Target {
   /**
    * Glob-pattern parser.
+   * @see {@link Ignores}
    */
-  matcher: PathChecker
+  ignores: Ignores;
 }

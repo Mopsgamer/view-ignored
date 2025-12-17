@@ -5,18 +5,31 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "tests",
+      "name": "test git",
       "type": "node",
       "request": "launch",
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
-      "args": [
-        "--test",
-        "./out/**/*.test.js"
-      ],
+      "skipFiles": ["<node_internals>/**"],
+      "args": ["--enable-source-maps", "--test", "./out/targets/git.test.js"],
       "console": "integratedTerminal",
       "sourceMaps": true
     },
+    {
+      "name": "test npm",
+      "type": "node",
+      "request": "launch",
+      "skipFiles": ["<node_internals>/**"],
+      "args": ["--enable-source-maps", "--test", "./out/targets/npm.test.js"],
+      "console": "integratedTerminal",
+      "sourceMaps": true
+    },
+    {
+      "name": "test npm (self)",
+      "type": "node",
+      "request": "launch",
+      "skipFiles": ["<node_internals>/**"],
+      "args": ["--enable-source-maps", "--test", "./out/scan_self_npm.test.js"],
+      "console": "integratedTerminal",
+      "sourceMaps": true
+    }
   ]
 }

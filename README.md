@@ -37,9 +37,9 @@ by Git, NPM, Yarn, JSR, VSCE or other tools.
 
 ```ts
 import * as vign from "view-ignored";
-import { Git } from "view-ignored/targets";
+import { Git as target } from "view-ignored/targets";
 
-const results = await vign.scan({ target: Git });
+const results = await vign.scan({ target });
 results.paths.has(".git/HEAD");
 ```
 
@@ -50,9 +50,9 @@ import * as vign from "view-ignored";
 import {
   type SourceExtractor,
   type SignedPattern,
-  extractGitignore
+  extractGitignore,
   findAndExtract,
-  signedPatternIgnores,
+  signedPatternIgnores
 } from "view-ignored/patterns";
 import type { Target } from "view-ignored/targets";
 
@@ -69,12 +69,8 @@ const gitPattern: SignedPattern = {
 };
 
 export const Git: Target = {
-  async matcher(entry, isDir, ctx) {
-    if (isDir) {
-      await findAndExtract(entry, gitSources, gitSourceMap, ctx);
-      return true;
-    }
-    return await signedPatternIgnores(gitPattern, entry, gitSources, gitSourceMap, ctx);
+  async ignores(cwd, entry, ctx) {
+    return await signedPatternIgnores(gitPattern, cwd, entry, gitSources, gitSourceMap, ctx);
   }
 };
 ```
