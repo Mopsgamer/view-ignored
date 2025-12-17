@@ -2,6 +2,9 @@
   "name": "view-ignored",
   "version": "0.5.2",
   "description": "Retrieve list of files ignored/included by Git, NPM, Yarn, JSR, VSCE or other tools.",
+  "bin": {
+    "view-ignored": "./bin/viewig-native"
+  },
   "keywords": [
     "files",
     "fs",
@@ -28,7 +31,8 @@
     "lib": "out"
   },
   "files": [
-    "/out"
+    "/out",
+    "/wasi"
   ],
   "type": "module",
   "exports": {
@@ -59,6 +63,7 @@
     "lint": "bun run oxlint --type-aware",
     "fmt": "bun run oxfmt",
     "check": "bun tsgo -p . --noEmit",
+    "build:go": "GOOS=wasip1 GOARCH=wasm go build -o wasi/viewig.wasm main.go",
     "build": "rm -rf out && bun tsgo -p .",
     "build:prod": "rm -rf out && tsgo -p tsconfig.prod.json",
     "release:major": "bun run release-it --increment=major",
