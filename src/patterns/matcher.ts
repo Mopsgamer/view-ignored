@@ -141,28 +141,19 @@ export function sourcePushNegatable(source: Source, pattern: string): void {
   source.pattern.exclude.push(pattern);
 }
 
-export type Extraction = "stop" | "continue";
-
 /**
  * The result of a source extraction operation.
  * Continues extraction unless `extraction` is set to `'stop'`.
  * If `extraction` is `'stop'`, the context will be marked as failed.
- * `undefined` is equivalent to `{ extraction: 'continue' }`.
- * @see {@link SourceExtractor}
  */
-export type SourceExtractorResult =
-  | undefined
-  | { errors?: Source["error"]; extraction: Extraction };
+export type Extraction = "stop" | "continue";
 
 /**
  * Populates a `Source` object from the content of a source file.
  * @see {@link Source.pattern} for more details.
  * @throws Error if extraction fails. Processing stops.
  */
-export type SourceExtractor = (
-  source: Source,
-  content: Buffer<ArrayBuffer>,
-) => SourceExtractorResult;
+export type SourceExtractor = (source: Source, content: Buffer<ArrayBuffer>) => Extraction;
 
 /**
  * Populates the {@link MatcherContext.external} map with {@link Source} objects.
@@ -217,7 +208,7 @@ export async function findAndExtract(
       break;
     }
 
-    let r: SourceExtractorResult;
+    let r: Extraction;
     try {
       r = sourceExtractor(source, buff!);
     } catch (err) {
@@ -234,14 +225,12 @@ export async function findAndExtract(
       break;
     }
 
-    if (r?.errors) {
-      source.error = r.errors;
+    if (source.error) {
       continue;
     }
 
-    if (r?.extraction === "stop") {
+    if (r === "stop") {
       ctx.failed = true;
-      break;
     }
 
     break;

@@ -16,13 +16,14 @@ by Git, NPM, Yarn, JSR, VSCE or other tools.
 
 ## Highlights
 
-- **Native.** Get a list of included files using configuration file
+- **Reader.** Get a list of included files using configuration file
   readers, not command-line wrappers.
 - **Plugins.** Built-in [targets](#targets) for popular tools. Use custom
   targets by implementing the `Target` interface.
 - **TypeScript.** Written in TypeScript with type definitions included.
 - **Lightweight.** Minimal dependencies for fast performance and small bundle size.
 - **Easy-to-modify.** Well-written and MIT-licensed.
+- **Broswer.** Can be bundled for browser use. See `ScanOptions.fsp`.
 
 > [!NOTE]
 > Despite the name of the package being "view-ignored",
@@ -51,27 +52,21 @@ import {
   type SourceExtractor,
   type SignedPattern,
   extractGitignore,
-  findAndExtract,
   signedPatternIgnores
 } from "view-ignored/patterns";
 import type { Target } from "view-ignored/targets";
 
-const gitSources = ['.gitignore'];
-const gitSourceMap = new Map<string, SourceExtractor>([
-  ['.gitignore', extractGitignore]
-]);
+const gitSources = [".gitignore"];
+const gitSourceMap = new Map<string, SourceExtractor>([[".gitignore", extractGitignore]]);
 const gitPattern: SignedPattern = {
-  exclude: [
-    '.git',
-    '.DS_Store',
-  ],
-  include: []
+  exclude: [".git", ".DS_Store"],
+  include: [],
 };
 
 export const Git: Target = {
   async ignores(cwd, entry, ctx) {
     return await signedPatternIgnores(gitPattern, cwd, entry, gitSources, gitSourceMap, ctx);
-  }
+  },
 };
 ```
 

@@ -160,6 +160,7 @@ export async function scan(options: ScanOptions): Promise<MatcherContext> {
     } else {
       ctx.paths.add(path);
     }
+
     return 0;
   });
 

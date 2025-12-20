@@ -15,7 +15,7 @@ and this project adheres to
 - Add `Source.error` and `MatcherContext.failed`.
 - BREAKING CHANGE: Improve and fix `SourceExtractor`.
   Remove `MatcherContext.sourceErrors`.
-- Replace eslint with oxlint.
+- Replace eslint with oxlint and oxfmt.
 - Add tests for Git and NPM targets.
   Also, test outputs for them for the project itself.
 
