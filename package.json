@@ -22,7 +22,7 @@
   "author": "Mopsgamer",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Mopsgamer/view-ignored.git"
+    "url": "git+https://github.com/Mopsgamer/view-ignored.git"
   },
   "directories": {
     "lib": "out"
