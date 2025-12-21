@@ -25,6 +25,9 @@ func ExtractGitignore(source *Source, content []byte) Extraction {
 var _ SourceExtractor = (SourceExtractor)(ExtractGitignore)
 
 func GitignoreMatch(pattern, path string) (bool, error) {
+	if strings.HasSuffix(pattern, "/") {
+		pattern += "**"
+	}
 	if strings.HasPrefix(pattern, "/") {
 		pattern = pattern[1:]
 	} else if !strings.HasPrefix(pattern, "**/") {
