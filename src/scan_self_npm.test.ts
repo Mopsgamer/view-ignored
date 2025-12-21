@@ -14,5 +14,5 @@ void test("scan NPM (self, flat)", async () => {
   // @jsr:registry=https://npm.jsr.io in .npmrc or something.
   const paths = sortFirstFolders(r.paths);
   deepEqual(paths, ["out/", "LICENSE.txt", "package.json", "README.md"]);
-  equal(r.totalMatchedFiles, 99);
+  equal(r.totalMatchedFiles, 107);
 });

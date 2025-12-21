@@ -53,6 +53,7 @@
     "test": "bun run build && node --enable-source-maps --test out/**/*.test.js",
     "test:patterns": "bun run build && node --enable-source-maps --test out/patterns/**/*.test.js",
     "test:targets": "bun run build && node --enable-source-maps --test out/targets/**/*.test.js",
+    "test:noself": "bun run build && node --enable-source-maps --test-skip-pattern self --test out/**/*.test.js",
     "test:self:git": "bun run build && node --enable-source-maps --test out/scan_self_git.test.js",
     "test:self:npm": "bun run build && node --enable-source-maps --test out/scan_self_npm.test.js",
     "lint": "bun run oxlint --type-aware",

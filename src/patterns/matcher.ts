@@ -27,10 +27,18 @@ export type MatcherContext = {
   /**
    * Maps directory paths to the quantity of files they contain.
    * @example
+   * // for
+   * "src/"
+   * "src/components/"
+   * "src/views/"
+   * "src/views/index.html"
+   *
+   * // depth: 0
    * "src/" => 1
+   *
+   * // depth: 1
    * "src/components/" => 0
    * "src/views/" => 1
-   * "src/views/index.html" => undefined
    */
   depthPaths: Map<string, number>;
   /**

@@ -64,7 +64,7 @@ export type ScanOptions = {
 export async function scan(options: ScanOptions): Promise<MatcherContext> {
   const {
     target,
-    cwd: cwdo = (await import("node:process")).cwd(),
+    cwd = (await import("node:process")).cwd().replaceAll("\\", "/"),
     depth: maxDepth = Infinity,
     invert = false,
     signal = undefined,
@@ -74,7 +74,6 @@ export async function scan(options: ScanOptions): Promise<MatcherContext> {
   if (maxDepth < 0) {
     throw new TypeError("Depth must be a non-negative integer");
   }
-  const cwd = cwdo.replaceAll("\\", "/");
   const ctx: MatcherContext = {
     paths: new Set<string>(),
     external: new Map<string, Source>(),

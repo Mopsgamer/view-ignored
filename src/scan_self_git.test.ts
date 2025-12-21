@@ -75,6 +75,8 @@ void test("scan Git (self)", async () => {
       "src/targets/testScanPaths.test.ts",
       "src/targets/vsce.ts",
       "src/targets/yarn.ts",
+      "src/edit.test.ts",
+      "src/edit.ts",
       "src/walk.ts",
       "tsconfig.json",
       "tsconfig.prod.json",

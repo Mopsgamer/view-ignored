@@ -5,6 +5,15 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "test add",
+      "type": "node",
+      "request": "launch",
+      "skipFiles": ["<node_internals>/**"],
+      "args": ["--enable-source-maps", "--test", "./out/edit.test.js"],
+      "console": "integratedTerminal",
+      "sourceMaps": true
+    },
+    {
       "name": "test git",
       "type": "node",
       "request": "launch",
