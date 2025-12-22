@@ -102,6 +102,10 @@ The following built-in scanners are available:
   - Reads `jsr.json(c)` and `deno.json(c)` `include` and `exclude` fields.
   - See the implementation of [JSR target](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/jsr.ts) for details.
 
+## See also
+
+- https://jsr.io/@m234/path - Utility to sort paths.
+
 ## License
 
 MIT License. See [LICENSE.txt](LICENSE.txt) for details.
