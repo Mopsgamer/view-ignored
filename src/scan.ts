@@ -3,6 +3,7 @@ import type { MatcherContext, Source } from "./patterns/matcher.js";
 import type { Target } from "./targets/target.js";
 import { opendir } from "./walk.js";
 import type { FsPromises } from "./fsp.js";
+import { getDepth } from "./getdepth.js";
 
 export type DepthMode = "files" | undefined;
 
@@ -173,27 +174,4 @@ export async function scan(options: ScanOptions): Promise<MatcherContext> {
   }
 
   return ctx;
-}
-
-function getDepth(path: string, maxDepth: number) {
-  const result = {
-    depth: 0,
-    depthSlash: 0,
-  };
-  result.depthSlash = -1;
-  if (maxDepth < 0) {
-    return result;
-  }
-  for (const [i, c] of Array.from(path).entries()) {
-    if (c !== "/") {
-      continue;
-    }
-    result.depth++;
-    if (result.depth < maxDepth) {
-      continue;
-    }
-    result.depthSlash = i;
-    return result;
-  }
-  return result;
 }

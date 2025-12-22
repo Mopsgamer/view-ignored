@@ -5,7 +5,7 @@ import {
   matcherContextAddPath,
   matcherContextRefreshDir,
   matcherContextRemovePath,
-} from "./edit.js";
+} from "./rescan.js";
 import { Git as target } from "./targets/git.js";
 
 void test("can add paths", async () => {
@@ -33,14 +33,14 @@ void test("can remove paths", async () => {
       two: "",
       ".gitignore": "four",
     },
-    async ({ ctx }) => {
+    async ({ options, ctx }) => {
       equal(ctx.paths.size, 3);
-      await matcherContextRemovePath(ctx, "three");
+      await matcherContextRemovePath(ctx, "three", options);
       equal(ctx.paths.size, 3);
-      await matcherContextRemovePath(ctx, "two");
+      await matcherContextRemovePath(ctx, "two", options);
       equal(ctx.paths.size, 2);
       equal(ctx.totalMatchedFiles, ctx.paths.size);
-      await matcherContextRemovePath(ctx, "./");
+      await matcherContextRemovePath(ctx, "./", options);
       equal(ctx.paths.size, 0);
     },
     { target },
