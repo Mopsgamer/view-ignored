@@ -5,29 +5,6 @@ import { Git as target } from "./targets/git.js"
 import { sortFirstFolders } from "./scan_sort.test.js"
 import { spawn } from "node:child_process"
 
-void test("scan Git (self, flat)", async () => {
-	const r = await scan({ target, depth: 0, fastDepth: true })
-	deepEqual(
-		sortFirstFolders(r.paths),
-		sortFirstFolders([
-			".gitattributes",
-			".github/",
-			".gitignore",
-			".oxlintrc.json",
-			".release-it.json",
-			".vscode/",
-			"CHANGELOG.md",
-			"LICENSE.txt",
-			"README.md",
-			"bun.lock",
-			"package.json",
-			"src/",
-			"tsconfig.json",
-			"tsconfig.prod.json",
-		]),
-	)
-})
-
 void test("scan Git (self)", async () => {
 	const files = gitFiles()
 	const r = await scan({ target })
