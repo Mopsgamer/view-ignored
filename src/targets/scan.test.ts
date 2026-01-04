@@ -3,7 +3,7 @@ import { createFsFromVolume, Volume, type NestedDirectoryJSON } from "memfs"
 import { cwd } from "node:process"
 import { scan, type ScanOptions } from "../scan.js"
 import type { FsAdapter } from "../fs_adapter.js"
-import type { MatcherContext } from "../patterns/matcher.js"
+import type { MatcherContext } from "../patterns/matcher_context.js"
 
 export const memcwd = cwd().replace(/\w:/, "").replaceAll("\\", "/")
 
@@ -19,7 +19,7 @@ export type PathHandler =
 /**
  * Executes tests within './test'.
  */
-export async function testScanPaths(
+export async function testScan(
 	tree: NestedDirectoryJSON,
 	test: PathHandler,
 	options: ScanOptions,

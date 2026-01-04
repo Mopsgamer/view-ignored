@@ -1,21 +1,22 @@
 import { test } from "node:test"
-import { testScanPaths } from "./targets/testScanPaths.test.js"
+import { testScan } from "../targets/scan.test.js"
 import { deepEqual, equal, ok } from "node:assert/strict"
 import {
 	matcherContextAddPath,
 	matcherContextRefreshDir,
 	matcherContextRemovePath,
-} from "./rescan.js"
-import { Git as target } from "./targets/git.js"
+} from "./matcher_context.js"
+import { Git as target } from "../targets/git.js"
 
 void test("can add paths", async () => {
-	await testScanPaths(
+	await testScan(
 		{
 			one: "",
 			two: "",
 			".gitignore": "four",
 		},
-		async ({ options, ctx }) => {
+		async ({ options: { target, cwd }, ctx }) => {
+			const options = { target, cwd }
 			ok(await matcherContextAddPath(ctx, "three", options))
 			ok(await matcherContextAddPath(ctx, "two", options))
 			ok(!(await matcherContextAddPath(ctx, "four", options)))
@@ -27,13 +28,14 @@ void test("can add paths", async () => {
 })
 
 void test("can remove paths", async () => {
-	await testScanPaths(
+	await testScan(
 		{
 			one: "",
 			two: "",
 			".gitignore": "four",
 		},
-		async ({ options, ctx }) => {
+		async ({ options: { depth }, ctx }) => {
+			const options = { depth }
 			equal(ctx.paths.size, 3)
 			await matcherContextRemovePath(ctx, "three", options)
 			equal(ctx.paths.size, 3)
@@ -48,7 +50,7 @@ void test("can remove paths", async () => {
 })
 
 void test("can refresh without changes", async () => {
-	await testScanPaths(
+	await testScan(
 		{
 			one: "",
 			two: "",

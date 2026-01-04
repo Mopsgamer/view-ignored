@@ -1,10 +1,10 @@
 import { test, describe } from "node:test"
 import { Git as target } from "./git.js"
-import { testScanPaths, type PathHandler } from "./testScanPaths.test.js"
+import { testScan, type PathHandler } from "./scan.test.js"
 import type { NestedDirectoryJSON } from "memfs"
 
 function testGit(tree: NestedDirectoryJSON, handler: PathHandler) {
-	return testScanPaths(tree, handler, { target })
+	return testScan(tree, handler, { target })
 }
 
 void describe("Git", () => {

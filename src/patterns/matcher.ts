@@ -1,63 +1,7 @@
 import { dirname } from "node:path"
 import { gitignoreMatch } from "./gitignore.js"
-import type { FsAdapter } from "../fs_adapter.js"
+import type { MatcherContext } from "./matcher_context.js"
 import { ArkErrors } from "arktype"
-
-/**
- * The results and statistics of a scanning operation.
- */
-export type MatcherContext = {
-	/**
-	 * `Set` can be sorted, but `view-ignored`
-	 * does not sort paths.
-	 * @example
-	 * new Set(sort(new Set(['a/b', 'a/a'])))
-	 */
-	paths: Set<string>
-	/**
-	 * Maps directory paths to their corresponding sources.
-	 * @example
-	 * "src" => Source
-	 */
-	external: Map<string, Source>
-	/**
-	 * If any fatal errors were encountered during source extraction.
-	 */
-	failed: boolean
-	/**
-	 * Maps directory paths to the quantity of files they contain.
-	 * @example
-	 * // for
-	 * "src/"
-	 * "src/components/"
-	 * "src/views/"
-	 * "src/views/index.html"
-	 *
-	 * // depth: 0
-	 * "src/" => 1
-	 *
-	 * // depth: 1
-	 * "src/components/" => 0
-	 * "src/views/" => 1
-	 */
-	depthPaths: Map<string, number>
-	/**
-	 * Total number of files scanned.
-	 */
-	totalFiles: number
-	/**
-	 * Total number of files matched by the target.
-	 */
-	totalMatchedFiles: number
-	/**
-	 * Total number of directories scanned.
-	 */
-	totalDirs: number
-	/**
-	 * File system promises interface.
-	 */
-	fsp: FsAdapter
-}
 
 /**
  * Represents a list of positive minimatch patterns.

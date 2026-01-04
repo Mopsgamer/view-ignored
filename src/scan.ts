@@ -1,5 +1,6 @@
 import { posix } from "node:path"
-import type { MatcherContext, Source } from "./patterns/matcher.js"
+import type { Source } from "./patterns/matcher.js"
+import type { MatcherContext } from "./patterns/matcher_context.js"
 import type { Target } from "./targets/target.js"
 import { opendir } from "./walk.js"
 import type { FsAdapter } from "./fs_adapter.js"
