@@ -12,8 +12,10 @@ and this project adheres to
   including some renamings.
 - BREAKING CHANGE: Change implementations of some pattern extractors.
 - BREAKING CHANGE: Show directories.
-- Add `Source.error` and `MatcherContext.failed`.
 - BREAKING CHANGE: Improve and fix `SourceExtractor`.
+- Add stream API.
+- Add MatcherContext-patching API for watching.
+- Add `Source.error` and `MatcherContext.failed`.
   Remove `MatcherContext.sourceErrors`.
 - Replace eslint with oxlint and oxfmt.
 - Add tests for Git and NPM targets.

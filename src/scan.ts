@@ -1,10 +1,11 @@
-import { posix } from "node:path"
 import type { Source } from "./patterns/matcher.js"
 import type { MatcherContext } from "./patterns/matcher_context.js"
 import type { Target } from "./targets/target.js"
-import { opendir } from "./walk.js"
+import { opendir } from "./opendir.js"
 import type { FsAdapter } from "./fs_adapter.js"
-import { getDepth } from "./getdepth.js"
+import EventEmitter from "node:events"
+import type { Dirent } from "node:fs"
+import { walk } from "./walk.js"
 
 export type DepthMode = "files" | undefined
 
@@ -47,9 +48,101 @@ export type ScanOptions = {
 	fastDepth?: boolean
 
 	/**
+	 * If enabled, uses streaming directory reading.
+	 */
+	stream?: boolean
+
+	/**
 	 * Filesystem promises adapter.
 	 */
 	fs?: FsAdapter
+}
+
+export type EntryInfo = {
+	path: string
+	entry: Dirent
+	ignored: boolean
+}
+
+/**
+ * This listener is used for captured errors, not source errors.
+ */
+export type ErrorListener = (err: Error) => void
+export type EntryListener = (info: EntryInfo) => void
+// export type SourceListener = (source: Source) => void
+export type EndListener = (ctx: MatcherContext) => void
+
+export type EventMap = {
+	error: [Error]
+	entry: [EntryInfo]
+	source: [Source]
+	end: [MatcherContext]
+}
+
+/**
+ * Stream interface for scan results.
+ */
+export class MatcherStream extends EventEmitter<EventMap> {
+	override addListener(event: "error", listener: ErrorListener): this
+	override addListener(event: "entry", listener: EntryListener): this
+	// override addListener(event: "source", listener: SourceListener): this
+	override addListener(event: "end", listener: EndListener): this
+	override addListener(event: keyof EventMap, listener: (...args: any[]) => void): this {
+		super.addListener(event, listener)
+		return this
+	}
+
+	override emit(event: "error", err: Error): boolean
+	override emit(event: "entry", info: EntryInfo): boolean
+	// override emit(event: "source", source: Source): boolean
+	override emit(event: "end", ctx: MatcherContext): boolean
+	override emit(event: keyof EventMap, ...args: EventMap[keyof EventMap]): boolean {
+		return super.emit(event, ...args)
+	}
+
+	override on(event: "error", listener: ErrorListener): this
+	override on(event: "entry", listener: EntryListener): this
+	// override on(event: "source", listener: SourceListener): this
+	override on(event: "end", listener: EndListener): this
+	override on(event: keyof EventMap, listener: (...args: any[]) => void): this {
+		super.on(event, listener)
+		return this
+	}
+
+	override once(event: "error", listener: ErrorListener): this
+	override once(event: "entry", listener: EntryListener): this
+	// override once(event: "source", listener: SourceListener): this
+	override once(event: "end", listener: EndListener): this
+	override once(event: keyof EventMap, listener: (...args: any[]) => void): this {
+		super.once(event, listener)
+		return this
+	}
+
+	override prependListener(event: "error", listener: ErrorListener): this
+	override prependListener(event: "entry", listener: EntryListener): this
+	// override prependListener(event: "source", listener: SourceListener): this
+	override prependListener(event: "end", listener: EndListener): this
+	override prependListener(event: keyof EventMap, listener: (...args: any[]) => void): this {
+		super.prependListener(event, listener)
+		return this
+	}
+
+	override prependOnceListener(event: "error", listener: ErrorListener): this
+	override prependOnceListener(event: "entry", listener: EntryListener): this
+	// override prependOnceListener(event: "source", listener: SourceListener): this
+	override prependOnceListener(event: "end", listener: EndListener): this
+	override prependOnceListener(event: keyof EventMap, listener: (...args: any[]) => void): this {
+		super.prependOnceListener(event, listener)
+		return this
+	}
+
+	override listeners(event: "error"): ErrorListener[]
+	override listeners(event: "entry"): EntryListener[]
+	// override listeners(event: "source"): SourceListener[]
+	override listeners(event: "end"): EndListener[]
+	override listeners(event: keyof EventMap): Array<Function> {
+		return super.listeners(event)
+	}
 }
 
 /**
@@ -63,19 +156,20 @@ export type ScanOptions = {
  * @param options Scan options.
  * @returns A promise that resolves to a {@link MatcherContext} containing the scan results.
  */
-export async function scan(options: ScanOptions): Promise<MatcherContext> {
+export async function scan(options: ScanOptions & { stream: true }): Promise<MatcherStream>
+export async function scan(options: ScanOptions): Promise<MatcherContext>
+export async function scan(options: ScanOptions): Promise<MatcherStream | MatcherContext> {
 	const {
-		target,
 		cwd = (await import("node:process")).cwd().replaceAll("\\", "/"),
 		depth: maxDepth = Infinity,
-		invert = false,
 		signal = undefined,
-		fastDepth = false,
-		fs: fsp = (await import("node:fs")) as FsAdapter,
+		stream = false,
+		fs = (await import("node:fs")) as FsAdapter,
 	} = options
 	if (maxDepth < 0) {
 		throw new TypeError("Depth must be a non-negative integer")
 	}
+
 	const ctx: MatcherContext = {
 		paths: new Set<string>(),
 		external: new Map<string, Source>(),
@@ -84,92 +178,32 @@ export async function scan(options: ScanOptions): Promise<MatcherContext> {
 		totalFiles: 0,
 		totalMatchedFiles: 0,
 		totalDirs: 0,
-		fsp,
+		fs,
 	}
 
-	await opendir(fsp, cwd, async (entry) => {
+	const s = new MatcherStream({ captureRejections: true })
+
+	if (stream) {
+		const result = opendir(fs, cwd, (entry) => walk({ entry, ctx, s, ...options }))
+		result.then(() => {
+			for (const [dir, count] of ctx.depthPaths) {
+				if (count === 0) {
+					continue
+				}
+				ctx.paths.add(dir + "/")
+			}
+			s.emit("end", ctx)
+		})
+	} else {
+		await opendir(fs, cwd, (entry) => walk({ entry, ctx, s, ...options }))
 		signal?.throwIfAborted()
-		const path = posix.join(posix.relative(cwd, entry.parentPath.replaceAll("\\", "/")), entry.name)
-
-		const isDir = entry.isDirectory()
-		if (isDir) {
-			ctx.totalDirs++
-		} else {
-			ctx.totalFiles++
-		}
-
-		if (fastDepth) {
-			const { depth, depthSlash } = getDepth(path, maxDepth)
-			if (depth > maxDepth) {
-				let ignored = await target.ignores(cwd, path, ctx)
-				if (ctx.failed) {
-					return 2
-				}
-
-				if (invert) {
-					ignored = !ignored
-				}
-
-				if (ignored) {
-					return 0
-				}
-
-				if (isDir) {
-					// ctx.totalMatchedDirs++;
-					// ctx.depthPaths.set(path, (ctx.depthPaths.get(path) ?? 0) + 1);
-					return 0
-				}
-
-				ctx.totalMatchedFiles++
-				const dir = path.substring(0, depthSlash)
-				ctx.depthPaths.set(dir, (ctx.depthPaths.get(dir) ?? 0) + 1)
-				return 1
+		for (const [dir, count] of ctx.depthPaths) {
+			if (count === 0) {
+				continue
 			}
+			ctx.paths.add(dir + "/")
 		}
-
-		let ignored = await target.ignores(cwd, path, ctx)
-		if (ctx.failed) {
-			return 2
-		}
-
-		if (invert) {
-			ignored = !ignored
-		}
-
-		if (ignored) {
-			return 0
-		}
-
-		if (isDir) {
-			// ctx.totalMatchedDirs++;
-			// ctx.depthPaths.set(path, (ctx.depthPaths.get(path) ?? 0) + 1);
-			const { depth } = getDepth(path, maxDepth)
-			if (depth <= maxDepth) {
-				ctx.paths.add(path + "/")
-			}
-			return 0
-		}
-
-		ctx.totalMatchedFiles++
-		const { depth, depthSlash } = getDepth(path, maxDepth)
-		if (depth > maxDepth) {
-			const dir = path.substring(0, depthSlash)
-			ctx.depthPaths.set(dir, (ctx.depthPaths.get(dir) ?? 0) + 1)
-		} else {
-			ctx.paths.add(path)
-		}
-
-		return 0
-	})
-
-	signal?.throwIfAborted()
-
-	for (const [dir, count] of ctx.depthPaths) {
-		if (count === 0) {
-			continue
-		}
-		ctx.paths.add(dir + "/")
 	}
 
-	return ctx
+	return stream ? s : ctx
 }

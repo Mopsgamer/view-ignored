@@ -55,9 +55,9 @@ export interface MatcherContext {
 	 */
 	totalDirs: number
 	/**
-	 * File system promises interface.
+	 * File system interface.
 	 */
-	fsp: FsAdapter
+	fs: FsAdapter
 }
 
 /**

@@ -138,7 +138,7 @@ export async function findAndExtract(
 
 		let buff: Buffer<ArrayBuffer> | undefined
 		try {
-			buff = await ctx.fsp.promises.readFile(cwd + "/" + path)!
+			buff = await ctx.fs.promises.readFile(cwd + "/" + path)!
 		} catch (err) {
 			const error = err as NodeJS.ErrnoException
 			if (error.code === "ENOENT") {
