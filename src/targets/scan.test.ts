@@ -29,12 +29,12 @@ export async function testScan(
 	vol.fromNestedJSON(tree, cwd)
 	const fs = createFsFromVolume(vol)
 	const { opendir, readFile } = fs.promises
-	const fsp = { promises: { opendir, readFile } } as FsAdapter
-	const o = { cwd: cwd, fsp, ...options }
+	const adapter = { promises: { opendir, readFile } } as FsAdapter
+	const o = { cwd: cwd, fs: adapter, ...options }
 	const ctx = await scan(o)
 	const { paths: set } = ctx
 	const paths = [...set]
 
-	if (typeof test === "function") await test({ vol, fsp, ctx, options: o })
+	if (typeof test === "function") await test({ vol, fsp: adapter, ctx, options: o })
 	else deepEqual(paths, test)
 }

@@ -5,7 +5,7 @@ import type { FsAdapter } from "../fs_adapter.js"
 import type { Source } from "./matcher.js"
 
 /**
- * The results and statistics of a scanning operation.
+ * The results and stats of a scanning operation.
  */
 export interface MatcherContext {
 	/**
@@ -15,16 +15,19 @@ export interface MatcherContext {
 	 * new Set(sort(new Set(['a/b', 'a/a'])))
 	 */
 	paths: Set<string>
+
 	/**
 	 * Maps directory paths to their corresponding sources.
 	 * @example
 	 * "src" => Source
 	 */
 	external: Map<string, Source>
+
 	/**
 	 * If any fatal errors were encountered during source extraction.
 	 */
 	failed: boolean
+
 	/**
 	 * Maps directory paths to the quantity of files they contain.
 	 * @example
@@ -42,20 +45,24 @@ export interface MatcherContext {
 	 * "src/views/" => 1
 	 */
 	depthPaths: Map<string, number>
+
 	/**
 	 * Total number of files scanned.
 	 */
 	totalFiles: number
+
 	/**
 	 * Total number of files matched by the target.
 	 */
 	totalMatchedFiles: number
+
 	/**
 	 * Total number of directories scanned.
 	 */
 	totalDirs: number
+
 	/**
-	 * File system interface.
+	 * File system adapter.
 	 */
 	fs: FsAdapter
 }
@@ -64,7 +71,7 @@ export interface MatcherContext {
  * Returns `true` if the path is included.
  * If it is not ignored by the target,
  * adds it to the {@link MatcherContext.paths}
- * and updates statistics.
+ * and updates stats.
  */
 export async function matcherContextAddPath(
 	ctx: MatcherContext,

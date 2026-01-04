@@ -17,22 +17,26 @@ export type ScanOptions = {
 
 	/**
 	 * Current working directory to start the scan from.
+	 * @default `(await import("node:process")).cwd().replaceAll("\\", "/")`
 	 */
 	cwd?: string
 
 	/**
 	 * If enabled, the scan will return files that are ignored by the target matcher.
+	 * @default `false`
 	 */
 	invert?: boolean
 
 	/**
 	 * Starting from depth `0` means you will see
 	 * children of the current working directory.
+	 * @default `Infinity`
 	 */
 	depth?: number
 
 	/**
 	 * Return as soon as possible.
+	 * @default `undefined`
 	 */
 	signal?: AbortSignal
 	/**
@@ -44,23 +48,38 @@ export type ScanOptions = {
 	 * {@link MatcherContext.totalFiles},
 	 * {@link MatcherContext.totalMatchedFiles}
 	 * and {@link MatcherContext.depthPaths}.
+	 * @default `false`
 	 */
 	fastDepth?: boolean
 
 	/**
 	 * If enabled, uses streaming directory reading.
+	 * @default `false`
 	 */
 	stream?: boolean
 
 	/**
-	 * Filesystem promises adapter.
+	 * File system interface.
+	 * @default `await import("node:fs")`
 	 */
 	fs?: FsAdapter
 }
 
+/**
+ * Scanned entry information.
+ */
 export type EntryInfo = {
+	/**
+	 * The relative path of the entry.
+	 */
 	path: string
+	/**
+	 * The directory entry.
+	 */
 	entry: Dirent
+	/**
+	 * Whether the entry was ignored.
+	 */
 	ignored: boolean
 }
 
@@ -166,6 +185,7 @@ export async function scan(options: ScanOptions): Promise<MatcherStream | Matche
 		stream = false,
 		fs = (await import("node:fs")) as FsAdapter,
 	} = options
+
 	if (maxDepth < 0) {
 		throw new TypeError("Depth must be a non-negative integer")
 	}

@@ -23,6 +23,7 @@ export function patternMatches(pattern: Pattern, path: string): boolean {
  * These patterns are positive minimatch patterns.
  *
  * @see {@link PatternMatcher}
+ * @see {@link signedPatternIgnores}
  */
 export type SignedPattern = {
 	include: Pattern
@@ -32,9 +33,6 @@ export type SignedPattern = {
 /**
  * Combined internal and external patterns for matching.
  *
- * `exclude` patterns take precedence over `include` patterns.
- *
- * `internal` patterns take precedence over `external` patterns.
  * @see {@link signedPatternIgnores}
  */
 export type PatternMatcher = {
@@ -57,22 +55,30 @@ export type Source = {
 	/**
 	 * Patterns defined within the source file.
 	 * Those patterns are for ignoring files.
+	 * @see {@link PatternMatcher}
+	 * @see {@link signedPatternIgnores}
 	 */
 	pattern: SignedPattern
+
 	/**
 	 * Name of the source file.
 	 */
 	name: string
+
 	/**
 	 * Relative path to the source file.
 	 */
 	path: string
+
 	/**
 	 * Indicates if the matching logic is inverted.
 	 * For example, `package.json` `files` field inverts the matching logic,
 	 * because it specifies files to include rather than exclude.
+	 * @see {@link PatternMatcher}
+	 * @see {@link signedPatternIgnores}
 	 */
 	inverted: boolean
+
 	/**
 	 * Error encountered during extraction, if any.
 	 * @see {@link SourceExtractor}
@@ -196,6 +202,18 @@ export async function findAndExtract(
 /**
  * Checks whether a given entry should be ignored based on internal and external patterns.
  * Populates unknown sources using {@link findAndExtract}.
+ *
+ * Algorithm:
+ * 1. Check internal exclude patterns. If matched, return true.
+ * 2. Check internal include patterns. If matched, return false.
+ * 3. Check external patterns:
+ *    - If not inverted:
+ *      a. Check external include patterns. If matched, return false.
+ *      b. Check external exclude patterns. If matched, return true.
+ *    - If inverted:
+ *      a. Check external exclude patterns. If matched, return true.
+ *      b. Check external include patterns. If matched, return false.
+ * 4. If no patterns matched, return true if external is inverted, else false.
  */
 export async function signedPatternIgnores(
 	internal: SignedPattern,
@@ -239,22 +257,22 @@ export async function signedPatternIgnores(
 		if (!source.inverted) {
 			check = patternMatches(matcher.external.include, entry)
 			if (check) {
-				return source.inverted
+				return false
 			}
 
 			check = patternMatches(matcher.external.exclude, entry)
 			if (check) {
-				return !source.inverted
+				return true
 			}
 		} else {
 			check = patternMatches(matcher.external.exclude, entry)
 			if (check) {
-				return !source.inverted
+				return true
 			}
 
 			check = patternMatches(matcher.external.include, entry)
 			if (check) {
-				return source.inverted
+				return false
 			}
 		}
 	} catch (err) {
