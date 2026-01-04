@@ -2,7 +2,7 @@ import { deepEqual } from "node:assert/strict"
 import { createFsFromVolume, Volume, type NestedDirectoryJSON } from "memfs"
 import { cwd } from "node:process"
 import { scan, type ScanOptions } from "../scan.js"
-import type { FsPromises } from "../fsp.js"
+import type { FsAdapter } from "../fs_adapter.js"
 import type { MatcherContext } from "../patterns/matcher.js"
 
 export const memcwd = cwd().replace(/\w:/, "").replaceAll("\\", "/")
@@ -10,7 +10,7 @@ export const memcwd = cwd().replace(/\w:/, "").replaceAll("\\", "/")
 export type PathHandler =
 	| ((o: {
 			vol: Volume
-			fsp: FsPromises
+			fsp: FsAdapter
 			ctx: MatcherContext
 			options: ScanOptions
 	  }) => void | Promise<void>)
@@ -29,7 +29,7 @@ export async function testScanPaths(
 	vol.fromNestedJSON(tree, cwd)
 	const fs = createFsFromVolume(vol)
 	const { opendir, readFile } = fs.promises
-	const fsp = { opendir, readFile } as FsPromises
+	const fsp = {promises: { opendir, readFile }} as FsAdapter
 	const o = { cwd: cwd, fsp, ...options }
 	const ctx = await scan(o)
 	const { paths: set } = ctx

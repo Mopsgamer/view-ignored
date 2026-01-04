@@ -1,12 +1,12 @@
 import type { Dirent, PathLike } from "node:fs"
-import type { FsPromises } from "./fsp.js"
+import type { FsAdapter } from "./fs_adapter.js"
 
 export async function opendir(
-	fsp: FsPromises,
+	fsp: FsAdapter,
 	path: PathLike,
 	cb: (entry: Dirent) => Promise<0 | 1 | 2>,
 ): Promise<void | 2> {
-	const dir = await fsp.opendir(path)
+	const dir = await fsp.promises.opendir(path)
 	for await (const entry of dir) {
 		const r = await cb(entry)
 		if (r === 2) {

@@ -1,6 +1,6 @@
 import { dirname } from "node:path"
 import { gitignoreMatch } from "./gitignore.js"
-import type { FsPromises } from "../fsp.js"
+import type { FsAdapter } from "../fs_adapter.js"
 import { ArkErrors } from "arktype"
 
 /**
@@ -56,7 +56,7 @@ export type MatcherContext = {
 	/**
 	 * File system promises interface.
 	 */
-	fsp: FsPromises
+	fsp: FsAdapter
 }
 
 /**
@@ -194,7 +194,7 @@ export async function findAndExtract(
 
 		let buff: Buffer<ArrayBuffer> | undefined
 		try {
-			buff = await ctx.fsp.readFile(cwd + "/" + path)!
+			buff = await ctx.fsp.promises.readFile(cwd + "/" + path)!
 		} catch (err) {
 			const error = err as NodeJS.ErrnoException
 			if (error.code === "ENOENT") {

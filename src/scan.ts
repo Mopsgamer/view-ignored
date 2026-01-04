@@ -2,7 +2,7 @@ import { posix } from "node:path"
 import type { MatcherContext, Source } from "./patterns/matcher.js"
 import type { Target } from "./targets/target.js"
 import { opendir } from "./walk.js"
-import type { FsPromises } from "./fsp.js"
+import type { FsAdapter } from "./fs_adapter.js"
 import { getDepth } from "./getdepth.js"
 
 export type DepthMode = "files" | undefined
@@ -48,7 +48,7 @@ export type ScanOptions = {
 	/**
 	 * Filesystem promises adapter.
 	 */
-	fsp?: FsPromises
+	fsp?: FsAdapter
 }
 
 /**
@@ -70,7 +70,7 @@ export async function scan(options: ScanOptions): Promise<MatcherContext> {
 		invert = false,
 		signal = undefined,
 		fastDepth = false,
-		fsp = await import("node:fs/promises"),
+		fsp = await import("node:fs") as FsAdapter,
 	} = options
 	if (maxDepth < 0) {
 		throw new TypeError("Depth must be a non-negative integer")
