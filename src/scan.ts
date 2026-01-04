@@ -70,7 +70,7 @@ export async function scan(options: ScanOptions): Promise<MatcherContext> {
 		invert = false,
 		signal = undefined,
 		fastDepth = false,
-		fsp = await import("node:fs") as FsAdapter,
+		fsp = (await import("node:fs")) as FsAdapter,
 	} = options
 	if (maxDepth < 0) {
 		throw new TypeError("Depth must be a non-negative integer")

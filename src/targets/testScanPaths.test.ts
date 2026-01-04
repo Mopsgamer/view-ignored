@@ -29,7 +29,7 @@ export async function testScanPaths(
 	vol.fromNestedJSON(tree, cwd)
 	const fs = createFsFromVolume(vol)
 	const { opendir, readFile } = fs.promises
-	const fsp = {promises: { opendir, readFile }} as FsAdapter
+	const fsp = { promises: { opendir, readFile } } as FsAdapter
 	const o = { cwd: cwd, fsp, ...options }
 	const ctx = await scan(o)
 	const { paths: set } = ctx
