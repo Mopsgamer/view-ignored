@@ -49,7 +49,7 @@ export type ScanOptions = {
 	/**
 	 * Filesystem promises adapter.
 	 */
-	fsp?: FsAdapter
+	fs?: FsAdapter
 }
 
 /**
@@ -71,7 +71,7 @@ export async function scan(options: ScanOptions): Promise<MatcherContext> {
 		invert = false,
 		signal = undefined,
 		fastDepth = false,
-		fsp = (await import("node:fs")) as FsAdapter,
+		fs: fsp = (await import("node:fs")) as FsAdapter,
 	} = options
 	if (maxDepth < 0) {
 		throw new TypeError("Depth must be a non-negative integer")
