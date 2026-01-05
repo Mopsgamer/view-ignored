@@ -4,21 +4,15 @@ import { getDepth } from "./getdepth.js"
 import type { MatcherContext } from "./patterns/matcher_context.js"
 import type { MatcherStream, ScanOptions, EntryInfo } from "./scan.js"
 
-export async function walk(
-	options: { entry: Dirent; ctx: MatcherContext; s: MatcherStream } & ScanOptions & { cwd: string },
-): Promise<0 | 1 | 2> {
-	const {
-		entry,
-		ctx,
-		s,
-		target,
-		cwd,
-		depth: maxDepth = Infinity,
-		invert = false,
-		signal = undefined,
-		fastDepth = false,
-		stream = false,
-	} = options
+export type WalkOptions = {
+	entry: Dirent
+	ctx: MatcherContext
+	s: MatcherStream
+} & ScanOptions &
+	Omit<Required<ScanOptions>, "signal">
+
+export async function walk(options: WalkOptions): Promise<0 | 1 | 2> {
+	const { entry, ctx, s, target, cwd, depth: maxDepth, invert, signal, fastDepth, stream } = options
 
 	signal?.throwIfAborted()
 

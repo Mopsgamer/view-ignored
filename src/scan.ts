@@ -39,6 +39,7 @@ export type ScanOptions = {
 	 * @default `undefined`
 	 */
 	signal?: AbortSignal
+
 	/**
 	 * Requires depth >= 0.
 	 * If enabled, directories will be processed faster
@@ -73,10 +74,12 @@ export type EntryInfo = {
 	 * The relative path of the entry.
 	 */
 	path: string
+
 	/**
 	 * The directory entry.
 	 */
 	dirent: Dirent
+
 	/**
 	 * Whether the entry was ignored.
 	 */
@@ -89,7 +92,7 @@ export type EndListener = (ctx: MatcherContext) => void
 
 export type EventMap = {
 	dirent: [EntryInfo]
-	source: [Source]
+	// source: [Source]
 	end: [MatcherContext]
 }
 
@@ -163,7 +166,9 @@ export class MatcherStream extends EventEmitter<EventMap> {
  * @param options Scan options.
  * @returns A promise that resolves to a {@link MatcherContext} containing the scan results.
  */
-export async function scan(options: ScanOptions & { stream: true }): Promise<MatcherStream>
+export function scan(
+	options: ScanOptions & { stream: true; cwd: string; fs: FsAdapter },
+): MatcherStream
 /**
  * Scan the directory for included files based on the provided targets.
  *
@@ -175,19 +180,80 @@ export async function scan(options: ScanOptions & { stream: true }): Promise<Mat
  * @param options Scan options.
  * @returns A promise that resolves to a {@link MatcherContext} containing the scan results.
  */
-export async function scan(options: ScanOptions): Promise<MatcherContext>
-export async function scan(options: ScanOptions): Promise<MatcherStream | MatcherContext> {
+export function scan(options: ScanOptions & { stream: true }): Promise<MatcherStream>
+/**
+ * Scan the directory for included files based on the provided targets.
+ *
+ * Note that this function uses `fs/promises.readFile` and `fs/promises.opendir` without options within
+ * custom recursion, instead of `fs.promises.readdir` with `{ withFileTypes: true }.
+ * It also normalizes paths to use forward slashes.
+ * Please report any issues if you encounter problems related to this behavior.
+ *
+ * @param options Scan options.
+ * @returns A promise that resolves to a {@link MatcherContext} containing the scan results.
+ */
+export function scan(options: ScanOptions): Promise<MatcherContext>
+export function scan(
+	options: ScanOptions,
+): MatcherStream | Promise<MatcherStream | MatcherContext> {
 	const {
-		cwd = (await import("node:process")).cwd().replaceAll("\\", "/"),
+		target,
+		cwd, // = (await import("node:process")).cwd().replaceAll("\\", "/"),
+		invert = false,
 		depth: maxDepth = Infinity,
 		signal = undefined,
+		fastDepth = false,
 		stream = false,
-		fs = (await import("node:fs")) as FsAdapter,
+		fs, // = (await import("node:fs")) as FsAdapter,
 	} = options
 
 	if (maxDepth < 0) {
 		throw new TypeError("Depth must be a non-negative integer")
 	}
+
+	if (typeof fs === "undefined" || typeof cwd === "undefined") {
+		return (async (): Promise<MatcherContext | MatcherStream> => {
+			const cwd_ = cwd ?? (await import("node:process")).cwd().replaceAll("\\", "/")
+			const fs_ = fs ?? ((await import("node:fs")) as FsAdapter)
+			const r = await scanKnownFsAndCwd({
+				target,
+				cwd: cwd_,
+				invert,
+				depth: maxDepth,
+				signal,
+				fastDepth,
+				stream,
+				fs: fs_,
+			})
+			return r
+		})()
+	}
+
+	return scanKnownFsAndCwd({
+		target,
+		cwd,
+		invert,
+		depth: maxDepth,
+		signal,
+		fastDepth,
+		stream,
+		fs,
+	})
+}
+
+function scanKnownFsAndCwd(
+	options: ScanOptions & { fs: FsAdapter; cwd: string },
+): MatcherStream | Promise<MatcherContext> {
+	const {
+		target,
+		cwd,
+		invert = false,
+		depth: maxDepth = Infinity,
+		signal = undefined,
+		fastDepth = false,
+		stream = false,
+		fs,
+	} = options
 
 	const ctx: MatcherContext = {
 		paths: new Set<string>(),
@@ -202,28 +268,42 @@ export async function scan(options: ScanOptions): Promise<MatcherStream | Matche
 
 	const s = new MatcherStream({ captureRejections: false })
 
-	const realOptions = { ...options, cwd, depth: maxDepth, signal, fs, stream }
+	const result = opendir(fs, cwd, (entry) =>
+		walk({
+			entry,
+			ctx,
+			s,
+			cwd,
+			depth: maxDepth,
+			fastDepth,
+			fs,
+			invert,
+			signal,
+			stream,
+			target,
+		}),
+	)
 	if (stream) {
-		const result = opendir(fs, cwd, (entry) => walk({ entry, ctx, s, ...realOptions }))
 		void result.then(() => {
-			for (const [dir, count] of ctx.depthPaths) {
-				if (count === 0) {
-					continue
-				}
-				ctx.paths.add(dir + "/")
-			}
+			populateDirs(signal, ctx)
 			s.emit("end", ctx)
 		})
-	} else {
-		await opendir(fs, cwd, (entry) => walk({ entry, ctx, s, ...realOptions }))
-		signal?.throwIfAborted()
-		for (const [dir, count] of ctx.depthPaths) {
-			if (count === 0) {
-				continue
-			}
-			ctx.paths.add(dir + "/")
-		}
+		return s
 	}
 
-	return stream ? s : ctx
+	return (async (): Promise<MatcherContext> => {
+		await result
+		populateDirs(signal, ctx)
+		return ctx
+	})()
+}
+
+function populateDirs(signal: AbortSignal | undefined, ctx: MatcherContext): void {
+	for (const [dir, count] of ctx.depthPaths) {
+		signal?.throwIfAborted()
+		if (count === 0) {
+			continue
+		}
+		ctx.paths.add(dir + "/")
+	}
 }
