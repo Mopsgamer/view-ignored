@@ -92,11 +92,19 @@ export type Source = {
  * and adds to exclude patterns otherwise.
  */
 export function sourcePushNegatable(source: Source, pattern: string): void {
-	if (pattern.startsWith("!")) {
-		source.pattern.include.push(pattern.substring(1))
-		return
+	let exclude = source.pattern.exclude, include = source.pattern.include
+	if (source.inverted) {
+		[exclude, include] = [include, exclude]
 	}
-	source.pattern.exclude.push(pattern)
+
+	let dist = exclude
+
+	if (pattern.startsWith("!")) {
+		dist = include
+		pattern = pattern.substring(1)
+	}
+
+	dist.push(pattern)
 }
 
 /**
