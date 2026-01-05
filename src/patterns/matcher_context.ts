@@ -1,8 +1,9 @@
-import { dirname } from "node:path"
-import { scan, type ScanOptions } from "../scan.js"
-import { getDepth } from "../getdepth.js"
+import type { ScanOptions } from "../types.js"
 import type { FsAdapter } from "../fs_adapter.js"
 import type { Source } from "./matcher.js"
+import { dirname } from "node:path"
+import { scan } from "../scan.js"
+import { getDepth } from "../getdepth.js"
 
 /**
  * The results and stats of a scanning operation.
