@@ -13,8 +13,11 @@ and this project adheres to
 - BREAKING CHANGE: Change implementations of some pattern extractors.
 - BREAKING CHANGE: Show directories.
 - BREAKING CHANGE: Improve and fix `SourceExtractor`.
-- Add stream API.
-- Add MatcherContext-patching API for watching.
+- Add `stream` function, `view-ignored/browser` API.
+- Add `view-ignored/scan`, `view-ignored/stream`.
+- Add `view-ignored/browser/scan`, `view-ignored/browser/stream`.
+- Add MatcherContext-patching API for watching: `matcherContextAddPath`,
+ `matcherContextRemovePath`, `matcherContextRefreshDir`.
 - Add `Source.error` and `MatcherContext.failed`.
   Remove `MatcherContext.sourceErrors`.
 - Replace eslint with oxlint and oxfmt.

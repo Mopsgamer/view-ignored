@@ -36,6 +36,26 @@
 			"types": "./out/index.d.ts",
 			"default": "./out/index.js"
 		},
+		"./scan": {
+			"types": "./out/scan.d.ts",
+			"default": "./out/scan.js"
+		},
+		"./stream": {
+			"types": "./out/stream.d.ts",
+			"default": "./out/stream.js"
+		},
+		"./browser": {
+			"types": "./out/browser.d.ts",
+			"default": "./out/browser.js"
+		},
+		"./browser/scan": {
+			"types": "./out/browser_scan.d.ts",
+			"default": "./out/browser_scan.js"
+		},
+		"./browser/stream": {
+			"types": "./out/browser_stream.d.ts",
+			"default": "./out/browser_stream.js"
+		},
 		"./patterns": {
 			"types": "./out/patterns/index.d.ts",
 			"default": "./out/patterns/index.js"
