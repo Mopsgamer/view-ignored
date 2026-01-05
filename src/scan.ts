@@ -205,7 +205,7 @@ export async function scan(options: ScanOptions): Promise<MatcherStream | Matche
 
 	if (stream) {
 		const result = opendir(fs, cwd, (entry) => walk({ entry, ctx, s, ...options }))
-		result.then(() => {
+		void result.then(() => {
 			for (const [dir, count] of ctx.depthPaths) {
 				if (count === 0) {
 					continue

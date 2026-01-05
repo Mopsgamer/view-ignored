@@ -19,7 +19,9 @@ export async function walk(
 		fastDepth = false,
 		stream = false,
 	} = options
+
 	signal?.throwIfAborted()
+
 	const path = posix.join(posix.relative(cwd, entry.parentPath.replaceAll("\\", "/")), entry.name)
 
 	const isDir = entry.isDirectory()

@@ -32,6 +32,16 @@
 			"sourceMaps": true
 		},
 		{
+			"name": "test git (self)",
+			"type": "node",
+			"request": "launch",
+			"skipFiles": ["<node_internals>/**"],
+			"args": ["--enable-source-maps", "--test", "./out/scan_self_git.test.js"],
+			"console": "integratedTerminal",
+			"sourceMaps": true,
+			"stopOnEntry": true
+		},
+		{
 			"name": "test npm (self)",
 			"type": "node",
 			"request": "launch",
