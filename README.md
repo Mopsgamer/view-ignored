@@ -40,8 +40,9 @@ by Git, NPM, Yarn, JSR, VSCE or other tools.
 import * as vign from "view-ignored";
 import { Git as target } from "view-ignored/targets";
 
-const results = await vign.scan({ target });
-results.paths.has(".git/HEAD");
+const ctx = await vign.scan({ target });
+ctx.paths.has(".git/HEAD"); // false
+ctx.paths.has("src"); // true
 ```
 
 ### Using custom target
@@ -56,22 +57,40 @@ import {
 } from "view-ignored/patterns";
 import type { Target } from "view-ignored/targets";
 
-const gitSources = [".gitignore"];
-const gitSourceMap = new Map<string, SourceExtractor>([[".gitignore", extractGitignore]]);
-const gitPattern: SignedPattern = {
-  exclude: [".git", ".DS_Store"],
-  include: [],
-};
-
 export const Git: Target = {
-  async ignores(cwd, entry, ctx) {
-    return await signedPatternIgnores(gitPattern, cwd, entry, gitSources, gitSourceMap, ctx);
-  },
-};
+	ignores(cwd, entry, ctx) {
+		const gitSources = [".gitignore"]
+		const gitSourceMap = new Map<string, SourceExtractor>([[".gitignore", extractGitignore]])
+		const gitPattern: SignedPattern = {
+			exclude: [".git", ".DS_Store"],
+			include: [],
+		}
+		return signedPatternIgnores(gitPattern, cwd, entry, gitSources, gitSourceMap, ctx)
+	},
+}
+
+const ctx = await vign.scan({ target });
 ```
 
+### Streaming results
+
 ```ts
-vign.scan({ target: Git });
+import * as vign from "view-ignored";
+import { NPM as target } from "view-ignored/targets";
+
+const stream = await vign.scan({ target, stream: true })
+
+stream.on('end', (ctx) => {
+  ctx.paths.has(".git/HEAD"); // false
+  ctx.paths.has("node_modules/"); // false
+  ctx.paths.has("package.json"); // true
+
+  throw new Error("OK")
+})
+
+stream.on('error', (error) => {
+  console.log(error) // Error: OK
+})
 ```
 
 ## Targets

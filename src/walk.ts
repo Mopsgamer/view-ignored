@@ -5,14 +5,14 @@ import type { MatcherContext } from "./patterns/matcher_context.js"
 import type { MatcherStream, ScanOptions, EntryInfo } from "./scan.js"
 
 export async function walk(
-	options: { entry: Dirent; ctx: MatcherContext; s: MatcherStream } & ScanOptions,
+	options: { entry: Dirent; ctx: MatcherContext; s: MatcherStream } & ScanOptions & { cwd: string },
 ): Promise<0 | 1 | 2> {
 	const {
 		entry,
 		ctx,
 		s,
 		target,
-		cwd = (await import("node:process")).cwd().replaceAll("\\", "/"),
+		cwd,
 		depth: maxDepth = Infinity,
 		invert = false,
 		signal = undefined,
@@ -39,7 +39,7 @@ export async function walk(
 			if (ctx.failed) {
 				if (stream) {
 					// TODO: perf stream check
-					s.emit("entry", { entry, ignored, path } as EntryInfo)
+					s.emit("dirent", { dirent: entry, ignored, path } as EntryInfo)
 				}
 				return 2
 			}
@@ -52,7 +52,7 @@ export async function walk(
 			if (ignored) {
 				if (stream) {
 					// TODO: perf stream check
-					s.emit("entry", { entry, ignored, path } as EntryInfo)
+					s.emit("dirent", { dirent: entry, ignored, path } as EntryInfo)
 				}
 				return 0
 			}
@@ -62,7 +62,7 @@ export async function walk(
 				// ctx.depthPaths.set(path, (ctx.depthPaths.get(path) ?? 0) + 1);
 				if (stream) {
 					// TODO: perf stream check
-					s.emit("entry", { entry, ignored, path } as EntryInfo)
+					s.emit("dirent", { dirent: entry, ignored, path } as EntryInfo)
 				}
 				return 0
 			}
@@ -71,7 +71,7 @@ export async function walk(
 			const dir = path.substring(0, depthSlash)
 			ctx.depthPaths.set(dir, (ctx.depthPaths.get(dir) ?? 0) + 1)
 			if (stream) {
-				s.emit("entry", { entry, ignored, path } as EntryInfo)
+				s.emit("dirent", { dirent: entry, ignored, path } as EntryInfo)
 			}
 			return 1
 		}
@@ -81,7 +81,7 @@ export async function walk(
 	if (ctx.failed) {
 		if (stream) {
 			// TODO: perf stream check
-			s.emit("entry", { entry, ignored, path } as EntryInfo)
+			s.emit("dirent", { dirent: entry, ignored, path } as EntryInfo)
 		}
 		return 2
 	}
@@ -94,7 +94,7 @@ export async function walk(
 	if (ignored) {
 		if (stream) {
 			// TODO: perf stream check
-			s.emit("entry", { entry, ignored, path } as EntryInfo)
+			s.emit("dirent", { dirent: entry, ignored, path } as EntryInfo)
 		}
 		return 0
 	}
@@ -108,7 +108,7 @@ export async function walk(
 		}
 		if (stream) {
 			// TODO: perf stream check
-			s.emit("entry", { entry, ignored, path } as EntryInfo)
+			s.emit("dirent", { dirent: entry, ignored, path } as EntryInfo)
 		}
 		return 0
 	}
@@ -124,7 +124,7 @@ export async function walk(
 
 	if (stream) {
 		// TODO: perf stream check
-		s.emit("entry", { entry, ignored, path } as EntryInfo)
+		s.emit("dirent", { dirent: entry, ignored, path } as EntryInfo)
 	}
 	return 0
 }

@@ -76,24 +76,19 @@ export type EntryInfo = {
 	/**
 	 * The directory entry.
 	 */
-	entry: Dirent
+	dirent: Dirent
 	/**
 	 * Whether the entry was ignored.
 	 */
 	ignored: boolean
 }
 
-/**
- * This listener is used for captured errors, not source errors.
- */
-export type ErrorListener = (err: Error) => void
 export type EntryListener = (info: EntryInfo) => void
 // export type SourceListener = (source: Source) => void
 export type EndListener = (ctx: MatcherContext) => void
 
 export type EventMap = {
-	error: [Error]
-	entry: [EntryInfo]
+	dirent: [EntryInfo]
 	source: [Source]
 	end: [MatcherContext]
 }
@@ -102,8 +97,7 @@ export type EventMap = {
  * Stream interface for scan results.
  */
 export class MatcherStream extends EventEmitter<EventMap> {
-	override addListener(event: "error", listener: ErrorListener): this
-	override addListener(event: "entry", listener: EntryListener): this
+	override addListener(event: "dirent", listener: EntryListener): this
 	// override addListener(event: "source", listener: SourceListener): this
 	override addListener(event: "end", listener: EndListener): this
 	override addListener(event: keyof EventMap, listener: (...args: any[]) => void): this {
@@ -111,16 +105,14 @@ export class MatcherStream extends EventEmitter<EventMap> {
 		return this
 	}
 
-	override emit(event: "error", err: Error): boolean
-	override emit(event: "entry", info: EntryInfo): boolean
+	override emit(event: "dirent", info: EntryInfo): boolean
 	// override emit(event: "source", source: Source): boolean
 	override emit(event: "end", ctx: MatcherContext): boolean
 	override emit(event: keyof EventMap, ...args: EventMap[keyof EventMap]): boolean {
 		return super.emit(event, ...args)
 	}
 
-	override on(event: "error", listener: ErrorListener): this
-	override on(event: "entry", listener: EntryListener): this
+	override on(event: "dirent", listener: EntryListener): this
 	// override on(event: "source", listener: SourceListener): this
 	override on(event: "end", listener: EndListener): this
 	override on(event: keyof EventMap, listener: (...args: any[]) => void): this {
@@ -128,8 +120,7 @@ export class MatcherStream extends EventEmitter<EventMap> {
 		return this
 	}
 
-	override once(event: "error", listener: ErrorListener): this
-	override once(event: "entry", listener: EntryListener): this
+	override once(event: "dirent", listener: EntryListener): this
 	// override once(event: "source", listener: SourceListener): this
 	override once(event: "end", listener: EndListener): this
 	override once(event: keyof EventMap, listener: (...args: any[]) => void): this {
@@ -137,8 +128,7 @@ export class MatcherStream extends EventEmitter<EventMap> {
 		return this
 	}
 
-	override prependListener(event: "error", listener: ErrorListener): this
-	override prependListener(event: "entry", listener: EntryListener): this
+	override prependListener(event: "dirent", listener: EntryListener): this
 	// override prependListener(event: "source", listener: SourceListener): this
 	override prependListener(event: "end", listener: EndListener): this
 	override prependListener(event: keyof EventMap, listener: (...args: any[]) => void): this {
@@ -146,8 +136,7 @@ export class MatcherStream extends EventEmitter<EventMap> {
 		return this
 	}
 
-	override prependOnceListener(event: "error", listener: ErrorListener): this
-	override prependOnceListener(event: "entry", listener: EntryListener): this
+	override prependOnceListener(event: "dirent", listener: EntryListener): this
 	// override prependOnceListener(event: "source", listener: SourceListener): this
 	override prependOnceListener(event: "end", listener: EndListener): this
 	override prependOnceListener(event: keyof EventMap, listener: (...args: any[]) => void): this {
@@ -155,8 +144,7 @@ export class MatcherStream extends EventEmitter<EventMap> {
 		return this
 	}
 
-	override listeners(event: "error"): ErrorListener[]
-	override listeners(event: "entry"): EntryListener[]
+	override listeners(event: "dirent"): EntryListener[]
 	// override listeners(event: "source"): SourceListener[]
 	override listeners(event: "end"): EndListener[]
 	override listeners(event: keyof EventMap): Array<Function> {
@@ -176,6 +164,17 @@ export class MatcherStream extends EventEmitter<EventMap> {
  * @returns A promise that resolves to a {@link MatcherContext} containing the scan results.
  */
 export async function scan(options: ScanOptions & { stream: true }): Promise<MatcherStream>
+/**
+ * Scan the directory for included files based on the provided targets.
+ *
+ * Note that this function uses `fs/promises.readFile` and `fs/promises.opendir` without options within
+ * custom recursion, instead of `fs.promises.readdir` with `{ withFileTypes: true }.
+ * It also normalizes paths to use forward slashes.
+ * Please report any issues if you encounter problems related to this behavior.
+ *
+ * @param options Scan options.
+ * @returns A promise that resolves to a {@link MatcherContext} containing the scan results.
+ */
 export async function scan(options: ScanOptions): Promise<MatcherContext>
 export async function scan(options: ScanOptions): Promise<MatcherStream | MatcherContext> {
 	const {
@@ -201,10 +200,11 @@ export async function scan(options: ScanOptions): Promise<MatcherStream | Matche
 		fs,
 	}
 
-	const s = new MatcherStream({ captureRejections: true })
+	const s = new MatcherStream({ captureRejections: false })
 
+	const realOptions = { ...options, cwd, depth: maxDepth, signal, fs, stream }
 	if (stream) {
-		const result = opendir(fs, cwd, (entry) => walk({ entry, ctx, s, ...options }))
+		const result = opendir(fs, cwd, (entry) => walk({ entry, ctx, s, ...realOptions }))
 		void result.then(() => {
 			for (const [dir, count] of ctx.depthPaths) {
 				if (count === 0) {
@@ -215,7 +215,7 @@ export async function scan(options: ScanOptions): Promise<MatcherStream | Matche
 			s.emit("end", ctx)
 		})
 	} else {
-		await opendir(fs, cwd, (entry) => walk({ entry, ctx, s, ...options }))
+		await opendir(fs, cwd, (entry) => walk({ entry, ctx, s, ...realOptions }))
 		signal?.throwIfAborted()
 		for (const [dir, count] of ctx.depthPaths) {
 			if (count === 0) {
