@@ -2,6 +2,7 @@ import type { ScanOptions } from "./types.js"
 import type { FsAdapter } from "./fs_adapter.js"
 import type { Source } from "./patterns/matcher.js"
 import type { MatcherContext } from "./patterns/matcher_context.js"
+// oxlint-disable-next-line no-unused-vars
 import type { scan as browserScan } from "./browser_scan.js"
 import { MatcherStream } from "./patterns/matcher_stream.js"
 import { opendir } from "./opendir.js"
@@ -50,9 +51,10 @@ export function stream(options: ScanOptions & { fs: FsAdapter; cwd: string }): M
 		}),
 	)
 
-	;(async (): Promise<void> => {
+	void (async (): Promise<void> => {
 		await result
 		populateDirs(signal, ctx)
+		s.emit("end", ctx)
 	})()
 
 	return s

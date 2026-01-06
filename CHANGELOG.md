@@ -17,7 +17,7 @@ and this project adheres to
 - Add `view-ignored/scan`, `view-ignored/stream`.
 - Add `view-ignored/browser/scan`, `view-ignored/browser/stream`.
 - Add MatcherContext-patching API for watching: `matcherContextAddPath`,
- `matcherContextRemovePath`, `matcherContextRefreshDir`.
+  `matcherContextRemovePath`, `matcherContextRefreshDir`.
 - Add `Source.error` and `MatcherContext.failed`.
   Remove `MatcherContext.sourceErrors`.
 - Replace eslint with oxlint and oxfmt.

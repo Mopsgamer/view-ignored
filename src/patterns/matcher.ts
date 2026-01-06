@@ -123,23 +123,34 @@ export type Extraction = "stop" | "continue"
 export type SourceExtractor = (source: Source, content: Buffer<ArrayBuffer>) => Extraction
 
 /**
+ *
+ */
+export interface PatternFinderOptions {
+	cwd: string
+	sources: string[]
+	extractors: Map<string, SourceExtractor>
+	ctx: MatcherContext
+}
+
+/**
+ * @see {@link findAndExtract}
+ */
+export interface FindAndExtractOptions extends PatternFinderOptions {
+	dir: string
+}
+
+/**
  * Populates the {@link MatcherContext.external} map with {@link Source} objects.
  */
-export async function findAndExtract(
-	cwd: string,
-	directory: string,
-	sources: string[],
-	matcher: Map<string, SourceExtractor>,
-	ctx: MatcherContext,
-): Promise<void> {
-	const parent = dirname(directory)
-	if (directory !== ".") {
-		await findAndExtract(cwd, parent, sources, matcher, ctx)
+export async function findAndExtract(options: FindAndExtractOptions): Promise<void> {
+	const parent = dirname(options.dir)
+	if (options.dir !== ".") {
+		await findAndExtract({ ...options, dir: parent })
 	}
 
-	for (const name of sources) {
+	for (const name of options.sources) {
 		let path = ""
-		path = directory === "." ? name : directory + "/" + name
+		path = options.dir === "." ? name : options.dir + "/" + name
 
 		const source: Source = {
 			inverted: false,
@@ -153,25 +164,25 @@ export async function findAndExtract(
 
 		let buff: Buffer<ArrayBuffer> | undefined
 		try {
-			buff = await ctx.fs.promises.readFile(cwd + "/" + path)!
+			buff = await options.ctx.fs.promises.readFile(options.cwd + "/" + path)!
 		} catch (err) {
 			const error = err as NodeJS.ErrnoException
 			if (error.code === "ENOENT") {
 				continue
 			}
 			source.error = error
-			ctx.external.set(directory, source)
-			ctx.failed = true
+			options.ctx.external.set(options.dir, source)
+			options.ctx.failed = true
 			break
 		}
 
-		ctx.external.set(directory, source)
+		options.ctx.external.set(options.dir, source)
 
-		const sourceExtractor = matcher.get(name)
+		const sourceExtractor = options.extractors.get(name)
 		if (!sourceExtractor) {
 			const err = new Error("No extractor for source file: " + name)
 			source.error = err
-			ctx.failed = true
+			options.ctx.failed = true
 			break
 		}
 
@@ -179,7 +190,7 @@ export async function findAndExtract(
 		try {
 			r = sourceExtractor(source, buff!)
 		} catch (err) {
-			ctx.failed = true
+			options.ctx.failed = true
 			s: switch (true) {
 				case err instanceof Error:
 				case err instanceof ArkErrors:
@@ -197,15 +208,22 @@ export async function findAndExtract(
 		}
 
 		if (r === "stop") {
-			ctx.failed = true
+			options.ctx.failed = true
 		}
 
 		break
 	}
 
-	if (!ctx.external.has(directory)) {
-		ctx.external.set(directory, ctx.external.get(parent)!)
+	if (!options.ctx.external.has(options.dir)) {
+		options.ctx.external.set(options.dir, options.ctx.external.get(parent)!)
 	}
+}
+
+/**
+ * @see {@link signedPatternIgnores}
+ */
+export interface SignedPatternIgnoresOptions extends PatternFinderOptions {
+	entry: string
 }
 
 /**
@@ -226,20 +244,19 @@ export async function findAndExtract(
  */
 export async function signedPatternIgnores(
 	internal: SignedPattern,
-	cwd: string,
-	entry: string,
-	sources: string[],
-	sourceMap: Map<string, SourceExtractor>,
-	ctx: MatcherContext,
+	options: SignedPatternIgnoresOptions,
 ): Promise<boolean> {
-	const parent = dirname(entry)
-	let source = ctx.external.get(parent)
+	const parent = dirname(options.entry)
+	let source = options.ctx.external.get(parent)
+
 	if (!source) {
-		await findAndExtract(cwd, parent, sources, sourceMap, ctx)
-		if (ctx.failed) {
+		await findAndExtract({ ...options, dir: parent })
+
+		if (options.ctx.failed) {
 			return false
 		}
-		source = ctx.external.get(parent)
+
+		source = options.ctx.external.get(parent)
 		if (!source) {
 			return false
 		}
@@ -253,33 +270,33 @@ export async function signedPatternIgnores(
 	try {
 		let check = false
 
-		check = patternMatches(matcher.internal.exclude, entry)
+		check = patternMatches(matcher.internal.exclude, options.entry)
 		if (check) {
 			return true
 		}
 
-		check = patternMatches(matcher.internal.include, entry)
+		check = patternMatches(matcher.internal.include, options.entry)
 		if (check) {
 			return false
 		}
 
 		if (!source.inverted) {
-			check = patternMatches(matcher.external.include, entry)
+			check = patternMatches(matcher.external.include, options.entry)
 			if (check) {
 				return false
 			}
 
-			check = patternMatches(matcher.external.exclude, entry)
+			check = patternMatches(matcher.external.exclude, options.entry)
 			if (check) {
 				return true
 			}
 		} else {
-			check = patternMatches(matcher.external.exclude, entry)
+			check = patternMatches(matcher.external.exclude, options.entry)
 			if (check) {
 				return true
 			}
 
-			check = patternMatches(matcher.external.include, entry)
+			check = patternMatches(matcher.external.include, options.entry)
 			if (check) {
 				return false
 			}
