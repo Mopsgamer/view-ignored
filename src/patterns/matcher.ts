@@ -123,7 +123,9 @@ export type Extraction = "stop" | "continue"
 export type SourceExtractor = (source: Source, content: Buffer<ArrayBuffer>) => Extraction
 
 /**
- *
+ * Options for finding and extracting patterns from source files.
+ * @see {@link findAndExtract}
+ * @see {@link signedPatternIgnores}
  */
 export interface PatternFinderOptions {
 	cwd: string

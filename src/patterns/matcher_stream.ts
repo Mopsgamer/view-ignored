@@ -20,6 +20,11 @@ export type EntryInfo = {
 	 * Whether the entry was ignored.
 	 */
 	ignored: boolean
+
+	/**
+	 * The matcher context.
+	 */
+	ctx: MatcherContext
 }
 
 export type EntryListener = (info: EntryInfo) => void
@@ -44,11 +49,11 @@ export class MatcherStream extends EventEmitter<EventMap> {
 		return this
 	}
 
-	override emit(event: "dirent", info: EntryInfo): boolean
-	// override emit(event: "source", source: Source): boolean
-	override emit(event: "end", ctx: MatcherContext): boolean
-	override emit(event: keyof EventMap, ...args: EventMap[keyof EventMap]): boolean {
-		return super.emit(event, ...args)
+	override emit<T extends keyof EventMap>(
+		eventName: T | keyof EventMap,
+		...args: T extends keyof EventMap ? EventMap[T] : never
+	): boolean {
+		return super.emit<T>(eventName, ...args)
 	}
 
 	override on(event: "dirent", listener: EntryListener): this
