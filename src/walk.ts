@@ -111,5 +111,6 @@ export async function walk(options: WalkOptions): Promise<0 | 1 | 2> {
 	if (s) {
 		s.emit("dirent", { dirent: entry, match, path, ctx })
 	}
+
 	return 0
 }

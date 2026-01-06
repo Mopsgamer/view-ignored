@@ -2,7 +2,6 @@ import { dirname } from "node:path"
 import { gitignoreMatch } from "./gitignore.js"
 import type { MatcherContext } from "./matcher_context.js"
 import { ArkErrors } from "arktype"
-import type { MatcherStream } from "./matcher_stream.js";
 
 /**
  * Represents a list of positive minimatch patterns.
