@@ -1,3 +1,4 @@
+import type { SignedPatternMatch } from "./matcher.js"
 import type { MatcherContext } from "../patterns/matcher_context.js"
 import type { Dirent } from "node:fs"
 import { EventEmitter } from "node:events"
@@ -19,7 +20,7 @@ export type EntryInfo = {
 	/**
 	 * Whether the entry was ignored.
 	 */
-	ignored: boolean
+	match: SignedPatternMatch
 
 	/**
 	 * The matcher context.

@@ -20,7 +20,8 @@ const internal: SignedPattern = {
 
 export const Git: Target = {
 	ignores(cwd, entry, ctx) {
-		return signedPatternIgnores(internal, {
+		return signedPatternIgnores({
+			internal,
 			ctx,
 			cwd,
 			entry,

@@ -94,11 +94,11 @@ export async function matcherContextAddPath(
 
 	const isDir = entry.endsWith("/")
 	if (isDir) {
-		const ignored = await target.ignores(cwd, entry.substring(0, entry.length - 1), ctx)
-		return !ignored
+		const match = await target.ignores(cwd, entry.substring(0, entry.length - 1), ctx)
+		return !match.ignored
 	}
-	const ignored = await target.ignores(cwd, entry, ctx)
-	if (ignored) {
+	const match = await target.ignores(cwd, entry, ctx)
+	if (match.ignored) {
 		return false
 	}
 	ctx.paths.add(entry)

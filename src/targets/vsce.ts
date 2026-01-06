@@ -22,7 +22,8 @@ const internal: SignedPattern = {
 
 export const VSCE: Target = {
 	ignores(cwd, entry, ctx) {
-		return signedPatternIgnores(internal, {
+		return signedPatternIgnores({
+			internal,
 			ctx,
 			cwd,
 			entry,

@@ -29,21 +29,21 @@ export async function walk(options: WalkOptions): Promise<0 | 1 | 2> {
 	if (fastDepth) {
 		const { depth, depthSlash } = getDepth(path, maxDepth)
 		if (depth > maxDepth) {
-			let ignored = await target.ignores(cwd, path, ctx)
+			let match = await target.ignores(cwd, path, ctx)
+			if (invert) {
+				match.ignored = !match.ignored
+			}
+
 			if (ctx.failed) {
 				if (s) {
-					s.emit("dirent", { dirent: entry, ignored, path, ctx })
+					s.emit("dirent", { dirent: entry, match, path, ctx })
 				}
 				return 2
 			}
 
-			if (invert) {
-				ignored = !ignored
-			}
-
-			if (ignored) {
+			if (match.ignored) {
 				if (s) {
-					s.emit("dirent", { dirent: entry, ignored, path, ctx })
+					s.emit("dirent", { dirent: entry, match, path, ctx })
 				}
 				return 0
 			}
@@ -52,7 +52,7 @@ export async function walk(options: WalkOptions): Promise<0 | 1 | 2> {
 				// ctx.totalMatchedDirs++;
 				// ctx.depthPaths.set(path, (ctx.depthPaths.get(path) ?? 0) + 1);
 				if (s) {
-					s.emit("dirent", { dirent: entry, ignored, path, ctx })
+					s.emit("dirent", { dirent: entry, match, path, ctx })
 				}
 				return 0
 			}
@@ -61,27 +61,27 @@ export async function walk(options: WalkOptions): Promise<0 | 1 | 2> {
 			const dir = path.substring(0, depthSlash)
 			ctx.depthPaths.set(dir, (ctx.depthPaths.get(dir) ?? 0) + 1)
 			if (s) {
-				s.emit("dirent", { dirent: entry, ignored, path, ctx })
+				s.emit("dirent", { dirent: entry, match, path, ctx })
 			}
 			return 1
 		}
 	}
 
-	let ignored = await target.ignores(cwd, path, ctx)
+	let match = await target.ignores(cwd, path, ctx)
+	if (invert) {
+		match.ignored = !match.ignored
+	}
+
 	if (ctx.failed) {
 		if (s) {
-			s.emit("dirent", { dirent: entry, ignored, path, ctx })
+			s.emit("dirent", { dirent: entry, match, path, ctx })
 		}
 		return 2
 	}
 
-	if (invert) {
-		ignored = !ignored
-	}
-
-	if (ignored) {
+	if (match.ignored) {
 		if (s) {
-			s.emit("dirent", { dirent: entry, ignored, path, ctx })
+			s.emit("dirent", { dirent: entry, match, path, ctx })
 		}
 		return 0
 	}
@@ -94,7 +94,7 @@ export async function walk(options: WalkOptions): Promise<0 | 1 | 2> {
 			ctx.paths.add(path + "/")
 		}
 		if (s) {
-			s.emit("dirent", { dirent: entry, ignored, path, ctx })
+			s.emit("dirent", { dirent: entry, match, path, ctx })
 		}
 		return 0
 	}
@@ -109,7 +109,7 @@ export async function walk(options: WalkOptions): Promise<0 | 1 | 2> {
 	}
 
 	if (s) {
-		s.emit("dirent", { dirent: entry, ignored, path, ctx })
+		s.emit("dirent", { dirent: entry, match, path, ctx })
 	}
 	return 0
 }
