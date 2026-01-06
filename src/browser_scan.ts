@@ -5,6 +5,7 @@ import type { MatcherContext } from "./patterns/matcher_context.js"
 import { opendir } from "./opendir.js"
 import { walk } from "./walk.js"
 import { populateDirs } from "./populate_dirs.js"
+export type * from "./types.js"
 
 /**
  * Scan the directory for included files based on the provided targets.
@@ -27,6 +28,7 @@ export function scan(
 		depth: maxDepth = Infinity,
 		signal = undefined,
 		fastDepth = false,
+		fastInternal = false,
 		fs,
 	} = options
 
@@ -49,10 +51,11 @@ export function scan(
 		walk({
 			entry,
 			ctx,
-			s: undefined,
+			stream: undefined,
 			cwd,
 			depth: maxDepth,
 			fastDepth,
+			fastInternal,
 			fs,
 			invert,
 			signal,

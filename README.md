@@ -57,15 +57,27 @@ import {
 } from "view-ignored/patterns";
 import type { Target } from "view-ignored/targets";
 
+const sources = [".gitignore"];
+
+const extractors = new Map<string, SourceExtractor>([
+	[".gitignore", extractGitignore],
+]);
+
+const internal: SignedPattern = {
+	exclude: [".git", ".DS_Store"],
+	include: [],
+}
+
 export const Git: Target = {
 	ignores(cwd, entry, ctx) {
-		const gitSources = [".gitignore"];
-		const gitSourceMap = new Map<string, SourceExtractor>([[".gitignore", extractGitignore]]);
-		const gitPattern: SignedPattern = {
-			exclude: [".git", ".DS_Store"],
-			include: [],
-		};
-		return signedPatternIgnores(gitPattern, cwd, entry, gitSources, gitSourceMap, ctx);
+		return signedPatternIgnores({
+			internal,
+			ctx,
+			cwd,
+			entry,
+			sources,
+			extractors
+		});
 	}
 };
 
@@ -78,7 +90,7 @@ const ctx = await vign.scan({ target });
 import * as vign from "view-ignored";
 import { NPM as target } from "view-ignored/targets";
 
-const stream = await vign.stream({ target });
+const stream = await vign.scanStream({ target });
 
 stream.on('dirent', console.log);
 stream.on('end', (ctx) => {

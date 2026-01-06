@@ -1,2 +1,3 @@
 export { scan } from "./scan.js"
-export { stream } from "./stream.js"
+export { scanStream } from "./stream.js"
+export type * from "./types.js"

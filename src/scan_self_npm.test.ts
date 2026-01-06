@@ -7,7 +7,7 @@ import { spawn } from "node:child_process"
 
 void test("scan NPM (self, flat)", async () => {
 	const npm = npmTotalFiles()
-	const r = await scan({ target, invert: false })
+	const r = await scan({ target, fastInternal: true })
 	// this test uses sortFirstFolders implementation
 	// provided by https://jsr.io/@m234/path/0.1.4/sort-cmp.ts
 	// you can install this jsr package in your project
@@ -32,7 +32,11 @@ function npmTotalFiles(): Promise<{ total: number; files: string[] }> {
 		npm.stderr.on("data", (data) => {
 			output += data.toString()
 		})
-		npm.on("close", () => {
+		npm.on("close", (code) => {
+			if (code !== 0) {
+				reject(new Error(`'npm pack --dry-run' exited with code ${code}\n${output}`))
+				return
+			}
 			const match = output.match(/total files:\s+(\d+)/)
 			const files: string[] = []
 			const lines = output.split(/\r?\n/)

@@ -7,7 +7,7 @@ import { spawn } from "node:child_process"
 
 void test("scan Git (self)", async () => {
 	const files = gitFiles()
-	const r = await scan({ target })
+	const r = await scan({ target, fastInternal: true })
 	// this test uses sortFirstFolders implementation
 	// provided by https://jsr.io/@m234/path/0.1.4/sort-cmp.ts
 	// you can install this jsr package in your project
@@ -21,7 +21,7 @@ void test("scan Git (self)", async () => {
 })
 
 function gitFiles(): Promise<string[]> {
-	const git = spawn("git", ["ls-tree", "-r", "HEAD", "--name-only"])
+	const git = spawn("git", ["ls-tree", "-r", "HEAD", "--name-only"], { env: { NO_COLOR: "1" } })
 	return new Promise((resolve, reject) => {
 		let output = ""
 		git.stdout.on("data", (data) => {
@@ -32,7 +32,7 @@ function gitFiles(): Promise<string[]> {
 		})
 		git.on("close", (code) => {
 			if (code !== 0) {
-				reject(new Error(`git ls-tree exited with code ${code}`))
+				reject(new Error(`'git ls-tree -r HEAD --name-only' exited with code ${code}\n${output}`))
 				return
 			}
 			const files = output.trim().split("\n")

@@ -8,12 +8,23 @@ import { getDepth } from "./getdepth.js"
 export type WalkOptions = {
 	entry: Dirent
 	ctx: MatcherContext
-	s: MatcherStream | undefined
+	stream: MatcherStream | undefined
 	signal: AbortSignal | undefined
 } & Omit<Required<ScanOptions>, "signal">
 
 export async function walk(options: WalkOptions): Promise<0 | 1 | 2> {
-	const { entry, ctx, s, target, cwd, depth: maxDepth, invert, signal, fastDepth } = options
+	const {
+		entry,
+		ctx,
+		stream,
+		target,
+		cwd,
+		depth: maxDepth,
+		invert,
+		signal,
+		fastDepth,
+		fastInternal,
+	} = options
 
 	signal?.throwIfAborted()
 
@@ -35,15 +46,18 @@ export async function walk(options: WalkOptions): Promise<0 | 1 | 2> {
 			}
 
 			if (ctx.failed) {
-				if (s) {
-					s.emit("dirent", { dirent: entry, match, path, ctx })
+				if (stream) {
+					stream.emit("dirent", { dirent: entry, match, path, ctx })
 				}
 				return 2
 			}
 
 			if (match.ignored) {
-				if (s) {
-					s.emit("dirent", { dirent: entry, match, path, ctx })
+				if (stream) {
+					stream.emit("dirent", { dirent: entry, match, path, ctx })
+				}
+				if (isDir && fastInternal && match.kind === "internal") {
+					return 1
 				}
 				return 0
 			}
@@ -51,8 +65,8 @@ export async function walk(options: WalkOptions): Promise<0 | 1 | 2> {
 			if (isDir) {
 				// ctx.totalMatchedDirs++;
 				// ctx.depthPaths.set(path, (ctx.depthPaths.get(path) ?? 0) + 1);
-				if (s) {
-					s.emit("dirent", { dirent: entry, match, path, ctx })
+				if (stream) {
+					stream.emit("dirent", { dirent: entry, match, path, ctx })
 				}
 				return 0
 			}
@@ -60,8 +74,8 @@ export async function walk(options: WalkOptions): Promise<0 | 1 | 2> {
 			ctx.totalMatchedFiles++
 			const dir = path.substring(0, depthSlash)
 			ctx.depthPaths.set(dir, (ctx.depthPaths.get(dir) ?? 0) + 1)
-			if (s) {
-				s.emit("dirent", { dirent: entry, match, path, ctx })
+			if (stream) {
+				stream.emit("dirent", { dirent: entry, match, path, ctx })
 			}
 			return 1
 		}
@@ -73,15 +87,18 @@ export async function walk(options: WalkOptions): Promise<0 | 1 | 2> {
 	}
 
 	if (ctx.failed) {
-		if (s) {
-			s.emit("dirent", { dirent: entry, match, path, ctx })
+		if (stream) {
+			stream.emit("dirent", { dirent: entry, match, path, ctx })
 		}
 		return 2
 	}
 
 	if (match.ignored) {
-		if (s) {
-			s.emit("dirent", { dirent: entry, match, path, ctx })
+		if (stream) {
+			stream.emit("dirent", { dirent: entry, match, path, ctx })
+		}
+		if (isDir && fastInternal && match.kind === "internal") {
+			return 1
 		}
 		return 0
 	}
@@ -93,8 +110,8 @@ export async function walk(options: WalkOptions): Promise<0 | 1 | 2> {
 		if (depth <= maxDepth) {
 			ctx.paths.add(path + "/")
 		}
-		if (s) {
-			s.emit("dirent", { dirent: entry, match, path, ctx })
+		if (stream) {
+			stream.emit("dirent", { dirent: entry, match, path, ctx })
 		}
 		return 0
 	}
@@ -108,8 +125,8 @@ export async function walk(options: WalkOptions): Promise<0 | 1 | 2> {
 		ctx.paths.add(path)
 	}
 
-	if (s) {
-		s.emit("dirent", { dirent: entry, match, path, ctx })
+	if (stream) {
+		stream.emit("dirent", { dirent: entry, match, path, ctx })
 	}
 
 	return 0

@@ -6,7 +6,7 @@ import { createFsFromVolume, Volume, type NestedDirectoryJSON } from "memfs"
 import { cwd } from "node:process"
 import { scan } from "./browser_scan.js"
 import { MatcherStream } from "./patterns/matcher_stream.js"
-import { stream } from "./browser_stream.js"
+import { scanStream } from "./browser_stream.js"
 import { sortFirstFolders } from "./testSort.test.js"
 
 export const memcwd = cwd().replace(/\w:/, "").replaceAll("\\", "/")
@@ -21,7 +21,7 @@ export type PathHandlerOptions = {
 export type PathHandlerOptionsStream = {
 	vol: Volume
 	fsp: FsAdapter
-	s: MatcherStream
+	stream: MatcherStream
 	options: ScanOptions
 }
 
@@ -75,11 +75,11 @@ export async function testStream(
 	const o = { cwd: cwd, fs: adapter, ...options } as ScanOptions & { fs: FsAdapter; cwd: string }
 
 	if (typeof test === "function") {
-		const s = stream(o)
+		const stream = scanStream(o)
 		await test({
 			vol,
 			fsp: adapter,
-			s,
+			stream,
 			options: o,
 		})
 		return

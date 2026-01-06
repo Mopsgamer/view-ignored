@@ -3,6 +3,7 @@ import type { ScanOptions } from "./types.js"
 import { scan as browserScan } from "./browser_scan.js"
 import * as nodefs from "node:fs"
 import * as process from "node:process"
+export type * from "./types.js"
 
 /**
  * Scan the directory for included files based on the provided targets.

@@ -1,5 +1,7 @@
 import type { Target } from "./targets/target.js"
 import type { FsAdapter } from "./fs_adapter.js"
+// oxlint-disable-next-line no-unused-vars
+import type { MatcherContext } from "./patterns/matcher_context.js"
 
 export type DepthMode = "files" | undefined
 
@@ -35,17 +37,38 @@ export type ScanOptions = {
 	signal?: AbortSignal
 
 	/**
-	 * Requires depth >= 0.
+	 * Works together with {@link ScanOptions.depth}.
 	 * If enabled, directories will be processed faster
 	 * by skipping files after first match.
+	 *
 	 * This makes the scan faster but affects
 	 * {@link MatcherContext.totalDirs},
 	 * {@link MatcherContext.totalFiles},
 	 * {@link MatcherContext.totalMatchedFiles}
 	 * and {@link MatcherContext.depthPaths}.
+	 *
+	 * It's recommended to use this option unless you
+	 * need precise statistics.
 	 * @default `false`
 	 */
 	fastDepth?: boolean
+
+	/**
+	 * Enables skipping entire directories for internal matches.
+	 * For example, when scanning a Git repository,
+	 * '.git' directory will be skipped without reading its contents.
+	 *
+	 * This makes the scan faster but affects
+	 * {@link MatcherContext.totalDirs},
+	 * {@link MatcherContext.totalFiles},
+	 * and {@link MatcherContext.depthPaths}.
+	 *
+	 * It's recommended to use this option unless the target
+	 * allows overriding internal patterns.
+	 * This option should never affect {@link MatcherContext.totalMatchedFiles}.
+	 * @default `false`
+	 */
+	fastInternal?: boolean
 
 	/**
 	 * File system interface.

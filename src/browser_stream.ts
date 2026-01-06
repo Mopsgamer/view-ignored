@@ -8,11 +8,12 @@ import { MatcherStream } from "./patterns/matcher_stream.js"
 import { opendir } from "./opendir.js"
 import { walk } from "./walk.js"
 import { populateDirs } from "./populate_dirs.js"
+export type * from "./types.js"
 
 /**
  * @see {@link browserScan}
  */
-export function stream(options: ScanOptions & { fs: FsAdapter; cwd: string }): MatcherStream {
+export function scanStream(options: ScanOptions & { fs: FsAdapter; cwd: string }): MatcherStream {
 	const {
 		target,
 		cwd,
@@ -20,6 +21,7 @@ export function stream(options: ScanOptions & { fs: FsAdapter; cwd: string }): M
 		depth: maxDepth = Infinity,
 		signal = undefined,
 		fastDepth = false,
+		fastInternal = false,
 		fs,
 	} = options
 
@@ -34,16 +36,17 @@ export function stream(options: ScanOptions & { fs: FsAdapter; cwd: string }): M
 		fs,
 	}
 
-	const s = new MatcherStream({ captureRejections: false })
+	const stream = new MatcherStream({ captureRejections: false })
 
 	const result = opendir(fs, cwd, (entry) =>
 		walk({
 			entry,
 			ctx,
-			s,
+			stream,
 			cwd,
 			depth: maxDepth,
 			fastDepth,
+			fastInternal,
 			fs,
 			invert,
 			signal,
@@ -54,8 +57,8 @@ export function stream(options: ScanOptions & { fs: FsAdapter; cwd: string }): M
 	void (async (): Promise<void> => {
 		await result
 		populateDirs(signal, ctx)
-		s.emit("end", ctx)
+		stream.emit("end", ctx)
 	})()
 
-	return s
+	return stream
 }
