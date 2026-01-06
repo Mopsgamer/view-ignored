@@ -1,6 +1,6 @@
 import { test, describe } from "node:test"
 import { Git as target } from "./git.js"
-import { testScan, type PathHandlerOptions } from "./scan.test.js"
+import { testScan, type PathHandlerOptions } from "../testScan.test.js"
 import type { NestedDirectoryJSON } from "memfs"
 
 function testGit(

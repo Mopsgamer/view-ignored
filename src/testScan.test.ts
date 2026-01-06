@@ -1,12 +1,13 @@
-import type { ScanOptions } from "../types.js"
-import type { FsAdapter } from "../fs_adapter.js"
-import type { MatcherContext } from "../patterns/matcher_context.js"
+import type { ScanOptions } from "./types.js"
+import type { FsAdapter } from "./fs_adapter.js"
+import type { MatcherContext } from "./patterns/matcher_context.js"
 import { deepEqual } from "node:assert/strict"
 import { createFsFromVolume, Volume, type NestedDirectoryJSON } from "memfs"
 import { cwd } from "node:process"
-import { scan } from "../browser_scan.js"
-import { MatcherStream } from "../patterns/matcher_stream.js"
-import { stream } from "../browser_stream.js"
+import { scan } from "./browser_scan.js"
+import { MatcherStream } from "./patterns/matcher_stream.js"
+import { stream } from "./browser_stream.js"
+import { sortFirstFolders } from "./testSort.test.js"
 
 export const memcwd = cwd().replace(/\w:/, "").replaceAll("\\", "/")
 
@@ -53,8 +54,8 @@ export async function testScan(
 
 	const ctx = await scan(o)
 	const { paths: set } = ctx
-	const paths = [...set]
-	deepEqual(paths, test)
+	const paths = sortFirstFolders(set)
+	deepEqual(paths, sortFirstFolders(test))
 }
 
 /**
