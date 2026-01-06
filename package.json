@@ -5,15 +5,21 @@
 	"keywords": [
 		"files",
 		"fs",
+		"ignorefile",
 		"gitignore",
+		".gitignore",
 		"ignore",
+		"file",
 		"ls-tree",
 		"match",
 		"migration",
 		"npmignore",
+		".npmignore",
 		"tree",
 		"vscodeignore",
-		"yarnignore"
+		".vscodeignore",
+		"yarnignore",
+		".yarnignore"
 	],
 	"bugs": {
 		"url": "https://github.com/Mopsgamer/view-ignored/issues"
