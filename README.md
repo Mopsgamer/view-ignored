@@ -23,7 +23,7 @@ by Git, NPM, Yarn, JSR, VSCE or other tools.
 - **TypeScript.** Written in TypeScript with type definitions included.
 - **Lightweight.** Minimal dependencies for fast performance and small bundle size.
 - **Easy-to-modify.** Well-written and MIT-licensed.
-- **Broswer.** Can be bundled for browser use. See `ScanOptions.fsp`.
+- **Broswer.** Can be bundled for browser use. See `ScanOptions.fs` and `import ... "view-ignored/browser"`.
 
 > [!NOTE]
 > Despite the name of the package being "view-ignored",
@@ -59,15 +59,15 @@ import type { Target } from "view-ignored/targets";
 
 export const Git: Target = {
 	ignores(cwd, entry, ctx) {
-		const gitSources = [".gitignore"]
-		const gitSourceMap = new Map<string, SourceExtractor>([[".gitignore", extractGitignore]])
+		const gitSources = [".gitignore"];
+		const gitSourceMap = new Map<string, SourceExtractor>([[".gitignore", extractGitignore]]);
 		const gitPattern: SignedPattern = {
 			exclude: [".git", ".DS_Store"],
 			include: [],
-		}
-		return signedPatternIgnores(gitPattern, cwd, entry, gitSources, gitSourceMap, ctx)
-	},
-}
+		};
+		return signedPatternIgnores(gitPattern, cwd, entry, gitSources, gitSourceMap, ctx);
+	}
+};
 
 const ctx = await vign.scan({ target });
 ```
@@ -78,19 +78,14 @@ const ctx = await vign.scan({ target });
 import * as vign from "view-ignored";
 import { NPM as target } from "view-ignored/targets";
 
-const stream = await vign.scan({ target, stream: true })
+const stream = await vign.stream({ target });
 
+stream.on('dirent', console.log);
 stream.on('end', (ctx) => {
   ctx.paths.has(".git/HEAD"); // false
   ctx.paths.has("node_modules/"); // false
   ctx.paths.has("package.json"); // true
-
-  throw new Error("OK")
-})
-
-stream.on('error', (error) => {
-  console.log(error) // Error: OK
-})
+});
 ```
 
 ## Targets
