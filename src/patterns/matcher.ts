@@ -134,18 +134,15 @@ export function sourcePushNegatable(source: Source, pattern: string): void {
 }
 
 /**
- * The result of a source extraction operation.
- * Continues extraction unless `extraction` is set to `'stop'`.
- * If `extraction` is `'stop'`, the context will be marked as failed.
- */
-export type ExtractorNext = "stop" | "continue"
-
-/**
  * Populates a `Source` object from the content of a source file.
  * @see {@link Source.pattern} for more details.
  * @throws Error if extraction fails. Processing stops.
  */
-export type ExtractorFn = (source: Source, content: Buffer<ArrayBuffer>) => ExtractorNext
+export type ExtractorFn = (
+	source: Source,
+	content: Buffer<ArrayBuffer>,
+	ctx: MatcherContext,
+) => void
 
 /**
  * Defines a method for extracting patterns from a specific source file.
@@ -212,9 +209,8 @@ export async function findAndExtract(options: FindAndExtractOptions): Promise<vo
 
 		options.ctx.external.set(options.dir, source)
 
-		let r: ExtractorNext
 		try {
-			r = extractor.extract(source, buff!)
+			extractor.extract(source, buff!, options.ctx)
 		} catch (err) {
 			options.ctx.failed = true
 			s: switch (true) {
@@ -229,15 +225,9 @@ export async function findAndExtract(options: FindAndExtractOptions): Promise<vo
 			break
 		}
 
-		if (source.error) {
-			continue
+		if (options.ctx.failed === true || !source.error) {
+			break
 		}
-
-		if (r === "stop") {
-			options.ctx.failed = true
-		}
-
-		break
 	}
 
 	if (!options.ctx.external.has(options.dir)) {

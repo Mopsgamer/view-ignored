@@ -1,10 +1,5 @@
 import { type } from "arktype"
-import {
-	sourcePushNegatable,
-	type Source,
-	type ExtractorFn,
-	type ExtractorNext,
-} from "./matcher.js"
+import { sourcePushNegatable, type Source, type ExtractorFn } from "./matcher.js"
 
 const nodeJsManifest = type({
 	files: "string[]?",
@@ -14,23 +9,21 @@ const parse = type("string")
 	.pipe((s) => JSON.parse(s))
 	.pipe(nodeJsManifest)
 
-export function extractPackageJson(source: Source, content: Buffer<ArrayBuffer>): ExtractorNext {
+export function extractPackageJson(source: Source, content: Buffer<ArrayBuffer>): void {
 	source.inverted = true
 	const dist = parse(content.toString())
 	if (dist instanceof type.errors) {
 		source.error = dist
-		return "continue"
+		return
 	}
 
 	if (!dist.files) {
-		return "continue"
+		return
 	}
 
 	for (const pattern of dist.files) {
 		sourcePushNegatable(source, pattern)
 	}
-
-	return "continue"
 }
 
 extractPackageJson satisfies ExtractorFn
