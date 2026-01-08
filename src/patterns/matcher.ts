@@ -35,7 +35,13 @@ export type SignedPattern = {
  */
 export type SignedPatternMatch =
 	| {
-			kind: "none" | "no-match" | "missing-source" | "broken-source" | "invalid-pattern"
+			kind:
+				| "none"
+				| "no-match"
+				| "invalid-internal-pattern"
+				| "missing-source"
+				| "broken-source"
+				| "invalid-pattern"
 			ignored: boolean
 	  }
 	| {
@@ -100,7 +106,7 @@ export type Source = {
 
 	/**
 	 * Error encountered during extraction, if any.
-	 * @see {@link SourceExtractor}
+	 * @see {@link ExtractorFn}
 	 */
 	error?: ArkErrors | Error
 }
@@ -132,14 +138,22 @@ export function sourcePushNegatable(source: Source, pattern: string): void {
  * Continues extraction unless `extraction` is set to `'stop'`.
  * If `extraction` is `'stop'`, the context will be marked as failed.
  */
-export type Extraction = "stop" | "continue"
+export type ExtractorNext = "stop" | "continue"
 
 /**
  * Populates a `Source` object from the content of a source file.
  * @see {@link Source.pattern} for more details.
  * @throws Error if extraction fails. Processing stops.
  */
-export type SourceExtractor = (source: Source, content: Buffer<ArrayBuffer>) => Extraction
+export type ExtractorFn = (source: Source, content: Buffer<ArrayBuffer>) => ExtractorNext
+
+/**
+ * Defines a method for extracting patterns from a specific source file.
+ */
+export interface Extractor {
+	path: string
+	extract: ExtractorFn
+}
 
 /**
  * Options for finding and extracting patterns from source files.
@@ -149,8 +163,7 @@ export type SourceExtractor = (source: Source, content: Buffer<ArrayBuffer>) => 
 export interface PatternFinderOptions {
 	ctx: MatcherContext
 	cwd: string
-	sources: string[]
-	extractors: Map<string, SourceExtractor>
+	extractors: Extractor[]
 }
 
 /**
@@ -169,9 +182,9 @@ export async function findAndExtract(options: FindAndExtractOptions): Promise<vo
 		await findAndExtract({ ...options, dir: parent })
 	}
 
-	for (const name of options.sources) {
-		let path = ""
-		path = options.dir === "." ? name : options.dir + "/" + name
+	for (const extractor of options.extractors) {
+		let path = options.dir === "." ? extractor.path : options.dir + "/" + extractor.path
+		const name = path.substring(path.lastIndexOf("/") + 1)
 
 		const source: Source = {
 			inverted: false,
@@ -199,17 +212,9 @@ export async function findAndExtract(options: FindAndExtractOptions): Promise<vo
 
 		options.ctx.external.set(options.dir, source)
 
-		const sourceExtractor = options.extractors.get(name)
-		if (!sourceExtractor) {
-			const err = new Error("No extractor for source file: " + name)
-			source.error = err
-			options.ctx.failed = true
-			break
-		}
-
-		let r: Extraction
+		let r: ExtractorNext
 		try {
-			r = sourceExtractor(source, buff!)
+			r = extractor.extract(source, buff!)
 		} catch (err) {
 			options.ctx.failed = true
 			s: switch (true) {
@@ -278,51 +283,58 @@ export async function signedPatternIgnores(
 		}
 
 		source = options.ctx.external.get(parent)
-		if (!source) {
-			return { kind: "missing-source", ignored: false }
-		}
 	}
 
-	const matcher: PatternMatcher = {
-		internal: options.internal,
-		external: source.pattern,
-	}
+	const internal = options.internal
 
 	try {
 		let check: false | string = false
 
-		check = patternMatches(matcher.internal.exclude, options.entry)
+		check = patternMatches(internal.exclude, options.entry)
 		if (check) {
 			// return true
 			return { kind: "internal", negated: true, pattern: check, ignored: true }
 		}
 
-		check = patternMatches(matcher.internal.include, options.entry)
+		check = patternMatches(internal.include, options.entry)
 		if (check) {
 			// return false
 			return { kind: "internal", negated: false, pattern: check, ignored: false }
 		}
+	} catch {
+		options.ctx.failed = true
+		return { kind: "invalid-internal-pattern", ignored: false }
+	}
+
+	if (!source) {
+		return { kind: "no-match", ignored: false }
+	}
+
+	const external = source.pattern
+
+	try {
+		let check: false | string = false
 
 		if (!source.inverted) {
-			check = patternMatches(matcher.external.include, options.entry)
+			check = patternMatches(external.include, options.entry)
 			if (check) {
 				// return false
 				return { kind: "external", negated: true, pattern: check, ignored: false }
 			}
 
-			check = patternMatches(matcher.external.exclude, options.entry)
+			check = patternMatches(external.exclude, options.entry)
 			if (check) {
 				// return true
 				return { kind: "external", negated: false, pattern: check, ignored: true }
 			}
 		} else {
-			check = patternMatches(matcher.external.exclude, options.entry)
+			check = patternMatches(external.exclude, options.entry)
 			if (check) {
 				// return true
 				return { kind: "external", negated: false, pattern: check, ignored: true }
 			}
 
-			check = patternMatches(matcher.external.include, options.entry)
+			check = patternMatches(external.include, options.entry)
 			if (check) {
 				// return false
 				return { kind: "external", negated: true, pattern: check, ignored: false }

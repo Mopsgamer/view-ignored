@@ -1,12 +1,12 @@
 import {
 	sourcePushNegatable,
 	type Source,
-	type SourceExtractor,
-	type Extraction,
+	type ExtractorFn,
+	type ExtractorNext,
 } from "./matcher.js"
 import { minimatch, type MinimatchOptions } from "minimatch"
 
-export function extractGitignore(source: Source, content: Buffer<ArrayBuffer>): Extraction {
+export function extractGitignore(source: Source, content: Buffer<ArrayBuffer>): ExtractorNext {
 	for (let line of content.toString().split("\n")) {
 		line = line.trim()
 		if (line === "" || line.startsWith("#")) {
@@ -23,7 +23,7 @@ export function extractGitignore(source: Source, content: Buffer<ArrayBuffer>): 
 	return "continue"
 }
 
-extractGitignore satisfies SourceExtractor
+extractGitignore satisfies ExtractorFn
 
 export function gitignoreMatch(pattern: string, path: string): boolean {
 	const o: MinimatchOptions = { dot: true }

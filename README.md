@@ -109,7 +109,7 @@ stream.on('end', (ctx) => {
 The following built-in scanners are available:
 
 - Git
-  - Reads `.gitignore` files but does not consider global settings.
+  - Reads `.gitignore` and `.git/info/exclude` files but does not consider global settings.
   - Check this scanner by running `git ls-tree -r HEAD --name-only`.
   - See the implementation of [Git target](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/git.ts) for details.
 - NPM (compatible with Bun, PNPM, and others)
@@ -121,7 +121,7 @@ The following built-in scanners are available:
   - Same behavior as `npm`, but also reads `.yarnignore`.
   - See the implementation of [Yarn target](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/yarn.ts) for details.
 - VSCE
-  - Reads `.vscodeignore` and `package.json` `files` field.
+  - Reads `package.json` `files` field, `.vscodeignore` and `.gitignore`.
   - Check this scanner by running `vsce ls`.
   - See the implementation of [VSCE target](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/vsce.ts) for details.
 - JSR (compatible with Deno)

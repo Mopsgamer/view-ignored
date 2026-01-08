@@ -3,23 +3,23 @@
 	"version": "0.5.2",
 	"description": "Retrieve list of files ignored/included by Git, NPM, Yarn, JSR, VSCE or other tools.",
 	"keywords": [
+		".gitignore",
+		".npmignore",
+		".vscodeignore",
+		".yarnignore",
+		"file",
 		"files",
 		"fs",
-		"ignorefile",
 		"gitignore",
-		".gitignore",
 		"ignore",
-		"file",
+		"ignorefile",
 		"ls-tree",
 		"match",
 		"migration",
 		"npmignore",
-		".npmignore",
 		"tree",
 		"vscodeignore",
-		".vscodeignore",
-		"yarnignore",
-		".yarnignore"
+		"yarnignore"
 	],
 	"bugs": {
 		"url": "https://github.com/Mopsgamer/view-ignored/issues"

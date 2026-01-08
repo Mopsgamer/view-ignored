@@ -29,6 +29,27 @@ void describe("Git", () => {
 		)
 	})
 
+	void test("ignores .git/", async () => {
+		await testGit(
+			{
+				".git/HEAD": "",
+				file: "",
+			},
+			["file"],
+		)
+	})
+
+	void test("ignores file (.git/info/exclude)", async () => {
+		await testGit(
+			{
+				filei: "",
+				file: "",
+				".git/info/exclude": "filei",
+			},
+			["file"],
+		)
+	})
+
 	void test("ignores file", async () => {
 		await testGit(
 			{

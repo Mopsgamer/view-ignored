@@ -1,5 +1,5 @@
 import { type } from "arktype"
-import type { Source, SourceExtractor, Extraction } from "./matcher.js"
+import type { Source, ExtractorFn, ExtractorNext } from "./matcher.js"
 import stripJsonComments from "strip-json-comments"
 
 const jsrManifest = type({
@@ -13,7 +13,7 @@ const jsrManifest = type({
 
 const parse = jsrManifest.pipe((s: string): typeof jsrManifest.infer => JSON.parse(s))
 
-export function extractJsrJson(source: Source, content: Buffer<ArrayBuffer>): Extraction {
+export function extractJsrJson(source: Source, content: Buffer<ArrayBuffer>): ExtractorNext {
 	const dist = parse(content.toString())
 	if (dist instanceof type.errors) {
 		source.error = dist
@@ -39,10 +39,10 @@ export function extractJsrJson(source: Source, content: Buffer<ArrayBuffer>): Ex
 	return "continue"
 }
 
-extractJsrJson satisfies SourceExtractor
+extractJsrJson satisfies ExtractorFn
 
-export function extractJsrJsonc(source: Source, content: Buffer<ArrayBuffer>): Extraction {
+export function extractJsrJsonc(source: Source, content: Buffer<ArrayBuffer>): ExtractorNext {
 	return extractJsrJson(source, Buffer.from(stripJsonComments(content.toString())))
 }
 
-extractJsrJsonc satisfies SourceExtractor
+extractJsrJsonc satisfies ExtractorFn

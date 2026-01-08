@@ -2,8 +2,8 @@ import { type } from "arktype"
 import {
 	sourcePushNegatable,
 	type Source,
-	type SourceExtractor,
-	type Extraction,
+	type ExtractorFn,
+	type ExtractorNext,
 } from "./matcher.js"
 
 const nodeJsManifest = type({
@@ -14,7 +14,7 @@ const parse = type("string")
 	.pipe((s) => JSON.parse(s))
 	.pipe(nodeJsManifest)
 
-export function extractPackageJson(source: Source, content: Buffer<ArrayBuffer>): Extraction {
+export function extractPackageJson(source: Source, content: Buffer<ArrayBuffer>): ExtractorNext {
 	source.inverted = true
 	const dist = parse(content.toString())
 	if (dist instanceof type.errors) {
@@ -33,4 +33,4 @@ export function extractPackageJson(source: Source, content: Buffer<ArrayBuffer>)
 	return "continue"
 }
 
-extractPackageJson satisfies SourceExtractor
+extractPackageJson satisfies ExtractorFn
