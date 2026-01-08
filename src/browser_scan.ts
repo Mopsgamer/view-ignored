@@ -1,11 +1,10 @@
-import type { ScanOptions } from "./types.js"
+import type { ScanOptions, FsAdapter } from "./types.d.ts"
 import type { Source } from "./patterns/matcher.js"
-import type { FsAdapter } from "./fs_adapter.js"
 import type { MatcherContext } from "./patterns/matcher_context.js"
 import { opendir } from "./opendir.js"
 import { walk } from "./walk.js"
 import { populateDirs } from "./populate_dirs.js"
-export type * from "./types.js"
+export type * from "./types.d.ts"
 
 /**
  * Scan the directory for included files based on the provided targets.

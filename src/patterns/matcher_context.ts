@@ -1,5 +1,4 @@
-import type { ScanOptions } from "../types.js"
-import type { FsAdapter } from "../fs_adapter.js"
+import type { ScanOptions, FsAdapter } from "../types.d.ts"
 import type { Source } from "./matcher.js"
 import { dirname } from "node:path"
 import { scan } from "../scan.js"

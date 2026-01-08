@@ -1,7 +1,14 @@
 import type { Target } from "./targets/target.js"
-import type { FsAdapter } from "./fs_adapter.js"
+import type * as fs from "node:fs"
 // oxlint-disable-next-line no-unused-vars
 import type { MatcherContext } from "./patterns/matcher_context.js"
+
+export interface FsAdapter {
+	promises: {
+		opendir: typeof fs.promises.opendir
+		readFile: typeof fs.promises.readFile
+	}
+}
 
 export type DepthMode = "files" | undefined
 

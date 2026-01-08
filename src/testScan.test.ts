@@ -1,5 +1,4 @@
-import type { ScanOptions } from "./types.js"
-import type { FsAdapter } from "./fs_adapter.js"
+import type { ScanOptions, FsAdapter } from "./types.d.ts"
 import type { MatcherContext } from "./patterns/matcher_context.js"
 import { deepEqual } from "node:assert/strict"
 import { createFsFromVolume, Volume, type NestedDirectoryJSON } from "memfs"

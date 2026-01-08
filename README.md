@@ -48,38 +48,42 @@ ctx.paths.has("src"); // true
 ### Using custom target
 
 ```ts
-import * as vign from "view-ignored";
 import {
-  type SourceExtractor,
-  type SignedPattern,
-  extractGitignore,
-  signedPatternIgnores
+	type Extractor,
+	type SignedPattern,
+	signedPatternIgnores,
+	extractGitignore
 } from "view-ignored/patterns";
+import { extractGitignore } from "../patterns/gitignore.js";
 import type { Target } from "view-ignored/targets";
-
-const sources = [".gitignore"];
-
-const extractors = new Map<string, SourceExtractor>([
-	[".gitignore", extractGitignore],
-]);
-
-const internal: SignedPattern = {
-	exclude: [".git", ".DS_Store"],
-	include: [],
-}
 
 export const Git: Target = {
 	ignores(cwd, entry, ctx) {
+		const extractors: Extractor[] = [
+			{
+				extract: extractGitignore,
+				path: ".gitignore",
+			},
+			{
+				extract: extractGitignore,
+				path: ".git/info/exclude",
+			}
+		];
+
+		const internal: SignedPattern = {
+			exclude: [".git", ".DS_Store"],
+			include: []
+		};
+
 		return signedPatternIgnores({
 			internal,
 			ctx,
 			cwd,
 			entry,
-			sources,
-			extractors
+			extractors,
 		});
-	}
-};
+	},
+}
 
 const ctx = await vign.scan({ target });
 ```
@@ -94,10 +98,32 @@ const stream = await vign.scanStream({ target });
 
 stream.on('dirent', console.log);
 stream.on('end', (ctx) => {
-  ctx.paths.has(".git/HEAD"); // false
-  ctx.paths.has("node_modules/"); // false
-  ctx.paths.has("package.json"); // true
+	ctx.paths.has(".git/HEAD"); // false
+	ctx.paths.has("node_modules/"); // false
+	ctx.paths.has("package.json"); // true
 });
+```
+
+### Browser and custom FS
+
+To avoid imports from `node:fs` and `node:process` modules,
+use the browser submodule, which requires some additional options.
+
+```ts
+import * as vign from "view-ignored/browser";
+// or view-ignored/browser/scan
+import { Git as target } from "view-ignored/targets";
+
+export const cwd = cwd().replace(/\w:/, "").replaceAll("\\", "/");
+
+const customFs = {
+	promises: {
+		opendir,
+		readFile,
+	}
+};
+
+vign.scan({ target, cwd, fs });
 ```
 
 ## Targets
