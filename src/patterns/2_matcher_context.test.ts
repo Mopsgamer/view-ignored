@@ -1,5 +1,5 @@
 import { test } from "node:test"
-import { testScan } from "../testScan.test.js"
+import { testScan } from "../0_testScan.test.js"
 import { deepEqual, equal, ok } from "node:assert/strict"
 import {
 	matcherContextAddPath,

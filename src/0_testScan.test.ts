@@ -6,7 +6,7 @@ import { cwd } from "node:process"
 import { scan } from "./browser_scan.js"
 import { MatcherStream } from "./patterns/matcher_stream.js"
 import { scanStream } from "./browser_stream.js"
-import { sortFirstFolders } from "./testSort.test.js"
+import { sortFirstFolders } from "./0_testSort.test.js"
 
 export const memcwd = cwd().replace(/\w:/, "").replaceAll("\\", "/")
 

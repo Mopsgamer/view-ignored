@@ -2,7 +2,7 @@ import { scan } from "./scan.js"
 import { test } from "node:test"
 import { deepEqual, equal } from "node:assert/strict"
 import { NPM as target } from "./targets/npm.js"
-import { sortFirstFolders } from "./testSort.test.js"
+import { sortFirstFolders } from "./0_testSort.test.js"
 import { spawn } from "node:child_process"
 
 void test("scan NPM (self, flat)", async () => {

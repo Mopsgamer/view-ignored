@@ -1,5 +1,5 @@
 import { test } from "node:test"
-import { testScan } from "./testScan.test.js"
+import { testScan } from "./0_testScan.test.js"
 import { Git as target } from "./targets/git.js"
 
 void test("depth 1 should include src/ and files", async () => {
