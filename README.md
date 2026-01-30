@@ -37,12 +37,12 @@ by Git, NPM, Yarn, JSR, VSCE or other tools.
 ### Basic example
 
 ```ts
-import * as vign from "view-ignored";
-import { Git as target } from "view-ignored/targets";
+import * as vign from "view-ignored"
+import { Git as target } from "view-ignored/targets"
 
-const ctx = await vign.scan({ target });
-ctx.paths.has(".git/HEAD"); // false
-ctx.paths.has("src"); // true
+const ctx = await vign.scan({ target })
+ctx.paths.has(".git/HEAD") // false
+ctx.paths.has("src") // true
 ```
 
 ### Using custom target
@@ -52,10 +52,10 @@ import {
 	type Extractor,
 	type SignedPattern,
 	signedPatternIgnores,
-	extractGitignore
-} from "view-ignored/patterns";
-import { extractGitignore } from "../patterns/gitignore.js";
-import type { Target } from "view-ignored/targets";
+	extractGitignore,
+} from "view-ignored/patterns"
+import { extractGitignore } from "../patterns/gitignore.js"
+import type { Target } from "view-ignored/targets"
 
 export const Git: Target = {
 	ignores(cwd, entry, ctx) {
@@ -67,13 +67,13 @@ export const Git: Target = {
 			{
 				extract: extractGitignore,
 				path: ".git/info/exclude",
-			}
-		];
+			},
+		]
 
 		const internal: SignedPattern = {
 			exclude: [".git", ".DS_Store"],
-			include: []
-		};
+			include: [],
+		}
 
 		return signedPatternIgnores({
 			internal,
@@ -81,27 +81,27 @@ export const Git: Target = {
 			cwd,
 			entry,
 			extractors,
-		});
+		})
 	},
 }
 
-const ctx = await vign.scan({ target });
+const ctx = await vign.scan({ target })
 ```
 
 ### Streaming results
 
 ```ts
-import * as vign from "view-ignored";
-import { NPM as target } from "view-ignored/targets";
+import * as vign from "view-ignored"
+import { NPM as target } from "view-ignored/targets"
 
-const stream = await vign.scanStream({ target });
+const stream = await vign.scanStream({ target })
 
-stream.on('dirent', console.log);
-stream.on('end', (ctx) => {
-	ctx.paths.has(".git/HEAD"); // false
-	ctx.paths.has("node_modules/"); // false
-	ctx.paths.has("package.json"); // true
-});
+stream.on("dirent", console.log)
+stream.on("end", (ctx) => {
+	ctx.paths.has(".git/HEAD") // false
+	ctx.paths.has("node_modules/") // false
+	ctx.paths.has("package.json") // true
+})
 ```
 
 ### Browser and custom FS
@@ -110,20 +110,20 @@ To avoid imports from `node:fs` and `node:process` modules,
 use the browser submodule, which requires some additional options.
 
 ```ts
-import * as vign from "view-ignored/browser";
+import * as vign from "view-ignored/browser"
 // or view-ignored/browser/scan
-import { Git as target } from "view-ignored/targets";
+import { Git as target } from "view-ignored/targets"
 
-export const cwd = cwd().replace(/\w:/, "").replaceAll("\\", "/");
+export const cwd = cwd().replace(/\w:/, "").replaceAll("\\", "/")
 
 const customFs = {
 	promises: {
 		opendir,
 		readFile,
-	}
-};
+	},
+}
 
-vign.scan({ target, cwd, fs });
+vign.scan({ target, cwd, fs })
 ```
 
 ## Targets

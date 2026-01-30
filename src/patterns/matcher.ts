@@ -174,61 +174,64 @@ export interface FindAndExtractOptions extends PatternFinderOptions {
  * Populates the {@link MatcherContext.external} map with {@link Source} objects.
  */
 export async function findAndExtract(options: FindAndExtractOptions): Promise<void> {
-    const { ctx, cwd, extractors } = options
-    let dir = options.dir
+	const { ctx, cwd, extractors } = options
+	let dir = options.dir
 
-    while (true) {
-        if (ctx.external.has(dir)) break
+	while (true) {
+		if (ctx.external.has(dir)) break
 
-        let foundSource = false
+		let foundSource = false
 
-        for (const extractor of extractors) {
-            const path = dir === "." ? extractor.path : dir + "/" + extractor.path
-            const name = path.substring(path.lastIndexOf("/") + 1)
+		for (const extractor of extractors) {
+			const path = dir === "." ? extractor.path : dir + "/" + extractor.path
+			const name = path.substring(path.lastIndexOf("/") + 1)
 
-            const source: Source = {
-                inverted: false,
-                name,
-                path,
-                pattern: { exclude: [], include: [] },
-            }
+			const source: Source = {
+				inverted: false,
+				name,
+				path,
+				pattern: { exclude: [], include: [] },
+			}
 
-            let buff: Buffer<ArrayBuffer> | undefined
-            try {
-                buff = await ctx.fs.promises.readFile(cwd + "/" + path)
-            } catch (err) {
-                const error = err as NodeJS.ErrnoException
-                if (error.code === "ENOENT") continue
-                source.error = error
-                ctx.external.set(dir, source)
-                ctx.failed = true
-                foundSource = true
-                break
-            }
+			let buff: Buffer<ArrayBuffer> | undefined
+			try {
+				buff = await ctx.fs.promises.readFile(cwd + "/" + path)
+			} catch (err) {
+				const error = err as NodeJS.ErrnoException
+				if (error.code === "ENOENT") continue
+				source.error = error
+				ctx.external.set(dir, source)
+				ctx.failed = true
+				foundSource = true
+				break
+			}
 
-            ctx.external.set(dir, source)
-            try {
-                extractor.extract(source, buff, ctx)
-            } catch (err) {
-                ctx.failed = true
-                source.error = err instanceof Error ? err : new Error("Unknown error during source extraction", { cause: err })
-                break
-            }
-            foundSource = true
-            break
-        }
+			ctx.external.set(dir, source)
+			try {
+				extractor.extract(source, buff, ctx)
+			} catch (err) {
+				ctx.failed = true
+				source.error =
+					err instanceof Error
+						? err
+						: new Error("Unknown error during source extraction", { cause: err })
+				break
+			}
+			foundSource = true
+			break
+		}
 
-        // Inherit from parent if not found
+		// Inherit from parent if not found
 		const parent = dirname(dir)
-        if (!foundSource) {
-            if (ctx.external.has(parent)) {
-                ctx.external.set(dir, ctx.external.get(parent)!)
-            }
-        }
+		if (!foundSource) {
+			if (ctx.external.has(parent)) {
+				ctx.external.set(dir, ctx.external.get(parent)!)
+			}
+		}
 
-        if (dir === parent) break
-        dir = parent
-    }
+		if (dir === parent) break
+		dir = parent
+	}
 }
 
 /**
