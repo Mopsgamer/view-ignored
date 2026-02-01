@@ -1,4 +1,4 @@
-import type { MatcherContext } from "./patterns/matcher_context.js"
+import type { MatcherContext } from "./patterns/matcherContext.js"
 
 export function populateDirs(signal: AbortSignal | undefined, ctx: MatcherContext): void {
 	for (const [dir, count] of ctx.depthPaths) {

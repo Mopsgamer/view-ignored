@@ -1,4 +1,4 @@
-import type { MatcherStream } from "./patterns/matcher_stream.js"
+import type { MatcherStream } from "./patterns/matcherStream.js"
 import type { ScanOptions } from "./types.js"
 // oxlint-disable-next-line no-unused-vars
 import type { scan } from "./scan.js"

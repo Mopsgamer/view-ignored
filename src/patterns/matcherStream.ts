@@ -1,5 +1,5 @@
-import type { SignedPatternMatch } from "./matcher.js"
-import type { MatcherContext } from "../patterns/matcher_context.js"
+import type { SignedPatternMatch } from "./signedPattern.js"
+import type { MatcherContext } from "../patterns/matcherContext.js"
 import type { Dirent } from "node:fs"
 import { EventEmitter } from "node:events"
 

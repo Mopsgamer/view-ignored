@@ -5,7 +5,7 @@ import {
 	matcherContextAddPath,
 	matcherContextRefreshDir,
 	matcherContextRemovePath,
-} from "./matcher_context.js"
+} from "./matcherContext.js"
 import { Git as target } from "../targets/git.js"
 
 void test("can add paths", async () => {

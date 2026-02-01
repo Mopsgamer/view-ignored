@@ -1,6 +1,6 @@
 import type { Dirent } from "fs"
-import type { MatcherContext } from "./patterns/matcher_context.js"
-import type { MatcherStream } from "./patterns/matcher_stream.js"
+import type { MatcherContext } from "./patterns/matcherContext.js"
+import type { MatcherStream } from "./patterns/matcherStream.js"
 import type { ScanOptions } from "./types.js"
 import { posix } from "path/posix"
 import { getDepth } from "./getdepth.js"

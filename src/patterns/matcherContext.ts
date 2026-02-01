@@ -1,5 +1,5 @@
 import type { ScanOptions } from "../types.js"
-import type { Source } from "./matcher.js"
+import type { Source } from "./source.js"
 import { dirname } from "node:path"
 import { scan } from "../scan.js"
 import { getDepth } from "../getdepth.js"
@@ -78,7 +78,11 @@ export async function matcherContextAddPath(
 		return true
 	}
 
-	const { target, fs = nodefs, cwd = (await import("node:process")).cwd().replaceAll("\\", "/") } = options
+	const {
+		target,
+		fs = nodefs,
+		cwd = (await import("node:process")).cwd().replaceAll("\\", "/"),
+	} = options
 
 	{
 		const parent = dirname(entry)

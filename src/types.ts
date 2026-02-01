@@ -1,7 +1,10 @@
 import type { Target } from "./targets/target.js"
 import type * as fs from "node:fs"
+import type { MatcherContext } from "./patterns/matcherContext.js"
 // oxlint-disable-next-line no-unused-vars
-import type { MatcherContext } from "./patterns/matcher_context.js"
+import { signedPatternIgnores, type SignedPatternMatch } from "./patterns/signedPattern.js"
+// oxlint-disable-next-line no-unused-vars
+import type { sourcesBackwards } from "./patterns/matcher.js"
 
 export interface FsAdapter {
 	promises: {
@@ -9,6 +12,19 @@ export interface FsAdapter {
 		readFile: typeof fs.promises.readFile
 	}
 }
+
+/**
+ * Checks whether a given entry path should be ignored based on its patterns.
+ * @see {@link sourcesBackwards}
+ * @see {@link signedPatternIgnores}
+ * @see {@link https://github.com/Mopsgamer/view-ignored/tree/main/src/targets} for usage examples.
+ */
+export type Ignores = (
+	fs: FsAdapter,
+	cwd: string,
+	entry: string,
+	ctx: MatcherContext,
+) => Promise<SignedPatternMatch>
 
 export type DepthMode = "files" | undefined
 

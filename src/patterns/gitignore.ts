@@ -1,5 +1,6 @@
-import { sourcePushNegatable, type Source, type ExtractorFn } from "./matcher.js"
+import type { ExtractorFn } from "./matcher.js"
 import { minimatch, type MinimatchOptions } from "minimatch"
+import { sourcePushNegatable, type Source } from "./source.js"
 
 export function extractGitignore(source: Source, content: Buffer<ArrayBuffer>): void {
 	for (let line of content.toString().split("\n")) {

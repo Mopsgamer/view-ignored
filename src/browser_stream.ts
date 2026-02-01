@@ -1,9 +1,9 @@
 import type { ScanOptions, FsAdapter } from "./types.js"
-import type { Source } from "./patterns/matcher.js"
-import type { MatcherContext } from "./patterns/matcher_context.js"
+import type { Source } from "./patterns/source.js"
+import type { MatcherContext } from "./patterns/matcherContext.js"
 // oxlint-disable-next-line no-unused-vars
 import type { scan as browserScan } from "./browser_scan.js"
-import { MatcherStream } from "./patterns/matcher_stream.js"
+import { MatcherStream } from "./patterns/matcherStream.js"
 import { opendir } from "./opendir.js"
 import { walk } from "./walk.js"
 import { populateDirs } from "./populate_dirs.js"

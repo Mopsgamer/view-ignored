@@ -1,6 +1,6 @@
 import type { ScanOptions, FsAdapter } from "./types.js"
-import type { Source } from "./patterns/matcher.js"
-import type { MatcherContext } from "./patterns/matcher_context.js"
+import type { Source } from "./patterns/source.js"
+import type { MatcherContext } from "./patterns/matcherContext.js"
 import { opendir } from "./opendir.js"
 import { walk } from "./walk.js"
 import { populateDirs } from "./populate_dirs.js"

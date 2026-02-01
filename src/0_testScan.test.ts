@@ -1,10 +1,10 @@
 import type { ScanOptions, FsAdapter } from "./types.js"
-import type { MatcherContext } from "./patterns/matcher_context.js"
+import type { MatcherContext } from "./patterns/matcherContext.js"
 import { deepEqual } from "node:assert/strict"
 import { createFsFromVolume, Volume, type NestedDirectoryJSON } from "memfs"
 import { cwd } from "node:process"
 import { scan } from "./browser_scan.js"
-import { MatcherStream } from "./patterns/matcher_stream.js"
+import { MatcherStream } from "./patterns/matcherStream.js"
 import { scanStream } from "./browser_stream.js"
 import { sortFirstFolders } from "./0_testSort.test.js"
 

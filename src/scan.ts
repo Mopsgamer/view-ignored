@@ -1,4 +1,4 @@
-import type { MatcherContext } from "./patterns/matcher_context.js"
+import type { MatcherContext } from "./patterns/matcherContext.js"
 import type { ScanOptions } from "./types.js"
 import { scan as browserScan } from "./browser_scan.js"
 import * as nodefs from "node:fs"

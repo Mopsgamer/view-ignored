@@ -1,4 +1,5 @@
-import { type Extractor, type SignedPattern, signedPatternIgnores } from "../patterns/matcher.js"
+import type { Extractor } from "../patterns/matcher.js"
+import { signedPatternIgnores, type SignedPattern } from "../patterns/index.js"
 import { extractGitignore } from "../patterns/gitignore.js"
 import { extractPackageJson } from "../patterns/packagejson.js"
 import type { Target } from "./target.js"

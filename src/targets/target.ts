@@ -1,4 +1,4 @@
-import type { Ignores } from "../patterns/matcher.js"
+import type { Ignores } from "../types.js"
 
 /**
  * Contains the matcher used for target scanning.
