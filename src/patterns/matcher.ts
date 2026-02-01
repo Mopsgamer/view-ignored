@@ -2,6 +2,7 @@ import { dirname } from "node:path"
 import { gitignoreMatch } from "./gitignore.js"
 import type { MatcherContext } from "./matcher_context.js"
 import { ArkErrors } from "arktype"
+import type { FsAdapter } from "../types.js";
 
 /**
  * Represents a list of positive minimatch patterns.
@@ -68,6 +69,7 @@ export type PatternMatcher = {
  * @see {@link https://github.com/Mopsgamer/view-ignored/tree/main/src/targets} for usage examples.
  */
 export type Ignores = (
+	fs: FsAdapter,
 	cwd: string,
 	entry: string,
 	ctx: MatcherContext,
@@ -158,6 +160,7 @@ export interface Extractor {
  * @see {@link signedPatternIgnores}
  */
 export interface PatternFinderOptions {
+	fs: FsAdapter
 	ctx: MatcherContext
 	cwd: string
 	extractors: Extractor[]
@@ -174,7 +177,7 @@ export interface FindAndExtractOptions extends PatternFinderOptions {
  * Populates the {@link MatcherContext.external} map with {@link Source} objects.
  */
 export async function findAndExtract(options: FindAndExtractOptions): Promise<void> {
-	const { ctx, cwd, extractors } = options
+	const { fs, ctx, cwd, extractors } = options
 	let dir = options.dir
 
 	while (true) {
@@ -195,7 +198,7 @@ export async function findAndExtract(options: FindAndExtractOptions): Promise<vo
 
 			let buff: Buffer<ArrayBuffer> | undefined
 			try {
-				buff = await ctx.fs.promises.readFile(cwd + "/" + path)
+				buff = await fs.promises.readFile(cwd + "/" + path)
 			} catch (err) {
 				const error = err as NodeJS.ErrnoException
 				if (error.code === "ENOENT") continue

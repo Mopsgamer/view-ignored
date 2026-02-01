@@ -1,8 +1,9 @@
-import type { ScanOptions, FsAdapter } from "../types.d.ts"
+import type { ScanOptions } from "../types.js"
 import type { Source } from "./matcher.js"
 import { dirname } from "node:path"
 import { scan } from "../scan.js"
 import { getDepth } from "../getdepth.js"
+import * as nodefs from "node:fs"
 
 /**
  * The results and stats of a scanning operation.
@@ -60,11 +61,6 @@ export interface MatcherContext {
 	 * Total number of directories scanned.
 	 */
 	totalDirs: number
-
-	/**
-	 * File system adapter.
-	 */
-	fs: FsAdapter
 }
 
 /**
@@ -76,13 +72,13 @@ export interface MatcherContext {
 export async function matcherContextAddPath(
 	ctx: MatcherContext,
 	entry: string,
-	options: Pick<ScanOptions, "target" | "cwd">,
+	options: Pick<ScanOptions, "target" | "cwd" | "fs">,
 ): Promise<boolean> {
 	if (ctx.paths.has(entry)) {
 		return true
 	}
 
-	const { target, cwd = (await import("node:process")).cwd().replaceAll("\\", "/") } = options
+	const { target, fs = nodefs, cwd = (await import("node:process")).cwd().replaceAll("\\", "/") } = options
 
 	{
 		const parent = dirname(entry)
@@ -93,10 +89,10 @@ export async function matcherContextAddPath(
 
 	const isDir = entry.endsWith("/")
 	if (isDir) {
-		const match = await target.ignores(cwd, entry.substring(0, entry.length - 1), ctx)
+		const match = await target.ignores(fs, cwd, entry.substring(0, entry.length - 1), ctx)
 		return !match.ignored
 	}
-	const match = await target.ignores(cwd, entry, ctx)
+	const match = await target.ignores(fs, cwd, entry, ctx)
 	if (match.ignored) {
 		return false
 	}

@@ -3,7 +3,7 @@ import { extractGitignore } from "../patterns/gitignore.js"
 import type { Target } from "./target.js"
 
 export const Git: Target = {
-	ignores(cwd, entry, ctx) {
+	ignores(fs, cwd, entry, ctx) {
 		const extractors: Extractor[] = [
 			{
 				extract: extractGitignore,
@@ -21,6 +21,7 @@ export const Git: Target = {
 		}
 
 		return signedPatternIgnores({
+			fs,
 			internal,
 			ctx,
 			cwd,

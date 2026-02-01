@@ -60,7 +60,6 @@ void test("can refresh without changes", async () => {
 			const oldDepthPaths = [...ctx.depthPaths]
 			const oldExternal = [...ctx.external]
 			const oldFailed = ctx.failed
-			const oldFsp = ctx.fs
 			const oldPaths = [...ctx.paths]
 			const oldTotalDirs = ctx.totalDirs
 			const oldTotalFiles = ctx.totalFiles
@@ -69,7 +68,6 @@ void test("can refresh without changes", async () => {
 			deepEqual([...ctx.depthPaths], oldDepthPaths)
 			deepEqual([...ctx.external], oldExternal)
 			deepEqual(ctx.failed, oldFailed)
-			deepEqual(ctx.fs, oldFsp)
 			deepEqual([...ctx.paths], oldPaths)
 			deepEqual(ctx.totalDirs, oldTotalDirs)
 			deepEqual(ctx.totalFiles, oldTotalFiles)

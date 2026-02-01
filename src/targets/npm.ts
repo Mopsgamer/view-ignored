@@ -4,7 +4,7 @@ import { extractPackageJson } from "../patterns/packagejson.js"
 import type { Target } from "./target.js"
 
 export const NPM: Target = {
-	ignores(cwd, entry, ctx) {
+	ignores(fs, cwd, entry, ctx) {
 		const extractors: Extractor[] = [
 			{
 				extract: extractPackageJson,
@@ -44,6 +44,7 @@ export const NPM: Target = {
 		}
 
 		return signedPatternIgnores({
+			fs,
 			internal,
 			ctx,
 			cwd,

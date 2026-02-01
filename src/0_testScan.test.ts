@@ -1,4 +1,4 @@
-import type { ScanOptions, FsAdapter } from "./types.d.ts"
+import type { ScanOptions, FsAdapter } from "./types.js"
 import type { MatcherContext } from "./patterns/matcher_context.js"
 import { deepEqual } from "node:assert/strict"
 import { createFsFromVolume, Volume, type NestedDirectoryJSON } from "memfs"
@@ -34,7 +34,7 @@ export async function testScan(
 ): Promise<void> {
 	const vol = new Volume()
 	const cwd = memcwd + "/test"
-	vol.fromNestedJSON(tree, cwd)
+	vol.fromNestedJSON(tree, { cwd })
 	const fs = createFsFromVolume(vol)
 	const { opendir, readFile } = fs.promises
 	const adapter = { promises: { opendir, readFile } } as FsAdapter
@@ -67,7 +67,7 @@ export async function testStream(
 ): Promise<void> {
 	const vol = new Volume()
 	const cwd = memcwd + "/test"
-	vol.fromNestedJSON(tree, cwd)
+	vol.fromNestedJSON(tree, { cwd })
 	const fs = createFsFromVolume(vol)
 	const { opendir, readFile } = fs.promises
 	const adapter = { promises: { opendir, readFile } } as FsAdapter

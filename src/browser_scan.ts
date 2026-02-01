@@ -1,10 +1,10 @@
-import type { ScanOptions, FsAdapter } from "./types.d.ts"
+import type { ScanOptions, FsAdapter } from "./types.js"
 import type { Source } from "./patterns/matcher.js"
 import type { MatcherContext } from "./patterns/matcher_context.js"
 import { opendir } from "./opendir.js"
 import { walk } from "./walk.js"
 import { populateDirs } from "./populate_dirs.js"
-export type * from "./types.d.ts"
+export type * from "./types.js"
 
 /**
  * Scan the directory for included files based on the provided targets.
@@ -43,7 +43,6 @@ export function scan(
 		totalFiles: 0,
 		totalMatchedFiles: 0,
 		totalDirs: 0,
-		fs,
 	}
 
 	const result = opendir(fs, cwd, (entry) =>

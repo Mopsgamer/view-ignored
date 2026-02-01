@@ -1,7 +1,7 @@
 import type { Dirent } from "fs"
 import type { MatcherContext } from "./patterns/matcher_context.js"
 import type { MatcherStream } from "./patterns/matcher_stream.js"
-import type { ScanOptions } from "./types.d.ts"
+import type { ScanOptions } from "./types.js"
 import { posix } from "path/posix"
 import { getDepth } from "./getdepth.js"
 
@@ -14,6 +14,7 @@ export type WalkOptions = {
 
 export async function walk(options: WalkOptions): Promise<0 | 1 | 2> {
 	const {
+		fs,
 		entry,
 		ctx,
 		stream,
@@ -40,7 +41,7 @@ export async function walk(options: WalkOptions): Promise<0 | 1 | 2> {
 	if (fastDepth) {
 		const { depth, depthSlash } = getDepth(path, maxDepth)
 		if (depth > maxDepth) {
-			let match = await target.ignores(cwd, path, ctx)
+			let match = await target.ignores(fs, cwd, path, ctx)
 			if (invert) {
 				match.ignored = !match.ignored
 			}
@@ -81,7 +82,7 @@ export async function walk(options: WalkOptions): Promise<0 | 1 | 2> {
 		}
 	}
 
-	let match = await target.ignores(cwd, path, ctx)
+	let match = await target.ignores(fs, cwd, path, ctx)
 	if (invert) {
 		match.ignored = !match.ignored
 	}
