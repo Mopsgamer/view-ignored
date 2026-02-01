@@ -21,23 +21,56 @@ type ScanOptions struct {
 	Target targets.Target
 
 	// Current working directory to start the scan from.
+	// TODO: default
 	Cwd *string
 
 	// If enabled, the scan will return files that are ignored by the target matchers.
+	// Default:
+	// 	false
 	Invert *bool
 
 	// Starting from depth `0` means you will see
 	// children of the current working directory.
+	// Default:
+	// 	math.MaxInt
 	Depth *int
 
 	// Return as soon as possible.
+	// Default:
+	// 	nil
 	Signal <-chan struct{}
 
-	// If enabled, Depth will be calculated faster by skipping
-	// other files after first match.
-	// This makes the scan faster but affects patterns.MatcherContext's
-	// TotalDirs, TotalFiles, TotalMatchedFiles and DepthPaths.
+	// Works together with [ScanOptions.Depth].
+	// If enabled, directories will be processed faster
+	// by skipping files after first match.
+	//
+	// This makes the scan faster but affects
+	// [patterns.MatcherContext.TotalDirs],
+	// [patterns.MatcherContext.TotalFiles],
+	// [patterns.MatcherContext.TotalMatchedFiles]
+	// and [patterns.MatcherContext.DepthPaths].
+	//
+	// It's recommended to use this option unless you
+	// need precise statistics.
+	// Default:
+	// 	false
 	FastDepth *bool
+
+	// Enables skipping entire directories for internal matches.
+	// For example, when scanning a Git repository,
+	// '.git' directory will be skipped without reading its contents.
+	//
+	// This makes the scan faster but affects
+	// [patterns.MatcherContext.TotalDirs],
+	// [patterns.MatcherContext.TotalFiles],
+	// and [patterns.MatcherContext.DepthPaths].
+	//
+	// It's recommended to use this option unless the target
+	// allows overriding internal patterns.
+	// This option should never affect [patterns.MatcherContext.TotalMatchedFiles].
+	// Default:
+	// 	false
+	FastInternal *bool
 }
 
 // Scan the directory for included files based on the provided targets.
@@ -60,7 +93,7 @@ func Scan(options *ScanOptions) patterns.MatcherContext {
 	}
 
 	ctx := patterns.MatcherContext{
-		Paths:      []string{},
+		Paths:      make(map[string]struct{}),
 		External:   make(map[string]*patterns.Source),
 		DepthPaths: make(map[string]int),
 	}
@@ -68,116 +101,16 @@ func Scan(options *ScanOptions) patterns.MatcherContext {
 	fs.WalkDir(
 		os.DirFS("."),
 		*options.Cwd,
-		walkIncludes(options.Target.Ignores, options, &ctx),
+		func(path string, d fs.DirEntry, err error) error {
+			return walkIncludes(WalkOptions{
+				ScanOptions: *options,
+				Ctx:         &ctx,
+				Entry:       d,
+				Path:        path,
+				Error:       err,
+			})
+		},
 	)
 
 	return ctx
-}
-
-func walkIncludes(ignores patterns.Ignores, options *ScanOptions, ctx *patterns.MatcherContext) fs.WalkDirFunc {
-	cwd := *options.Cwd
-	fastDepth := *options.FastDepth
-	maxDepth := *options.Depth
-	invert := *options.Invert
-	return func(path string, entry fs.DirEntry, err error) error {
-		select {
-		case <-options.Signal:
-			return fs.SkipAll
-		default:
-		}
-
-		if path == "." {
-			return nil
-		}
-
-		isDir := entry.IsDir()
-		if isDir {
-			ctx.TotalDirs++
-		} else {
-			ctx.TotalFiles++
-		}
-
-		if fastDepth {
-			depth, depthSlash := getDepth(path, maxDepth)
-			if depth > maxDepth {
-				ignored := ignores(cwd, path, ctx)
-				if ctx.Failed {
-					return fs.SkipAll
-				}
-
-				if invert {
-					ignored = !ignored
-				}
-
-				if ignored {
-					return nil
-				}
-
-				if isDir {
-					// ctx.TotalMatchedDirs++
-					// ctx.DepthPaths[path]++
-					return nil
-				}
-
-				ctx.TotalMatchedFiles++
-				dir := path[:depthSlash]
-				ctx.DepthPaths[dir]++
-				return fs.SkipDir
-			}
-		}
-
-		ignored := ignores(cwd, path, ctx)
-		if ctx.Failed {
-			return fs.SkipAll
-		}
-
-		if invert {
-			ignored = !ignored
-		}
-
-		if ignored {
-			return nil
-		}
-
-		if isDir {
-			// ctx.TotalMatchedDirs++
-			// ctx.DepthPaths[path]++
-			depth, _ := getDepth(path, maxDepth)
-			if depth <= maxDepth {
-				ctx.Paths = append(ctx.Paths, path+"/")
-			}
-			return nil
-		}
-
-		ctx.TotalMatchedFiles++
-		depth, depthSlash := getDepth(path, maxDepth)
-		if depth > maxDepth {
-			dir := path[:depthSlash]
-			ctx.DepthPaths[dir]++
-		} else {
-			ctx.Paths = append(ctx.Paths, path)
-		}
-
-		return nil
-	}
-}
-
-func getDepth(path string, maxDepth int) (depth, index int) {
-	index = -1
-	if maxDepth < 0 {
-		return
-	}
-	depth = 0
-	for i, c := range path {
-		if c != '/' {
-			continue
-		}
-		depth++
-		if depth < maxDepth {
-			continue
-		}
-		index = i
-		return
-	}
-	return
 }

@@ -5,15 +5,6 @@ import (
 	"github.com/gookit/color"
 )
 
-var gitSources = []string{".gitignore"}
-var gitSourceMap = map[string]patterns.SourceExtractor{".gitignore": patterns.ExtractGitignore}
-var gitPattern = patterns.SignedPattern{
-	Exclude: []string{
-		".git",
-		".DS_Store",
-	},
-}
-
 var Git = PrintableTarget{
 	Name:       "Git",
 	TargetName: TargetGit,
@@ -21,8 +12,32 @@ var Git = PrintableTarget{
 	Icon:       "",
 	Color:      color.Hex("#F44E28"),
 	Target: Target{
-		Ignores: func(cwd, entry string, ctx *patterns.MatcherContext) bool {
-			return gitPattern.Ignores(cwd, entry, gitSources, gitSourceMap, ctx)
+		Ignores: func(cwd string, entry string, ctx *patterns.MatcherContext) patterns.SignedPatternMatch {
+			extractors := []patterns.Extractor{
+				patterns.Extractor{
+					Extract: patterns.ExtractGitignore,
+					Path:    ".gitignore",
+				},
+				patterns.Extractor{
+					Extract: patterns.ExtractGitignore,
+					Path:    ".git/info/exclude",
+				},
+			}
+
+			internal := patterns.SignedPattern{
+				Exclude: []string{".git", ".DS_Store"},
+				Include: []string{},
+			}
+
+			return internal.Ignores(patterns.SignedPatternIgnoresOptions{
+				PatternFinderOptions: patterns.PatternFinderOptions{
+					Ctx:        ctx,
+					Cwd:        cwd,
+					Extractors: extractors,
+				},
+				Internal: internal,
+				Entry:    entry,
+			})
 		},
 	},
 }

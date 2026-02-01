@@ -13,12 +13,13 @@ type JsrManifest struct {
 	} `json:"publish"`
 }
 
-func ExtractJsrJson(source *Source, content []byte) Extraction {
+func ExtractJsrJson(source *Source, content []byte, ctx *MatcherContext) {
 	dist := JsrManifest{}
 	err := json.Unmarshal(content, &dist)
 	if err != nil {
 		source.Error = err
-		return ExtractionContinue
+		ctx.Failed = true
+		return
 	}
 
 	if dist.Publish == nil {
@@ -36,18 +37,16 @@ func ExtractJsrJson(source *Source, content []byte) Extraction {
 	} else if dist.Publish.Include != nil {
 		source.Pattern.Include = append(source.Pattern.Include, *dist.Publish.Include...)
 	}
-
-	return ExtractionContinue
 }
 
-var _ SourceExtractor = (SourceExtractor)(ExtractJsrJson)
+var _ ExtractorFn = (ExtractorFn)(ExtractJsrJson)
 
-func ExtractJsrJsonc(source *Source, content []byte) Extraction {
+func ExtractJsrJsonc(source *Source, content []byte, ctx *MatcherContext) {
 	content = StripJSONC(content)
-	return ExtractJsrJson(source, content)
+	ExtractJsrJson(source, content, ctx)
 }
 
-var _ SourceExtractor = (SourceExtractor)(ExtractJsrJsonc)
+var _ ExtractorFn = (ExtractorFn)(ExtractJsrJsonc)
 
 func StripJSONC(src []byte) []byte {
 	out := make([]byte, 0, len(src))

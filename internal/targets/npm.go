@@ -5,41 +5,6 @@ import (
 	"github.com/gookit/color"
 )
 
-var npmSources = []string{"package.json", ".npmignore", ".gitignore"}
-var npmSourceMap = map[string]patterns.SourceExtractor{
-	"package.json": patterns.ExtractPackageJson,
-	".npmignore":   patterns.ExtractGitignore,
-	".gitignore":   patterns.ExtractGitignore,
-}
-var npmPattern = patterns.SignedPattern{
-	Exclude: []string{
-		".git",
-		".DS_Store",
-		"node_modules",
-		".*.swp",
-		"._*",
-		".DS_Store",
-		".git",
-		".gitignore",
-		".hg",
-		".npmignore",
-		".npmrc",
-		".lock-wscript",
-		".svn",
-		".wafpickle-*",
-		"config.gypi",
-		"CVS",
-		"npm-debug.log",
-	},
-	Include: []string{
-		"bin",
-		"package.json",
-		"README*",
-		"LICENSE*",
-		"LICENCE*",
-	},
-}
-
 var Npm = PrintableTarget{
 	Name:       "NPM",
 	TargetName: TargetNpm,
@@ -47,8 +12,60 @@ var Npm = PrintableTarget{
 	Icon:       "",
 	Color:      color.Hex("#CA0404"),
 	Target: Target{
-		Ignores: func(cwd, entry string, ctx *patterns.MatcherContext) bool {
-			return npmPattern.Ignores(cwd, entry, npmSources, npmSourceMap, ctx)
+		Ignores: func(cwd string, entry string, ctx *patterns.MatcherContext) patterns.SignedPatternMatch {
+			extractors := []patterns.Extractor{
+				patterns.Extractor{
+					Extract: patterns.ExtractPackageJson,
+					Path:    "package.json",
+				},
+				patterns.Extractor{
+					Extract: patterns.ExtractGitignore,
+					Path:    ".npmignore",
+				},
+				patterns.Extractor{
+					Extract: patterns.ExtractGitignore,
+					Path:    ".gitignore",
+				},
+			}
+
+			internal := patterns.SignedPattern{
+				Exclude: []string{
+					".git",
+					".DS_Store",
+					"node_modules",
+					".*.swp",
+					"._*",
+					".DS_Store",
+					".git",
+					".gitignore",
+					".hg",
+					".npmignore",
+					".npmrc",
+					".lock-wscript",
+					".svn",
+					".wafpickle-*",
+					"config.gypi",
+					"CVS",
+					"npm-debug.log",
+				},
+				Include: []string{
+					"bin",
+					"package.json",
+					"README*",
+					"LICENSE*",
+					"LICENCE*",
+				},
+			}
+
+			return internal.Ignores(patterns.SignedPatternIgnoresOptions{
+				PatternFinderOptions: patterns.PatternFinderOptions{
+					Ctx:        ctx,
+					Cwd:        cwd,
+					Extractors: extractors,
+				},
+				Internal: internal,
+				Entry:    entry,
+			})
 		},
 	},
 }

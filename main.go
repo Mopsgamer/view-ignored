@@ -23,6 +23,7 @@ func main() {
 	summary := scan.Bool("sum", false, "print only the number of matched files and errors")
 	paths := scan.Bool("paths", false, "print only parsable paths, one per line")
 	fastDepth := scan.Bool("fast-depth", false, "enable fast depth calculation by skipping other files after first match")
+	fastInternal := scan.Bool("fast-internal", false, "enable skipping entire directories for internal matches")
 	timeout := scan.Duration("timeout", 30*time.Second, "enable fast depth calculation by skipping other files after first match")
 
 	flag.Usage = func() {
@@ -54,11 +55,12 @@ func main() {
 		}
 		ok := internal.Print(targets.TargetName(*target), &internal.PrintOptions{
 			ScanOptions: internal.ScanOptions{
-				Invert:    invert,
-				Depth:     depth,
-				FastDepth: fastDepth,
-				Target:    target.Target().Target,
-				Signal:    abort,
+				Invert:       invert,
+				Depth:        depth,
+				FastDepth:    fastDepth,
+				FastInternal: fastInternal,
+				Target:       target.Target().Target,
+				Signal:       abort,
 			},
 			DepthPaths: depthPaths,
 			Summary:    summary,

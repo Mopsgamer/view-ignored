@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 	"time"
@@ -33,9 +34,10 @@ func Print(targetName targets.TargetName, options *PrintOptions) bool {
 				return false
 			}
 		}
-		slices.SortFunc(ctx.Paths, FirstFolders)
-		depthPaths(ctx.Paths, ctx.DepthPaths)
-		fmt.Println(strings.Join(ctx.Paths, "\n"))
+		paths := slices.Collect(maps.Keys(ctx.Paths))
+		slices.SortFunc(paths, FirstFolders)
+		depthPaths(paths, ctx.DepthPaths)
+		fmt.Println(strings.Join(paths, "\n"))
 		return true
 	}
 
@@ -66,11 +68,12 @@ func Print(targetName targets.TargetName, options *PrintOptions) bool {
 		}
 	}
 
-	slices.SortFunc(ctx.Paths, FirstFolders)
-	depthPaths(ctx.Paths, ctx.DepthPaths)
+	paths := slices.Collect(maps.Keys(ctx.Paths))
+	slices.SortFunc(paths, FirstFolders)
+	depthPaths(paths, ctx.DepthPaths)
 	if !*options.Summary {
 		fmt.Println("")
-		fmt.Println(strings.Join(ctx.Paths, "\n"))
+		fmt.Println(strings.Join(paths, "\n"))
 	}
 	if *options.Summary {
 		head = ""

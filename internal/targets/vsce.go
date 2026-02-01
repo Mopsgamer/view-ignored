@@ -5,18 +5,6 @@ import (
 	"github.com/gookit/color"
 )
 
-var vsceSources = []string{"package.json", ".vscodeignore"}
-var vsceSourceMap = map[string]patterns.SourceExtractor{
-	"package.json":  patterns.ExtractPackageJson,
-	".vscodeignore": patterns.ExtractGitignore,
-}
-var vscePattern = patterns.SignedPattern{
-	Exclude: []string{
-		".git",
-		".DS_Store",
-	},
-}
-
 var Vsce = PrintableTarget{
 	Name:       "VSCE",
 	TargetName: TargetVsce,
@@ -24,8 +12,36 @@ var Vsce = PrintableTarget{
 	Icon:       "󰨞",
 	Color:      color.Hex("#23A9F1"),
 	Target: Target{
-		Ignores: func(cwd, entry string, ctx *patterns.MatcherContext) bool {
-			return vscePattern.Ignores(cwd, entry, vsceSources, vsceSourceMap, ctx)
+		Ignores: func(cwd string, entry string, ctx *patterns.MatcherContext) patterns.SignedPatternMatch {
+			extractors := []patterns.Extractor{
+				patterns.Extractor{
+					Extract: patterns.ExtractPackageJson,
+					Path:    "package.json",
+				},
+				patterns.Extractor{
+					Extract: patterns.ExtractGitignore,
+					Path:    ".vscodeignore",
+				},
+				patterns.Extractor{
+					Extract: patterns.ExtractGitignore,
+					Path:    ".gitignore",
+				},
+			}
+
+			internal := patterns.SignedPattern{
+				Exclude: []string{".git", ".DS_Store"},
+				Include: []string{},
+			}
+
+			return internal.Ignores(patterns.SignedPatternIgnoresOptions{
+				PatternFinderOptions: patterns.PatternFinderOptions{
+					Ctx:        ctx,
+					Cwd:        cwd,
+					Extractors: extractors,
+				},
+				Internal: internal,
+				Entry:    entry,
+			})
 		},
 	},
 }

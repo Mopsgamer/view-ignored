@@ -8,24 +8,22 @@ type NodeJsManifest struct {
 	Files *[]string `json:"files"`
 }
 
-func ExtractPackageJson(source *Source, content []byte) Extraction {
+func ExtractPackageJson(source *Source, content []byte, _ *MatcherContext) {
 	dist := NodeJsManifest{}
 	source.Inverted = true
 	err := json.Unmarshal(content, &dist)
 	if err != nil {
 		source.Error = err
-		return ExtractionContinue
+		return
 	}
 
 	if dist.Files == nil {
-		return ExtractionContinue
+		return
 	}
 
 	for _, pattern := range *dist.Files {
 		source.PushNegatable(pattern)
 	}
-
-	return ExtractionContinue
 }
 
-var _ SourceExtractor = (SourceExtractor)(ExtractPackageJson)
+var _ ExtractorFn = (ExtractorFn)(ExtractPackageJson)
