@@ -8,7 +8,7 @@ import (
 )
 
 func BenchmarkScan(b *testing.B) {
-	o := &ScanOptions{
+	o := ScanOptions{
 		Target: targets.Git.Target,
 		Cwd:    new("."),
 		Invert: new(false),
@@ -21,6 +21,6 @@ func BenchmarkScan(b *testing.B) {
 
 func BenchmarkScanNil(b *testing.B) {
 	for b.Loop() {
-		Scan(new(ScanOptions{Target: targets.Git.Target}))
+		Scan(ScanOptions{Target: targets.Git.Target})
 	}
 }

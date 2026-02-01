@@ -74,10 +74,7 @@ type ScanOptions struct {
 }
 
 // Scan the directory for included files based on the provided targets.
-func Scan(options *ScanOptions) patterns.MatcherContext {
-	if options == nil {
-		options = new(ScanOptions)
-	}
+func Scan(options ScanOptions) patterns.MatcherContext {
 	if options.Cwd == nil {
 		options.Cwd = new(".")
 	}
@@ -103,7 +100,7 @@ func Scan(options *ScanOptions) patterns.MatcherContext {
 		*options.Cwd,
 		func(path string, d fs.DirEntry, err error) error {
 			return walkIncludes(WalkOptions{
-				ScanOptions: *options,
+				ScanOptions: options,
 				Ctx:         &ctx,
 				Entry:       d,
 				Path:        path,
