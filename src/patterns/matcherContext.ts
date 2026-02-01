@@ -1,24 +1,88 @@
+import type { ScanOptions } from "../types.js"
+import type { Source } from "./source.js"
 import { dirname } from "node:path"
-import type { MatcherContext } from "./patterns/matcher.js"
-import { scan, type ScanOptions } from "./scan.js"
-import { getDepth } from "./getdepth.js"
+import { scan } from "../scan.js"
+import { getDepth } from "../getdepth.js"
+import * as nodefs from "node:fs"
+
+/**
+ * The results and stats of a scanning operation.
+ */
+export interface MatcherContext {
+	/**
+	 * `Set` can be sorted, but `view-ignored`
+	 * does not sort paths.
+	 * @example
+	 * new Set(sort(new Set(['a/b', 'a/a'])))
+	 */
+	paths: Set<string>
+
+	/**
+	 * Maps directory paths to their corresponding sources.
+	 * @example
+	 * "src" => Source
+	 */
+	external: Map<string, Source>
+
+	/**
+	 * If any fatal errors were encountered during source extraction.
+	 */
+	failed: boolean
+
+	/**
+	 * Maps directory paths to the quantity of files they contain.
+	 * @example
+	 * // for
+	 * "src/"
+	 * "src/components/"
+	 * "src/views/"
+	 * "src/views/index.html"
+	 *
+	 * // depth: 0
+	 * "src/" => 1
+	 *
+	 * // depth: 1
+	 * "src/components/" => 0
+	 * "src/views/" => 1
+	 */
+	depthPaths: Map<string, number>
+
+	/**
+	 * Total number of files scanned.
+	 */
+	totalFiles: number
+
+	/**
+	 * Total number of files matched by the target.
+	 */
+	totalMatchedFiles: number
+
+	/**
+	 * Total number of directories scanned.
+	 */
+	totalDirs: number
+}
 
 /**
  * Returns `true` if the path is included.
  * If it is not ignored by the target,
  * adds it to the {@link MatcherContext.paths}
- * and updates statistics.
+ * and updates stats.
  */
 export async function matcherContextAddPath(
 	ctx: MatcherContext,
 	entry: string,
-	options: Pick<ScanOptions, "target" | "cwd">,
+	options: Pick<ScanOptions, "target" | "cwd" | "fs">,
 ): Promise<boolean> {
 	if (ctx.paths.has(entry)) {
 		return true
 	}
 
-	const { target, cwd = (await import("node:process")).cwd().replaceAll("\\", "/") } = options
+	const {
+		target,
+		fs = nodefs,
+		cwd = (await import("node:process")).cwd().replaceAll("\\", "/"),
+	} = options
 
 	{
 		const parent = dirname(entry)
@@ -29,11 +93,11 @@ export async function matcherContextAddPath(
 
 	const isDir = entry.endsWith("/")
 	if (isDir) {
-		const ignored = await target.ignores(cwd, entry.substring(0, entry.length - 1), ctx)
-		return !ignored
+		const match = await target.ignores(fs, cwd, entry.substring(0, entry.length - 1), ctx)
+		return !match.ignored
 	}
-	const ignored = await target.ignores(cwd, entry, ctx)
-	if (ignored) {
+	const match = await target.ignores(fs, cwd, entry, ctx)
+	if (match.ignored) {
 		return false
 	}
 	ctx.paths.add(entry)

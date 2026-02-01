@@ -1,25 +1,41 @@
-import {
-	type SourceExtractor,
-	type SignedPattern,
-	signedPatternIgnores,
-} from "../patterns/matcher.js"
+import type { Extractor } from "../patterns/matcher.js"
+import { signedPatternIgnores, type SignedPattern } from "../patterns/index.js"
 import { extractJsrJson, extractJsrJsonc } from "../patterns/jsrjson.js"
 import type { Target } from "./target.js"
 
-const jsrSources = ["deno.json", "deno.jsonc", "jsr.json", "jsr.jsonc"]
-const jsrSourceMap = new Map<string, SourceExtractor>([
-	["deno.json", extractJsrJson],
-	["deno.jsonc", extractJsrJsonc],
-	["jsr.json", extractJsrJson],
-	["jsr.jsonc", extractJsrJsonc],
-])
-const vscePattern: SignedPattern = {
-	exclude: [".git", ".DS_Store"],
-	include: [],
-}
-
 export const JSR: Target = {
-	async ignores(cwd, entry, ctx) {
-		return await signedPatternIgnores(vscePattern, cwd, entry, jsrSources, jsrSourceMap, ctx)
+	ignores(fs, cwd, entry, ctx) {
+		const extractors: Extractor[] = [
+			{
+				extract: extractJsrJson,
+				path: "deno.json",
+			},
+			{
+				extract: extractJsrJsonc,
+				path: "deno.jsonc",
+			},
+			{
+				extract: extractJsrJson,
+				path: "jsr.json",
+			},
+			{
+				extract: extractJsrJsonc,
+				path: "jsr.jsonc",
+			},
+		]
+
+		const internal: SignedPattern = {
+			exclude: [".git", ".DS_Store"],
+			include: [],
+		}
+
+		return signedPatternIgnores({
+			fs,
+			internal,
+			ctx,
+			cwd,
+			entry,
+			extractors,
+		})
 	},
 }

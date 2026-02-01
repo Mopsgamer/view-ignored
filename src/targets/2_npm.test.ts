@@ -1,10 +1,13 @@
 import { test, describe } from "node:test"
 import { NPM as target } from "./npm.js"
-import { testScanPaths, type PathHandler } from "./testScanPaths.test.js"
+import { testScan, type PathHandlerOptions } from "../0_testScan.test.js"
 import type { NestedDirectoryJSON } from "memfs"
 
-function testNpm(tree: NestedDirectoryJSON, handler: PathHandler) {
-	return testScanPaths(tree, handler, { target })
+function testNpm(
+	tree: NestedDirectoryJSON,
+	handler: ((o: PathHandlerOptions) => void | Promise<void>) | string[],
+) {
+	return testScan(tree, handler, { target })
 }
 
 void describe("NPM", () => {

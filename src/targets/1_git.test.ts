@@ -1,10 +1,13 @@
 import { test, describe } from "node:test"
 import { Git as target } from "./git.js"
-import { testScanPaths, type PathHandler } from "./testScanPaths.test.js"
+import { testScan, type PathHandlerOptions } from "../0_testScan.test.js"
 import type { NestedDirectoryJSON } from "memfs"
 
-function testGit(tree: NestedDirectoryJSON, handler: PathHandler) {
-	return testScanPaths(tree, handler, { target })
+function testGit(
+	tree: NestedDirectoryJSON,
+	handler: ((o: PathHandlerOptions) => void | Promise<void>) | string[],
+) {
+	return testScan(tree, handler, { target })
 }
 
 void describe("Git", () => {
@@ -23,6 +26,27 @@ void describe("Git", () => {
 				".gitignore": "",
 			},
 			["file", ".gitignore"],
+		)
+	})
+
+	void test("ignores .git/", async () => {
+		await testGit(
+			{
+				".git/HEAD": "",
+				file: "",
+			},
+			["file"],
+		)
+	})
+
+	void test("ignores file (.git/info/exclude)", async () => {
+		await testGit(
+			{
+				filei: "",
+				file: "",
+				".git/info/exclude": "filei",
+			},
+			["file"],
 		)
 	})
 

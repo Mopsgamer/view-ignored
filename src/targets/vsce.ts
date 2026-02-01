@@ -1,25 +1,38 @@
-import {
-	type SourceExtractor,
-	type SignedPattern,
-	signedPatternIgnores,
-} from "../patterns/matcher.js"
+import type { Extractor } from "../patterns/matcher.js"
+import { signedPatternIgnores, type SignedPattern } from "../patterns/index.js"
 import { extractGitignore } from "../patterns/gitignore.js"
 import { extractPackageJson } from "../patterns/packagejson.js"
 import type { Target } from "./target.js"
 
-const vsceSources = ["package.json", ".vscodeignore"]
-const vsceSourceMap = new Map<string, SourceExtractor>([
-	["package.json", extractPackageJson],
-	[".vscodeignore", extractGitignore],
-	[".gitignore", extractGitignore],
-])
-const vscePattern: SignedPattern = {
-	exclude: [".git", ".DS_Store"],
-	include: [],
-}
-
 export const VSCE: Target = {
-	async ignores(cwd, entry, ctx) {
-		return await signedPatternIgnores(vscePattern, cwd, entry, vsceSources, vsceSourceMap, ctx)
+	ignores(fs, cwd, entry, ctx) {
+		const extractors: Extractor[] = [
+			{
+				extract: extractPackageJson,
+				path: "package.json",
+			},
+			{
+				extract: extractGitignore,
+				path: ".vscodeignore",
+			},
+			{
+				extract: extractGitignore,
+				path: ".gitignore",
+			},
+		]
+
+		const internal: SignedPattern = {
+			exclude: [".git", ".DS_Store"],
+			include: [],
+		}
+
+		return signedPatternIgnores({
+			fs,
+			internal,
+			ctx,
+			cwd,
+			entry,
+			extractors,
+		})
 	},
 }

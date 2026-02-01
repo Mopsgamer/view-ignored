@@ -23,7 +23,7 @@ by Git, NPM, Yarn, JSR, VSCE or other tools.
 - **TypeScript.** Written in TypeScript with type definitions included.
 - **Lightweight.** Minimal dependencies for fast performance and small bundle size.
 - **Easy-to-modify.** Well-written and MIT-licensed.
-- **Broswer.** Can be bundled for browser use. See `ScanOptions.fsp`.
+- **Broswer.** Can be bundled for browser use. See `ScanOptions.fs` and `import ... "view-ignored/browser"`.
 
 > [!NOTE]
 > Despite the name of the package being "view-ignored",
@@ -37,41 +37,93 @@ by Git, NPM, Yarn, JSR, VSCE or other tools.
 ### Basic example
 
 ```ts
-import * as vign from "view-ignored";
-import { Git as target } from "view-ignored/targets";
+import * as vign from "view-ignored"
+import { Git as target } from "view-ignored/targets"
 
-const results = await vign.scan({ target });
-results.paths.has(".git/HEAD");
+const ctx = await vign.scan({ target })
+ctx.paths.has(".git/HEAD") // false
+ctx.paths.has("src") // true
 ```
 
 ### Using custom target
 
 ```ts
-import * as vign from "view-ignored";
 import {
-  type SourceExtractor,
-  type SignedPattern,
-  extractGitignore,
-  signedPatternIgnores
-} from "view-ignored/patterns";
-import type { Target } from "view-ignored/targets";
-
-const gitSources = [".gitignore"];
-const gitSourceMap = new Map<string, SourceExtractor>([[".gitignore", extractGitignore]]);
-const gitPattern: SignedPattern = {
-  exclude: [".git", ".DS_Store"],
-  include: [],
-};
+	type Extractor,
+	type SignedPattern,
+	signedPatternIgnores,
+	extractGitignore,
+} from "view-ignored/patterns"
+import { extractGitignore } from "../patterns/gitignore.js"
+import type { Target } from "view-ignored/targets"
 
 export const Git: Target = {
-  async ignores(cwd, entry, ctx) {
-    return await signedPatternIgnores(gitPattern, cwd, entry, gitSources, gitSourceMap, ctx);
-  },
-};
+	ignores(cwd, entry, ctx) {
+		const extractors: Extractor[] = [
+			{
+				extract: extractGitignore,
+				path: ".gitignore",
+			},
+			{
+				extract: extractGitignore,
+				path: ".git/info/exclude",
+			},
+		]
+
+		const internal: SignedPattern = {
+			exclude: [".git", ".DS_Store"],
+			include: [],
+		}
+
+		return signedPatternIgnores({
+			internal,
+			ctx,
+			cwd,
+			entry,
+			extractors,
+		})
+	},
+}
+
+const ctx = await vign.scan({ target })
 ```
 
+### Streaming results
+
 ```ts
-vign.scan({ target: Git });
+import * as vign from "view-ignored"
+import { NPM as target } from "view-ignored/targets"
+
+const stream = await vign.scanStream({ target })
+
+stream.on("dirent", console.log)
+stream.on("end", (ctx) => {
+	ctx.paths.has(".git/HEAD") // false
+	ctx.paths.has("node_modules/") // false
+	ctx.paths.has("package.json") // true
+})
+```
+
+### Browser and custom FS
+
+To avoid imports from `node:fs` and `node:process` modules,
+use the browser submodule, which requires some additional options.
+
+```ts
+import * as vign from "view-ignored/browser"
+// or view-ignored/browser/scan
+import { Git as target } from "view-ignored/targets"
+
+export const cwd = cwd().replace(/\w:/, "").replaceAll("\\", "/")
+
+const customFs = {
+	promises: {
+		opendir,
+		readFile,
+	},
+}
+
+vign.scan({ target, cwd, fs })
 ```
 
 ## Targets
@@ -83,7 +135,7 @@ vign.scan({ target: Git });
 The following built-in scanners are available:
 
 - Git
-  - Reads `.gitignore` files but does not consider global settings.
+  - Reads `.gitignore` and `.git/info/exclude` files but does not consider global settings.
   - Check this scanner by running `git ls-tree -r HEAD --name-only`.
   - See the implementation of [Git target](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/git.ts) for details.
 - NPM (compatible with Bun, PNPM, and others)
@@ -95,7 +147,7 @@ The following built-in scanners are available:
   - Same behavior as `npm`, but also reads `.yarnignore`.
   - See the implementation of [Yarn target](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/yarn.ts) for details.
 - VSCE
-  - Reads `.vscodeignore` and `package.json` `files` field.
+  - Reads `package.json` `files` field, `.vscodeignore` and `.gitignore`.
   - Check this scanner by running `vsce ls`.
   - See the implementation of [VSCE target](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/vsce.ts) for details.
 - JSR (compatible with Deno)

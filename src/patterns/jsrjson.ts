@@ -1,6 +1,8 @@
 import { type } from "arktype"
-import type { Source, SourceExtractor, Extraction } from "./matcher.js"
+import type { ExtractorFn } from "./matcher.js"
 import stripJsonComments from "strip-json-comments"
+import type { MatcherContext } from "./matcherContext.js"
+import type { Source } from "./source.js"
 
 const jsrManifest = type({
 	exclude: "string[]?",
@@ -13,11 +15,16 @@ const jsrManifest = type({
 
 const parse = jsrManifest.pipe((s: string): typeof jsrManifest.infer => JSON.parse(s))
 
-export function extractJsrJson(source: Source, content: Buffer<ArrayBuffer>): Extraction {
+export function extractJsrJson(
+	source: Source,
+	content: Buffer<ArrayBuffer>,
+	ctx: MatcherContext,
+): void {
 	const dist = parse(content.toString())
 	if (dist instanceof type.errors) {
 		source.error = dist
-		return "stop"
+		ctx.failed = true
+		return
 	}
 
 	if (!dist.publish) {
@@ -35,14 +42,16 @@ export function extractJsrJson(source: Source, content: Buffer<ArrayBuffer>): Ex
 	} else if (dist.publish.include) {
 		source.pattern.include.push(...dist.publish.include)
 	}
-
-	return "continue"
 }
 
-extractJsrJson satisfies SourceExtractor
+extractJsrJson satisfies ExtractorFn
 
-export function extractJsrJsonc(source: Source, content: Buffer<ArrayBuffer>): Extraction {
-	return extractJsrJson(source, Buffer.from(stripJsonComments(content.toString())))
+export function extractJsrJsonc(
+	source: Source,
+	content: Buffer<ArrayBuffer>,
+	ctx: MatcherContext,
+): void {
+	extractJsrJson(source, Buffer.from(stripJsonComments(content.toString())), ctx)
 }
 
-extractJsrJsonc satisfies SourceExtractor
+extractJsrJsonc satisfies ExtractorFn

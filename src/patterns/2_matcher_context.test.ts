@@ -1,21 +1,22 @@
 import { test } from "node:test"
-import { testScanPaths } from "./targets/testScanPaths.test.js"
+import { testScan } from "../0_testScan.test.js"
 import { deepEqual, equal, ok } from "node:assert/strict"
 import {
 	matcherContextAddPath,
 	matcherContextRefreshDir,
 	matcherContextRemovePath,
-} from "./rescan.js"
-import { Git as target } from "./targets/git.js"
+} from "./matcherContext.js"
+import { Git as target } from "../targets/git.js"
 
 void test("can add paths", async () => {
-	await testScanPaths(
+	await testScan(
 		{
 			one: "",
 			two: "",
 			".gitignore": "four",
 		},
-		async ({ options, ctx }) => {
+		async ({ options: { target, cwd }, ctx }) => {
+			const options = { target, cwd }
 			ok(await matcherContextAddPath(ctx, "three", options))
 			ok(await matcherContextAddPath(ctx, "two", options))
 			ok(!(await matcherContextAddPath(ctx, "four", options)))
@@ -27,13 +28,14 @@ void test("can add paths", async () => {
 })
 
 void test("can remove paths", async () => {
-	await testScanPaths(
+	await testScan(
 		{
 			one: "",
 			two: "",
 			".gitignore": "four",
 		},
-		async ({ options, ctx }) => {
+		async ({ options: { depth }, ctx }) => {
+			const options = { depth }
 			equal(ctx.paths.size, 3)
 			await matcherContextRemovePath(ctx, "three", options)
 			equal(ctx.paths.size, 3)
@@ -48,7 +50,7 @@ void test("can remove paths", async () => {
 })
 
 void test("can refresh without changes", async () => {
-	await testScanPaths(
+	await testScan(
 		{
 			one: "",
 			two: "",
@@ -58,7 +60,6 @@ void test("can refresh without changes", async () => {
 			const oldDepthPaths = [...ctx.depthPaths]
 			const oldExternal = [...ctx.external]
 			const oldFailed = ctx.failed
-			const oldFsp = ctx.fsp
 			const oldPaths = [...ctx.paths]
 			const oldTotalDirs = ctx.totalDirs
 			const oldTotalFiles = ctx.totalFiles
@@ -67,7 +68,6 @@ void test("can refresh without changes", async () => {
 			deepEqual([...ctx.depthPaths], oldDepthPaths)
 			deepEqual([...ctx.external], oldExternal)
 			deepEqual(ctx.failed, oldFailed)
-			deepEqual(ctx.fsp, oldFsp)
 			deepEqual([...ctx.paths], oldPaths)
 			deepEqual(ctx.totalDirs, oldTotalDirs)
 			deepEqual(ctx.totalFiles, oldTotalFiles)
