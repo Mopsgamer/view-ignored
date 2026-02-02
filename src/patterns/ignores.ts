@@ -1,6 +1,6 @@
-import type { FsAdapter } from "../types.js";
-import type { MatcherContext } from "../patterns/matcherContext.js";
-import type { SignedPatternMatch } from "../patterns/signedPattern.js";
+import type { FsAdapter } from "../types.js"
+import type { MatcherContext } from "../patterns/matcherContext.js"
+import type { SignedPatternMatch } from "../patterns/signedPattern.js"
 
 /**
  * Checks whether a given entry path should be ignored based on its patterns.
