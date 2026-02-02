@@ -3,7 +3,7 @@ import type { Source } from "./patterns/source.js"
 import type { MatcherContext } from "./patterns/matcherContext.js"
 import { opendir } from "./opendir.js"
 import { walk } from "./walk.js"
-import { populateDirs } from "./populate_dirs.js"
+import { populateDirs } from "./populateDirs.js"
 export type * from "./types.js"
 
 /**

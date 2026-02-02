@@ -6,7 +6,7 @@ import type { scan as browserScan } from "./browser_scan.js"
 import { MatcherStream } from "./patterns/matcherStream.js"
 import { opendir } from "./opendir.js"
 import { walk } from "./walk.js"
-import { populateDirs } from "./populate_dirs.js"
+import { populateDirs } from "./populateDirs.js"
 export type * from "./types.js"
 
 /**
