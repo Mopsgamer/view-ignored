@@ -15,6 +15,7 @@ type WalkOptions struct {
 }
 
 func walkIncludes(options WalkOptions) error {
+	filesystem := options.FS
 	entry := options.Entry
 	ctx := options.Ctx
 	target := options.Target
@@ -56,7 +57,7 @@ func walkIncludes(options WalkOptions) error {
 	if fastDepth {
 		depth, depthSlash := getDepth(path, maxDepth)
 		if depth > maxDepth {
-			match := target.Ignores(cwd, path, ctx)
+			match := target.Ignores(filesystem, cwd, path, ctx)
 			patterns.InvertSignedPatternMatch(match, invert)
 
 			if ctx.Failed {
@@ -83,7 +84,7 @@ func walkIncludes(options WalkOptions) error {
 		}
 	}
 
-	match := target.Ignores(cwd, path, ctx)
+	match := target.Ignores(filesystem, cwd, path, ctx)
 	patterns.InvertSignedPatternMatch(match, invert)
 
 	if ctx.Failed {

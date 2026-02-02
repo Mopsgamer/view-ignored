@@ -21,7 +21,8 @@ type ScanOptions struct {
 	Target targets.Target
 
 	// Current working directory to start the scan from.
-	// TODO: default
+	// Default:
+	// 	"."
 	Cwd *string
 
 	// If enabled, the scan will return files that are ignored by the target matchers.
@@ -71,6 +72,11 @@ type ScanOptions struct {
 	// Default:
 	// 	false
 	FastInternal *bool
+
+	// File system interface.
+	// Default:
+	//	os.DirFS(".")
+	FS fs.FS
 }
 
 // Scan the directory for included files based on the provided targets.
@@ -88,6 +94,12 @@ func Scan(options ScanOptions) patterns.MatcherContext {
 	if options.FastDepth == nil {
 		options.FastDepth = new(false)
 	}
+	if options.FastInternal == nil {
+		options.FastInternal = new(false)
+	}
+	if options.FS == nil {
+		options.FS = os.DirFS(".")
+	}
 
 	ctx := patterns.MatcherContext{
 		Paths:      make(map[string]struct{}),
@@ -96,7 +108,7 @@ func Scan(options ScanOptions) patterns.MatcherContext {
 	}
 
 	fs.WalkDir(
-		os.DirFS("."),
+		options.FS,
 		*options.Cwd,
 		func(path string, d fs.DirEntry, err error) error {
 			return walkIncludes(WalkOptions{

@@ -1,6 +1,8 @@
 package targets
 
 import (
+	"io/fs"
+
 	"github.com/Mopsgamer/view-ignored/internal/patterns"
 	"github.com/gookit/color"
 )
@@ -11,7 +13,7 @@ var Jsr = PrintableTarget{
 	Icon:       "",
 	Color:      color.Hex("#F5DD1E"),
 	Target: Target{
-		Ignores: func(cwd string, entry string, ctx *patterns.MatcherContext) patterns.SignedPatternMatch {
+		Ignores: func(fs fs.FS, cwd string, entry string, ctx *patterns.MatcherContext) patterns.SignedPatternMatch {
 			extractors := []patterns.Extractor{
 				patterns.Extractor{
 					Extract: patterns.ExtractJsrJson,
@@ -42,6 +44,7 @@ var Jsr = PrintableTarget{
 					Cwd:        cwd,
 					Extractors: extractors,
 				},
+				FS:       fs,
 				Internal: internal,
 				Entry:    entry,
 			})

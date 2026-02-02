@@ -80,6 +80,7 @@
 	},
 	"scripts": {
 		"prerelease": "bun run test && bun run build:prod && bun run lint && bun run fmt --check",
+		"gojs": "GOOS=js GOARCH=wasm go build -o mylib.wasm github.com/Mopsgamer/view-ignored/internal",
 		"test": "bun run build && node --enable-source-maps --test out/**/*.test.js",
 		"test:patterns": "bun run build && node --enable-source-maps --test out/patterns/**/*.test.js",
 		"test:targets": "bun run build && node --enable-source-maps --test out/targets/**/*.test.js",

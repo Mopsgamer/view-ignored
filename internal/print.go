@@ -115,12 +115,12 @@ func colorNumber[T ~int | ~int64 | ~float64](n T) string {
 }
 
 func colorNumberStr(s string) string {
-	out := ""
+	var out strings.Builder
 	buf := ""
 
 	flushDigits := func() {
 		if buf != "" {
-			out += color.Green.Sprint(buf)
+			out.WriteString(color.Green.Sprint(buf))
 			buf = ""
 		}
 	}
@@ -133,14 +133,14 @@ func colorNumberStr(s string) string {
 		flushDigits()
 
 		if r == '.' {
-			out += color.Red.Sprint(string(r))
+			out.WriteString(color.Red.Sprint(string(r)))
 		} else {
-			out += color.White.Sprint(string(r))
+			out.WriteString(color.White.Sprint(string(r)))
 		}
 	}
 
 	flushDigits()
-	return out
+	return out.String()
 }
 
 func uniqueValues(m map[string]*patterns.Source) (result []error) {

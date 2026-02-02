@@ -1,6 +1,7 @@
 package patterns
 
 import (
+	"io/fs"
 	"os"
 	"path"
 	"slices"
@@ -31,6 +32,7 @@ type PatternFinderOptions struct {
 // See [SourcesBackwards].
 type SourcesBackwardsOptions struct {
 	PatternFinderOptions
+	FS  fs.FS
 	Dir string
 }
 
@@ -63,7 +65,7 @@ func SourceBackwards(options SourcesBackwardsOptions) {
 				},
 			}
 
-			buff, err := os.ReadFile(options.Cwd + "/" + path)
+			buff, err := fs.ReadFile(options.FS, path)
 			if err != nil {
 				if os.IsNotExist(err) {
 					continue

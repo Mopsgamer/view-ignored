@@ -1,6 +1,9 @@
 package patterns
 
-import "path"
+import (
+	"io/fs"
+	"path"
+)
 
 // Represents a set of include and exclude patterns.
 // These patterns are positive minimatch patterns.
@@ -13,6 +16,7 @@ type SignedPattern struct {
 // See [SignedPattern.Ignores].
 type SignedPatternIgnoresOptions struct {
 	PatternFinderOptions
+	FS       fs.FS
 	Entry    string
 	Internal SignedPattern
 }
@@ -100,6 +104,7 @@ func (ointernal SignedPattern) Ignores(
 		SourceBackwards(SourcesBackwardsOptions{
 			PatternFinderOptions: options.PatternFinderOptions,
 			Dir:                  parent,
+			FS:                   options.FS,
 		})
 
 		if options.Ctx.Failed {

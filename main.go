@@ -61,6 +61,7 @@ func main() {
 				FastInternal: fastInternal,
 				Target:       target.Target().Target,
 				Signal:       abort,
+				FS:           nil,
 			},
 			DepthPaths: depthPaths,
 			Summary:    summary,
