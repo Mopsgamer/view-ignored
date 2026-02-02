@@ -1,6 +1,7 @@
+import type { PatternFinderOptions } from "./extractor.js"
 import { dirname } from "node:path"
 import { patternMatches, type Pattern } from "./pattern.js"
-import { sourcesBackwards, type PatternFinderOptions } from "./matcher.js"
+import { sourcesBackwards } from "./sourcesBackwards.js"
 
 /**
  * Represents a set of include and exclude patterns.

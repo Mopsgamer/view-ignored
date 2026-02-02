@@ -1,5 +1,5 @@
 import { type } from "arktype"
-import type { ExtractorFn } from "./matcher.js"
+import type { ExtractorFn } from "./extractor.js"
 import stripJsonComments from "strip-json-comments"
 import type { MatcherContext } from "./matcherContext.js"
 import type { Source } from "./source.js"
