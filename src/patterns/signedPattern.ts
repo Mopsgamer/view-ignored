@@ -78,7 +78,7 @@ export async function signedPatternIgnores(
 	const internal = options.internal
 
 	try {
-		let check: false | string = false
+		let check: string = ""
 
 		check = patternMatches(internal.exclude, options.entry)
 		if (check) {
