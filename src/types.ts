@@ -39,7 +39,7 @@ export type ScanOptions = {
 	 * Return as soon as possible.
 	 * @default `undefined`
 	 */
-	signal?: AbortSignal
+	signal?: AbortSignal | null
 
 	/**
 	 * Works together with {@link ScanOptions.depth}.

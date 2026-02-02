@@ -9,23 +9,13 @@ export type WalkOptions = {
 	entry: Dirent
 	ctx: MatcherContext
 	stream: MatcherStream | undefined
-	signal: AbortSignal | undefined
-} & Omit<Required<ScanOptions>, "signal">
+	scanOptions: Required<ScanOptions>
+}
 
-export async function walk(options: WalkOptions): Promise<0 | 1 | 2> {
-	const {
-		fs,
-		entry,
-		ctx,
-		stream,
-		target,
-		cwd,
-		depth: maxDepth,
-		invert,
-		signal,
-		fastDepth,
-		fastInternal,
-	} = options
+export async function walkIncludes(options: WalkOptions): Promise<0 | 1 | 2> {
+	const { entry, ctx, stream, scanOptions } = options
+
+	const { fs, target, cwd, depth: maxDepth, invert, signal, fastDepth, fastInternal } = scanOptions
 
 	signal?.throwIfAborted()
 

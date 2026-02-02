@@ -5,7 +5,7 @@ import type { MatcherContext } from "./patterns/matcherContext.js"
 import type { scan as browserScan } from "./browser_scan.js"
 import { MatcherStream } from "./patterns/matcherStream.js"
 import { opendir } from "./opendir.js"
-import { walk } from "./walk.js"
+import { walkIncludes } from "./walk.js"
 import { populateDirs } from "./populateDirs.js"
 export type * from "./types.js"
 
@@ -18,7 +18,7 @@ export function scanStream(options: ScanOptions & { fs: FsAdapter; cwd: string }
 		cwd,
 		invert = false,
 		depth: maxDepth = Infinity,
-		signal = undefined,
+		signal = null,
 		fastDepth = false,
 		fastInternal = false,
 		fs,
@@ -36,19 +36,23 @@ export function scanStream(options: ScanOptions & { fs: FsAdapter; cwd: string }
 
 	const stream = new MatcherStream({ captureRejections: false })
 
+	const scanOptions: Required<ScanOptions> = {
+		cwd,
+		depth: maxDepth,
+		fastDepth,
+		fastInternal,
+		fs,
+		invert,
+		signal,
+		target,
+	}
+
 	const result = opendir(fs, cwd, (entry) =>
-		walk({
+		walkIncludes({
 			entry,
 			ctx,
 			stream,
-			cwd,
-			depth: maxDepth,
-			fastDepth,
-			fastInternal,
-			fs,
-			invert,
-			signal,
-			target,
+			scanOptions,
 		}),
 	)
 

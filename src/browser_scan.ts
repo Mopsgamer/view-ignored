@@ -2,7 +2,7 @@ import type { ScanOptions, FsAdapter } from "./types.js"
 import type { Source } from "./patterns/source.js"
 import type { MatcherContext } from "./patterns/matcherContext.js"
 import { opendir } from "./opendir.js"
-import { walk } from "./walk.js"
+import { walkIncludes } from "./walk.js"
 import { populateDirs } from "./populateDirs.js"
 export type * from "./types.js"
 
@@ -25,7 +25,7 @@ export function scan(
 		cwd,
 		invert = false,
 		depth: maxDepth = Infinity,
-		signal = undefined,
+		signal = null,
 		fastDepth = false,
 		fastInternal = false,
 		fs,
@@ -45,19 +45,23 @@ export function scan(
 		totalDirs: 0,
 	}
 
+	const scanOptions: Required<ScanOptions> = {
+		cwd,
+		depth: maxDepth,
+		fastDepth,
+		fastInternal,
+		fs,
+		invert,
+		signal,
+		target,
+	}
+
 	const result = opendir(fs, cwd, (entry) =>
-		walk({
+		walkIncludes({
 			entry,
 			ctx,
 			stream: undefined,
-			cwd,
-			depth: maxDepth,
-			fastDepth,
-			fastInternal,
-			fs,
-			invert,
-			signal,
-			target,
+			scanOptions,
 		}),
 	)
 
