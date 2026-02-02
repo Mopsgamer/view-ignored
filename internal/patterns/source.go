@@ -27,8 +27,18 @@ type Source struct {
 // Strips the leading '!' for include patterns,
 // and adds to exclude patterns otherwise.
 func (source *Source) PushNegatable(pattern string) {
-	if len(pattern) > 0 && pattern[0] == '!' {
-		source.Pattern.Include = append(source.Pattern.Include, pattern[1:])
+	exclude := &source.Pattern.Exclude
+	include := &source.Pattern.Include
+	if source.Inverted {
+		exclude, include = include, exclude
 	}
-	source.Pattern.Exclude = append(source.Pattern.Exclude, pattern)
+
+	dist := exclude
+
+	if len(pattern) > 0 && pattern[0] == '!' {
+		dist = include
+		pattern = pattern[1:]
+	}
+
+	*dist = append(*dist, pattern)
 }
