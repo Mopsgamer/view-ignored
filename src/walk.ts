@@ -3,7 +3,7 @@ import type { MatcherContext } from "./patterns/matcherContext.js"
 import type { MatcherStream } from "./patterns/matcherStream.js"
 import type { ScanOptions } from "./types.js"
 import { posix } from "path/posix"
-import { getDepth } from "./getdepth.js"
+import { getDepth } from "./getDepth.js"
 
 export type WalkOptions = {
 	entry: Dirent

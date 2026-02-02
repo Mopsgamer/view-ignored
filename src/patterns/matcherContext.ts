@@ -2,7 +2,7 @@ import type { ScanOptions } from "../types.js"
 import type { Source } from "./source.js"
 import { dirname } from "node:path"
 import { scan } from "../scan.js"
-import { getDepth } from "../getdepth.js"
+import { getDepth } from "../getDepth.js"
 import * as nodefs from "node:fs"
 
 /**
