@@ -1,6 +1,6 @@
-import { signedPatternIgnores, type SignedPattern } from "../patterns/signedPattern.js"
-import type { Extractor } from "../patterns/matcher.js"
+import type { Extractor } from "../patterns/extractor.js"
 import type { Target } from "./target.js"
+import { signedPatternIgnores, type SignedPattern } from "../patterns/signedPattern.js"
 import { extractGitignore } from "../patterns/gitignore.js"
 
 export const Git: Target = {

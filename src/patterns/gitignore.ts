@@ -1,4 +1,4 @@
-import type { ExtractorFn } from "./matcher.js"
+import type { ExtractorFn } from "./extractor.js"
 import { minimatch, type MinimatchOptions } from "minimatch"
 import { sourcePushNegatable, type Source } from "./source.js"
 
