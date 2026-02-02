@@ -1,7 +1,6 @@
 package patterns
 
 import (
-	"io/fs"
 	"path"
 )
 
@@ -16,7 +15,6 @@ type SignedPattern struct {
 // See [SignedPattern.Ignores].
 type SignedPatternIgnoresOptions struct {
 	PatternFinderOptions
-	FS       fs.FS
 	Entry    string
 	Internal SignedPattern
 }
@@ -104,7 +102,6 @@ func (ointernal SignedPattern) Ignores(
 		SourceBackwards(SourcesBackwardsOptions{
 			PatternFinderOptions: options.PatternFinderOptions,
 			Dir:                  parent,
-			FS:                   options.FS,
 		})
 
 		if options.Ctx.Failed {

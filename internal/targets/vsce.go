@@ -37,11 +37,11 @@ var Vsce = PrintableTarget{
 
 			return internal.Ignores(patterns.SignedPatternIgnoresOptions{
 				PatternFinderOptions: patterns.PatternFinderOptions{
+					FS:         fs,
 					Ctx:        ctx,
 					Cwd:        cwd,
 					Extractors: extractors,
 				},
-				FS:       fs,
 				Internal: internal,
 				Entry:    entry,
 			})

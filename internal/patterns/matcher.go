@@ -24,6 +24,7 @@ type Extractor struct {
 // See [SourceBackwards].
 // See [SignedPattern.Ignores].
 type PatternFinderOptions struct {
+	FS         fs.FS
 	Ctx        *MatcherContext
 	Cwd        string
 	Extractors []Extractor
@@ -32,7 +33,6 @@ type PatternFinderOptions struct {
 // See [SourcesBackwards].
 type SourcesBackwardsOptions struct {
 	PatternFinderOptions
-	FS  fs.FS
 	Dir string
 }
 
