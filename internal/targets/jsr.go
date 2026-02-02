@@ -15,19 +15,19 @@ var Jsr = PrintableTarget{
 	Target: Target{
 		Ignores: func(fs fs.FS, cwd string, entry string, ctx *patterns.MatcherContext) patterns.SignedPatternMatch {
 			extractors := []patterns.Extractor{
-				patterns.Extractor{
+				{
 					Extract: patterns.ExtractJsrJson,
 					Path:    "deno.json",
 				},
-				patterns.Extractor{
+				{
 					Extract: patterns.ExtractJsrJsonc,
 					Path:    "deno.jsonc",
 				},
-				patterns.Extractor{
+				{
 					Extract: patterns.ExtractJsrJson,
 					Path:    "jsr.json",
 				},
-				patterns.Extractor{
+				{
 					Extract: patterns.ExtractJsrJsonc,
 					Path:    "jsr.jsonc",
 				},

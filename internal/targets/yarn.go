@@ -15,19 +15,19 @@ var Yarn = PrintableTarget{
 	Target: Target{
 		Ignores: func(fs fs.FS, cwd string, entry string, ctx *patterns.MatcherContext) patterns.SignedPatternMatch {
 			extractors := []patterns.Extractor{
-				patterns.Extractor{
+				{
 					Extract: patterns.ExtractPackageJson,
 					Path:    "package.json",
 				},
-				patterns.Extractor{
+				{
 					Extract: patterns.ExtractGitignore,
 					Path:    ".yarnignore",
 				},
-				patterns.Extractor{
+				{
 					Extract: patterns.ExtractGitignore,
 					Path:    ".npmignore",
 				},
-				patterns.Extractor{
+				{
 					Extract: patterns.ExtractGitignore,
 					Path:    ".gitignore",
 				},

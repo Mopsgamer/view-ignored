@@ -16,11 +16,11 @@ var Git = PrintableTarget{
 	Target: Target{
 		Ignores: func(fs fs.FS, cwd string, entry string, ctx *patterns.MatcherContext) patterns.SignedPatternMatch {
 			extractors := []patterns.Extractor{
-				patterns.Extractor{
+				{
 					Extract: patterns.ExtractGitignore,
 					Path:    ".gitignore",
 				},
-				patterns.Extractor{
+				{
 					Extract: patterns.ExtractGitignore,
 					Path:    ".git/info/exclude",
 				},
