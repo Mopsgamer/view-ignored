@@ -1,4 +1,4 @@
-import { test } from "node:test"
+import { test } from "bun:test"
 import { testScan } from "../0_testScan.test.js"
 import { deepEqual, equal, ok } from "node:assert/strict"
 import {
@@ -8,7 +8,7 @@ import {
 } from "./matcherContext.js"
 import { Git as target } from "../targets/git.js"
 
-void test("can add paths", async () => {
+test("can add paths", async () => {
 	await testScan(
 		{
 			one: "",
@@ -27,7 +27,7 @@ void test("can add paths", async () => {
 	)
 })
 
-void test("can remove paths", async () => {
+test("can remove paths", async () => {
 	await testScan(
 		{
 			one: "",
@@ -49,7 +49,7 @@ void test("can remove paths", async () => {
 	)
 })
 
-void test("can refresh without changes", async () => {
+test("can refresh without changes", async () => {
 	await testScan(
 		{
 			one: "",

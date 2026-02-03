@@ -12,7 +12,7 @@ by Git, NPM, Yarn, JSR, VSCE or other tools.
 
 - Node.js 18 or later for production
 - Node.js 20 or later for production type definitions
-- Node.js 22 or later for development type definitions
+- Node.js 25 or later for development type definitions
 
 ## Highlights
 

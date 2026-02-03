@@ -1,11 +1,11 @@
 import { scan } from "./scan.js"
-import { test } from "node:test"
+import { test } from "bun:test"
 import { deepEqual } from "node:assert/strict"
 import { Git as target } from "./targets/git.js"
 import { sortFirstFolders } from "./0_testSort.test.js"
 import { spawn } from "node:child_process"
 
-void test("scan Git (self)", async () => {
+test("scan Git (self)", async () => {
 	const files = gitFiles()
 	const r = await scan({ target, fastInternal: true })
 	// this test uses sortFirstFolders implementation

@@ -1,6 +1,11 @@
 import type { PatternFinderOptions } from "./extractor.js"
 import { dirname } from "node:path"
-import { patternCompile, patternMinimatchTest, type Pattern, type PatternMinimatch } from "./pattern.js"
+import {
+	patternCompile,
+	patternMinimatchTest,
+	type Pattern,
+	type PatternMinimatch,
+} from "./pattern.js"
 import { sourcesBackwards } from "./sourcesBackwards.js"
 import type { Source } from "./source.js"
 

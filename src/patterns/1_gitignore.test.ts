@@ -1,9 +1,9 @@
 import { ok } from "node:assert/strict"
-import { test } from "node:test"
+import { test } from "bun:test"
 import { gitignoreCompile } from "./gitignore.js"
-import { patternMinimatchTest } from "./pattern.js";
+import { patternMinimatchTest } from "./pattern.js"
 
-void test("gitignoreMatch", () => {
+test("gitignoreMatch", () => {
 	ok(patternMinimatchTest(gitignoreCompile(".git"), ".git/message"))
 	ok(!patternMinimatchTest(gitignoreCompile(".git"), ".github/message"))
 
