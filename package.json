@@ -80,7 +80,7 @@
 	},
 	"scripts": {
 		"prerelease": "bun run test && bun run prod && bun run lint && bun run fmt --check",
-		"gojs": "GOOS=js GOARCH=wasm go build -o mylib.wasm github.com/Mopsgamer/view-ignored/internal",
+		"gojs": "GOOS=js GOARCH=wasm go build -o wasi/viewig.wasm github.com/Mopsgamer/view-ignored/internal",
 		"test": "bun test src",
 		"test:patterns": "bun test src/patterns",
 		"test:targets": "bun test src/targets",
@@ -91,8 +91,7 @@
 		"lint": "bun run oxlint --type-aware",
 		"fmt": "bun run oxfmt",
 		"check": "bun tsgo -p . --noEmit",
-		"build": "rm -rf out && bun tsgo -p .",
-		"build:prod": "rm -rf out && tsgo -p tsconfig.prod.json",
+		"prod": "rm -rf out && tsgo -p tsconfig.prod.json",
 		"release:major": "bun run release-it --increment=major",
 		"release:minor": "bun run release-it --increment=minor",
 		"release:patch": "bun run release-it --increment=patch"
