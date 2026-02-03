@@ -30,6 +30,13 @@ Node.js 18 or later
 > You can invert the results if you need the ignored files
 > by setting the `invert` option to `true`.
 
+## Plans
+
+- While v0.4 was highly experimental, it introduced some mess without enough useful features.
+- v0.5 was a rewrite, but lacked tests due to missing features in `memfs`. It's not fully functional, though some users might rely on it (with caution).
+- v0.6 brings new features: optimization options, improved support for Node 18 and browsers, and adds some tests. The library works at least half of the time, but can't guarantee the streaming API or all targets are reliable yet.
+- The goal is for v0.7 or a v0.6.x release to deliver a fully tested project. After that, the library will be stabilized and released as v1.0.0.
+
 ## Usage
 
 ### Basic example
