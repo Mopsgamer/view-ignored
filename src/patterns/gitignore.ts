@@ -1,5 +1,6 @@
 import type { ExtractorFn } from "./extractor.js"
-import { minimatch, type MinimatchOptions } from "minimatch"
+import type { PatternMinimatch } from "./pattern.js"
+import { makeRe } from "minimatch";
 import { sourcePushNegatable, type Source } from "./source.js"
 
 export function extractGitignore(source: Source, content: Buffer<ArrayBuffer>): void {
@@ -20,8 +21,7 @@ export function extractGitignore(source: Source, content: Buffer<ArrayBuffer>): 
 
 extractGitignore satisfies ExtractorFn
 
-export function gitignoreMatch(pattern: string, path: string): boolean {
-	const o: MinimatchOptions = { dot: true }
+export function gitignoreCompile(pattern: string): PatternMinimatch {
 	if (pattern.endsWith("/")) {
 		pattern = pattern.substring(0, pattern.length - 1)
 	}
@@ -30,5 +30,11 @@ export function gitignoreMatch(pattern: string, path: string): boolean {
 	} else if (!pattern.startsWith("**/")) {
 		pattern = "**/" + pattern
 	}
-	return minimatch(path, pattern, o) || minimatch(path, pattern + "/**", o)
+
+	pattern += "/**"
+
+	const r = makeRe(pattern, { dot: true, nonegate: true, nocomment: true, nobrace: true }) as RegExp
+	;(r as PatternMinimatch).context = pattern
+
+	return r as PatternMinimatch
 }

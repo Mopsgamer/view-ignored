@@ -1,29 +1,30 @@
 import { ok } from "node:assert/strict"
 import { test } from "node:test"
-import { gitignoreMatch } from "./gitignore.js"
+import { gitignoreCompile } from "./gitignore.js"
+import { patternMinimatchTest } from "./pattern.js";
 
 void test("gitignoreMatch", () => {
-	ok(gitignoreMatch(".git", ".git/message"))
-	ok(!gitignoreMatch(".git", ".github/message"))
+	ok(patternMinimatchTest(gitignoreCompile(".git"), ".git/message"))
+	ok(!patternMinimatchTest(gitignoreCompile(".git"), ".github/message"))
 
-	ok(gitignoreMatch("node_modules", "node_modules/x/message.ts"))
-	ok(gitignoreMatch("message", ".git/message"))
+	ok(patternMinimatchTest(gitignoreCompile("node_modules"), "node_modules/x/message.ts"))
+	ok(patternMinimatchTest(gitignoreCompile("message"), ".git/message"))
 
-	ok(gitignoreMatch("**/.git", ".git/message"))
-	ok(!gitignoreMatch("**/.git", ".github/message"))
+	ok(patternMinimatchTest(gitignoreCompile("**/.git"), ".git/message"))
+	ok(!patternMinimatchTest(gitignoreCompile("**/.git"), ".github/message"))
 
-	ok(gitignoreMatch("/.git", ".git/message"))
-	ok(!gitignoreMatch("/.git", ".github/message"))
+	ok(patternMinimatchTest(gitignoreCompile("/.git"), ".git/message"))
+	ok(!patternMinimatchTest(gitignoreCompile("/.git"), ".github/message"))
 
-	ok(!gitignoreMatch("/message", ".git/message"))
-	ok(!gitignoreMatch("/message", ".git/message/file"))
-	ok(gitignoreMatch("/message", "message"))
-	ok(gitignoreMatch("/message", "message/file"))
+	ok(!patternMinimatchTest(gitignoreCompile("/message"), ".git/message"))
+	ok(!patternMinimatchTest(gitignoreCompile("/message"), ".git/message/file"))
+	ok(patternMinimatchTest(gitignoreCompile("/message"), "message"))
+	ok(patternMinimatchTest(gitignoreCompile("/message"), "message/file"))
 
-	ok(gitignoreMatch(".git/", ".git/message"))
-	ok(gitignoreMatch(".git/", ".git/message/file"))
-	ok(gitignoreMatch(".git/", ".git"))
-	ok(!gitignoreMatch(".git/", ".github/message"))
-	ok(!gitignoreMatch(".git/", ".github/message/file"))
-	ok(!gitignoreMatch(".git/", ".github"))
+	ok(patternMinimatchTest(gitignoreCompile(".git/"), ".git/message"))
+	ok(patternMinimatchTest(gitignoreCompile(".git/"), ".git/message/file"))
+	ok(patternMinimatchTest(gitignoreCompile(".git/"), ".git"))
+	ok(!patternMinimatchTest(gitignoreCompile(".git/"), ".github/message"))
+	ok(!patternMinimatchTest(gitignoreCompile(".git/"), ".github/message/file"))
+	ok(!patternMinimatchTest(gitignoreCompile(".git/"), ".github"))
 })

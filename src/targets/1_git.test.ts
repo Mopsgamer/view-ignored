@@ -1,4 +1,5 @@
 import { test, describe } from "node:test"
+import { ok, equal } from "node:assert/strict"
 import { Git as target } from "./git.js"
 import { testScan, type PathHandlerOptions } from "../0_testScan.test.js"
 import type { NestedDirectoryJSON } from "memfs"
@@ -114,6 +115,24 @@ void describe("Git", () => {
 				".gitignore": "*.js\n!negkeep.js",
 			},
 			["negkeep.js", ".gitignore"],
+		)
+	})
+
+	void test.skip("collects errors", async () => {
+		await testGit(
+			{
+				"foo.js": "",
+				"negkeep.js": "",
+				".gitignore": "\\",
+			},
+			({ ctx }) => {
+				ok(ctx.failed)
+				const source = ctx.external.get(".")
+				ok(source)
+				ok(source.error)
+				ok(source.error instanceof Error)
+				equal(source.error.message, "Invalid usage of '/'")
+			},
 		)
 	})
 })
