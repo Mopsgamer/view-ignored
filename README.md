@@ -10,9 +10,7 @@ by Git, NPM, Yarn, JSR, VSCE or other tools.
 
 ## Requirements
 
-- Node.js 18 or later for production
-- Node.js 20 or later for production type definitions
-- Node.js 22 or later for development type definitions
+Node.js 18 or later
 
 ## Highlights
 
@@ -32,6 +30,13 @@ by Git, NPM, Yarn, JSR, VSCE or other tools.
 > You can invert the results if you need the ignored files
 > by setting the `invert` option to `true`.
 
+## Plans
+
+- While v0.4 was highly experimental, it introduced some mess without enough useful features.
+- v0.5 was a rewrite, but lacked tests due to missing features in `memfs`. It's not fully functional, though some users might rely on it (with caution).
+- v0.6 brings new features: optimization options, improved support for Node 18 and browsers, and adds some tests. The library works at least half of the time, but can't guarantee the streaming API or all targets are reliable yet.
+- The goal is for v0.7 or a v0.6.x release to deliver a fully tested project. After that, the library will be stabilized and released as v1.0.0.
+
 ## Usage
 
 ### Basic example
@@ -48,34 +53,37 @@ ctx.paths.has("src") // true
 ### Using custom target
 
 ```ts
+import type { Target } from "view-ignored/targets"
 import {
 	type Extractor,
 	type SignedPattern,
 	signedPatternIgnores,
 	extractGitignore,
 } from "view-ignored/patterns"
-import { extractGitignore } from "../patterns/gitignore.js"
-import type { Target } from "view-ignored/targets"
+
+const extractors: Extractor[] = [
+	{
+		extract: extractGitignore,
+		path: ".gitignore",
+	},
+	{
+		extract: extractGitignore,
+		path: ".git/info/exclude",
+	},
+]
+
+const internal: SignedPattern = {
+	exclude: [".git", ".DS_Store"],
+	include: [],
+	compiled: null,
+}
+
+signedPatternCompile(internal)
 
 export const Git: Target = {
-	ignores(cwd, entry, ctx) {
-		const extractors: Extractor[] = [
-			{
-				extract: extractGitignore,
-				path: ".gitignore",
-			},
-			{
-				extract: extractGitignore,
-				path: ".git/info/exclude",
-			},
-		]
-
-		const internal: SignedPattern = {
-			exclude: [".git", ".DS_Store"],
-			include: [],
-		}
-
+	ignores(fs, cwd, entry, ctx) {
 		return signedPatternIgnores({
+			fs,
 			internal,
 			ctx,
 			cwd,

@@ -15,11 +15,7 @@ const jsrManifest = type({
 
 const parse = jsrManifest.pipe((s: string): typeof jsrManifest.infer => JSON.parse(s))
 
-export function extractJsrJson(
-	source: Source,
-	content: Buffer<ArrayBuffer>,
-	ctx: MatcherContext,
-): void {
+export function extractJsrJson(source: Source, content: Buffer, ctx: MatcherContext): void {
 	const dist = parse(content.toString())
 	if (dist instanceof type.errors) {
 		source.error = dist
@@ -46,11 +42,7 @@ export function extractJsrJson(
 
 extractJsrJson satisfies ExtractorFn
 
-export function extractJsrJsonc(
-	source: Source,
-	content: Buffer<ArrayBuffer>,
-	ctx: MatcherContext,
-): void {
+export function extractJsrJsonc(source: Source, content: Buffer, ctx: MatcherContext): void {
 	extractJsrJson(source, Buffer.from(stripJsonComments(content.toString())), ctx)
 }
 

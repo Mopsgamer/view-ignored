@@ -13,6 +13,7 @@ and this project adheres to
 - BREAKING CHANGE: Change implementations of some pattern extractors.
 - BREAKING CHANGE: Show directories.
 - BREAKING CHANGE: Improve and fix `Extractor`.
+- Use Node 18.
 - Add `stream` function, `view-ignored/browser` API.
 - Add `view-ignored/scan`, `view-ignored/stream`.
 - Add `view-ignored/browser/scan`, `view-ignored/browser/stream`.

@@ -1,8 +1,8 @@
-import { test } from "node:test"
+import { test } from "bun:test"
 import { testScan } from "./0_testScan.test.js"
 import { Git as target } from "./targets/git.js"
 
-void test("depth 1 should include src/ and files", async () => {
+test("depth 1 should include src/ and files", async () => {
 	await testScan(
 		{
 			node_modules: {
@@ -23,7 +23,7 @@ void test("depth 1 should include src/ and files", async () => {
 	)
 })
 
-void test("depth 1 should include out/ and node_modules/ for inverted", async () => {
+test("depth 1 should include out/ and node_modules/ for inverted", async () => {
 	await testScan(
 		{
 			node_modules: {

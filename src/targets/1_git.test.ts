@@ -1,4 +1,5 @@
-import { test, describe } from "node:test"
+import { test, describe } from "bun:test"
+import { ok, equal } from "node:assert/strict"
 import { Git as target } from "./git.js"
 import { testScan, type PathHandlerOptions } from "../0_testScan.test.js"
 import type { NestedDirectoryJSON } from "memfs"
@@ -10,16 +11,16 @@ function testGit(
 	return testScan(tree, handler, { target })
 }
 
-void describe("Git", () => {
-	void test("empty for empty", async () => {
+describe("Git", () => {
+	test("empty for empty", async () => {
 		await testGit({ ".": null }, [])
 	})
 
-	void test("keeps for no sources", async () => {
+	test("keeps for no sources", async () => {
 		await testGit({ file: "" }, ["file"])
 	})
 
-	void test("keeps for empty source", async () => {
+	test("keeps for empty source", async () => {
 		await testGit(
 			{
 				file: "",
@@ -29,7 +30,7 @@ void describe("Git", () => {
 		)
 	})
 
-	void test("ignores .git/", async () => {
+	test("ignores .git/", async () => {
 		await testGit(
 			{
 				".git/HEAD": "",
@@ -39,7 +40,7 @@ void describe("Git", () => {
 		)
 	})
 
-	void test("ignores file (.git/info/exclude)", async () => {
+	test("ignores file (.git/info/exclude)", async () => {
 		await testGit(
 			{
 				filei: "",
@@ -50,7 +51,7 @@ void describe("Git", () => {
 		)
 	})
 
-	void test("ignores file", async () => {
+	test("ignores file", async () => {
 		await testGit(
 			{
 				filei: "",
@@ -60,7 +61,7 @@ void describe("Git", () => {
 		)
 	})
 
-	void test("ignores multiple files", async () => {
+	test("ignores multiple files", async () => {
 		await testGit(
 			{
 				"file1.txt": "",
@@ -71,7 +72,7 @@ void describe("Git", () => {
 		)
 	})
 
-	void test("ignores files with pattern", async () => {
+	test("ignores files with pattern", async () => {
 		await testGit(
 			{
 				"foo.js": "",
@@ -82,7 +83,7 @@ void describe("Git", () => {
 		)
 	})
 
-	void test("ignores files in subdirectory", async () => {
+	test("ignores files in subdirectory", async () => {
 		await testGit(
 			{
 				src: {
@@ -95,7 +96,7 @@ void describe("Git", () => {
 		)
 	})
 
-	void test("does not ignore files not matching pattern", async () => {
+	test("does not ignore files not matching pattern", async () => {
 		await testGit(
 			{
 				"foo.txt": "",
@@ -106,7 +107,7 @@ void describe("Git", () => {
 		)
 	})
 
-	void test("negation pattern keeps file", async () => {
+	test("negation pattern keeps file", async () => {
 		await testGit(
 			{
 				"foo.js": "",
@@ -114,6 +115,24 @@ void describe("Git", () => {
 				".gitignore": "*.js\n!negkeep.js",
 			},
 			["negkeep.js", ".gitignore"],
+		)
+	})
+
+	test.skip("collects errors", async () => {
+		await testGit(
+			{
+				"foo.js": "",
+				"negkeep.js": "",
+				".gitignore": "\\",
+			},
+			({ ctx }) => {
+				ok(ctx.failed)
+				const source = ctx.external.get(".")
+				ok(source)
+				ok(source.error)
+				ok(source.error instanceof Error)
+				equal(source.error.message, "Invalid usage of '/'")
+			},
 		)
 	})
 })

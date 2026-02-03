@@ -34,7 +34,7 @@ export async function testScan(
 ): Promise<void> {
 	const vol = new Volume()
 	const cwd = memcwd + "/test"
-	vol.fromNestedJSON(tree, { cwd })
+	vol.fromNestedJSON(tree, cwd)
 	const fs = createFsFromVolume(vol)
 	const { opendir, readFile } = fs.promises
 	const adapter = { promises: { opendir, readFile } } as FsAdapter
@@ -67,7 +67,7 @@ export async function testStream(
 ): Promise<void> {
 	const vol = new Volume()
 	const cwd = memcwd + "/test"
-	vol.fromNestedJSON(tree, { cwd })
+	vol.fromNestedJSON(tree, cwd)
 	const fs = createFsFromVolume(vol)
 	const { opendir, readFile } = fs.promises
 	const adapter = { promises: { opendir, readFile } } as FsAdapter

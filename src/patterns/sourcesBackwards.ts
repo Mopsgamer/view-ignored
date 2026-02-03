@@ -3,6 +3,7 @@ import { dirname } from "node:path"
 import type { MatcherContext } from "./matcherContext.js"
 import type { Source } from "./source.js"
 import type { PatternFinderOptions } from "./extractor.js"
+import { signedPatternCompile } from "./signedPattern.js"
 
 /**
  * @see {@link sourcesBackwards}
@@ -31,10 +32,10 @@ export async function sourcesBackwards(options: SourcesBackwardsOptions): Promis
 				inverted: false,
 				name,
 				path,
-				pattern: { exclude: [], include: [] },
+				pattern: { exclude: [], include: [], compiled: null },
 			}
 
-			let buff: Buffer<ArrayBuffer> | undefined
+			let buff: Buffer | undefined
 			try {
 				buff = await fs.promises.readFile(cwd + "/" + path)
 			} catch (err) {
@@ -58,6 +59,7 @@ export async function sourcesBackwards(options: SourcesBackwardsOptions): Promis
 						: new Error("Unknown error during source extraction", { cause: err })
 				break
 			}
+			signedPatternCompile(source.pattern)
 			foundSource = true
 			break
 		}
