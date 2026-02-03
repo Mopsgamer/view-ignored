@@ -3,7 +3,7 @@ import type { PatternMinimatch } from "./pattern.js"
 import { makeRe } from "minimatch"
 import { sourcePushNegatable, type Source } from "./source.js"
 
-export function extractGitignore(source: Source, content: Buffer<ArrayBuffer>): void {
+export function extractGitignore(source: Source, content: Buffer): void {
 	for (let line of content.toString().split("\n")) {
 		line = line.trim()
 		if (line === "" || line.startsWith("#")) {

@@ -35,7 +35,7 @@ export async function sourcesBackwards(options: SourcesBackwardsOptions): Promis
 				pattern: { exclude: [], include: [], compiled: null },
 			}
 
-			let buff: Buffer<ArrayBuffer> | undefined
+			let buff: Buffer | undefined
 			try {
 				buff = await fs.promises.readFile(cwd + "/" + path)
 			} catch (err) {

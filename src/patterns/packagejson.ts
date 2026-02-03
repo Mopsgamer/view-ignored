@@ -10,7 +10,7 @@ const parse = type("string")
 	.pipe((s) => JSON.parse(s))
 	.pipe(nodeJsManifest)
 
-export function extractPackageJson(source: Source, content: Buffer<ArrayBuffer>): void {
+export function extractPackageJson(source: Source, content: Buffer): void {
 	source.inverted = true
 	const dist = parse(content.toString())
 	if (dist instanceof type.errors) {

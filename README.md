@@ -10,9 +10,7 @@ by Git, NPM, Yarn, JSR, VSCE or other tools.
 
 ## Requirements
 
-- Node.js 18 or later for production
-- Node.js 20 or later for production type definitions
-- Node.js 25 or later for development type definitions
+Node.js 18 or later
 
 ## Highlights
 
@@ -48,34 +46,37 @@ ctx.paths.has("src") // true
 ### Using custom target
 
 ```ts
+import type { Target } from "view-ignored/targets"
 import {
 	type Extractor,
 	type SignedPattern,
 	signedPatternIgnores,
 	extractGitignore,
 } from "view-ignored/patterns"
-import { extractGitignore } from "../patterns/gitignore.js"
-import type { Target } from "view-ignored/targets"
+
+const extractors: Extractor[] = [
+	{
+		extract: extractGitignore,
+		path: ".gitignore",
+	},
+	{
+		extract: extractGitignore,
+		path: ".git/info/exclude",
+	},
+]
+
+const internal: SignedPattern = {
+	exclude: [".git", ".DS_Store"],
+	include: [],
+	compiled: null,
+}
+
+signedPatternCompile(internal)
 
 export const Git: Target = {
-	ignores(cwd, entry, ctx) {
-		const extractors: Extractor[] = [
-			{
-				extract: extractGitignore,
-				path: ".gitignore",
-			},
-			{
-				extract: extractGitignore,
-				path: ".git/info/exclude",
-			},
-		]
-
-		const internal: SignedPattern = {
-			exclude: [".git", ".DS_Store"],
-			include: [],
-		}
-
+	ignores(fs, cwd, entry, ctx) {
 		return signedPatternIgnores({
+			fs,
 			internal,
 			ctx,
 			cwd,
