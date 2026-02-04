@@ -45,8 +45,10 @@ export function scan(
 		totalDirs: 0,
 	}
 
+	const normalCwd = cwd.replaceAll("\\", "/")
+
 	const scanOptions: Required<ScanOptions> = {
-		cwd,
+		cwd: normalCwd,
 		depth: maxDepth,
 		fastDepth,
 		fastInternal,

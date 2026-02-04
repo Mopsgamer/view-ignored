@@ -1,27 +1,29 @@
-import { test, describe } from "node:test"
+import { describe, test } from "bun:test"
 import { ok, match } from "node:assert/strict"
 import { NPM as target } from "./npm.js"
 import { testScan, type PathHandlerOptions } from "../0_testScan.test.js"
 import type { NestedDirectoryJSON } from "memfs"
 
 function testNpm(
+	done: () => void,
 	tree: NestedDirectoryJSON,
 	handler: ((o: PathHandlerOptions) => void | Promise<void>) | string[],
 ) {
-	return testScan(tree, handler, { target })
+	return testScan(done, tree, handler, { target })
 }
 
-void describe("NPM", () => {
-	void test("empty for empty", async () => {
-		await testNpm({ ".": null }, [])
+describe("NPM", () => {
+	test("empty for empty", async (done) => {
+		await testNpm(done, { ".": null }, [])
 	})
 
-	void test("keeps for no sources", async () => {
-		await testNpm({ file: "" }, ["file"])
+	test("keeps for no sources", async (done) => {
+		await testNpm(done, { file: "" }, ["file"])
 	})
 
-	void test("keeps for empty source", async () => {
+	test("keeps for empty source", async (done) => {
 		await testNpm(
+			done,
 			{
 				filekeep: "",
 				".npmignore": "",
@@ -30,8 +32,9 @@ void describe("NPM", () => {
 		)
 	})
 
-	void test("ignores file", async () => {
+	test("ignores file", async (done) => {
 		await testNpm(
+			done,
 			{
 				file: "",
 				".npmignore": "file",
@@ -40,8 +43,9 @@ void describe("NPM", () => {
 		)
 	})
 
-	void test("ignores multiple files", async () => {
+	test("ignores multiple files", async (done) => {
 		await testNpm(
+			done,
 			{
 				"file1.txt": "",
 				"file2.txt": "",
@@ -51,8 +55,9 @@ void describe("NPM", () => {
 		)
 	})
 
-	void test("ignores files with pattern", async () => {
+	test("ignores files with pattern", async (done) => {
 		await testNpm(
+			done,
 			{
 				"foo.js": "",
 				"bar.js": "",
@@ -62,8 +67,9 @@ void describe("NPM", () => {
 		)
 	})
 
-	void test("ignores files in subdirectory", async () => {
+	test("ignores files in subdirectory", async (done) => {
 		await testNpm(
+			done,
 			{
 				src: {
 					"main.js": "",
@@ -75,8 +81,9 @@ void describe("NPM", () => {
 		)
 	})
 
-	void test("does not ignore files not matching pattern", async () => {
+	test("does not ignore files not matching pattern", async (done) => {
 		await testNpm(
+			done,
 			{
 				"foo.txt": "",
 				"bar.js": "",
@@ -86,8 +93,9 @@ void describe("NPM", () => {
 		)
 	})
 
-	void test("negation pattern keeps file", async () => {
+	test("negation pattern keeps file", async (done) => {
 		await testNpm(
+			done,
 			{
 				"foo.js": "",
 				"bar.js": "",
@@ -97,8 +105,9 @@ void describe("NPM", () => {
 		)
 	})
 
-	void test("collects errors", async () => {
+	test("collects errors", async (done) => {
 		await testNpm(
+			done,
 			{
 				"foo.js": "",
 				"negkeep.js": "",

@@ -12,14 +12,14 @@ export const memcwd = cwd().replace(/\w:/, "").replaceAll("\\", "/")
 
 export type PathHandlerOptions = {
 	vol: Volume
-	fsp: FsAdapter
+	fs: FsAdapter
 	ctx: MatcherContext
 	options: ScanOptions
 }
 
 export type PathHandlerOptionsStream = {
 	vol: Volume
-	fsp: FsAdapter
+	fs: FsAdapter
 	stream: MatcherStream
 	options: ScanOptions
 }
@@ -28,6 +28,7 @@ export type PathHandlerOptionsStream = {
  * Executes tests within './test'.
  */
 export async function testScan(
+	done: () => void,
 	tree: NestedDirectoryJSON,
 	test: ((o: PathHandlerOptions) => void | Promise<void>) | string[],
 	options: ScanOptions,
@@ -44,7 +45,7 @@ export async function testScan(
 		const ctx = await scan(o)
 		await test({
 			vol,
-			fsp: adapter,
+			fs: adapter,
 			ctx,
 			options: o,
 		})
@@ -53,16 +54,28 @@ export async function testScan(
 
 	const ctx = await scan(o)
 	const { paths: set } = ctx
-	const paths = sortFirstFolders(set)
+	let paths = sortFirstFolders(set)
 	deepEqual(paths, sortFirstFolders(test))
+
+	const stream = scanStream(o)
+	const results: string[] = []
+	stream.addListener("dirent", (dirent) => {
+		if (!dirent.match.ignored) results.push(dirent.path)
+	})
+	stream.addListener("end", () => {
+		paths = sortFirstFolders(results)
+		deepEqual(paths, sortFirstFolders(test))
+		done()
+	})
 }
 
 /**
  * Executes tests within './test'.
  */
 export async function testStream(
+	done: () => void,
 	tree: NestedDirectoryJSON,
-	test: (o: PathHandlerOptionsStream) => void | Promise<void>,
+	test: ((o: PathHandlerOptionsStream) => void | Promise<void>) | string[],
 	options: ScanOptions,
 ): Promise<void> {
 	const vol = new Volume()
@@ -77,10 +90,21 @@ export async function testStream(
 		const stream = scanStream(o)
 		await test({
 			vol,
-			fsp: adapter,
+			fs: adapter,
 			stream,
 			options: o,
 		})
 		return
 	}
+
+	const stream = scanStream(o)
+	const results: string[] = []
+	stream.addListener("dirent", (dirent) => {
+		if (!dirent.match.ignored) results.push(dirent.path)
+	})
+	stream.addListener("end", () => {
+		const paths = sortFirstFolders(results)
+		deepEqual(paths, sortFirstFolders(test))
+		done()
+	})
 }

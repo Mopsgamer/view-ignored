@@ -5,23 +5,25 @@ import { testScan, type PathHandlerOptions } from "../0_testScan.test.js"
 import type { NestedDirectoryJSON } from "memfs"
 
 function testGit(
+	done: () => void,
 	tree: NestedDirectoryJSON,
 	handler: ((o: PathHandlerOptions) => void | Promise<void>) | string[],
 ) {
-	return testScan(tree, handler, { target })
+	return testScan(done, tree, handler, { target })
 }
 
 describe("Git", () => {
-	test("empty for empty", async () => {
-		await testGit({ ".": null }, [])
+	test("empty for empty", async (done) => {
+		await testGit(done, { ".": null }, [])
 	})
 
-	test("keeps for no sources", async () => {
-		await testGit({ file: "" }, ["file"])
+	test("keeps for no sources", async (done) => {
+		await testGit(done, { file: "" }, ["file"])
 	})
 
-	test("keeps for empty source", async () => {
+	test("keeps for empty source", async (done) => {
 		await testGit(
+			done,
 			{
 				file: "",
 				".gitignore": "",
@@ -30,8 +32,9 @@ describe("Git", () => {
 		)
 	})
 
-	test("ignores .git/", async () => {
+	test("ignores .git/", async (done) => {
 		await testGit(
+			done,
 			{
 				".git/HEAD": "",
 				file: "",
@@ -40,8 +43,9 @@ describe("Git", () => {
 		)
 	})
 
-	test("ignores file (.git/info/exclude)", async () => {
+	test("ignores file (.git/info/exclude)", async (done) => {
 		await testGit(
+			done,
 			{
 				filei: "",
 				file: "",
@@ -51,8 +55,9 @@ describe("Git", () => {
 		)
 	})
 
-	test("ignores file", async () => {
+	test("ignores file", async (done) => {
 		await testGit(
+			done,
 			{
 				filei: "",
 				".gitignore": "filei",
@@ -61,8 +66,9 @@ describe("Git", () => {
 		)
 	})
 
-	test("ignores multiple files", async () => {
+	test("ignores multiple files", async (done) => {
 		await testGit(
+			done,
 			{
 				"file1.txt": "",
 				"file2.txt": "",
@@ -72,8 +78,9 @@ describe("Git", () => {
 		)
 	})
 
-	test("ignores files with pattern", async () => {
+	test("ignores files with pattern", async (done) => {
 		await testGit(
+			done,
 			{
 				"foo.js": "",
 				"bar.js": "",
@@ -83,8 +90,9 @@ describe("Git", () => {
 		)
 	})
 
-	test("ignores files in subdirectory", async () => {
+	test("ignores files in subdirectory", async (done) => {
 		await testGit(
+			done,
 			{
 				src: {
 					"main.js": "",
@@ -96,8 +104,9 @@ describe("Git", () => {
 		)
 	})
 
-	test("does not ignore files not matching pattern", async () => {
+	test("does not ignore files not matching pattern", async (done) => {
 		await testGit(
+			done,
 			{
 				"foo.txt": "",
 				"bar.js": "",
@@ -107,8 +116,9 @@ describe("Git", () => {
 		)
 	})
 
-	test("negation pattern keeps file", async () => {
+	test("negation pattern keeps file", async (done) => {
 		await testGit(
+			done,
 			{
 				"foo.js": "",
 				"negkeep.js": "",
@@ -118,8 +128,9 @@ describe("Git", () => {
 		)
 	})
 
-	test.skip("collects errors", async () => {
+	test.skip("collects errors", async (done) => {
 		await testGit(
+			done,
 			{
 				"foo.js": "",
 				"negkeep.js": "",

@@ -9,8 +9,9 @@ import {
 import { Git as target } from "../targets/git.js"
 
 describe("MatcherContext", () => {
-	test("can add paths", async () => {
+	test("can add paths", async (done) => {
 		await testScan(
+			done,
 			{
 				one: "",
 				two: "",
@@ -28,8 +29,9 @@ describe("MatcherContext", () => {
 		)
 	})
 
-	test("can remove paths", async () => {
+	test("can remove paths", async (done) => {
 		await testScan(
+			done,
 			{
 				one: "",
 				two: "",
@@ -50,8 +52,9 @@ describe("MatcherContext", () => {
 		)
 	})
 
-	test("can refresh without changes", async () => {
+	test("can refresh without changes", async (done) => {
 		await testScan(
+			done,
 			{
 				one: "",
 				two: "",

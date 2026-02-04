@@ -3,8 +3,9 @@ import { testScan } from "./0_testScan.test.js"
 import { Git as target } from "./targets/git.js"
 
 describe("Git", () => {
-	test("depth 1 should include src/ and files", async () => {
+	test("depth 1 should include src/ and files", async (done) => {
 		await testScan(
+			done,
 			{
 				node_modules: {
 					a: { "package.json": "{}" },
@@ -24,8 +25,9 @@ describe("Git", () => {
 		)
 	})
 
-	test("depth 1 should include out/ and node_modules/ for inverted", async () => {
+	test("depth 1 should include out/ and node_modules/ for inverted", async (done) => {
 		await testScan(
+			done,
 			{
 				node_modules: {
 					a: { "package.json": "{}" },
