@@ -79,7 +79,7 @@
 		"test": "bun test src",
 		"test:patterns": "bun test src/patterns",
 		"test:targets": "bun test src/targets",
-		"test:noself": "bun test src --filter '!self'",
+		"test:noself": "TEST_NO_SELF=1 bun test src",
 		"test:self": "bun test src/*_scan_self_*.test.ts",
 		"test:self:git": "bun test src/*_scan_self_git.test.ts",
 		"test:self:npm": "bun test src/*_scan_self_npm.test.ts",
