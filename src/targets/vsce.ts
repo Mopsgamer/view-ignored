@@ -32,6 +32,7 @@ const internal: SignedPattern = {
 signedPatternCompile(internal)
 
 export const VSCE: Target = {
+	extractors,
 	ignores(fs, cwd, entry, ctx) {
 		return signedPatternIgnores({
 			fs,

@@ -62,7 +62,7 @@ export async function testScan(
 
 	const ctx = await scan(o)
 	const { paths } = ctx
-	deepEqual(sortFirstFolders(paths), sortFirstFolders(test))
+	deepEqual(sortFirstFolders(paths.keys()), sortFirstFolders(test))
 
 	const stream = scanStream(o)
 	const results: string[] = []

@@ -1,8 +1,8 @@
-import { type } from "arktype"
 import type { ExtractorFn } from "./extractor.js"
-import stripJsonComments from "strip-json-comments"
 import type { MatcherContext } from "./matcherContext.js"
 import type { Source } from "./source.js"
+import { type } from "arktype"
+import stripJsonComments from "strip-json-comments"
 
 const jsrManifest = type({
 	exclude: "string[]?",
@@ -19,7 +19,7 @@ export function extractJsrJson(source: Source, content: Buffer, ctx: MatcherCont
 	const dist = parse(content.toString())
 	if (dist instanceof type.errors) {
 		source.error = dist
-		ctx.failed = true
+		ctx.failed.push(source)
 		return
 	}
 

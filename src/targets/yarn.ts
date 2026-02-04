@@ -56,6 +56,7 @@ const internal: SignedPattern = {
 signedPatternCompile(internal)
 
 export const Yarn: Target = {
+	extractors,
 	ignores(fs, cwd, entry, ctx) {
 		return signedPatternIgnores({
 			fs,

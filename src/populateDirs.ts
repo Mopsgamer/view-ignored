@@ -6,6 +6,6 @@ export function populateDirs(signal: AbortSignal | null, ctx: MatcherContext): v
 		if (count === 0) {
 			continue
 		}
-		ctx.paths.add(dir + "/")
+		ctx.paths.set(dir + "/", { kind: "internal", ignored: false, pattern: "" })
 	}
 }

@@ -43,7 +43,7 @@ export async function sourcesBackwards(options: SourcesBackwardsOptions): Promis
 				if (error.code === "ENOENT") continue
 				source.error = error
 				ctx.external.set(dir, source)
-				ctx.failed = true
+				ctx.failed = dirname(source.path)
 				foundSource = true
 				break
 			}
@@ -52,7 +52,7 @@ export async function sourcesBackwards(options: SourcesBackwardsOptions): Promis
 			try {
 				extractor.extract(source, buff, ctx)
 			} catch (err) {
-				ctx.failed = true
+				ctx.failed = dirname(source.path)
 				source.error =
 					err instanceof Error
 						? err

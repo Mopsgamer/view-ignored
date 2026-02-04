@@ -20,7 +20,7 @@ describe.skipIf(!!process.env.TEST_NO_SELF)("NPM", () => {
 			equal(r.totalMatchedFiles, (await npm).total)
 			equal((await npm).total, (await npm).files.length)
 			deepEqual(
-				sortFirstFolders(r.paths).filter((path) => !path.endsWith("/")),
+				sortFirstFolders(r.paths.keys()).filter((path) => !path.endsWith("/")),
 				sortFirstFolders((await npm).files),
 			)
 		},

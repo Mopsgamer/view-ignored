@@ -35,6 +35,7 @@ const internal: SignedPattern = {
 signedPatternCompile(internal)
 
 export const JSR: Target = {
+	extractors,
 	ignores(fs, cwd, entry, ctx) {
 		return signedPatternIgnores({
 			fs,

@@ -21,7 +21,7 @@ Node.js 18 or later
 - **TypeScript.** Written in TypeScript with type definitions included.
 - **Lightweight.** Minimal dependencies for fast performance and small bundle size.
 - **Easy-to-modify.** Well-written and MIT-licensed.
-- **Broswer.** Can be bundled for browser use. See `ScanOptions.fs` and `import ... "view-ignored/browser"`.
+- **Browser.** Can be bundled for browser use. See `ScanOptions.fs` and `import ... "view-ignored/browser"`.
 
 > [!NOTE]
 > Despite the name of the package being "view-ignored",

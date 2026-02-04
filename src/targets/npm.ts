@@ -50,6 +50,7 @@ const internal: SignedPattern = {
 signedPatternCompile(internal)
 
 export const NPM: Target = {
+	extractors,
 	ignores(fs, cwd, entry, ctx) {
 		return signedPatternIgnores({
 			fs,

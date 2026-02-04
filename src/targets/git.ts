@@ -27,6 +27,7 @@ const internal: SignedPattern = {
 signedPatternCompile(internal)
 
 export const Git: Target = {
+	extractors,
 	ignores(fs, cwd, entry, ctx) {
 		return signedPatternIgnores({
 			fs,

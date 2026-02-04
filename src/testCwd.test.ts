@@ -39,8 +39,8 @@ describe("Git", () => {
 		await testCwd(done, "./", ["test/", "test/file", "test/folder/", "test/folder/nested"])
 	})
 	test("cwd works with ../", async (done) => {
-		await testCwd(done, "../", ({ ctx: { paths: set } }) => {
-			const paths = sortFirstFolders(set)
+		await testCwd(done, "../", ({ ctx: { paths: map } }) => {
+			const paths = sortFirstFolders(map.keys())
 			equal(paths.length, 5)
 			ok(minimatch.match([paths[0]!], "*/"))
 			ok(minimatch.match([paths[1]!], "*/test/"))
@@ -50,8 +50,8 @@ describe("Git", () => {
 		})
 	})
 	test("cwd works with ../../", async (done) => {
-		await testCwd(done, "../../", ({ ctx: { paths: set } }) => {
-			const paths = sortFirstFolders(set)
+		await testCwd(done, "../../", ({ ctx: { paths: map } }) => {
+			const paths = sortFirstFolders(map.keys())
 			equal(paths.length, 6)
 			ok(minimatch.match([paths[0]!], "*/"))
 			ok(minimatch.match([paths[1]!], "*/*/"))

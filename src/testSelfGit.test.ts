@@ -18,7 +18,7 @@ describe.skipIf(!!process.env.TEST_NO_SELF)("Git", () => {
 			// but your package and dependents should also declare
 			// @jsr:registry=https://npm.jsr.io in .npmrc or something.
 			deepEqual(
-				sortFirstFolders(r.paths).filter((path) => !path.endsWith("/")),
+				sortFirstFolders(r.paths.keys()).filter((path) => !path.endsWith("/")),
 				sortFirstFolders(await files),
 			)
 		},
@@ -40,7 +40,11 @@ function gitFiles(): Promise<string[]> {
 		})
 		git.on("close", (code) => {
 			if (code !== 0) {
-				reject(new Error(`'git ls-files --others --exclude-standard --cached' exited with code ${code}\n${output}`))
+				reject(
+					new Error(
+						`'git ls-files --others --exclude-standard --cached' exited with code ${code}\n${output}`,
+					),
+				)
 				return
 			}
 			const files = output.trim().split("\n")

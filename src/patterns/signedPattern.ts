@@ -1,4 +1,5 @@
 import type { PatternFinderOptions } from "./extractor.js"
+import type { Source } from "./source.js"
 import { dirname } from "node:path"
 import {
 	patternCompile,
@@ -7,7 +8,6 @@ import {
 	type PatternMinimatch,
 } from "./pattern.js"
 import { sourcesBackwards } from "./sourcesBackwards.js"
-import type { Source } from "./source.js"
 
 /**
  * Represents a set of include and exclude patterns.
@@ -44,6 +44,12 @@ export type SignedPatternMatch =
 			pattern: string
 			ignored: boolean
 	  }
+	| {
+			kind: "external"
+			pattern: string
+			source: Source
+			ignored: boolean
+	  }
 
 /**
  * @see {@link signedPatternIgnores}
@@ -66,12 +72,19 @@ function signedPatternCompiledMatch(
 	path: string,
 	source: Source | undefined,
 ): SignedPatternMatch {
-	let check: string = ""
+	let patternMatch: string = ""
 
 	function patternRegExpTest(rs: PatternMinimatch[]): string {
+		{
+			// TODO: options.ctx.paths should provide patternIndex, not pattern
+			// const cache = options.ctx.paths.get(path)
+			// if (cache && cache.kind === "external" && cache.patternIndex >= 0) {
+			// 	rs = rs.slice(cache.patternIndex)
+			// }
+		}
 		for (const r of rs) {
 			if (patternMinimatchTest(r, path)) {
-				return r.context
+				return r.pattern
 			}
 		}
 		return ""
@@ -79,7 +92,7 @@ function signedPatternCompiledMatch(
 
 	if (!source) {
 		if (kind === "internal") {
-			source = { pattern: options.internal, inverted: true, name: "", path: "" }
+			source = { pattern: options.internal, inverted: true, name: "", path: "." }
 		} else {
 			return { kind: "no-match", ignored: false }
 		}
@@ -89,33 +102,33 @@ function signedPatternCompiledMatch(
 
 	try {
 		if (source.inverted) {
-			check = patternRegExpTest(compiled.exclude)
-			if (check) {
+			patternMatch = patternRegExpTest(compiled.exclude)
+			if (patternMatch) {
 				// return true
-				return { kind, pattern: check, ignored: true }
+				return { kind, source, pattern: patternMatch, ignored: true }
 			}
 
-			check = patternRegExpTest(compiled.include)
-			if (check) {
+			patternMatch = patternRegExpTest(compiled.include)
+			if (patternMatch) {
 				// return false
-				return { kind, pattern: check, ignored: false }
+				return { kind, source, pattern: patternMatch, ignored: false }
 			}
 		} else {
-			check = patternRegExpTest(compiled.include)
-			if (check) {
+			patternMatch = patternRegExpTest(compiled.include)
+			if (patternMatch) {
 				// return false
-				return { kind, pattern: check, ignored: false }
+				return { kind, source, pattern: patternMatch, ignored: false }
 			}
 
-			check = patternRegExpTest(compiled.exclude)
-			if (check) {
+			patternMatch = patternRegExpTest(compiled.exclude)
+			if (patternMatch) {
 				// return true
-				return { kind, pattern: check, ignored: true }
+				return { kind, source, pattern: patternMatch, ignored: true }
 			}
 		}
 	} catch (err) {
 		source.error = err as Error
-		options.ctx.failed = true
+		options.ctx.failed = dirname(source.path)
 		if (kind === "external") {
 			return { kind: "invalid-pattern", ignored: false }
 		}
@@ -149,7 +162,7 @@ export async function signedPatternIgnores(
 	if (!source) {
 		await sourcesBackwards({ ...options, dir: parent })
 
-		if (options.ctx.failed) {
+		if (options.ctx.failed.length) {
 			return { kind: "broken-source", ignored: false }
 		}
 

@@ -114,7 +114,7 @@ describe("NPM", () => {
 				"package.json": "{",
 			},
 			({ ctx }) => {
-				ok(ctx.failed)
+				ok(ctx.failed.length)
 				const source = ctx.external.get(".")
 				ok(source)
 				ok(source.error)
