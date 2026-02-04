@@ -1,5 +1,5 @@
 import { describe, test } from "bun:test"
-import { testScan } from "./0_testScan.test.js"
+import { testScan } from "./testScan.test.js"
 import { Git as target } from "./targets/git.js"
 
 describe("Git", () => {

@@ -5,50 +5,28 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
-			"name": "test add",
-			"type": "node",
+			"name": "Test in-memory Git",
+			"type": "bun",
 			"request": "launch",
-			"skipFiles": ["<node_internals>/**"],
-			"args": ["--enable-source-maps", "--test", "./out/edit.test.js"],
-			"console": "integratedTerminal",
-			"sourceMaps": true
+			"program": "./src/targets/testGit.test.ts"
 		},
 		{
-			"name": "test git",
-			"type": "node",
+			"name": "Test in-memory NPM",
+			"type": "bun",
 			"request": "launch",
-			"skipFiles": ["<node_internals>/**"],
-			"args": ["--enable-source-maps", "--test", "./out/targets/git.test.js"],
-			"console": "integratedTerminal",
-			"sourceMaps": true
+			"program": "./src/targets/testNPM.test.ts"
 		},
 		{
-			"name": "test npm",
-			"type": "node",
+			"name": "Test own Git",
+			"type": "bun",
 			"request": "launch",
-			"skipFiles": ["<node_internals>/**"],
-			"args": ["--enable-source-maps", "--test", "./out/targets/npm.test.js"],
-			"console": "integratedTerminal",
-			"sourceMaps": true
+			"program": "./src/testSelfGit.test.ts"
 		},
 		{
-			"name": "test git (self)",
-			"type": "node",
+			"name": "Test own NPM",
+			"type": "bun",
 			"request": "launch",
-			"skipFiles": ["<node_internals>/**"],
-			"args": ["--enable-source-maps", "--test", "./out/scan_self_git.test.js"],
-			"console": "integratedTerminal",
-			"sourceMaps": true,
-			"stopOnEntry": true
-		},
-		{
-			"name": "test npm (self)",
-			"type": "node",
-			"request": "launch",
-			"skipFiles": ["<node_internals>/**"],
-			"args": ["--enable-source-maps", "--test", "./out/scan_self_npm.test.js"],
-			"console": "integratedTerminal",
-			"sourceMaps": true
+			"program": "./src/testSelfNPM.test.ts"
 		}
 	]
 }

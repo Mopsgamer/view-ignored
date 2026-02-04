@@ -2,13 +2,11 @@ import type { ScanOptions, FsAdapter } from "./types.js"
 import type { MatcherContext } from "./patterns/matcherContext.js"
 import { deepEqual } from "node:assert/strict"
 import { createFsFromVolume, Volume, type NestedDirectoryJSON } from "memfs"
-import { cwd } from "node:process"
+import * as process from "node:process"
 import { scan } from "./browser_scan.js"
 import { MatcherStream } from "./patterns/matcherStream.js"
 import { scanStream } from "./browser_stream.js"
-import { sortFirstFolders } from "./0_testSort.test.js"
-
-export const memcwd = cwd().replace(/\w:/, "").replaceAll("\\", "/")
+import { sortFirstFolders } from "./testSort.test.js"
 
 export type PathHandlerOptions = {
 	vol: Volume
@@ -34,7 +32,7 @@ export async function testScan(
 	options: ScanOptions,
 ): Promise<void> {
 	const vol = new Volume()
-	const cwd = memcwd + "/test"
+	const cwd = process.cwd() + "/test"
 	vol.fromNestedJSON(tree, cwd)
 	const fs = createFsFromVolume(vol)
 	const { opendir, readFile } = fs.promises
@@ -49,13 +47,22 @@ export async function testScan(
 			ctx,
 			options: o,
 		})
+		const stream = scanStream(o)
+		stream.addListener("end", async (sctx) => {
+			await test({
+				vol,
+				fs: adapter,
+				ctx: sctx,
+				options: o,
+			})
+			done()
+		})
 		return
 	}
 
 	const ctx = await scan(o)
-	const { paths: set } = ctx
-	let paths = sortFirstFolders(set)
-	deepEqual(paths, sortFirstFolders(test))
+	const { paths } = ctx
+	deepEqual(sortFirstFolders(paths), sortFirstFolders(test))
 
 	const stream = scanStream(o)
 	const results: string[] = []
@@ -63,8 +70,7 @@ export async function testScan(
 		if (!dirent.match.ignored) results.push(dirent.path)
 	})
 	stream.addListener("end", () => {
-		paths = sortFirstFolders(results)
-		deepEqual(paths, sortFirstFolders(test))
+		deepEqual(sortFirstFolders(results), sortFirstFolders(test))
 		done()
 	})
 }
@@ -79,7 +85,7 @@ export async function testStream(
 	options: ScanOptions,
 ): Promise<void> {
 	const vol = new Volume()
-	const cwd = memcwd + "/test"
+	const cwd = process.cwd() + "/test"
 	vol.fromNestedJSON(tree, cwd)
 	const fs = createFsFromVolume(vol)
 	const { opendir, readFile } = fs.promises

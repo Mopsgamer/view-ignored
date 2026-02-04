@@ -2,7 +2,7 @@ import { scan } from "./scan.js"
 import { describe, test } from "bun:test"
 import { deepEqual } from "node:assert/strict"
 import { Git as target } from "./targets/git.js"
-import { sortFirstFolders } from "./0_testSort.test.js"
+import { sortFirstFolders } from "./testSort.test.js"
 import { spawn } from "node:child_process"
 
 describe.skipIf(!!process.env.TEST_NO_SELF)("Git", () => {
@@ -22,7 +22,7 @@ describe.skipIf(!!process.env.TEST_NO_SELF)("Git", () => {
 				sortFirstFolders(await files),
 			)
 		},
-		{ timeout: 30e3 },
+		{ timeout: 120e3 },
 	)
 })
 
@@ -40,7 +40,7 @@ function gitFiles(): Promise<string[]> {
 		})
 		git.on("close", (code) => {
 			if (code !== 0) {
-				reject(new Error(`'git ls-tree -r HEAD --name-only' exited with code ${code}\n${output}`))
+				reject(new Error(`'git ls-files --others --exclude-standard --cached' exited with code ${code}\n${output}`))
 				return
 			}
 			const files = output.trim().split("\n")

@@ -2,7 +2,7 @@ import type { Dirent } from "fs"
 import type { MatcherContext } from "./patterns/matcherContext.js"
 import type { MatcherStream } from "./patterns/matcherStream.js"
 import type { ScanOptions } from "./types.js"
-import { posix } from "path/posix"
+import { posix } from "path"
 import { getDepth } from "./getDepth.js"
 
 export type WalkOptions = {
@@ -19,7 +19,7 @@ export async function walkIncludes(options: WalkOptions): Promise<0 | 1 | 2> {
 
 	signal?.throwIfAborted()
 
-	const path = posix.join(posix.relative(cwd, entry.parentPath.replaceAll("\\", "/")), entry.name)
+	const path = posix.relative(cwd, entry.parentPath.replaceAll("\\", "/").replace(/\w:/, "") + "/" + entry.name)
 
 	const isDir = entry.isDirectory()
 	let direntPath: string

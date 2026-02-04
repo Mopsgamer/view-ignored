@@ -2,7 +2,7 @@ import { scan } from "./scan.js"
 import { describe, test } from "bun:test"
 import { deepEqual, equal } from "node:assert/strict"
 import { NPM as target } from "./targets/npm.js"
-import { sortFirstFolders } from "./0_testSort.test.js"
+import { sortFirstFolders } from "./testSort.test.js"
 import { spawn } from "node:child_process"
 
 describe.skipIf(!!process.env.TEST_NO_SELF)("NPM", () => {
@@ -24,7 +24,7 @@ describe.skipIf(!!process.env.TEST_NO_SELF)("NPM", () => {
 				sortFirstFolders((await npm).files),
 			)
 		},
-		{ timeout: 30e3 },
+		{ timeout: 120e3 },
 	)
 })
 

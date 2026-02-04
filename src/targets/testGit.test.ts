@@ -1,7 +1,7 @@
 import { test, describe } from "bun:test"
 import { ok, equal } from "node:assert/strict"
 import { Git as target } from "./git.js"
-import { testScan, type PathHandlerOptions } from "../0_testScan.test.js"
+import { testScan, type PathHandlerOptions } from "../testScan.test.js"
 import type { NestedDirectoryJSON } from "memfs"
 
 function testGit(

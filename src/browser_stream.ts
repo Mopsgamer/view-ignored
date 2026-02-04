@@ -36,7 +36,7 @@ export function scanStream(options: ScanOptions & { fs: FsAdapter; cwd: string }
 
 	const stream = new MatcherStream({ captureRejections: false })
 
-	const normalCwd = cwd.replaceAll("\\", "/")
+	const normalCwd = cwd.replaceAll("\\", "/").replace(/\w:/, "")
 
 	const scanOptions: Required<ScanOptions> = {
 		cwd: normalCwd,

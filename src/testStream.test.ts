@@ -1,4 +1,4 @@
-import { testStream } from "./0_testScan.test.js"
+import { testStream } from "./testScan.test.js"
 import { describe, test } from "bun:test"
 import { deepEqual } from "node:assert/strict"
 import { Git as target } from "./targets/git.js"
