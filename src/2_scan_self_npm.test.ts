@@ -6,22 +6,26 @@ import { sortFirstFolders } from "./0_testSort.test.js"
 import { spawn } from "node:child_process"
 
 describe.skipIf(!!process.env.TEST_NO_SELF)("NPM", () => {
-	test("scans self", async () => {
-		const npm = npmTotalFiles()
-		const r = await scan({ target, fastInternal: true })
-		// this test uses sortFirstFolders implementation
-		// provided by https://jsr.io/@m234/path/0.1.4/sort-cmp.ts
-		// you can install this jsr package in your project
-		// for sorting - new Set(sorted) keeps sorting :),
-		// but your package and dependents should also declare
-		// @jsr:registry=https://npm.jsr.io in .npmrc or something.
-		equal(r.totalMatchedFiles, (await npm).total)
-		equal((await npm).total, (await npm).files.length)
-		deepEqual(
-			sortFirstFolders(r.paths).filter((path) => !path.endsWith("/")),
-			sortFirstFolders((await npm).files),
-		)
-	}, {timeout: 30e+3})
+	test(
+		"scans self",
+		async () => {
+			const npm = npmTotalFiles()
+			const r = await scan({ target, fastInternal: true })
+			// this test uses sortFirstFolders implementation
+			// provided by https://jsr.io/@m234/path/0.1.4/sort-cmp.ts
+			// you can install this jsr package in your project
+			// for sorting - new Set(sorted) keeps sorting :),
+			// but your package and dependents should also declare
+			// @jsr:registry=https://npm.jsr.io in .npmrc or something.
+			equal(r.totalMatchedFiles, (await npm).total)
+			equal((await npm).total, (await npm).files.length)
+			deepEqual(
+				sortFirstFolders(r.paths).filter((path) => !path.endsWith("/")),
+				sortFirstFolders((await npm).files),
+			)
+		},
+		{ timeout: 30e3 },
+	)
 })
 
 function npmTotalFiles(): Promise<{ total: number; files: string[] }> {
