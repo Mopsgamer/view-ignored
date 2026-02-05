@@ -6,7 +6,6 @@ import type { scan as browserScan } from "./browser_scan.js"
 import { MatcherStream } from "./patterns/matcherStream.js"
 import { opendir } from "./opendir.js"
 import { walkIncludes } from "./walk.js"
-import { populateDirs } from "./populateDirs.js"
 import type { SignedPatternMatch } from "./patterns/signedPattern.js"
 export type * from "./types.js"
 
@@ -61,7 +60,6 @@ export function scanStream(options: ScanOptions & { fs: FsAdapter; cwd: string }
 
 	void (async (): Promise<void> => {
 		await result
-		populateDirs(signal, ctx)
 		stream.emit("end", ctx)
 	})()
 

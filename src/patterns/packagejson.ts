@@ -19,7 +19,7 @@ export function extractPackageJson(source: Source, content: Buffer): void {
 	}
 
 	if (!dist.files) {
-		return
+		throw "continue"
 	}
 
 	for (const pattern of dist.files) {

@@ -1,22 +1,21 @@
 export function getDepth(path: string, maxDepth: number) {
+	if (path.endsWith("/")) {
+		path = path.substring(0, path.length - 1)
+	}
 	const result = {
 		depth: 0,
-		depthSlash: 0,
+		depthSlash: -1,
 	}
-	result.depthSlash = -1
-	if (maxDepth < 0) {
-		return result
-	}
-	for (const [i, c] of Array.from(path).entries()) {
+	let i = -1
+	for (const c of path) {
+		i++
 		if (c !== "/") {
 			continue
 		}
-		result.depth++
-		if (result.depth < maxDepth) {
-			continue
+		if (result.depth === maxDepth) {
+			result.depthSlash = i
 		}
-		result.depthSlash = i
-		return result
+		result.depth++
 	}
 	return result
 }

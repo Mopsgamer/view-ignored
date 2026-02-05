@@ -1,10 +1,5 @@
-import type { ScanOptions } from "../types.js"
 import type { Source } from "./source.js"
 import type { SignedPatternMatch } from "./signedPattern.js"
-import { dirname } from "node:path"
-import { scan } from "../scan.js"
-import { getDepth } from "../getDepth.js"
-import * as nodefs from "node:fs"
 
 /**
  * The results and stats of a scanning operation.

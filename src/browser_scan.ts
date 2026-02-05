@@ -3,7 +3,6 @@ import type { Source } from "./patterns/source.js"
 import type { MatcherContext } from "./patterns/matcherContext.js"
 import { opendir } from "./opendir.js"
 import { walkIncludes } from "./walk.js"
-import { populateDirs } from "./populateDirs.js"
 import type { SignedPatternMatch } from "./patterns/signedPattern.js"
 export type * from "./types.js"
 
@@ -70,7 +69,6 @@ export function scan(
 
 	return (async (): Promise<MatcherContext> => {
 		await result
-		populateDirs(signal, ctx)
 		return ctx
 	})()
 }

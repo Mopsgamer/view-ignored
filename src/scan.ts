@@ -17,7 +17,7 @@ export type * from "./types.js"
  * @returns A promise that resolves to a {@link MatcherContext} containing the scan results.
  */
 export function scan(options: ScanOptions): Promise<MatcherContext> {
-	const { cwd = process.cwd().replaceAll("\\", "/"), fs = nodefs } = options
+	const { cwd = process.cwd(), fs = nodefs } = options
 
 	return browserScan({ fs, cwd, ...options })
 }

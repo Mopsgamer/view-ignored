@@ -11,7 +11,7 @@ export type * from "./types.js"
  * @see {@link scan}
  */
 export function scanStream(options: ScanOptions): MatcherStream {
-	const { cwd = process.cwd().replaceAll("\\", "/"), fs = nodefs } = options
+	const { cwd = process.cwd(), fs = nodefs } = options
 
 	return browserStream({ fs, cwd, ...options })
 }

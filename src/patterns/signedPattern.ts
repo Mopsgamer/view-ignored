@@ -105,30 +105,34 @@ function signedPatternCompiledMatch(
 			patternMatch = patternRegExpTest(compiled.exclude)
 			if (patternMatch) {
 				// return true
+				if (kind === "internal") return { kind, pattern: patternMatch, ignored: true }
 				return { kind, source, pattern: patternMatch, ignored: true }
 			}
 
 			patternMatch = patternRegExpTest(compiled.include)
 			if (patternMatch) {
 				// return false
+				if (kind === "internal") return { kind, pattern: patternMatch, ignored: false }
 				return { kind, source, pattern: patternMatch, ignored: false }
 			}
 		} else {
 			patternMatch = patternRegExpTest(compiled.include)
 			if (patternMatch) {
 				// return false
+				if (kind === "internal") return { kind, pattern: patternMatch, ignored: false }
 				return { kind, source, pattern: patternMatch, ignored: false }
 			}
 
 			patternMatch = patternRegExpTest(compiled.exclude)
 			if (patternMatch) {
 				// return true
+				if (kind === "internal") return { kind, pattern: patternMatch, ignored: true }
 				return { kind, source, pattern: patternMatch, ignored: true }
 			}
 		}
 	} catch (err) {
 		source.error = err as Error
-		options.ctx.failed = dirname(source.path)
+		options.ctx.failed.push(source)
 		if (kind === "external") {
 			return { kind: "invalid-pattern", ignored: false }
 		}

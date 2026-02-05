@@ -1,6 +1,9 @@
 import type { MatcherContext } from "./matcherContext.js"
 import type { ScanOptions } from "../types.js"
 import * as nodepath from "node:path"
+import { getDepth } from "../getDepth.js"
+import { opendir } from "../opendir.js"
+import { walkIncludes } from "../walk.js"
 
 /**
  */
@@ -8,7 +11,6 @@ export async function matcherContextAddPath(
 	ctx: MatcherContext,
 	options: Required<ScanOptions>,
 	entry: string,
-	content?: string,
 ): Promise<boolean> {
 	if (ctx.paths.has(entry)) {
 		return true
@@ -18,8 +20,7 @@ export async function matcherContextAddPath(
 
 	const isDir = entry.endsWith("/")
 	if (isDir) {
-		// never add directories
-		// but internally we need recursive parent population
+		// recursive parent population
 		if (ctx.paths.has(entry)) {
 			return false
 		}
@@ -31,18 +32,16 @@ export async function matcherContextAddPath(
 		return true
 	}
 
+	const parent = nodepath.dirname(entry)
+
 	const isSource = target.extractors.some((e) => e.path === entry)
 	if (isSource) {
 		// add pattern sources
-		// 1. parse and extract patterns
-		// 2. rescan paths, change caching
+		await rescan(ctx, options, entry, parent)
 	}
 	// add paths
 	// 1. recursively populate parents
-	{
-		const parent = nodepath.dirname(entry)
-		await matcherContextAddPath(ctx, options, parent + "/")
-	}
+	await matcherContextAddPath(ctx, options, parent + "/")
 	// 2. if ignored, remove, otherwise add
 	const match = await target.ignores(fs, cwd, entry, ctx)
 	if (match.ignored) {
@@ -66,7 +65,6 @@ export async function matcherContextRemovePath(
 ): Promise<boolean> {
 	if (!ctx.paths.has(entry)) {
 		// never remove existing
-		// no internal behaviors
 		return false
 	}
 
@@ -85,17 +83,22 @@ export async function matcherContextRemovePath(
 				ctx.totalFiles--
 				ctx.totalMatchedFiles--
 			}
-			const direntPath = element.replace(/\/$/, "")
 			// 2. remove depthPaths
-			
+			const { depthSlash } = getDepth(entry, options.depth)
+			if (depthSlash >= 0) {
+				const dir = entry.substring(0, depthSlash)
+				if (ctx.depthPaths.get(dir)) {
+					ctx.depthPaths.delete(dir)
+				}
+			}
 			// 3. remove sources
+			const direntPath = element.replace(/\/$/, "")
 			if (ctx.external.delete(direntPath)) {
-				// 3.1. remove
+				// 3.1. remove failed sources
 				const failedEntryIndex = ctx.failed.findIndex(
-					(s) => s.path.substring(0, s.path.lastIndexOf("/")) === direntPath,
+					(fail) => nodepath.dirname(fail.path) === direntPath,
 				)
 				if (failedEntryIndex >= 0) {
-					// 3.1.1. remove failed sources
 					ctx.failed.splice(failedEntryIndex, 1)
 				}
 			}
@@ -105,14 +108,58 @@ export async function matcherContextRemovePath(
 		return true
 	}
 
+	const parent = nodepath.dirname(entry)
+
 	const isSource = options.target.extractors.some((e) => e.path === entry)
 	if (isSource) {
 		// remove pattern sources
-		// 1. rescan directory
-		// 2. change stats
+		// rescan directory and repopulate stats
+		await rescan(ctx, options, entry, parent)
+		return true
 	}
 	// remove path
 	// 1. change stats
-	// 2. remove self
+	{
+		ctx.totalFiles--
+		ctx.totalMatchedFiles--
+		// 1.1 remove depthPaths
+		const { depthSlash } = getDepth(entry, options.depth)
+		if (depthSlash >= 0) {
+			const dir = entry.substring(0, depthSlash)
+			if (ctx.depthPaths.get(dir)) {
+				ctx.depthPaths.delete(dir)
+			}
+		}
+		// 1.2 remove external
+		if (ctx.external.delete(parent)) {
+			// 1.2.1. remove failed sources
+			const failedEntryIndex = ctx.failed.findIndex(
+				(fail) => nodepath.dirname(fail.path) === parent,
+			)
+			if (failedEntryIndex >= 0) {
+				ctx.failed.splice(failedEntryIndex, 1)
+			}
+		}
+	}
+	// 2. remove from paths
+	ctx.paths.delete(entry)
 	return false
+}
+
+async function rescan(
+	ctx: MatcherContext,
+	options: Required<ScanOptions>,
+	entry: string,
+	parent: string,
+) {
+	matcherContextRemovePath(ctx, options, parent + "/")
+	const normalCwd = options.cwd.replaceAll("\\", "/").replace(/\w:/, "")
+	await opendir(options.fs, options.cwd + "/" + entry, (entry) =>
+		walkIncludes({
+			entry,
+			ctx,
+			stream: undefined,
+			scanOptions: { ...options, cwd: normalCwd },
+		}),
+	)
 }

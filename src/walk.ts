@@ -114,9 +114,11 @@ export async function walkIncludes(options: WalkOptions): Promise<0 | 1 | 2> {
 		return 0
 	}
 
-	ctx.paths.set(path, match)
-	if (stream) {
-		stream.emit("dirent", { dirent: entry, match, path: direntPath, ctx })
+	if (depth <= maxDepth) {
+		ctx.paths.set(path, match)
+		if (stream) {
+			stream.emit("dirent", { dirent: entry, match, path: direntPath, ctx })
+		}
 	}
 
 	return 0

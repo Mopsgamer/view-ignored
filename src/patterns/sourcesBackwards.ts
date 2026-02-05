@@ -43,22 +43,26 @@ export async function sourcesBackwards(options: SourcesBackwardsOptions): Promis
 				if (error.code === "ENOENT") continue
 				source.error = error
 				ctx.external.set(dir, source)
-				ctx.failed = dirname(source.path)
+				ctx.failed.push(source)
 				foundSource = true
 				break
 			}
 
-			ctx.external.set(dir, source)
 			try {
 				extractor.extract(source, buff, ctx)
 			} catch (err) {
-				ctx.failed = dirname(source.path)
+				if (err === "continue") {
+					continue
+				}
+				ctx.external.set(dir, source)
+				ctx.failed.push(source)
 				source.error =
 					err instanceof Error
 						? err
 						: new Error("Unknown error during source extraction", { cause: err })
 				break
 			}
+			ctx.external.set(dir, source)
 			signedPatternCompile(source.pattern)
 			foundSource = true
 			break

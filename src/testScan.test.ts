@@ -8,6 +8,13 @@ import { MatcherStream } from "./patterns/matcherStream.js"
 import { scanStream } from "./browser_stream.js"
 import { sortFirstFolders } from "./testSort.test.js"
 
+export function createAdapter(vol: Volume): FsAdapter {
+	const fs = createFsFromVolume(vol)
+	const { opendir, readFile } = fs.promises
+	const adapter = { promises: { opendir, readFile } } as FsAdapter
+	return adapter
+}
+
 export type PathHandlerOptions = {
 	vol: Volume
 	fs: FsAdapter
@@ -31,12 +38,9 @@ export async function testScan(
 	test: ((o: PathHandlerOptions) => void | Promise<void>) | string[],
 	options: ScanOptions,
 ): Promise<void> {
-	const vol = new Volume()
 	const cwd = process.cwd() + "/test"
-	vol.fromNestedJSON(tree, cwd)
-	const fs = createFsFromVolume(vol)
-	const { opendir, readFile } = fs.promises
-	const adapter = { promises: { opendir, readFile } } as FsAdapter
+	const vol = Volume.fromNestedJSON(tree, cwd)
+	const adapter = createAdapter(vol)
 	const o = { cwd: cwd, fs: adapter, ...options } as ScanOptions & { fs: FsAdapter; cwd: string }
 
 	if (typeof test === "function") {
@@ -84,12 +88,9 @@ export async function testStream(
 	test: ((o: PathHandlerOptionsStream) => void | Promise<void>) | string[],
 	options: ScanOptions,
 ): Promise<void> {
-	const vol = new Volume()
 	const cwd = process.cwd() + "/test"
-	vol.fromNestedJSON(tree, cwd)
-	const fs = createFsFromVolume(vol)
-	const { opendir, readFile } = fs.promises
-	const adapter = { promises: { opendir, readFile } } as FsAdapter
+	const vol = Volume.fromNestedJSON(tree, cwd)
+	const adapter = createAdapter(vol)
 	const o = { cwd: cwd, fs: adapter, ...options } as ScanOptions & { fs: FsAdapter; cwd: string }
 
 	if (typeof test === "function") {
