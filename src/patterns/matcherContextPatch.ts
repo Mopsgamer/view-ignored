@@ -26,7 +26,9 @@ export async function matcherContextAddPath(
 			return true
 		}
 		ctx.paths.set(entry, await target.ignores(fs, cwd, direntPath, ctx))
-		ctx.totalDirs++
+		if (ctx.totalFiles >= 0) {
+			ctx.totalDirs++
+		}
 		const parent = nodepath.dirname(direntPath)
 		if (parent !== ".") {
 			void (await matcherContextAddPath(ctx, options, parent + "/"))
@@ -35,6 +37,13 @@ export async function matcherContextAddPath(
 	}
 
 	const parent = nodepath.dirname(entry)
+
+	const isSource = target.extractors.some((e) => e.path === entry)
+	if (isSource) {
+		// add pattern sources
+		await matcherContextRemovePath(ctx, options, parent + "/")
+		await rescan(ctx, options, entry)
+	}
 
 	// add paths
 	// 1. recursively populate parents
@@ -47,16 +56,11 @@ export async function matcherContextAddPath(
 		return false
 	}
 	// 2.2. add
-	ctx.totalFiles++
-	ctx.totalMatchedFiles++
-	ctx.paths.set(entry, match)
-
-	const isSource = target.extractors.some((e) => e.path === entry)
-	if (isSource) {
-		// add pattern sources
-		await matcherContextRemovePath(ctx, options, parent + "/")
-		await rescan(ctx, options, entry)
+	if (ctx.totalFiles >= 0) {
+		ctx.totalFiles++
+		ctx.totalMatchedFiles++
 	}
+	ctx.paths.set(entry, match)
 	return true
 }
 
@@ -70,39 +74,41 @@ export async function matcherContextRemovePath(
 	const isDir = entry.endsWith("/")
 	if (isDir) {
 		// remove directories
+		const direntPath = entry.replace(/\/$/, "")
 		for (const [element] of ctx.paths) {
 			if (entry !== "./" && !element.startsWith(entry)) {
 				continue
 			}
-			const isDir = element.endsWith("/")
-			// 1. remove stats
-			if (isDir) {
-				ctx.totalDirs--
-			} else {
-				ctx.totalFiles--
-				ctx.totalMatchedFiles--
-			}
-			// 2. remove depthPaths
-			const { depthSlash } = getDepth(entry, options.depth)
-			if (depthSlash >= 0) {
-				const dir = entry.substring(0, depthSlash)
-				if (ctx.depthPaths.get(dir)) {
-					ctx.depthPaths.delete(dir)
+			if (ctx.totalFiles >= 0) {
+				const isDir = element.endsWith("/")
+				if (isDir) {
+					ctx.totalDirs--
+				} else {
+					ctx.totalFiles--
+					ctx.totalMatchedFiles--
 				}
 			}
-			// 3. remove sources
-			const direntPath = element.replace(/\/$/, "")
-			if (ctx.external.delete(direntPath)) {
+			ctx.paths.delete(element)
+		}
+		for (const [element] of ctx.depthPaths) {
+			if (entry !== "./" && !element.startsWith(direntPath)) {
+				continue
+			}
+			ctx.depthPaths.delete(element)
+		}
+		for (const [element] of ctx.external) {
+			if (entry !== "./" && !element.startsWith(direntPath)) {
+				continue
+			}
+			if (ctx.external.delete(element) && ctx.failed.length) {
 				// 3.1. remove failed sources
 				const failedEntryIndex = ctx.failed.findIndex(
-					(fail) => nodepath.dirname(fail.path) === direntPath,
+					(fail) => nodepath.dirname(fail.path) === element,
 				)
 				if (failedEntryIndex >= 0) {
 					ctx.failed.splice(failedEntryIndex, 1)
 				}
 			}
-			// 4. remove paths
-			ctx.paths.delete(element)
 		}
 		return true
 	}
@@ -120,18 +126,22 @@ export async function matcherContextRemovePath(
 	// remove path
 	// 1. change stats
 	{
-		ctx.totalFiles--
-		ctx.totalMatchedFiles--
+		if (ctx.totalFiles >= 0) {
+			ctx.totalFiles--
+			ctx.totalMatchedFiles--
+		}
 		// 1.1 remove depthPaths
 		const { depthSlash } = getDepth(entry, options.depth)
 		if (depthSlash >= 0) {
 			const dir = entry.substring(0, depthSlash)
-			let num = ctx.depthPaths.get(dir) || 1
-			num--
-			if (num === 0) {
-				ctx.depthPaths.delete(dir)
-			} else {
-				ctx.depthPaths.set(dir, num)
+			let num = ctx.depthPaths.get(dir)
+			if (num) {
+				num--
+				if (num <= 0) {
+					ctx.depthPaths.delete(dir)
+				} else {
+					ctx.depthPaths.set(dir, num)
+				}
 			}
 		}
 	}
@@ -144,8 +154,8 @@ async function rescan(
 	ctx: MatcherContext,
 	options: Required<ScanOptions>,
 	entry: string,
-) {
-	if (entry !== '.') options.cwd += "/" + entry
+): Promise<void> {
+	if (entry !== ".") options.cwd += "/" + entry
 	const normalCwd = options.cwd.replaceAll("\\", "/").replace(/\w:/, "")
 	await opendir(options.fs, options.cwd, (entry) =>
 		walkIncludes({
@@ -155,4 +165,5 @@ async function rescan(
 			scanOptions: { ...options, cwd: normalCwd },
 		}),
 	)
+	ctx.totalDirs = ctx.totalFiles = ctx.totalMatchedFiles = -1
 }

@@ -4,7 +4,7 @@ import { matcherContextAddPath, matcherContextRemovePath } from "./matcherContex
 import { scan, type ScanOptions } from "../scan.js"
 import { NPM as target } from "../targets/npm.js"
 import { createAdapter } from "../testScan.test.js"
-import { Volume,type NestedDirectoryJSON } from "memfs"
+import { Volume, type NestedDirectoryJSON } from "memfs"
 import type { MatcherContext } from "./matcherContext.js"
 import type { Source } from "./source.js"
 import type { SignedPatternMatch } from "./signedPattern.js"
@@ -310,7 +310,7 @@ describe("matcherContextAddPath", () => {
 			ok(!(await matcherContextAddPath(c, o, "package.json")))
 
 			// NPM will use gitignore
-			deepEqual(c, <MatcherContext>{
+			const newc = <MatcherContext>{
 				depthPaths: new Map<string, number>([]),
 				external: new Map<string, Source>([
 					[".", sourceGitignore],
@@ -345,7 +345,9 @@ describe("matcherContextAddPath", () => {
 				totalDirs: 11,
 				totalFiles: 22,
 				totalMatchedFiles: 10,
-			})
+			}
+			debugger
+			deepEqual(c, newc)
 		})
 		test("included file is added", async () => {
 			const c = await scan(opt)
@@ -607,17 +609,20 @@ describe("matcherContextRemovePath", () => {
 			})
 		})
 		test("source file is changed", async () => {
-			const o = {...optDepth1}
+			const o = { ...optDepth1 }
 			const c = await scan(o)
-			o.fs = patchFS(f => {
+			o.fs = patchFS((f) => {
 				delete (f as any)["package.json"]
 				return f
 			})
 			ok(await matcherContextRemovePath(c, o, "package.json"))
 
 			// NPM will use gitignore
-			deepEqual(c, <MatcherContext>{
-				depthPaths: new Map<string, number>([]),
+			const newc = <MatcherContext>{
+				depthPaths: new Map<string, number>([
+					["src/patterns", 3],
+					["src/targets", 3],
+				]),
 				external: new Map<string, Source>([
 					[".", sourceGitignore],
 					["node_modules", sourceGitignore],
@@ -638,14 +643,15 @@ describe("matcherContextRemovePath", () => {
 					["src/index.ts", { kind: "no-match", ignored: false }],
 					["src/patterns/", { kind: "no-match", ignored: false }],
 					["src/targets/", { kind: "no-match", ignored: false }],
-					["package.json", { kind: "internal", ignored: false, pattern: "package.json" }],
 					["tsconfig.prod.json", { kind: "no-match", ignored: false }],
 				]),
 				failed: [],
-				totalDirs: 11,
-				totalFiles: 22,
-				totalMatchedFiles: 10,
-			})
+				totalDirs: -1,
+				totalFiles: -1,
+				totalMatchedFiles: -1,
+			}
+			debugger
+			deepEqual(c, newc)
 		})
 	})
 })

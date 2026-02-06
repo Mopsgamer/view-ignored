@@ -27,6 +27,12 @@
 			"type": "bun",
 			"request": "launch",
 			"program": "./src/testSelfNPM.test.ts"
+		},
+		{
+			"name": "Test watcher patchers",
+			"type": "bun",
+			"request": "launch",
+			"program": "./src/patterns/testMatcherContextPatch.test.ts"
 		}
 	]
 }
