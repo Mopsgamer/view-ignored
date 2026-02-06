@@ -47,7 +47,6 @@ export async function matcherContextAddPath(
 		return false
 	}
 	// 2.2. add
-	console.log(entry)
 	ctx.totalFiles++
 	ctx.totalMatchedFiles++
 	ctx.paths.set(entry, match)
@@ -55,7 +54,8 @@ export async function matcherContextAddPath(
 	const isSource = target.extractors.some((e) => e.path === entry)
 	if (isSource) {
 		// add pattern sources
-		await rescan(ctx, options, entry, parent)
+		await matcherContextRemovePath(ctx, options, parent + "/")
+		await rescan(ctx, options, entry)
 	}
 	return true
 }
@@ -67,16 +67,11 @@ export async function matcherContextRemovePath(
 	options: Required<ScanOptions>,
 	entry: string,
 ): Promise<boolean> {
-	if (!ctx.paths.has(entry)) {
-		// never remove existing
-		return true
-	}
-
 	const isDir = entry.endsWith("/")
 	if (isDir) {
 		// remove directories
 		for (const [element] of ctx.paths) {
-			if (!element.startsWith(entry)) {
+			if (entry !== "./" && !element.startsWith(entry)) {
 				continue
 			}
 			const isDir = element.endsWith("/")
@@ -118,7 +113,8 @@ export async function matcherContextRemovePath(
 	if (isSource) {
 		// remove pattern sources
 		// rescan directory and repopulate stats
-		await rescan(ctx, options, entry, parent)
+		await matcherContextRemovePath(ctx, options, parent + "/")
+		await rescan(ctx, options, parent)
 		return true
 	}
 	// remove path
@@ -130,35 +126,28 @@ export async function matcherContextRemovePath(
 		const { depthSlash } = getDepth(entry, options.depth)
 		if (depthSlash >= 0) {
 			const dir = entry.substring(0, depthSlash)
-			if (ctx.depthPaths.get(dir)) {
+			let num = ctx.depthPaths.get(dir) || 1
+			num--
+			if (num === 0) {
 				ctx.depthPaths.delete(dir)
-			}
-		}
-		// 1.2 remove external
-		if (ctx.external.delete(parent)) {
-			// 1.2.1. remove failed sources
-			const failedEntryIndex = ctx.failed.findIndex(
-				(fail) => nodepath.dirname(fail.path) === parent,
-			)
-			if (failedEntryIndex >= 0) {
-				ctx.failed.splice(failedEntryIndex, 1)
+			} else {
+				ctx.depthPaths.set(dir, num)
 			}
 		}
 	}
 	// 2. remove from paths
 	ctx.paths.delete(entry)
-	return false
+	return true
 }
 
 async function rescan(
 	ctx: MatcherContext,
 	options: Required<ScanOptions>,
 	entry: string,
-	parent: string,
 ) {
-	await matcherContextRemovePath(ctx, options, parent + "/")
+	if (entry !== '.') options.cwd += "/" + entry
 	const normalCwd = options.cwd.replaceAll("\\", "/").replace(/\w:/, "")
-	await opendir(options.fs, options.cwd + "/" + entry, (entry) =>
+	await opendir(options.fs, options.cwd, (entry) =>
 		walkIncludes({
 			entry,
 			ctx,

@@ -27,4 +27,13 @@ describe("getDepth", () => {
 		deepEqual(getDepth("a/b", 1), { depth: 1, depthSlash: -1 })
 		deepEqual(getDepth("a/b/", 1), { depth: 1, depthSlash: -1 })
 	})
+	test("./a/b/c", () => {
+		deepEqual(getDepth("a/b/c", 9), { depth: 2, depthSlash: -1 })
+		deepEqual(getDepth("a/b/c/", 9), { depth: 2, depthSlash: -1 })
+		deepEqual(getDepth("a/b/c", 0), { depth: 2, depthSlash: 1 })
+		deepEqual(getDepth("a/b/c/", 0), { depth: 2, depthSlash: 1 })
+		deepEqual(getDepth("a/b/c", 1), { depth: 2, depthSlash: 3 })
+		deepEqual(getDepth("a/b/c/", 1), { depth: 2, depthSlash: 3 })
+		deepEqual(getDepth("out/targets/index.js", 1), { depth: 2, depthSlash: 11 })
+	})
 })

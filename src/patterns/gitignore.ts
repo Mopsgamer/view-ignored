@@ -38,9 +38,12 @@ export function gitignoreCompile(
 
 	pattern += "/**"
 
-	const r = makeRe(pattern, { dot: true, nonegate: true, nocomment: true, nobrace: true }) as RegExp
-	;(r as PatternMinimatch).pattern = original
-	;(r as PatternMinimatch).patternContext = array
+	const re = makeRe(pattern, {
+		dot: true,
+		nonegate: true,
+		nocomment: true,
+		nobrace: true,
+	}) as RegExp
 
-	return r as PatternMinimatch
+	return { re, pattern: original, patternContext: array }
 }

@@ -1,6 +1,7 @@
 import { gitignoreCompile } from "./gitignore.js"
 
-export type PatternMinimatch = RegExp & {
+export type PatternMinimatch = {
+	re: RegExp
 	/**
 	 * The original pattern string this minimatch was compiled from.
 	 */
@@ -12,8 +13,8 @@ export type PatternMinimatch = RegExp & {
 }
 
 export function patternMinimatchTest(pattern: PatternMinimatch, path: string): boolean {
-	pattern.lastIndex = 0
-	return pattern.test(path)
+	pattern.re.lastIndex = 0
+	return pattern.re.test(path)
 }
 
 /**

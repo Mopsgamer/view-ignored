@@ -90,18 +90,14 @@ function signedPatternCompiledMatch(
 		return ""
 	}
 
-	if (!source) {
-		if (kind === "internal") {
-			source = { pattern: options.internal, inverted: true, name: "", path: "." }
-		} else {
-			return { kind: "no-match", ignored: false }
-		}
+	if (!source && kind === "external") {
+		return { kind: "no-match", ignored: false }
 	}
-	const signedPattern = kind === "internal" ? options.internal : source.pattern
+	const signedPattern = kind === "internal" ? options.internal : source!.pattern
 	const compiled = signedPattern.compiled!
 
 	try {
-		if (source.inverted) {
+		if (kind === "internal" || source?.inverted) {
 			patternMatch = patternRegExpTest(compiled.exclude)
 			if (patternMatch) {
 				// return true
@@ -119,26 +115,24 @@ function signedPatternCompiledMatch(
 			patternMatch = patternRegExpTest(compiled.include)
 			if (patternMatch) {
 				// return false
-				if (kind === "internal") return { kind, pattern: patternMatch, ignored: false }
 				return { kind, source, pattern: patternMatch, ignored: false }
 			}
 
 			patternMatch = patternRegExpTest(compiled.exclude)
 			if (patternMatch) {
 				// return true
-				if (kind === "internal") return { kind, pattern: patternMatch, ignored: true }
 				return { kind, source, pattern: patternMatch, ignored: true }
 			}
 		}
 	} catch (err) {
-		source.error = err as Error
-		options.ctx.failed.push(source)
-		if (kind === "external") {
+		if (kind === "internal") {
 			return { kind: "invalid-pattern", ignored: false }
 		}
+		source!.error = err as Error
+		options.ctx.failed.push(source!)
 		return { kind: "invalid-internal-pattern", ignored: false }
 	}
-	return { kind: "no-match", ignored: source.inverted }
+	return { kind: "no-match", ignored: source?.inverted ?? true }
 }
 
 /**
