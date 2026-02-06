@@ -1,6 +1,7 @@
 import type { FsAdapter } from "../types.js"
 import type { MatcherContext } from "./matcherContext.js"
 import type { Source } from "./source.js"
+import type { Target } from "../targets/target.js"
 
 /**
  * Populates a `Source` object from the content of a source file.
@@ -26,5 +27,5 @@ export interface PatternFinderOptions {
 	fs: FsAdapter
 	ctx: MatcherContext
 	cwd: string
-	extractors: Extractor[]
+	target: Target
 }

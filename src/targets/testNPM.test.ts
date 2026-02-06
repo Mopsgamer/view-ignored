@@ -3,6 +3,7 @@ import { ok, match } from "node:assert/strict"
 import { NPM as target } from "./npm.js"
 import { testScan, type PathHandlerOptions } from "../testScan.test.js"
 import type { NestedDirectoryJSON } from "memfs"
+import { dirname } from "node:path"
 
 function testNpm(
 	done: () => void,
@@ -115,7 +116,7 @@ describe("NPM", () => {
 			},
 			({ ctx }) => {
 				ok(ctx.failed.length)
-				const source = ctx.external.get(".")
+				const source = ctx.failed.find((fail) => dirname(fail.path) === ".")
 				ok(source)
 				ok(source.error)
 				ok(source.error instanceof Error)

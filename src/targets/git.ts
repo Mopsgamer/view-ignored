@@ -35,7 +35,7 @@ export const Git: Target = {
 			ctx,
 			cwd,
 			entry,
-			extractors,
+			target: Git,
 		})
 	},
 }

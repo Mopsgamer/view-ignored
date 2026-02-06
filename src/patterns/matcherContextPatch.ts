@@ -13,7 +13,7 @@ export async function matcherContextAddPath(
 	entry: string,
 ): Promise<boolean> {
 	if (ctx.paths.has(entry)) {
-		return true
+		return false
 	}
 
 	const { target, fs, cwd } = options
@@ -21,12 +21,14 @@ export async function matcherContextAddPath(
 	const isDir = entry.endsWith("/")
 	if (isDir) {
 		// recursive parent population
-		if (ctx.paths.has(entry)) {
-			return false
+		const direntPath = entry.replace(/\/$/, "")
+		if (direntPath === ".") {
+			return true
 		}
-		ctx.paths.set(entry, await target.ignores(fs, cwd, entry, ctx))
-		const parent = nodepath.dirname(entry)
-		if (parent !== "." && parent !== "/") {
+		ctx.paths.set(entry, await target.ignores(fs, cwd, direntPath, ctx))
+		ctx.totalDirs++
+		const parent = nodepath.dirname(direntPath)
+		if (parent !== ".") {
 			void (await matcherContextAddPath(ctx, options, parent + "/"))
 		}
 		return true
@@ -34,11 +36,6 @@ export async function matcherContextAddPath(
 
 	const parent = nodepath.dirname(entry)
 
-	const isSource = target.extractors.some((e) => e.path === entry)
-	if (isSource) {
-		// add pattern sources
-		await rescan(ctx, options, entry, parent)
-	}
 	// add paths
 	// 1. recursively populate parents
 	await matcherContextAddPath(ctx, options, parent + "/")
@@ -50,9 +47,16 @@ export async function matcherContextAddPath(
 		return false
 	}
 	// 2.2. add
+	console.log(entry)
 	ctx.totalFiles++
 	ctx.totalMatchedFiles++
 	ctx.paths.set(entry, match)
+
+	const isSource = target.extractors.some((e) => e.path === entry)
+	if (isSource) {
+		// add pattern sources
+		await rescan(ctx, options, entry, parent)
+	}
 	return true
 }
 
@@ -65,7 +69,7 @@ export async function matcherContextRemovePath(
 ): Promise<boolean> {
 	if (!ctx.paths.has(entry)) {
 		// never remove existing
-		return false
+		return true
 	}
 
 	const isDir = entry.endsWith("/")
@@ -152,7 +156,7 @@ async function rescan(
 	entry: string,
 	parent: string,
 ) {
-	matcherContextRemovePath(ctx, options, parent + "/")
+	await matcherContextRemovePath(ctx, options, parent + "/")
 	const normalCwd = options.cwd.replaceAll("\\", "/").replace(/\w:/, "")
 	await opendir(options.fs, options.cwd + "/" + entry, (entry) =>
 		walkIncludes({

@@ -16,7 +16,7 @@ export interface SourcesBackwardsOptions extends PatternFinderOptions {
  * Populates the {@link MatcherContext.external} map with {@link Source} objects.
  */
 export async function sourcesBackwards(options: SourcesBackwardsOptions): Promise<void> {
-	const { fs, ctx, cwd, extractors } = options
+	const { fs, ctx, cwd, target } = options
 	let dir = options.dir
 
 	while (true) {
@@ -24,7 +24,7 @@ export async function sourcesBackwards(options: SourcesBackwardsOptions): Promis
 
 		let foundSource = false
 
-		for (const extractor of extractors) {
+		for (const extractor of target.extractors) {
 			const path = dir === "." ? extractor.path : dir + "/" + extractor.path
 			const name = path.substring(path.lastIndexOf("/") + 1)
 
@@ -54,12 +54,11 @@ export async function sourcesBackwards(options: SourcesBackwardsOptions): Promis
 				if (err === "continue") {
 					continue
 				}
-				ctx.external.set(dir, source)
-				ctx.failed.push(source)
 				source.error =
 					err instanceof Error
 						? err
 						: new Error("Unknown error during source extraction", { cause: err })
+				ctx.failed.push(source)
 				break
 			}
 			ctx.external.set(dir, source)

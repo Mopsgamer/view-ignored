@@ -1,5 +1,5 @@
 import { describe, test } from "bun:test"
-import { deepEqual } from "node:assert/strict"
+import { deepEqual, equal, ok } from "node:assert/strict"
 import { matcherContextAddPath, matcherContextRemovePath } from "./matcherContextPatch.js"
 import { scan, type ScanOptions } from "../scan.js"
 import { NPM as target } from "../targets/npm.js"
@@ -193,14 +193,101 @@ test("ctxDepth1", () => {
 })
 
 describe("matcherContextAddPath", () => {
-	test("makes sense", () => {
-		matcherContextAddPath(ctx, o, "test")
-		// ...
+	test("ignored dir is added (internal behavior)", async () => {
+		const ctx = await scan(o)
+		ok(await matcherContextAddPath(ctx, o, "test/"))
+	})
+	test("ignored file is not added", async () => {
+		const ctx = await scan(o)
+		ok(!(await matcherContextAddPath(ctx, o, "test")))
+	})
+	test("included file is added", async () => {
+		const ctx = await scan(o)
+		ok(await matcherContextAddPath(ctx, o, "out/test"))
+		ok(await matcherContextAddPath(ctx, o, "out/testdir/testsubdir/test"))
+		equal(ctx.depthPaths.size, 0)
+		equal(ctx.failed.length, 0)
+		deepEqual(
+			ctx.external,
+			new Map<string, Source>([
+				[".", source],
+				["node_modules", source],
+				["node_modules/.bin", source],
+				["node_modules/a", source],
+				["node_modules/a/bin", source],
+				["node_modules/a/lib", source],
+				["out", source],
+				["out/testdir", source],
+				["out/testdir/testsubdir", source],
+				["out/patterns", source],
+				["out/targets", source],
+				["src", source],
+				["src/patterns", source],
+				["src/targets", source],
+			]),
+		)
+		deepEqual(ctx.paths, new Map<string, SignedPatternMatch>([
+			["LICENSE.txt", { kind: "internal", ignored: false, pattern: "LICENSE*" }],
+			["out/", { kind: "external", ignored: false, pattern: "/out", source }],
+			["out/test", { kind: "external", ignored: false, pattern: "/out", source }],
+			["out/testdir/", { kind: "external", ignored: false, pattern: "/out", source }],
+			["out/testdir/testsubdir/", { kind: "external", ignored: false, pattern: "/out", source }],
+			["out/testdir/testsubdir/test", { kind: "external", ignored: false, pattern: "/out", source }],
+			["out/index.json", { kind: "external", ignored: false, pattern: "/out", source }],
+			["out/patterns/", { kind: "external", ignored: false, pattern: "/out", source }],
+			["out/patterns/gitignore.ts", { kind: "external", ignored: false, pattern: "/out", source }],
+			["out/patterns/index.ts", { kind: "external", ignored: false, pattern: "/out", source }],
+			["out/patterns/jsrjson.ts", { kind: "external", ignored: false, pattern: "/out", source }],
+			["out/targets/", { kind: "external", ignored: false, pattern: "/out", source }],
+			["out/targets/git.ts", { kind: "external", ignored: false, pattern: "/out", source }],
+			["out/targets/index.ts", { kind: "external", ignored: false, pattern: "/out", source }],
+			["out/targets/npm.ts", { kind: "external", ignored: false, pattern: "/out", source }],
+			["package.json", { kind: "internal", ignored: false, pattern: "package.json" }],
+		]))
+		equal(ctx.totalDirs, 13)
+		equal(ctx.totalFiles, 24)
+		equal(ctx.totalMatchedFiles, 11)
 	})
 })
 describe("matcherContextRemovePath", () => {
-	test("makes sense", () => {
-		matcherContextRemovePath(ctx, o, "test")
-		// ...
+	test("ignored dir is removed", async () => {
+		const ctx = await scan(o)
+		ok(await matcherContextRemovePath(ctx, o, "test/"))
+	})
+	test("ignored file is removed", async () => {
+		const ctx = await scan(o)
+		ok(await matcherContextRemovePath(ctx, o, "test"))
+	})
+	test("foreign file is removed", async () => {
+		const ctx = await scan(o)
+		ok(await matcherContextRemovePath(ctx, o, "out/test"))
+		ok(await matcherContextRemovePath(ctx, o, "out/testdir/testsubdir/test"))
+	})
+	test("included file is removed", async () => {
+		const ctx = await scan(o)
+		ok(await matcherContextRemovePath(ctx, o, "out/"))
+		equal(ctx.depthPaths.size, 0)
+		equal(ctx.failed.length, 0)
+		deepEqual(
+			ctx.external,
+			new Map<string, Source>([
+				[".", source],
+				["node_modules", source],
+				["node_modules/.bin", source],
+				["node_modules/a", source],
+				["node_modules/a/bin", source],
+				["node_modules/a/lib", source],
+				["src", source],
+				["src/patterns", source],
+				["src/targets", source],
+			]),
+		)
+		deepEqual(ctx.paths, new Map<string, SignedPatternMatch>([
+			["LICENSE.txt", { kind: "internal", ignored: false, pattern: "LICENSE*" }],
+			["package.json", { kind: "internal", ignored: false, pattern: "package.json" }],
+		]))
+		equal(ctx.totalDirs, 8)
+		equal(ctx.totalFiles, 15)
+		equal(ctx.totalMatchedFiles, 2)
 	})
 })

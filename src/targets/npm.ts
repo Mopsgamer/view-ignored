@@ -58,7 +58,7 @@ export const NPM: Target = {
 			ctx,
 			cwd,
 			entry,
-			extractors,
+			target: NPM,
 		})
 	},
 }

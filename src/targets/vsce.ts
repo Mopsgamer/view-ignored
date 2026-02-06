@@ -40,7 +40,7 @@ export const VSCE: Target = {
 			ctx,
 			cwd,
 			entry,
-			extractors,
+			target: VSCE,
 		})
 	},
 }
