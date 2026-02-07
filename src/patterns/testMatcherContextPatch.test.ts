@@ -1,5 +1,4 @@
-import { describe, test } from "bun:test"
-import { deepEqual, equal, ok } from "node:assert/strict"
+import { describe, test, expect } from "bun:test"
 import { matcherContextAddPath, matcherContextRemovePath } from "./matcherContextPatch.js"
 import { scan, type ScanOptions } from "../scan.js"
 import { NPM as target } from "../targets/npm.js"
@@ -161,7 +160,7 @@ const opt: Required<ScanOptions> = {
 const ctx = await scan(opt)
 describe("matcherContext{Add,Remove}Path prepare", () => {
 	test("ctx", () => {
-		deepEqual(ctx, <MatcherContext>{
+		expect(ctx).toMatchObject(<MatcherContext>{
 			depthPaths: new Map<string, number>([]),
 			external: new Map<string, Source>([
 				[".", sourcePackageJson],
@@ -240,7 +239,7 @@ const optDepth1: Required<ScanOptions> = {
 const ctxDepth1 = await scan(optDepth1)
 describe("matcherContext{Add,Remove}Path prepare", () => {
 	test("ctxDepth1", () => {
-		deepEqual(ctxDepth1, <MatcherContext>{
+		expect(ctxDepth1).toMatchObject(<MatcherContext>{
 			depthPaths: new Map<string, number>([
 				["out/patterns", 3],
 				["out/targets", 3],
@@ -288,11 +287,11 @@ describe("matcherContextAddPath", () => {
 	describe("no max depth", () => {
 		test("ignored dir is added (internal behavior)", async () => {
 			const c = await scan(opt)
-			ok(await matcherContextAddPath(c, opt, "test/"))
+			expect(await matcherContextAddPath(c, opt, "test/")).toBeTrue()
 		})
 		test("ignored file is not added", async () => {
 			const c = await scan(opt)
-			ok(!(await matcherContextAddPath(c, opt, "test")))
+			expect(await matcherContextAddPath(c, opt, "test")).toBeFalse()
 		})
 		test("source file is changed", async () => {
 			const o = {
@@ -307,7 +306,7 @@ describe("matcherContextAddPath", () => {
 				}),
 			}
 			const c = await scan(o)
-			ok(!(await matcherContextAddPath(c, o, "package.json")))
+			expect(await matcherContextAddPath(c, o, "package.json")).toBeFalse()
 
 			// NPM will use gitignore
 			const newc = <MatcherContext>{
@@ -346,18 +345,15 @@ describe("matcherContextAddPath", () => {
 				totalFiles: 22,
 				totalMatchedFiles: 10,
 			}
-			debugger
-			deepEqual(c, newc)
+			expect(c).toMatchObject(newc)
 		})
 		test("included file is added", async () => {
 			const c = await scan(opt)
-			ok(await matcherContextAddPath(c, opt, "out/test"))
-			ok(await matcherContextAddPath(c, opt, "out/testdir/testsubdir/test"))
-			equal(c.depthPaths.size, 0)
-			equal(c.failed.length, 0)
-			deepEqual(
-				c.external,
-				new Map<string, Source>([
+			expect(await matcherContextAddPath(c, opt, "out/test")).toBeTrue()
+			expect(await matcherContextAddPath(c, opt, "out/testdir/testsubdir/test")).toBeTrue()
+			expect(c).toMatchObject({
+				depthPaths: new Map<string, number>([]),
+				external: new Map<string, Source>([
 					[".", sourcePackageJson],
 					["node_modules", sourcePackageJson],
 					["node_modules/.bin", sourcePackageJson],
@@ -373,10 +369,7 @@ describe("matcherContextAddPath", () => {
 					["src/patterns", sourcePackageJson],
 					["src/targets", sourcePackageJson],
 				]),
-			)
-			deepEqual(
-				c.paths,
-				new Map<string, SignedPatternMatch>([
+				paths: new Map<string, SignedPatternMatch>([
 					["LICENSE.txt", { kind: "internal", ignored: false, pattern: "LICENSE*" }],
 					[
 						"out/",
@@ -436,10 +429,11 @@ describe("matcherContextAddPath", () => {
 					],
 					["package.json", { kind: "internal", ignored: false, pattern: "package.json" }],
 				]),
-			)
-			equal(c.totalDirs, 13)
-			equal(c.totalFiles, 24)
-			equal(c.totalMatchedFiles, 11)
+				failed: [],
+				totalDirs: 13,
+				totalFiles: 24,
+				totalMatchedFiles: 11,
+			})
 		})
 	})
 })
@@ -448,25 +442,23 @@ describe("matcherContextRemovePath", () => {
 	describe("no max depth", () => {
 		test("ignored dir is removed", async () => {
 			const c = await scan(opt)
-			ok(await matcherContextRemovePath(c, opt, "test/"))
+			expect(await matcherContextRemovePath(c, opt, "test/")).toBeTrue()
 		})
 		test("ignored file is removed", async () => {
 			const c = await scan(opt)
-			ok(await matcherContextRemovePath(c, opt, "test"))
+			expect(await matcherContextRemovePath(c, opt, "test")).toBeTrue()
 		})
 		test("foreign file is removed", async () => {
 			const c = await scan(opt)
-			ok(await matcherContextRemovePath(c, opt, "out/test"))
-			ok(await matcherContextRemovePath(c, opt, "out/testdir/testsubdir/test"))
+			expect(await matcherContextRemovePath(c, opt, "out/test")).toBeTrue()
+			expect(await matcherContextRemovePath(c, opt, "out/testdir/testsubdir/test")).toBeTrue()
 		})
 		test("included file is removed", async () => {
 			const c = await scan(opt)
-			ok(await matcherContextRemovePath(c, opt, "out/index.js"))
-			equal(c.depthPaths.size, 0)
-			equal(c.failed.length, 0)
-			deepEqual(
-				c.external,
-				new Map<string, Source>([
+			expect(await matcherContextRemovePath(c, opt, "out/index.js")).toBeTrue()
+			expect(c).toMatchObject({
+				depthPaths: new Map<string, number>([]),
+				external: new Map<string, Source>([
 					[".", sourcePackageJson],
 					["node_modules", sourcePackageJson],
 					["node_modules/.bin", sourcePackageJson],
@@ -480,10 +472,7 @@ describe("matcherContextRemovePath", () => {
 					["src/patterns", sourcePackageJson],
 					["src/targets", sourcePackageJson],
 				]),
-			)
-			deepEqual(
-				c.paths,
-				new Map<string, SignedPatternMatch>([
+				paths: new Map<string, SignedPatternMatch>([
 					["LICENSE.txt", { kind: "internal", ignored: false, pattern: "LICENSE*" }],
 					[
 						"out/",
@@ -523,19 +512,18 @@ describe("matcherContextRemovePath", () => {
 					],
 					["package.json", { kind: "internal", ignored: false, pattern: "package.json" }],
 				]),
-			)
-			equal(c.totalDirs, 11)
-			equal(c.totalFiles, 21)
-			equal(c.totalMatchedFiles, 8)
+				failed: [],
+				totalDirs: 11,
+				totalFiles: 21,
+				totalMatchedFiles: 8,
+			})
 		})
 		test("included dir is removed", async () => {
 			const c = await scan(opt)
-			ok(await matcherContextRemovePath(c, opt, "out/"))
-			equal(c.depthPaths.size, 0)
-			equal(c.failed.length, 0)
-			deepEqual(
-				c.external,
-				new Map<string, Source>([
+			expect(await matcherContextRemovePath(c, opt, "out/")).toBeTrue()
+			expect(c).toMatchObject({
+				depthPaths: new Map<string, number>([]),
+				external: new Map<string, Source>([
 					[".", sourcePackageJson],
 					["node_modules", sourcePackageJson],
 					["node_modules/.bin", sourcePackageJson],
@@ -546,24 +534,22 @@ describe("matcherContextRemovePath", () => {
 					["src/patterns", sourcePackageJson],
 					["src/targets", sourcePackageJson],
 				]),
-			)
-			deepEqual(
-				c.paths,
-				new Map<string, SignedPatternMatch>([
+				paths: new Map<string, SignedPatternMatch>([
 					["LICENSE.txt", { kind: "internal", ignored: false, pattern: "LICENSE*" }],
 					["package.json", { kind: "internal", ignored: false, pattern: "package.json" }],
 				]),
-			)
-			equal(c.totalDirs, 8)
-			equal(c.totalFiles, 15)
-			equal(c.totalMatchedFiles, 2)
+				failed: [],
+				totalDirs: 8,
+				totalFiles: 15,
+				totalMatchedFiles: 2,
+			})
 		})
 	})
 	describe("max depth 1", () => {
 		test("should change ctx.depthPaths", async () => {
 			const c = await scan(optDepth1)
-			ok(await matcherContextRemovePath(c, optDepth1, "out/targets/index.js"))
-			deepEqual(c, <MatcherContext>{
+			expect(await matcherContextRemovePath(c, optDepth1, "out/targets/index.js")).toBeTrue()
+			expect(c).toMatchObject(<MatcherContext>{
 				depthPaths: new Map<string, number>([
 					["out/patterns", 3],
 					["out/targets", 2],
@@ -615,7 +601,7 @@ describe("matcherContextRemovePath", () => {
 				delete (f as any)["package.json"]
 				return f
 			})
-			ok(await matcherContextRemovePath(c, o, "package.json"))
+			expect(await matcherContextRemovePath(c, o, "package.json")).toBeTrue()
 
 			// NPM will use gitignore
 			const newc = <MatcherContext>{
@@ -650,8 +636,7 @@ describe("matcherContextRemovePath", () => {
 				totalFiles: -1,
 				totalMatchedFiles: -1,
 			}
-			debugger
-			deepEqual(c, newc)
+			expect(c).toMatchObject(newc)
 		})
 	})
 })
