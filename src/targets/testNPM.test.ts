@@ -124,4 +124,78 @@ describe("NPM", () => {
 			},
 		)
 	})
+	test("monorepo should use root if cwd is root", async (done) => {
+		await testScan(
+			done,
+			{
+				packages: {
+					a: {
+						"index.js": "console.log('a')",
+						"package.json": JSON.stringify({
+							name: "a",
+							version: "0.0.1",
+							files: ["index.js"],
+						}),
+					},
+				},
+				file: "1",
+				"index.js": "console.log('src')",
+				"index.ts": "console.log('src')",
+				"package.json": JSON.stringify({
+					name: "root",
+					version: "0.0.1",
+					files: ["index.ts"],
+				}),
+			},
+			({ ctx }) => {
+				expect(ctx.paths.has("file")).toBeFalse()
+				expect(ctx.paths.has("index.ts")).toBeTrue()
+				expect(ctx.paths.has("index.js")).toBeFalse()
+				expect(ctx.paths.has("packages/a/index.js")).toBeFalse()
+
+				expect(ctx.paths.get("packages/a/")).toBeObject()
+				expect(ctx.paths.get("packages/a/")!.kind).toBe("no-match")
+
+				expect(ctx.external.get("packages/a")?.path).toBe("package.json")
+			},
+			{ target, cwd: process.cwd() + '/test' },
+		)
+	})
+    test("monorepo should use children if cwd is children", async (done) => {
+		await testScan(
+			done,
+			{
+				packages: {
+					a: {
+						"index.js": "console.log('a')",
+						"package.json": JSON.stringify({
+							name: "a",
+							version: "0.0.1",
+							files: ["index.js"],
+						}),
+					},
+				},
+				file: "1",
+				"index.js": "console.log('src')",
+				"index.ts": "console.log('src')",
+				"package.json": JSON.stringify({
+					name: "root",
+					version: "0.0.1",
+					files: ["index.ts"],
+				}),
+			},
+			({ ctx }) => {
+				expect(ctx.paths.has("file")).toBeFalse()
+				expect(ctx.paths.has("index.ts")).toBeFalse()
+				expect(ctx.paths.has("index.js")).toBeTrue()
+				expect(ctx.paths.has("packages/a/index.js")).toBeFalse()
+
+				expect(ctx.paths.get("packages/a/")).toBeUndefined()
+
+				expect(ctx.external.get("packages/a")).toBeUndefined()
+                expect(ctx.external.get(".")?.path).toBe("package.json")
+			},
+			{ target, cwd: process.cwd() + '/test/packages/a' },
+		)
+	})
 })

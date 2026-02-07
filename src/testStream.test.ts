@@ -14,7 +14,14 @@ describe("Git", () => {
 					paths.push(d.path)
 				})
 				stream.once("end", () => {
-					expect(paths).toMatchObject(["no-match", "file", "no-match", "src/", "no-match", "src/file"])
+					expect(paths).toMatchObject([
+						"no-match",
+						"file",
+						"no-match",
+						"src/",
+						"no-match",
+						"src/file",
+					])
 					done()
 				})
 			},

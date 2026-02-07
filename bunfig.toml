@@ -1,5 +1,2 @@
 [test]
 coveragePathIgnorePatterns = ["src/testSelf*.test.ts"]
-
-[run]
-bun = true

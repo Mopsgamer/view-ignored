@@ -7,7 +7,9 @@ describe("Gitignore", () => {
 		expect(patternMinimatchTest(gitignoreCompile(".git"), ".git/message")).toBeTrue()
 		expect(patternMinimatchTest(gitignoreCompile(".git"), ".github/message")).toBeFalse()
 
-		expect(patternMinimatchTest(gitignoreCompile("node_modules"), "node_modules/x/message.ts")).toBeTrue()
+		expect(
+			patternMinimatchTest(gitignoreCompile("node_modules"), "node_modules/x/message.ts"),
+		).toBeTrue()
 		expect(patternMinimatchTest(gitignoreCompile("message"), ".git/message")).toBeTrue()
 
 		expect(patternMinimatchTest(gitignoreCompile("**/.git"), ".git/message")).toBeTrue()
