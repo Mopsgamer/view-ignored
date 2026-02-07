@@ -64,6 +64,7 @@ export const Yarn: Target = {
 			ctx,
 			cwd,
 			entry,
+			root: cwd,
 			target: Yarn,
 		})
 	},

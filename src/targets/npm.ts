@@ -58,6 +58,7 @@ export const NPM: Target = {
 			ctx,
 			cwd,
 			entry,
+			root: cwd,
 			target: NPM,
 		})
 	},

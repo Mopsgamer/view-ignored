@@ -1,5 +1,5 @@
 export * from "./extractor.js"
-export * from "./sourcesBackwards.js"
+export * from "./resolveSources.js"
 export * from "./pattern.js"
 export * from "./signedPattern.js"
 export * from "./patternMatcher.js"

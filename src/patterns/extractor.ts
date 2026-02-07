@@ -20,7 +20,7 @@ export interface Extractor {
 
 /**
  * Options for finding and extracting patterns from source files.
- * @see {@link sourcesBackwards}
+ * @see {@link resolveSources}
  * @see {@link signedPatternIgnores}
  */
 export interface PatternFinderOptions {
@@ -28,4 +28,5 @@ export interface PatternFinderOptions {
 	ctx: MatcherContext
 	cwd: string
 	target: Target
+	root: string
 }

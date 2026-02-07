@@ -158,10 +158,10 @@ describe("NPM", () => {
 
 				expect(ctx.external.get("packages/a")?.path).toBe("package.json")
 			},
-			{ target, cwd: process.cwd() + '/test' },
+			{ target, cwd: process.cwd() + "/test" },
 		)
 	})
-    test("monorepo should use children if cwd is children", async (done) => {
+	test("monorepo should use children if cwd is children", async (done) => {
 		await testScan(
 			done,
 			{
@@ -193,9 +193,9 @@ describe("NPM", () => {
 				expect(ctx.paths.get("packages/a/")).toBeUndefined()
 
 				expect(ctx.external.get("packages/a")).toBeUndefined()
-                expect(ctx.external.get(".")?.path).toBe("package.json")
+				expect(ctx.external.get(".")?.path).toBe("package.json")
 			},
-			{ target, cwd: process.cwd() + '/test/packages/a' },
+			{ target, cwd: process.cwd() + "/test/packages/a" },
 		)
 	})
 })

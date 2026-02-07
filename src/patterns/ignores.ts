@@ -4,7 +4,7 @@ import type { SignedPatternMatch } from "../patterns/signedPattern.js"
 
 /**
  * Checks whether a given entry path should be ignored based on its patterns.
- * @see {@link sourcesBackwards}
+ * @see {@link resolveSources}
  * @see {@link signedPatternIgnores}
  * @see {@link https://github.com/Mopsgamer/view-ignored/tree/main/src/targets} for usage examples.
  */

@@ -6,18 +6,26 @@ import type { PatternFinderOptions } from "./extractor.js"
 import { signedPatternCompile } from "./signedPattern.js"
 
 /**
- * @see {@link sourcesBackwards}
+ * @see {@link resolveSources}
  */
-export interface SourcesBackwardsOptions extends PatternFinderOptions {
+export interface ResolveSourcesOptions extends PatternFinderOptions {
 	dir: string
 }
 
 /**
  * Populates the {@link MatcherContext.external} map with {@link Source} objects.
  */
-export async function sourcesBackwards(options: SourcesBackwardsOptions): Promise<void> {
-	const { fs, ctx, cwd, target } = options
+export async function resolveSources(options: ResolveSourcesOptions): Promise<void> {
+	const { fs, ctx, cwd, target, root: _ } = options
 	let dir = options.dir
+
+	// new algo:
+
+	// iterate from dir backwards to search ctx.external caches.
+	// if cache is found populate until dir
+	// else
+	// iterate from root forwards
+	// if got source before reached cwd, continue from CWD forwards until dir
 
 	while (true) {
 		if (ctx.external.has(dir)) break

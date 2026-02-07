@@ -35,6 +35,7 @@ export const Git: Target = {
 			ctx,
 			cwd,
 			entry,
+			root: "/",
 			target: Git,
 		})
 	},

@@ -43,6 +43,7 @@ export const JSR: Target = {
 			ctx,
 			cwd,
 			entry,
+			root: cwd,
 			target: JSR,
 		})
 	},

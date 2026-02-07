@@ -7,7 +7,7 @@ import {
 	type Pattern,
 	type PatternMinimatch,
 } from "./pattern.js"
-import { sourcesBackwards } from "./sourcesBackwards.js"
+import { resolveSources } from "./resolveSources.js"
 
 /**
  * Represents a set of include and exclude patterns.
@@ -137,7 +137,7 @@ function signedPatternCompiledMatch(
 
 /**
  * Checks whether a given entry should be ignored based on internal and external patterns.
- * Populates unknown sources using {@link sourcesBackwards}.
+ * Populates unknown sources using {@link resolveSources}.
  *
  * Algorithm:
  * 1. Check internal exclude patterns. If matched, return true.
@@ -158,7 +158,7 @@ export async function signedPatternIgnores(
 	let source = options.ctx.external.get(parent)
 
 	if (!source) {
-		await sourcesBackwards({ ...options, dir: parent })
+		await resolveSources({ ...options, dir: parent, root: options.root })
 
 		if (options.ctx.failed.length) {
 			return { kind: "broken-source", ignored: false }
