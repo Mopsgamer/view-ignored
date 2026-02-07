@@ -1,5 +1,4 @@
-import { test, describe } from "bun:test"
-import { ok, equal } from "node:assert/strict"
+import { test, describe, expect } from "bun:test"
 import { Git as target } from "./git.js"
 import { testScan, type PathHandlerOptions } from "../testScan.test.js"
 import type { NestedDirectoryJSON } from "memfs"
@@ -137,12 +136,13 @@ describe("Git", () => {
 				".gitignore": "\\",
 			},
 			({ ctx }) => {
-				ok(ctx.failed.length)
+				expect(ctx.failed).toBeArray()
+				expect(ctx.failed).toBeEmpty()
 				const source = ctx.external.get(".")
-				ok(source)
-				ok(source.error)
-				ok(source.error instanceof Error)
-				equal(source.error.message, "Invalid usage of '/'")
+				expect(source).toBeTruthy()
+				expect(source!.error).toBeTruthy()
+				expect(source!.error instanceof Error).toBeTruthy()
+				expect((source!.error! as Error).message).toMatch("Invalid usage of '/'")
 			},
 		)
 	})

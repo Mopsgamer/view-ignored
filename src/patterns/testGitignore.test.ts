@@ -1,32 +1,31 @@
-import { ok } from "node:assert/strict"
-import { describe, test } from "bun:test"
+import { describe, test, expect } from "bun:test"
 import { gitignoreCompile } from "./gitignore.js"
 import { patternMinimatchTest } from "./pattern.js"
 
 describe("Gitignore", () => {
 	test("gitignoreCompile", () => {
-		ok(patternMinimatchTest(gitignoreCompile(".git"), ".git/message"))
-		ok(!patternMinimatchTest(gitignoreCompile(".git"), ".github/message"))
+		expect(patternMinimatchTest(gitignoreCompile(".git"), ".git/message")).toBeTrue()
+		expect(patternMinimatchTest(gitignoreCompile(".git"), ".github/message")).toBeFalse()
 
-		ok(patternMinimatchTest(gitignoreCompile("node_modules"), "node_modules/x/message.ts"))
-		ok(patternMinimatchTest(gitignoreCompile("message"), ".git/message"))
+		expect(patternMinimatchTest(gitignoreCompile("node_modules"), "node_modules/x/message.ts")).toBeTrue()
+		expect(patternMinimatchTest(gitignoreCompile("message"), ".git/message")).toBeTrue()
 
-		ok(patternMinimatchTest(gitignoreCompile("**/.git"), ".git/message"))
-		ok(!patternMinimatchTest(gitignoreCompile("**/.git"), ".github/message"))
+		expect(patternMinimatchTest(gitignoreCompile("**/.git"), ".git/message")).toBeTrue()
+		expect(patternMinimatchTest(gitignoreCompile("**/.git"), ".github/message")).toBeFalse()
 
-		ok(patternMinimatchTest(gitignoreCompile("/.git"), ".git/message"))
-		ok(!patternMinimatchTest(gitignoreCompile("/.git"), ".github/message"))
+		expect(patternMinimatchTest(gitignoreCompile("/.git"), ".git/message")).toBeTrue()
+		expect(patternMinimatchTest(gitignoreCompile("/.git"), ".github/message")).toBeFalse()
 
-		ok(!patternMinimatchTest(gitignoreCompile("/message"), ".git/message"))
-		ok(!patternMinimatchTest(gitignoreCompile("/message"), ".git/message/file"))
-		ok(patternMinimatchTest(gitignoreCompile("/message"), "message"))
-		ok(patternMinimatchTest(gitignoreCompile("/message"), "message/file"))
+		expect(patternMinimatchTest(gitignoreCompile("/message"), ".git/message")).toBeFalse()
+		expect(patternMinimatchTest(gitignoreCompile("/message"), ".git/message/file")).toBeFalse()
+		expect(patternMinimatchTest(gitignoreCompile("/message"), "message")).toBeTrue()
+		expect(patternMinimatchTest(gitignoreCompile("/message"), "message/file")).toBeTrue()
 
-		ok(patternMinimatchTest(gitignoreCompile(".git/"), ".git/message"))
-		ok(patternMinimatchTest(gitignoreCompile(".git/"), ".git/message/file"))
-		ok(patternMinimatchTest(gitignoreCompile(".git/"), ".git"))
-		ok(!patternMinimatchTest(gitignoreCompile(".git/"), ".github/message"))
-		ok(!patternMinimatchTest(gitignoreCompile(".git/"), ".github/message/file"))
-		ok(!patternMinimatchTest(gitignoreCompile(".git/"), ".github"))
+		expect(patternMinimatchTest(gitignoreCompile(".git/"), ".git/message")).toBeTrue()
+		expect(patternMinimatchTest(gitignoreCompile(".git/"), ".git/message/file")).toBeTrue()
+		expect(patternMinimatchTest(gitignoreCompile(".git/"), ".git")).toBeTrue()
+		expect(patternMinimatchTest(gitignoreCompile(".git/"), ".github/message")).toBeFalse()
+		expect(patternMinimatchTest(gitignoreCompile(".git/"), ".github/message/file")).toBeFalse()
+		expect(patternMinimatchTest(gitignoreCompile(".git/"), ".github")).toBeFalse()
 	})
 })

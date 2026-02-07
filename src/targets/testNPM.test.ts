@@ -1,5 +1,4 @@
-import { describe, test } from "bun:test"
-import { ok, match } from "node:assert/strict"
+import { describe, test, expect } from "bun:test"
 import { NPM as target } from "./npm.js"
 import { testScan, type PathHandlerOptions } from "../testScan.test.js"
 import type { NestedDirectoryJSON } from "memfs"
@@ -115,12 +114,13 @@ describe("NPM", () => {
 				"package.json": "{",
 			},
 			({ ctx }) => {
-				ok(ctx.failed.length)
+				expect(ctx.failed).toBeArray()
+				expect(ctx.failed).not.toBeEmpty()
 				const source = ctx.failed.find((fail) => dirname(fail.path) === ".")
-				ok(source)
-				ok(source.error)
-				ok(source.error instanceof Error)
-				match(source.error.message, /Expected/)
+				expect(source).toBeTruthy()
+				expect(source!.error).toBeTruthy()
+				expect(source!.error instanceof Error).toBeTruthy()
+				expect((source!.error! as Error).message).toMatch("Expected")
 			},
 		)
 	})

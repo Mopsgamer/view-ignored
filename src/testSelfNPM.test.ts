@@ -1,6 +1,5 @@
 import { scan } from "./scan.js"
-import { describe, test } from "bun:test"
-import { deepEqual, equal } from "node:assert/strict"
+import { describe, test, expect } from "bun:test"
 import { NPM as target } from "./targets/npm.js"
 import { sortFirstFolders } from "./testSort.test.js"
 import { spawn } from "node:child_process"
@@ -17,10 +16,9 @@ describe.skipIf(!!process.env.TEST_NO_SELF)("NPM", () => {
 			// for sorting - new Set(sorted) keeps sorting :),
 			// but your package and dependents should also declare
 			// @jsr:registry=https://npm.jsr.io in .npmrc or something.
-			equal(r.totalMatchedFiles, (await npm).total)
-			equal((await npm).total, (await npm).files.length)
-			deepEqual(
-				sortFirstFolders(r.paths.keys()).filter((path) => !path.endsWith("/")),
+			expect(r.totalMatchedFiles).toBe((await npm).total)
+			expect((await npm).total).toBe((await npm).files.length)
+			expect(sortFirstFolders(r.paths.keys()).filter((path) => !path.endsWith("/"))).toMatchObject(
 				sortFirstFolders((await npm).files),
 			)
 		},

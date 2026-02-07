@@ -1,6 +1,6 @@
 import type { ScanOptions, FsAdapter } from "./types.js"
 import type { MatcherContext } from "./patterns/matcherContext.js"
-import { deepEqual } from "node:assert/strict"
+import { expect } from "bun:test"
 import { createFsFromVolume, Volume, type NestedDirectoryJSON } from "memfs"
 import * as process from "node:process"
 import { scan } from "./browser_scan.js"
@@ -66,7 +66,7 @@ export async function testScan(
 
 	const ctx = await scan(o)
 	const { paths } = ctx
-	deepEqual(sortFirstFolders(paths.keys()), sortFirstFolders(test))
+	expect(sortFirstFolders(paths.keys())).toStrictEqual(sortFirstFolders(test))
 
 	const stream = scanStream(o)
 	const results: string[] = []
@@ -74,7 +74,7 @@ export async function testScan(
 		if (!dirent.match.ignored) results.push(dirent.path)
 	})
 	stream.addListener("end", () => {
-		deepEqual(sortFirstFolders(results), sortFirstFolders(test))
+		expect(sortFirstFolders(results)).toStrictEqual(sortFirstFolders(test))
 		done()
 	})
 }
@@ -111,7 +111,7 @@ export async function testStream(
 	})
 	stream.addListener("end", () => {
 		const paths = sortFirstFolders(results)
-		deepEqual(paths, sortFirstFolders(test))
+		expect(paths).toStrictEqual(sortFirstFolders(test))
 		done()
 	})
 }

@@ -1,6 +1,5 @@
 import { scan } from "./scan.js"
-import { describe, test } from "bun:test"
-import { deepEqual } from "node:assert/strict"
+import { describe, test, expect } from "bun:test"
 import { Git as target } from "./targets/git.js"
 import { sortFirstFolders } from "./testSort.test.js"
 import { spawn } from "node:child_process"
@@ -17,8 +16,7 @@ describe.skipIf(!!process.env.TEST_NO_SELF)("Git", () => {
 			// for sorting - new Set(sorted) keeps sorting :),
 			// but your package and dependents should also declare
 			// @jsr:registry=https://npm.jsr.io in .npmrc or something.
-			deepEqual(
-				sortFirstFolders(r.paths.keys()).filter((path) => !path.endsWith("/")),
+			expect(sortFirstFolders(r.paths.keys()).filter((path) => !path.endsWith("/"))).toMatchObject(
 				sortFirstFolders(await files),
 			)
 		},

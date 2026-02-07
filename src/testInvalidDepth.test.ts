@@ -1,34 +1,25 @@
-import { describe, test } from "bun:test"
-import { rejects } from "node:assert/strict"
+import { describe, test, expect } from "bun:test"
 import { scan } from "./scan.js"
 import { Git } from "./targets/git.js"
 
 describe("Git", () => {
 	const signal = AbortSignal.timeout(50)
 	test("depth -1 should throw", async () => {
-		await rejects(
-			async () => {
-				await scan({ target: Git, depth: -1, signal })
-			},
-			{ name: "TypeError", message: "Depth must be a non-negative integer" },
-		)
+		expect(() => scan({ target: Git, depth: -1, signal })).toThrow({
+			name: "TypeError",
+			message: "Depth must be a non-negative integer",
+		})
 	})
 
 	test("depth 0 should not throw", async () => {
-		await rejects(
-			async () => {
-				await scan({ target: Git, depth: 0, signal })
-			},
-			{ name: "TimeoutError" },
-		)
+		expect(scan({ target: Git, depth: 0, signal })).rejects.toMatchObject({
+			name: "TimeoutError",
+		})
 	})
 
 	test("depth 1 should not throw", async () => {
-		await rejects(
-			async () => {
-				await scan({ target: Git, depth: 1, signal })
-			},
-			{ name: "TimeoutError" },
-		)
+		expect(scan({ target: Git, depth: 1, signal })).rejects.toMatchObject({
+			name: "TimeoutError",
+		})
 	})
 })

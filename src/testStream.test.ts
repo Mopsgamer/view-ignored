@@ -1,6 +1,5 @@
+import { describe, test, expect } from "bun:test"
 import { testStream } from "./testScan.test.js"
-import { describe, test } from "bun:test"
-import { deepEqual } from "node:assert/strict"
 import { Git as target } from "./targets/git.js"
 
 describe("Git", () => {
@@ -15,7 +14,7 @@ describe("Git", () => {
 					paths.push(d.path)
 				})
 				stream.once("end", () => {
-					deepEqual(paths, ["no-match", "file", "no-match", "src/", "no-match", "src/file"])
+					expect(paths).toMatchObject(["no-match", "file", "no-match", "src/", "no-match", "src/file"])
 					done()
 				})
 			},
@@ -33,7 +32,7 @@ describe("Git", () => {
 					paths.push(d.path)
 				})
 				stream.once("end", () => {
-					deepEqual(paths, [
+					expect(paths).toMatchObject([
 						"external", // ignored
 						"file",
 						"no-match", // included
