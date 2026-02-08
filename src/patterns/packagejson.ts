@@ -15,7 +15,7 @@ export function extractPackageJson(source: Source, content: Buffer): void | "non
 	source.inverted = true
 	const dist = parse(content.toString())
 	if (dist instanceof type.errors) {
-		source.error = dist
+		source.error = new Error("Invalid '" + source.path + "': " + dist.summary, { cause: dist })
 		return
 	}
 

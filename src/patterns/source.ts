@@ -1,5 +1,3 @@
-import type { ArkErrors } from "arktype"
-
 import type { SignedPattern } from "./signedPattern.js"
 
 /**
@@ -37,7 +35,7 @@ export type Source = {
 	 * Error encountered during extraction, if any.
 	 * @see {@link ExtractorFn}
 	 */
-	error?: ArkErrors | Error
+	error?: Error
 }
 
 /**

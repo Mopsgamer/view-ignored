@@ -8,18 +8,20 @@ import type { Source } from "./source.js"
 const jsrManifest = type({
 	exclude: "string[]?",
 	include: "string[]?",
-	publish: {
+	"publish?": {
 		exclude: "string[]?",
 		include: "string[]?",
 	},
 })
 
-const parse = jsrManifest.pipe((s: string): typeof jsrManifest.infer => JSON.parse(s))
+const parse = type("string")
+	.pipe((s) => JSON.parse(s))
+	.pipe(jsrManifest)
 
 export function extractJsrJson(source: Source, content: Buffer, ctx: MatcherContext): void {
 	const dist = parse(content.toString())
 	if (dist instanceof type.errors) {
-		source.error = dist
+		source.error = new Error("Invalid '" + source.path + "': " + dist.summary, { cause: dist })
 		ctx.failed.push(source)
 		return
 	}

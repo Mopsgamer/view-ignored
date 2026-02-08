@@ -3,7 +3,7 @@ import { describe, test, expect } from "bun:test"
 import { gitignoreCompile } from "./gitignore.js"
 import { patternMinimatchTest } from "./pattern.js"
 
-describe("Gitignore", () => {
+describe(".gitignore", () => {
 	test("gitignoreCompile", () => {
 		expect(patternMinimatchTest(gitignoreCompile(".git"), ".git/message")).toBeTrue()
 		expect(patternMinimatchTest(gitignoreCompile(".git"), ".github/message")).toBeFalse()

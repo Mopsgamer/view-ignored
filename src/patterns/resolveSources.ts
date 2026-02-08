@@ -10,11 +10,12 @@ import { patternCompile } from "./pattern.js"
 import type { SignedPattern } from "./signedPattern.js"
 import type { Source } from "./source.js"
 
-export function signedPatternCompile(signedPattern: SignedPattern): void {
+export function signedPatternCompile(signedPattern: SignedPattern): SignedPattern {
 	signedPattern.compiled = {
 		include: patternCompile(signedPattern.include),
 		exclude: patternCompile(signedPattern.exclude),
 	}
+	return signedPattern
 }
 
 /**
