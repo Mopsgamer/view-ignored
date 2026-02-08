@@ -116,7 +116,7 @@ import * as vign from "view-ignored/browser"
 // or view-ignored/browser/scan
 import { Git as target } from "view-ignored/targets"
 
-export const cwd = cwd().replace(/\w:/, "").replaceAll("\\", "/")
+export const cwd = process.cwd()
 
 const customFs = {
 	promises: {

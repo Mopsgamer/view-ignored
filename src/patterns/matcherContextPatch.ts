@@ -4,6 +4,7 @@ import * as nodepath from "node:path"
 import { getDepth } from "../getDepth.js"
 import { opendir } from "../opendir.js"
 import { walkIncludes } from "../walk.js"
+import { normalizeCwd } from "../normalizeCwd.js"
 
 /**
  */
@@ -156,7 +157,7 @@ async function rescan(
 	entry: string,
 ): Promise<void> {
 	if (entry !== ".") options.cwd += "/" + entry
-	const normalCwd = options.cwd.replaceAll("\\", "/").replace(/\w:/, "")
+	const normalCwd = normalizeCwd(options.cwd)
 	await opendir(options.fs, options.cwd, (entry) =>
 		walkIncludes({
 			entry,

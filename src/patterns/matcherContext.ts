@@ -15,7 +15,7 @@ export interface MatcherContext {
 	 * @example
 	 * "src" => Source
 	 */
-	external: Map<string, Source>
+	external: Map<string, Source | "none">
 
 	/**
 	 * If any fatal errors were encountered during source extractions,

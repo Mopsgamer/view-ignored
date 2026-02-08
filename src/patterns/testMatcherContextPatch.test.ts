@@ -8,6 +8,7 @@ import type { MatcherContext } from "./matcherContext.js"
 import type { Source } from "./source.js"
 import type { SignedPatternMatch } from "./signedPattern.js"
 import type { PatternMinimatch, Pattern } from "./pattern.js"
+import { normalizeCwd } from "../normalizeCwd.js"
 
 const fsJson = {
 	node_modules: {
@@ -60,7 +61,7 @@ const fsJson = {
 	}),
 }
 
-const cwd = process.cwd().replaceAll("\\", "/").replace(/\w:/, "")
+const cwd = normalizeCwd(process.cwd())
 function patchFS(transformFs: (newFsJson: typeof fsJson) => NestedDirectoryJSON) {
 	const newFsJson = transformFs(structuredClone(fsJson))
 	const vol = Volume.fromNestedJSON(newFsJson, cwd)

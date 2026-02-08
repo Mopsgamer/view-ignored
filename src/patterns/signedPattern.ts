@@ -66,73 +66,93 @@ export function signedPatternCompile(signedPattern: SignedPattern): void {
 	}
 }
 
-function signedPatternCompiledMatch(
+function patternRegExpTest(path: string, rs: PatternMinimatch[]): string {
+	{
+		// TODO: options.ctx.paths should provide patternIndex, not pattern
+		// const cache = options.ctx.paths.get(path)
+		// if (cache && cache.kind === "external" && cache.patternIndex >= 0) {
+		// 	rs = rs.slice(cache.patternIndex)
+		// }
+	}
+	for (const r of rs) {
+		if (patternMinimatchTest(r, path)) {
+			return r.pattern
+		}
+	}
+	return ""
+}
+
+function signedPatternCompiledMatchInternal(
 	options: SignedPatternIgnoresOptions,
-	kind: "external" | "internal",
 	path: string,
-	source: Source | undefined,
 ): SignedPatternMatch {
 	let patternMatch: string = ""
+	const kind = "internal" as const
 
-	function patternRegExpTest(rs: PatternMinimatch[]): string {
-		{
-			// TODO: options.ctx.paths should provide patternIndex, not pattern
-			// const cache = options.ctx.paths.get(path)
-			// if (cache && cache.kind === "external" && cache.patternIndex >= 0) {
-			// 	rs = rs.slice(cache.patternIndex)
-			// }
-		}
-		for (const r of rs) {
-			if (patternMinimatchTest(r, path)) {
-				return r.pattern
-			}
-		}
-		return ""
-	}
-
-	if (!source && kind === "external") {
-		return { kind: "no-match", ignored: false }
-	}
-	const signedPattern = kind === "internal" ? options.internal : source!.pattern
-	const compiled = signedPattern.compiled!
+	const signedPattern = options.internal
+	const compiled = signedPattern.compiled! // no null
 
 	try {
-		if (kind === "internal" || source?.inverted) {
-			patternMatch = patternRegExpTest(compiled.exclude)
+		patternMatch = patternRegExpTest(path, compiled.exclude)
+		if (patternMatch) {
+			// return true
+			return { kind, pattern: patternMatch, ignored: true }
+		}
+
+		patternMatch = patternRegExpTest(path, compiled.include)
+		if (patternMatch) {
+			// return false
+			return { kind, pattern: patternMatch, ignored: false }
+		}
+	} catch {
+		return { kind: "invalid-internal-pattern", ignored: false }
+	}
+	return { kind: "no-match", ignored: true }
+}
+
+function signedPatternCompiledMatchExternal(
+	options: SignedPatternIgnoresOptions,
+	path: string,
+	source: Source,
+): SignedPatternMatch {
+	let patternMatch: string = ""
+	const kind = "external" as const
+
+	const signedPattern = source.pattern
+	const compiled = signedPattern.compiled! // no null
+
+	try {
+		if (source.inverted) {
+			patternMatch = patternRegExpTest(path, compiled.exclude)
 			if (patternMatch) {
 				// return true
-				if (kind === "internal") return { kind, pattern: patternMatch, ignored: true }
 				return { kind, source, pattern: patternMatch, ignored: true }
 			}
 
-			patternMatch = patternRegExpTest(compiled.include)
+			patternMatch = patternRegExpTest(path, compiled.include)
 			if (patternMatch) {
 				// return false
-				if (kind === "internal") return { kind, pattern: patternMatch, ignored: false }
 				return { kind, source, pattern: patternMatch, ignored: false }
 			}
 		} else {
-			patternMatch = patternRegExpTest(compiled.include)
+			patternMatch = patternRegExpTest(path, compiled.include)
 			if (patternMatch) {
 				// return false
 				return { kind, source, pattern: patternMatch, ignored: false }
 			}
 
-			patternMatch = patternRegExpTest(compiled.exclude)
+			patternMatch = patternRegExpTest(path, compiled.exclude)
 			if (patternMatch) {
 				// return true
 				return { kind, source, pattern: patternMatch, ignored: true }
 			}
 		}
 	} catch (err) {
-		if (kind === "internal") {
-			return { kind: "invalid-pattern", ignored: false }
-		}
-		source!.error = err as Error
+		source.error = err as Error
 		options.ctx.failed.push(source!)
-		return { kind: "invalid-internal-pattern", ignored: false }
+		return { kind: "invalid-pattern", ignored: false }
 	}
-	return { kind: "no-match", ignored: source?.inverted ?? true }
+	return { kind: "no-match", ignored: source.inverted }
 }
 
 /**
@@ -149,7 +169,7 @@ function signedPatternCompiledMatch(
  *    - If inverted:
  *      a. Check external exclude patterns. If matched, return true.
  *      b. Check external include patterns. If matched, return false.
- * 4. If no patterns matched, return true if external is inverted, else false.
+ * 4. If no patterns matched, return the inverted state.
  */
 export async function signedPatternIgnores(
 	options: SignedPatternIgnoresOptions,
@@ -157,9 +177,8 @@ export async function signedPatternIgnores(
 	const parent = dirname(options.entry)
 	let source = options.ctx.external.get(parent)
 
-	if (!source) {
+	if (source === undefined) {
 		await resolveSources({ ...options, dir: parent, root: options.root })
-
 		if (options.ctx.failed.length) {
 			return { kind: "broken-source", ignored: false }
 		}
@@ -167,10 +186,15 @@ export async function signedPatternIgnores(
 		source = options.ctx.external.get(parent)
 	}
 
-	let r = signedPatternCompiledMatch(options, "internal", options.entry, source)
-	if (r.kind === "internal") {
-		return r
+	let internalMatch = signedPatternCompiledMatchInternal(options, options.entry)
+	if (internalMatch.kind !== "no-match") {
+		return internalMatch
 	}
 
-	return signedPatternCompiledMatch(options, "external", options.entry, source)
+	if (source === undefined || source === "none") {
+		return { kind: "no-match", ignored: false }
+	}
+
+	const externalMatch = signedPatternCompiledMatchExternal(options, options.entry, source)
+	return externalMatch
 }

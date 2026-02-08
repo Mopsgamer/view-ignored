@@ -10,7 +10,7 @@ const parse = type("string")
 	.pipe((s) => JSON.parse(s))
 	.pipe(nodeJsManifest)
 
-export function extractPackageJson(source: Source, content: Buffer): void {
+export function extractPackageJson(source: Source, content: Buffer): void | "none" {
 	source.inverted = true
 	const dist = parse(content.toString())
 	if (dist instanceof type.errors) {
@@ -19,7 +19,7 @@ export function extractPackageJson(source: Source, content: Buffer): void {
 	}
 
 	if (!dist.files) {
-		throw "continue"
+		return "none"
 	}
 
 	for (const pattern of dist.files) {

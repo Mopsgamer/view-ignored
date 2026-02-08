@@ -8,7 +8,7 @@ import type { Target } from "../targets/target.js"
  * @see {@link Source.pattern} for more details.
  * @throws Error if extraction fails. Processing stops.
  */
-export type ExtractorFn = (source: Source, content: Buffer, ctx: MatcherContext) => void
+export type ExtractorFn = (source: Source, content: Buffer, ctx: MatcherContext) => void | "none"
 
 /**
  * Defines a method for extracting patterns from a specific source file.

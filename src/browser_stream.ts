@@ -7,6 +7,7 @@ import { MatcherStream } from "./patterns/matcherStream.js"
 import { opendir } from "./opendir.js"
 import { walkIncludes } from "./walk.js"
 import type { SignedPatternMatch } from "./patterns/signedPattern.js"
+import { normalizeCwd } from "./normalizeCwd.js"
 export type * from "./types.js"
 
 /**
@@ -36,7 +37,7 @@ export function scanStream(options: ScanOptions & { fs: FsAdapter; cwd: string }
 
 	const stream = new MatcherStream({ captureRejections: false })
 
-	const normalCwd = cwd.replaceAll("\\", "/").replace(/\w:/, "")
+	const normalCwd = normalizeCwd(cwd)
 
 	const scanOptions: Required<ScanOptions> = {
 		cwd: normalCwd,

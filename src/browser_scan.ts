@@ -4,6 +4,7 @@ import type { MatcherContext } from "./patterns/matcherContext.js"
 import { opendir } from "./opendir.js"
 import { walkIncludes } from "./walk.js"
 import type { SignedPatternMatch } from "./patterns/signedPattern.js"
+import { normalizeCwd } from "./normalizeCwd.js"
 export type * from "./types.js"
 
 /**
@@ -45,7 +46,7 @@ export function scan(
 		totalDirs: 0,
 	}
 
-	const normalCwd = cwd.replaceAll("\\", "/").replace(/\w:/, "")
+	const normalCwd = normalizeCwd(cwd)
 
 	const scanOptions: Required<ScanOptions> = {
 		cwd: normalCwd,

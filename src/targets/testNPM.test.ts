@@ -3,6 +3,7 @@ import { NPM as target } from "./npm.js"
 import { testScan, type PathHandlerOptions } from "../testScan.test.js"
 import type { NestedDirectoryJSON } from "memfs"
 import { dirname } from "node:path"
+import type { Source } from "../patterns/source.js"
 
 function testNpm(
 	done: () => void,
@@ -124,13 +125,13 @@ describe("NPM", () => {
 			},
 		)
 	})
-	test("monorepo should use root if cwd is root", async (done) => {
+	test("monorepo should use package.json if cwd is .", async (done) => {
 		await testScan(
 			done,
 			{
 				packages: {
 					a: {
-						"index.js": "console.log('a')",
+						"index.js": "('a')",
 						"package.json": JSON.stringify({
 							name: "a",
 							version: "0.0.1",
@@ -139,8 +140,8 @@ describe("NPM", () => {
 					},
 				},
 				file: "1",
-				"index.js": "console.log('src')",
-				"index.ts": "console.log('src')",
+				"index.js": "('src')",
+				"index.ts": "('src')",
 				"package.json": JSON.stringify({
 					name: "root",
 					version: "0.0.1",
@@ -149,25 +150,35 @@ describe("NPM", () => {
 			},
 			({ ctx }) => {
 				expect(ctx.paths.has("file")).toBeFalse()
-				expect(ctx.paths.has("index.ts")).toBeTrue()
+				expect(ctx.paths.get("index.ts")).toMatchObject({
+					ignored: false,
+					pattern: "index.ts",
+					kind: "external",
+				})
 				expect(ctx.paths.has("index.js")).toBeFalse()
 				expect(ctx.paths.has("packages/a/index.js")).toBeFalse()
 
-				expect(ctx.paths.get("packages/a/")).toBeObject()
-				expect(ctx.paths.get("packages/a/")!.kind).toBe("no-match")
+				expect(ctx.paths.get("packages/a/")).toMatchObject({
+					kind: "internal",
+					pattern: "package.json",
+					ignored: false,
+				})
 
-				expect(ctx.external.get("packages/a")?.path).toBe("package.json")
+				let source = ctx.external.get("packages/a")
+				expect(source).toBeObject()
+				source = source as Source
+				expect(source.path).toBe("package.json")
 			},
 			{ target, cwd: process.cwd() + "/test" },
 		)
 	})
-	test("monorepo should use children if cwd is children", async (done) => {
+	test("monorepo should use packages/a/package.json if cwd is packages/a", async (done) => {
 		await testScan(
 			done,
 			{
 				packages: {
 					a: {
-						"index.js": "console.log('a')",
+						"index.js": "('a')",
 						"package.json": JSON.stringify({
 							name: "a",
 							version: "0.0.1",
@@ -176,8 +187,8 @@ describe("NPM", () => {
 					},
 				},
 				file: "1",
-				"index.js": "console.log('src')",
-				"index.ts": "console.log('src')",
+				"index.js": "('src')",
+				"index.ts": "('src')",
 				"package.json": JSON.stringify({
 					name: "root",
 					version: "0.0.1",
@@ -193,7 +204,7 @@ describe("NPM", () => {
 				expect(ctx.paths.get("packages/a/")).toBeUndefined()
 
 				expect(ctx.external.get("packages/a")).toBeUndefined()
-				expect(ctx.external.get(".")?.path).toBe("package.json")
+				expect((ctx.external.get(".") as Source)?.path).toBe("package.json")
 			},
 			{ target, cwd: process.cwd() + "/test/packages/a" },
 		)

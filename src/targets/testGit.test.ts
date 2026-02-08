@@ -2,6 +2,7 @@ import { test, describe, expect } from "bun:test"
 import { Git as target } from "./git.js"
 import { testScan, type PathHandlerOptions } from "../testScan.test.js"
 import type { NestedDirectoryJSON } from "memfs"
+import type { Source } from "../patterns/source.js"
 
 function testGit(
 	done: () => void,
@@ -138,8 +139,9 @@ describe("Git", () => {
 			({ ctx }) => {
 				expect(ctx.failed).toBeArray()
 				expect(ctx.failed).toBeEmpty()
-				const source = ctx.external.get(".")
-				expect(source).toBeTruthy()
+				let source = ctx.external.get(".")
+				expect(source).toBeObject()
+				source = source as Source
 				expect(source!.error).toBeTruthy()
 				expect(source!.error instanceof Error).toBeTruthy()
 				expect((source!.error! as Error).message).toMatch("Invalid usage of '/'")

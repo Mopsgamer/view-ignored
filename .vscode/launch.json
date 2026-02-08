@@ -5,15 +5,30 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
+			"name": "Test watcher patchers",
+			"type": "bun",
+			"request": "launch",
+			"presentation": {
+				"group": "patterns"
+			},
+			"program": "./src/patterns/testMatcherContextPatch.test.ts"
+		},
+		{
 			"name": "Test in-memory Git",
 			"type": "bun",
 			"request": "launch",
+			"presentation": {
+				"group": "targets"
+			},
 			"program": "./src/targets/testGit.test.ts"
 		},
 		{
 			"name": "Test in-memory NPM",
 			"type": "bun",
 			"request": "launch",
+			"presentation": {
+				"group": "targets"
+			},
 			"program": "./src/targets/testNPM.test.ts"
 		},
 		{
@@ -29,10 +44,11 @@
 			"program": "./src/testSelfNPM.test.ts"
 		},
 		{
-			"name": "Test watcher patchers",
+			"name": "Test depth",
 			"type": "bun",
 			"request": "launch",
-			"program": "./src/patterns/testMatcherContextPatch.test.ts"
+			"stopOnEntry": false,
+			"program": "./src/testDepth.test.ts"
 		}
 	]
 }
