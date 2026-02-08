@@ -27,6 +27,9 @@ const internal: SignedPattern = {
 
 signedPatternCompile(internal)
 
+/**
+ * @since 0.0.6
+ */
 export const Git: Target = {
 	extractors,
 	ignores(fs, cwd, entry, ctx) {

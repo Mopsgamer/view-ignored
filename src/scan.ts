@@ -16,6 +16,8 @@ export type * from "./types.js"
  *
  * @param options Scan options.
  * @returns A promise that resolves to a {@link MatcherContext} containing the scan results.
+ *
+ * @since 0.0.6
  */
 export function scan(options: ScanOptions): Promise<MatcherContext> {
 	const { cwd = process.cwd(), fs = nodefs } = options

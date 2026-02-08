@@ -6,6 +6,8 @@ import { sourcePushNegatable, type Source } from "./source.js"
  * Extracts and compiles patterns from the file.
  *
  * @see {@link signedPatternCompile}
+ *
+ * @since 0.0.6
  */
 export function extractGitignore(source: Source, content: Buffer): void {
 	for (let line of content.toString().split("\n")) {

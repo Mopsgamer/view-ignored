@@ -3,30 +3,40 @@ import type { Source } from "./source.js"
 
 /**
  * Post-scan results.
+ *
+ * @since 0.0.6
  */
 export interface MatcherContext {
 	/**
 	 * Paths and their corresponding sources.
 	 * Directory paths are having the slash suffix.
+	 *
+	 * @since 0.0.6
 	 */
 	paths: Map<string, SignedPatternMatch>
 
 	/**
 	 * Maps directory paths to their corresponding sources.
+	 *
 	 * @example
 	 * "dir" => Source
 	 * "dir/subdir" => Source
+	 *
+	 * @since 0.0.6
 	 */
 	external: Map<string, Source | "none">
 
 	/**
 	 * If any fatal errors were encountered during source extractions,
 	 * this property will contain an array of failed sources.
+	 *
+	 * @since 0.0.6
 	 */
 	failed: Source[]
 
 	/**
 	 * Maps directory paths to the quantity of files they contain.
+	 *
 	 * @example
 	 * // for
 	 * "src/"
@@ -40,21 +50,29 @@ export interface MatcherContext {
 	 * // depth: 1
 	 * "src/components" => 0
 	 * "src/views" => 1
+	 *
+	 * @since 0.0.6
 	 */
 	depthPaths: Map<string, number>
 
 	/**
 	 * Total number of files scanned.
+	 *
+	 * @since 0.0.6
 	 */
 	totalFiles: number
 
 	/**
 	 * Total number of files matched by the target.
+	 *
+	 * @since 0.0.6
 	 */
 	totalMatchedFiles: number
 
 	/**
 	 * Total number of directories scanned.
+	 *
+	 * @since 0.0.6
 	 */
 	totalDirs: number
 }

@@ -2,6 +2,8 @@ import type { SignedPattern } from "./signedPattern.js"
 
 /**
  * Represents a source of external patterns.
+ *
+ * @since 0.0.6
  */
 export type Source = {
 	/**
@@ -10,16 +12,22 @@ export type Source = {
 	 *
 	 * @see {@link PatternMatcher}
 	 * @see {@link signedPatternIgnores}
+	 *
+	 * @since 0.0.6
 	 */
 	pattern: SignedPattern
 
 	/**
 	 * Name of the source file.
+	 *
+	 * @since 0.0.6
 	 */
 	name: string
 
 	/**
 	 * Relative path to the source file.
+	 *
+	 * @since 0.0.6
 	 */
 	path: string
 
@@ -30,6 +38,8 @@ export type Source = {
 	 *
 	 * @see {@link PatternMatcher}
 	 * @see {@link signedPatternIgnores}
+	 *
+	 * @since 0.0.6
 	 */
 	inverted: boolean
 
@@ -37,6 +47,8 @@ export type Source = {
 	 * Error encountered during extraction, if any.
 	 *
 	 * @see {@link ExtractorFn}
+	 *
+	 * @since 0.0.6
 	 */
 	error?: Error
 }
@@ -45,6 +57,8 @@ export type Source = {
  * Adds a negatable pattern to the source's pattern lists.
  * Strips the leading '!' for include patterns,
  * and adds to exclude patterns otherwise.
+ *
+ * @since 0.0.6
  */
 export function sourcePushNegatable(source: Source, pattern: string): void {
 	let exclude = source.pattern.exclude,

@@ -6,6 +6,8 @@ import type { PatternMinimatch, Pattern } from "./pattern.js"
  * Compiles a string of the {@link Pattern}.
  *
  * @see {@link patternCompile}
+ *
+ * @since 0.0.6
  */
 export function stringCompile(
 	pattern: string,

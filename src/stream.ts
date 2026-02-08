@@ -8,6 +8,8 @@ export type * from "./types.js"
 
 /**
  * @see {@link scan}
+ *
+ * @since 0.0.6
  */
 export function scanStream(options: ScanOptions): MatcherStream {
 	const { cwd = process.cwd(), fs = nodefs } = options

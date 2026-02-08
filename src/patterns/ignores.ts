@@ -8,6 +8,8 @@ import type { FsAdapter } from "../types.js"
  * @see {@link resolveSources}
  * @see {@link signedPatternIgnores}
  * @see {@link https://github.com/Mopsgamer/view-ignored/tree/main/src/targets} for usage examples.
+ *
+ * @since 0.0.6
  */
 export type Ignores = (
 	fs: FsAdapter,

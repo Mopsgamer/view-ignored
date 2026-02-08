@@ -16,6 +16,8 @@ const parse = type("string")
  * Extracts and compiles patterns from the file.
  *
  * @see {@link signedPatternCompile}
+ *
+ * @since 0.0.6
  */
 export function extractPackageJson(source: Source, content: Buffer): void | "none" {
 	source.inverted = true

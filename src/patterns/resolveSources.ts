@@ -11,9 +11,13 @@ import type { SignedPattern } from "./signedPattern.js"
 import type { Source } from "./source.js"
 
 /**
- * Compiles the {@link SignedPattern}.
+ * Compiles the {@link SignedPattern} (forced).
+ * Can be compiled at any time.
+ * Extractors are compiling it.
  *
  * @see {@link patternCompile}
+ *
+ * @since 0.0.6
  */
 export function signedPatternCompile(signedPattern: SignedPattern): SignedPattern {
 	signedPattern.compiled = {
@@ -25,13 +29,25 @@ export function signedPatternCompile(signedPattern: SignedPattern): SignedPatter
 
 /**
  * @see {@link resolveSources}
+ *
+ * @since 0.0.6
  */
 export interface ResolveSourcesOptions extends PatternFinderOptions {
+	/**
+	 * Relative directory path.
+	 *
+	 * @example
+	 * "dir/subdir"
+	 *
+	 * @since 0.0.6
+	 */
 	dir: string
 }
 
 /**
  * Populates the {@link MatcherContext.external} map with {@link Source} objects.
+ *
+ * @since 0.0.6
  */
 export async function resolveSources(options: ResolveSourcesOptions): Promise<void> {
 	const { fs, ctx, cwd, target, root } = options
