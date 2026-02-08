@@ -1,10 +1,12 @@
-import type { MatcherContext } from "./matcherContext.js"
-import type { ScanOptions } from "../types.js"
 import * as nodepath from "node:path"
+
 import { getDepth } from "../getDepth.js"
-import { opendir } from "../opendir.js"
-import { walkIncludes } from "../walk.js"
 import { normalizeCwd } from "../normalizeCwd.js"
+import { opendir } from "../opendir.js"
+import type { ScanOptions } from "../types.js"
+import { walkIncludes } from "../walk.js"
+
+import type { MatcherContext } from "./matcherContext.js"
 
 /**
  */

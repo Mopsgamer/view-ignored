@@ -1,13 +1,9 @@
-import type { PatternFinderOptions } from "./extractor.js"
-import type { Source } from "./source.js"
 import { dirname } from "node:path"
-import {
-	patternCompile,
-	patternMinimatchTest,
-	type Pattern,
-	type PatternMinimatch,
-} from "./pattern.js"
+
+import type { PatternFinderOptions } from "./extractor.js"
+import { patternMinimatchTest, type Pattern, type PatternMinimatch } from "./pattern.js"
 import { resolveSources } from "./resolveSources.js"
+import type { Source } from "./source.js"
 
 /**
  * Represents a set of include and exclude patterns.
@@ -57,13 +53,6 @@ export type SignedPatternMatch =
 export interface SignedPatternIgnoresOptions extends PatternFinderOptions {
 	entry: string
 	internal: SignedPattern
-}
-
-export function signedPatternCompile(signedPattern: SignedPattern): void {
-	signedPattern.compiled = {
-		include: patternCompile(signedPattern.include),
-		exclude: patternCompile(signedPattern.exclude),
-	}
 }
 
 function patternRegExpTest(path: string, rs: PatternMinimatch[]): string {
@@ -178,8 +167,9 @@ export async function signedPatternIgnores(
 	let source = options.ctx.external.get(parent)
 
 	if (source === undefined) {
+		const failedPrev = options.ctx.failed.length
 		await resolveSources({ ...options, dir: parent, root: options.root })
-		if (options.ctx.failed.length) {
+		if (failedPrev < options.ctx.failed.length) {
 			return { kind: "broken-source", ignored: false }
 		}
 

@@ -1,5 +1,6 @@
-import type { Target } from "./targets/target.js"
 import type * as fs from "node:fs"
+
+import type { Target } from "./targets/target.js"
 
 export interface FsAdapter {
 	promises: {

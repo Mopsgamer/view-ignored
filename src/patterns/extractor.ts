@@ -1,7 +1,8 @@
+import type { Target } from "../targets/target.js"
 import type { FsAdapter } from "../types.js"
+
 import type { MatcherContext } from "./matcherContext.js"
 import type { Source } from "./source.js"
-import type { Target } from "../targets/target.js"
 
 /**
  * Populates a `Source` object from the content of a source file.

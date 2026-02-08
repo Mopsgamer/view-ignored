@@ -1,4 +1,5 @@
 import type { Dirent, PathLike } from "node:fs"
+
 import type { FsAdapter } from "./types.js"
 
 export async function opendir(

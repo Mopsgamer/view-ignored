@@ -1,14 +1,17 @@
 import { describe, test, expect } from "bun:test"
-import { matcherContextAddPath, matcherContextRemovePath } from "./matcherContextPatch.js"
+
+import { Volume, type NestedDirectoryJSON } from "memfs"
+
+import { normalizeCwd } from "../normalizeCwd.js"
 import { scan, type ScanOptions } from "../scan.js"
 import { NPM as target } from "../targets/npm.js"
 import { createAdapter } from "../testScan.test.js"
-import { Volume, type NestedDirectoryJSON } from "memfs"
+
 import type { MatcherContext } from "./matcherContext.js"
-import type { Source } from "./source.js"
-import type { SignedPatternMatch } from "./signedPattern.js"
+import { matcherContextAddPath, matcherContextRemovePath } from "./matcherContextPatch.js"
 import type { PatternMinimatch, Pattern } from "./pattern.js"
-import { normalizeCwd } from "../normalizeCwd.js"
+import type { SignedPatternMatch } from "./signedPattern.js"
+import type { Source } from "./source.js"
 
 const fsJson = {
 	node_modules: {

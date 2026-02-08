@@ -1,13 +1,13 @@
-import type { ScanOptions, FsAdapter } from "./types.js"
-import type { Source } from "./patterns/source.js"
-import type { MatcherContext } from "./patterns/matcherContext.js"
 // oxlint-disable-next-line no-unused-vars
 import type { scan as browserScan } from "./browser_scan.js"
-import { MatcherStream } from "./patterns/matcherStream.js"
-import { opendir } from "./opendir.js"
-import { walkIncludes } from "./walk.js"
-import type { SignedPatternMatch } from "./patterns/signedPattern.js"
 import { normalizeCwd } from "./normalizeCwd.js"
+import { opendir } from "./opendir.js"
+import type { MatcherContext } from "./patterns/matcherContext.js"
+import { MatcherStream } from "./patterns/matcherStream.js"
+import type { SignedPatternMatch } from "./patterns/signedPattern.js"
+import type { Source } from "./patterns/source.js"
+import type { ScanOptions, FsAdapter } from "./types.js"
+import { walkIncludes } from "./walk.js"
 export type * from "./types.js"
 
 /**

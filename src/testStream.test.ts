@@ -1,6 +1,7 @@
 import { describe, test, expect } from "bun:test"
-import { testStream } from "./testScan.test.js"
+
 import { Git as target } from "./targets/git.js"
+import { testStream } from "./testScan.test.js"
 
 describe("Git", () => {
 	test("scanStream no file", async (done) => {

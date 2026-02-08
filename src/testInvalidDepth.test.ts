@@ -1,4 +1,5 @@
 import { describe, test, expect } from "bun:test"
+
 import { scan } from "./scan.js"
 import { Git } from "./targets/git.js"
 

@@ -1,8 +1,11 @@
 import { test, describe, expect } from "bun:test"
-import { Git as target } from "./git.js"
-import { testScan, type PathHandlerOptions } from "../testScan.test.js"
+
 import type { NestedDirectoryJSON } from "memfs"
+
 import type { Source } from "../patterns/source.js"
+import { testScan, type PathHandlerOptions } from "../testScan.test.js"
+
+import { Git as target } from "./git.js"
 
 function testGit(
 	done: () => void,

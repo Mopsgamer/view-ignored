@@ -1,8 +1,9 @@
+import { type } from "arktype"
+import stripJsonComments from "strip-json-comments"
+
 import type { ExtractorFn } from "./extractor.js"
 import type { MatcherContext } from "./matcherContext.js"
 import type { Source } from "./source.js"
-import { type } from "arktype"
-import stripJsonComments from "strip-json-comments"
 
 const jsrManifest = type({
 	exclude: "string[]?",

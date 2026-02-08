@@ -1,6 +1,7 @@
 import { describe, test } from "bun:test"
-import { testScan } from "./testScan.test.js"
+
 import { Git as target } from "./targets/git.js"
+import { testScan } from "./testScan.test.js"
 
 const dir = {
 	node_modules: {

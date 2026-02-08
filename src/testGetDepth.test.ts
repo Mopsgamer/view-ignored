@@ -1,4 +1,5 @@
 import { describe, test, expect } from "bun:test"
+
 import { getDepth } from "./getDepth.js"
 
 describe("getDepth", () => {

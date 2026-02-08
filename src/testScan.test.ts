@@ -1,12 +1,14 @@
-import type { ScanOptions, FsAdapter } from "./types.js"
-import type { MatcherContext } from "./patterns/matcherContext.js"
 import { expect } from "bun:test"
-import { createFsFromVolume, Volume, type NestedDirectoryJSON } from "memfs"
 import * as process from "node:process"
+
+import { createFsFromVolume, Volume, type NestedDirectoryJSON } from "memfs"
+
 import { scan } from "./browser_scan.js"
-import { MatcherStream } from "./patterns/matcherStream.js"
 import { scanStream } from "./browser_stream.js"
+import type { MatcherContext } from "./patterns/matcherContext.js"
+import { MatcherStream } from "./patterns/matcherStream.js"
 import { sortFirstFolders } from "./testSort.test.js"
+import type { ScanOptions, FsAdapter } from "./types.js"
 
 export function createAdapter(vol: Volume): FsAdapter {
 	const fs = createFsFromVolume(vol)

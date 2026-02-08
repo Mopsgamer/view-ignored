@@ -1,8 +1,9 @@
-import { scan } from "./scan.js"
 import { describe, test, expect } from "bun:test"
+import { spawn } from "node:child_process"
+
+import { scan } from "./scan.js"
 import { Git as target } from "./targets/git.js"
 import { sortFirstFolders } from "./testSort.test.js"
-import { spawn } from "node:child_process"
 
 describe.skipIf(!!process.env.TEST_NO_SELF)("Git", () => {
 	test(

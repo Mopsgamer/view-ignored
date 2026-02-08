@@ -1,11 +1,12 @@
-import type { Extractor } from "../patterns/extractor.js"
-import type { Target } from "./target.js"
 import {
-	signedPatternCompile,
+	type Extractor,
 	signedPatternIgnores,
 	type SignedPattern,
+	signedPatternCompile,
+	extractJsrJson, extractJsrJsonc
 } from "../patterns/index.js"
-import { extractJsrJson, extractJsrJsonc } from "../patterns/jsrjson.js"
+
+import type { Target } from "./target.js"
 
 const extractors: Extractor[] = [
 	{

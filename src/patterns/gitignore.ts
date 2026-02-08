@@ -1,6 +1,7 @@
+import { makeRe } from "minimatch"
+
 import type { ExtractorFn } from "./extractor.js"
 import type { PatternMinimatch, Pattern } from "./pattern.js"
-import { makeRe } from "minimatch"
 import { sourcePushNegatable, type Source } from "./source.js"
 
 export function extractGitignore(source: Source, content: Buffer): void {

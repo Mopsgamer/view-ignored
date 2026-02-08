@@ -1,11 +1,21 @@
-import type { MatcherContext } from "./matcherContext.js"
-import type { Source } from "./source.js"
-import type { PatternFinderOptions, Extractor } from "./extractor.js"
-import type { FsAdapter } from "../types.js"
 import { dirname, relative } from "node:path/posix"
-import { signedPatternCompile } from "./signedPattern.js"
-import type { Target } from "../targets/target.js"
+
 import { normalizeCwd } from "../normalizeCwd.js"
+import type { Target } from "../targets/target.js"
+import type { FsAdapter } from "../types.js"
+
+import type { PatternFinderOptions, Extractor } from "./extractor.js"
+import type { MatcherContext } from "./matcherContext.js"
+import { patternCompile } from "./pattern.js"
+import type { SignedPattern } from "./signedPattern.js"
+import type { Source } from "./source.js"
+
+export function signedPatternCompile(signedPattern: SignedPattern): void {
+	signedPattern.compiled = {
+		include: patternCompile(signedPattern.include),
+		exclude: patternCompile(signedPattern.exclude),
+	}
+}
 
 /**
  * @see {@link resolveSources}

@@ -1,4 +1,5 @@
 import type { ArkErrors } from "arktype"
+
 import type { SignedPattern } from "./signedPattern.js"
 
 /**

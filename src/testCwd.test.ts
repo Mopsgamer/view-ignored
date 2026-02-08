@@ -1,8 +1,10 @@
 import { describe, test, expect } from "bun:test"
-import { testScan, type PathHandlerOptions } from "./testScan.test.js"
-import { Git as target } from "./targets/git.js"
-import { sortFirstFolders } from "./testSort.test.js"
+
 import { minimatch } from "minimatch"
+
+import { Git as target } from "./targets/git.js"
+import { testScan, type PathHandlerOptions } from "./testScan.test.js"
+import { sortFirstFolders } from "./testSort.test.js"
 
 function testCwd(
 	done: () => void,

@@ -1,4 +1,5 @@
 import { type } from "arktype"
+
 import type { ExtractorFn } from "./extractor.js"
 import { sourcePushNegatable, type Source } from "./source.js"
 

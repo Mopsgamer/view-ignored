@@ -1,7 +1,9 @@
-import type { SignedPatternMatch } from "./signedPattern.js"
-import type { MatcherContext } from "../patterns/matcherContext.js"
-import type { Dirent } from "node:fs"
 import { EventEmitter } from "node:events"
+import type { Dirent } from "node:fs"
+
+import type { MatcherContext } from "../patterns/matcherContext.js"
+
+import type { SignedPatternMatch } from "./signedPattern.js"
 
 /**
  * Scanned entry information.

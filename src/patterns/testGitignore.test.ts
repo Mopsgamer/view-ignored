@@ -1,4 +1,5 @@
 import { describe, test, expect } from "bun:test"
+
 import { gitignoreCompile } from "./gitignore.js"
 import { patternMinimatchTest } from "./pattern.js"
 

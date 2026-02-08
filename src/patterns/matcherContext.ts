@@ -1,5 +1,5 @@
-import type { Source } from "./source.js"
 import type { SignedPatternMatch } from "./signedPattern.js"
+import type { Source } from "./source.js"
 
 /**
  * The results and stats of a scanning operation.

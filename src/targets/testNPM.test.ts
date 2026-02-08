@@ -1,9 +1,12 @@
 import { describe, test, expect } from "bun:test"
-import { NPM as target } from "./npm.js"
-import { testScan, type PathHandlerOptions } from "../testScan.test.js"
-import type { NestedDirectoryJSON } from "memfs"
 import { dirname } from "node:path"
+
+import type { NestedDirectoryJSON } from "memfs"
+
 import type { Source } from "../patterns/source.js"
+import { testScan, type PathHandlerOptions } from "../testScan.test.js"
+
+import { NPM as target } from "./npm.js"
 
 function testNpm(
 	done: () => void,

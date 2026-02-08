@@ -1,5 +1,5 @@
-import type { Ignores } from "../patterns/ignores.js"
 import type { Extractor } from "../patterns/extractor.js"
+import type { Ignores } from "../patterns/ignores.js"
 
 /**
  * Contains the matcher used for target scanning.

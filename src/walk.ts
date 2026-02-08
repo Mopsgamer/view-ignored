@@ -1,10 +1,11 @@
 import type { Dirent } from "node:fs"
+import { posix } from "node:path"
+
+import { getDepth } from "./getDepth.js"
+import { normalizeCwd } from "./normalizeCwd.js"
 import type { MatcherContext } from "./patterns/matcherContext.js"
 import type { MatcherStream } from "./patterns/matcherStream.js"
 import type { ScanOptions } from "./types.js"
-import { posix } from "node:path"
-import { getDepth } from "./getDepth.js"
-import { normalizeCwd } from "./normalizeCwd.js"
 
 export type WalkOptions = {
 	entry: Dirent
