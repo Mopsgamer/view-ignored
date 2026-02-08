@@ -77,7 +77,7 @@ export type SignedPatternMatch =
 			ignored: boolean
 	  }
 	| {
-			kind: "internal" | "external"
+			kind: "internal"
 			pattern: string
 			ignored: boolean
 	  }
