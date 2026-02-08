@@ -1,12 +1,13 @@
 import type { SignedPattern } from "./signedPattern.js"
 
 /**
- * Represents a source of patterns for matching paths.
+ * Represents a source of external patterns.
  */
 export type Source = {
 	/**
 	 * Patterns defined within the source file.
 	 * Those patterns are for ignoring files.
+	 *
 	 * @see {@link PatternMatcher}
 	 * @see {@link signedPatternIgnores}
 	 */
@@ -26,6 +27,7 @@ export type Source = {
 	 * Indicates if the matching logic is inverted.
 	 * For example, `package.json` `files` field inverts the matching logic,
 	 * because it specifies files to include rather than exclude.
+	 *
 	 * @see {@link PatternMatcher}
 	 * @see {@link signedPatternIgnores}
 	 */
@@ -33,6 +35,7 @@ export type Source = {
 
 	/**
 	 * Error encountered during extraction, if any.
+	 *
 	 * @see {@link ExtractorFn}
 	 */
 	error?: Error

@@ -5,7 +5,10 @@ import type { MatcherContext } from "./matcherContext.js"
 import type { Source } from "./source.js"
 
 /**
- * Populates a `Source` object from the content of a source file.
+ * Populates the source object from the content of a source file.
+ * Results are available in `ctx.external`.
+ * If `"none"` returned or throwed, will skip the extractor.
+ *
  * @see {@link Source.pattern} for more details.
  * @throws Error if extraction fails. Processing stops.
  */
@@ -21,6 +24,7 @@ export interface Extractor {
 
 /**
  * Options for finding and extracting patterns from source files.
+ *
  * @see {@link resolveSources}
  * @see {@link signedPatternIgnores}
  */

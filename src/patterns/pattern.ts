@@ -1,5 +1,11 @@
-import { gitignoreCompile } from "./gitignore.js"
+import { stringCompile } from "./stringCompile.js"
 
+/**
+ * Compiled pattern.
+ *
+ * @see {@link stringCompile}
+ * @see {@link signedPatternCompile}
+ */
 export type PatternMinimatch = {
 	re: RegExp
 	/**
@@ -12,6 +18,9 @@ export type PatternMinimatch = {
 	patternContext: Pattern
 }
 
+/**
+ * Safely calls RegExp.test.
+ */
 export function patternMinimatchTest(pattern: PatternMinimatch, path: string): boolean {
 	pattern.re.lastIndex = 0
 	return pattern.re.test(path)
@@ -22,6 +31,12 @@ export function patternMinimatchTest(pattern: PatternMinimatch, path: string): b
  */
 export type Pattern = string[]
 
+/**
+ * Compiles the {@link Pattern}.
+ *
+ * @see {@link stringCompile}
+ * @see {@link signedPatternCompile}
+ */
 export function patternCompile(pattern: Pattern): PatternMinimatch[] {
-	return pattern.map(gitignoreCompile)
+	return pattern.map(stringCompile)
 }

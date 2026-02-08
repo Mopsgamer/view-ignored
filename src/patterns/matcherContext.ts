@@ -2,18 +2,20 @@ import type { SignedPatternMatch } from "./signedPattern.js"
 import type { Source } from "./source.js"
 
 /**
- * The results and stats of a scanning operation.
+ * Post-scan results.
  */
 export interface MatcherContext {
 	/**
 	 * Paths and their corresponding sources.
+	 * Directory paths are having the slash suffix.
 	 */
 	paths: Map<string, SignedPatternMatch>
 
 	/**
 	 * Maps directory paths to their corresponding sources.
 	 * @example
-	 * "src" => Source
+	 * "dir" => Source
+	 * "dir/subdir" => Source
 	 */
 	external: Map<string, Source | "none">
 
@@ -33,11 +35,11 @@ export interface MatcherContext {
 	 * "src/views/index.html"
 	 *
 	 * // depth: 0
-	 * "src/" => 1
+	 * "src" => 1
 	 *
 	 * // depth: 1
-	 * "src/components/" => 0
-	 * "src/views/" => 1
+	 * "src/components" => 0
+	 * "src/views" => 1
 	 */
 	depthPaths: Map<string, number>
 

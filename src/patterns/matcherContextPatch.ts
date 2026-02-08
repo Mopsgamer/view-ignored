@@ -9,6 +9,8 @@ import { walkIncludes } from "../walk.js"
 import type { MatcherContext } from "./matcherContext.js"
 
 /**
+ * Provides patching abilities for the given {@link MatcherContext}.
+ * Directories should have the slash suffix.
  */
 export async function matcherContextAddPath(
 	ctx: MatcherContext,
@@ -68,6 +70,8 @@ export async function matcherContextAddPath(
 }
 
 /**
+ * Provides patching abilities for the given {@link MatcherContext}.
+ * Directories should have the slash suffix.
  */
 export async function matcherContextRemovePath(
 	ctx: MatcherContext,

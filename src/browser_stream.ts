@@ -1,5 +1,3 @@
-// oxlint-disable-next-line no-unused-vars
-import type { scan as browserScan } from "./browser_scan.js"
 import { normalizeCwd } from "./normalizeCwd.js"
 import { opendir } from "./opendir.js"
 import type { MatcherContext } from "./patterns/matcherContext.js"

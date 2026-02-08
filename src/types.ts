@@ -2,6 +2,9 @@ import type * as fs from "node:fs"
 
 import type { Target } from "./targets/target.js"
 
+/**
+ * Minimal FS implementation needed for `scan`, `scanStream`, and their browser versions.
+ */
 export interface FsAdapter {
 	promises: {
 		opendir: typeof fs.promises.opendir
@@ -9,8 +12,9 @@ export interface FsAdapter {
 	}
 }
 
-export type DepthMode = "files" | undefined
-
+/**
+ * Used in multiple methods, primarily `scan`, `scanStream`, and their browser versions.
+ */
 export type ScanOptions = {
 	/**
 	 * Provides the matcher to use for scanning.
@@ -19,12 +23,14 @@ export type ScanOptions = {
 
 	/**
 	 * Current working directory to start the scan from.
+	 *
 	 * @default `(await import("node:process")).cwd().replaceAll("\\", "/")`
 	 */
 	cwd?: string
 
 	/**
 	 * If enabled, the scan will return files that are ignored by the target matcher.
+	 *
 	 * @default `false`
 	 */
 	invert?: boolean
@@ -32,12 +38,14 @@ export type ScanOptions = {
 	/**
 	 * Starting from depth `0` means you will see
 	 * children of the current working directory.
+	 *
 	 * @default `Infinity`
 	 */
 	depth?: number
 
 	/**
 	 * Return as soon as possible.
+	 *
 	 * @default `undefined`
 	 */
 	signal?: AbortSignal | null
@@ -54,7 +62,8 @@ export type ScanOptions = {
 	 * and {@link MatcherContext.depthPaths}.
 	 *
 	 * It's recommended to use this option unless you
-	 * need precise statistics.
+	 * need precise statistics
+	 *
 	 * @default `false`
 	 */
 	fastDepth?: boolean
@@ -72,12 +81,14 @@ export type ScanOptions = {
 	 * It's recommended to use this option unless the target
 	 * allows overriding internal patterns.
 	 * This option should never affect {@link MatcherContext.totalMatchedFiles}.
+	 *
 	 * @default `false`
 	 */
 	fastInternal?: boolean
 
 	/**
 	 * File system interface.
+	 *
 	 * @default `await import("node:fs")`
 	 */
 	fs?: FsAdapter

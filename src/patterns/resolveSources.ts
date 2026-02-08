@@ -10,6 +10,11 @@ import { patternCompile } from "./pattern.js"
 import type { SignedPattern } from "./signedPattern.js"
 import type { Source } from "./source.js"
 
+/**
+ * Compiles the {@link SignedPattern}.
+ *
+ * @see {@link patternCompile}
+ */
 export function signedPatternCompile(signedPattern: SignedPattern): SignedPattern {
 	signedPattern.compiled = {
 		include: patternCompile(signedPattern.include),
@@ -163,6 +168,5 @@ async function tryExtractor(
 				: new Error("Unknown error during source extraction", { cause: err })
 		return newSource
 	}
-	signedPatternCompile(newSource.pattern)
 	return newSource
 }
