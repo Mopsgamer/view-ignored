@@ -6,7 +6,6 @@ import { testStream } from "./testScan.test.js"
 describe("Git", () => {
 	test("scanStream no file", async (done) => {
 		await testStream(
-			done,
 			{ file: "1", src: { file: "2" } },
 			({ stream }) => {
 				const paths: string[] = []
@@ -31,7 +30,6 @@ describe("Git", () => {
 	})
 	test("scanStream .gitignore", async (done) => {
 		await testStream(
-			done,
 			{ file: "1", src: { file: "2" }, ".gitignore": "file", ".git": { HEAD: "" } },
 			({ stream }) => {
 				const paths: string[] = []

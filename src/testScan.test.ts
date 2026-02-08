@@ -85,9 +85,8 @@ export async function testScan(
  * Executes tests within './test'.
  */
 export async function testStream(
-	done: () => void,
 	tree: NestedDirectoryJSON,
-	test: ((o: PathHandlerOptionsStream) => void | Promise<void>) | string[],
+	test: (o: PathHandlerOptionsStream) => void | Promise<void>,
 	options: ScanOptions,
 ): Promise<void> {
 	const cwd = process.cwd() + "/test"
@@ -105,15 +104,4 @@ export async function testStream(
 		})
 		return
 	}
-
-	const stream = scanStream(o)
-	const results: string[] = []
-	stream.addListener("dirent", (dirent) => {
-		if (!dirent.match.ignored) results.push(dirent.path)
-	})
-	stream.addListener("end", () => {
-		const paths = sortFirstFolders(results)
-		expect(paths).toStrictEqual(sortFirstFolders(test))
-		done()
-	})
 }

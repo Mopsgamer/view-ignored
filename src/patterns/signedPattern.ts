@@ -113,13 +113,6 @@ export interface SignedPatternIgnoresOptions extends PatternFinderOptions {
 }
 
 function patternRegExpTest(path: string, rs: PatternMinimatch[]): string {
-	{
-		// TODO: options.ctx.paths should provide patternIndex, not pattern
-		// const cache = options.ctx.paths.get(path)
-		// if (cache && cache.kind === "external" && cache.patternIndex >= 0) {
-		// 	rs = rs.slice(cache.patternIndex)
-		// }
-	}
 	for (const r of rs) {
 		if (patternMinimatchTest(r, path)) {
 			return r.pattern

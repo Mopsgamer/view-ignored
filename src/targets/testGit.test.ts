@@ -1,8 +1,7 @@
-import { test, describe, expect } from "bun:test"
+import { test, describe } from "bun:test"
 
 import type { NestedDirectoryJSON } from "memfs"
 
-import type { Source } from "../patterns/source.js"
 import { testScan, type PathHandlerOptions } from "../testScan.test.js"
 
 import { Git as target } from "./git.js"
@@ -128,27 +127,6 @@ describe("Git", () => {
 				".gitignore": "*.js\n!negkeep.js",
 			},
 			["negkeep.js", ".gitignore"],
-		)
-	})
-
-	test.skip("collects errors", async (done) => {
-		await testGit(
-			done,
-			{
-				"foo.js": "",
-				"negkeep.js": "",
-				".gitignore": "\\",
-			},
-			({ ctx }) => {
-				expect(ctx.failed).toBeArray()
-				expect(ctx.failed).toBeEmpty()
-				let source = ctx.external.get(".")
-				expect(source).toBeObject()
-				source = source as Source
-				expect(source!.error).toBeTruthy()
-				expect(source!.error instanceof Error).toBeTruthy()
-				expect((source!.error! as Error).message).toMatch("Invalid usage of '/'")
-			},
 		)
 	})
 })

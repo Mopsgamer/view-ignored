@@ -23,7 +23,6 @@ export function extractGitignore(source: Source, content: Buffer): void {
 		sourcePushNegatable(source, line)
 	}
 	signedPatternCompile(source.pattern)
-	// TODO: validate gitignore
 }
 
 extractGitignore satisfies ExtractorFn
