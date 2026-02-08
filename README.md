@@ -46,13 +46,15 @@ ctx.paths.has("src") // true
 ### Using custom target
 
 ```ts
-import type { Target } from "view-ignored/targets"
 import {
 	type Extractor,
-	type SignedPattern,
-	signedPatternIgnores,
 	extractGitignore,
+	signedPatternIgnores,
+	signedPatternCompile,
+	type SignedPattern,
 } from "view-ignored/patterns"
+
+import type { Target } from "view-ignored/targets"
 
 const extractors: Extractor[] = [
 	{
@@ -82,6 +84,7 @@ export const Git: Target = {
 			ctx,
 			cwd,
 			entry,
+			root: "/",
 			target: Git,
 		})
 	},

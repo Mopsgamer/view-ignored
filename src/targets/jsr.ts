@@ -3,7 +3,8 @@ import {
 	signedPatternIgnores,
 	type SignedPattern,
 	signedPatternCompile,
-	extractJsrJson, extractJsrJsonc
+	extractJsrJson,
+	extractJsrJsonc,
 } from "../patterns/index.js"
 
 import type { Target } from "./target.js"
