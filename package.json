@@ -13,6 +13,7 @@
 		"gitignore",
 		"ignore",
 		"ignorefile",
+		"ls-files",
 		"ls-tree",
 		"match",
 		"migration",
