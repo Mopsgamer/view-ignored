@@ -20,13 +20,17 @@ const dir = {
 	"package.json": "{}",
 }
 
+const fastDepth = true
+
 describe("Git", () => {
 	test("depth 0 should include *", async (done) => {
 		await testScan(done, dir, ["src/", ".gitignore", "package.json"], { target, depth: 0 })
+		await testScan(done, dir, ["src/", ".gitignore", "package.json"], { target, depth: 0, fastDepth })
 	})
 
 	test("depth 0 should include * for inverted", async (done) => {
 		await testScan(done, dir, ["out/", "node_modules/"], { target, invert: true, depth: 0 })
+		await testScan(done, dir, ["out/", "node_modules/"], { target, invert: true, depth: 0, fastDepth })
 	})
 
 	test("depth 1 should include */*", async (done) => {
@@ -35,6 +39,12 @@ describe("Git", () => {
 			dir,
 			["src/", "src/index.ts", "src/submodule/", ".gitignore", "package.json"],
 			{ target, depth: 1 },
+		)
+		await testScan(
+			done,
+			dir,
+			["src/", "src/index.ts", "src/submodule/", ".gitignore", "package.json"],
+			{ target, depth: 1, fastDepth },
 		)
 	})
 
@@ -51,6 +61,19 @@ describe("Git", () => {
 				"node_modules/b/",
 			],
 			{ target, invert: true, depth: 1 },
+		)
+		await testScan(
+			done,
+			dir,
+			[
+				"out/",
+				"out/index.js",
+				"out/submodule/",
+				"node_modules/",
+				"node_modules/a/",
+				"node_modules/b/",
+			],
+			{ target, invert: true, depth: 1, fastDepth },
 		)
 	})
 })
