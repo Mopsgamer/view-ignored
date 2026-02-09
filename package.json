@@ -76,7 +76,7 @@
 		"access": "public"
 	},
 	"scripts": {
-		"prerelease": "bun run test && bun run prod && bun run lint && bun run fmt --check",
+		"prerelease": "bun run test && bun run prod && bun run lint && bun run fmt --check && bun publint --pack bun --strict",
 		"test": "bun test src",
 		"test:patterns": "bun test src/patterns",
 		"test:targets": "bun test src/targets",
@@ -98,14 +98,15 @@
 		"strip-json-comments": "^5.0.3"
 	},
 	"devDependencies": {
-		"@release-it/keep-a-changelog": "^7.0.0",
+		"@release-it/keep-a-changelog": "^7.0.1",
 		"@types/bun": "^1.3.8",
 		"@types/node": "^18.19.130",
-		"@typescript/native-preview": "^7.0.0-dev.20260203.1",
+		"@typescript/native-preview": "^7.0.0-dev.20260209.1",
 		"memfs": "^4.56.10",
 		"oxfmt": "^0.28.0",
 		"oxlint": "^1.43.0",
-		"oxlint-tsgolint": "^0.11.4",
+		"oxlint-tsgolint": "^0.11.5",
+		"publint": "^0.3.17",
 		"release-it": "^19.2.4"
 	},
 	"engines": {

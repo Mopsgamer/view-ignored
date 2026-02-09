@@ -8,22 +8,10 @@ and this project adheres to
 
 ## [Unreleased]
 
-- BREAKING CHANGE: Target fixes and related refactorings,
-  including some renamings.
-- BREAKING CHANGE: Change implementations of some pattern extractors.
-- BREAKING CHANGE: Show directories.
-- BREAKING CHANGE: Improve and fix `Extractor`.
-- Use Node 18.
-- Add `stream` function, `view-ignored/browser` API.
-- Add `view-ignored/scan`, `view-ignored/stream`.
-- Add `view-ignored/browser/scan`, `view-ignored/browser/stream`.
-- Add MatcherContext-patching API for watching: `matcherContextAddPath`,
-  `matcherContextRemovePath`, `matcherContextRefreshDir`.
-- Add `Source.error` and `MatcherContext.failed`.
-  Remove `MatcherContext.sourceErrors`.
-- Replace eslint with oxlint and oxfmt.
-- Add tests for Git and NPM targets.
-  Also, test outputs for them for the project itself.
+- Replaces the 0.5.x release, which was untested and non functional.
+- Introduces improved APIs building on 0.5.x, including new scanning options
+  such as `within`, `fastInternal`, `fs`, and more.
+- Node 18 support.
 
 ## [0.5.2] - 2025-12-15
 
