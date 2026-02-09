@@ -30,11 +30,23 @@ export type ScanOptions = {
 	/**
 	 * Current working directory to start the scan from.
 	 *
-	 * @default `(await import("node:process")).cwd().replaceAll("\\", "/")`
+	 * @default `normalizeCwd(process.cwd())`
 	 *
 	 * @since 0.0.6
 	 */
 	cwd?: string
+
+	/**
+	 * Limits the scan to a subdirectory of `cwd`.
+	 * Traversal starts from this subdirectory, but returned paths
+	 * remain relative to `cwd`, and ignore files from `cwd`
+	 * are still applied.
+	 *
+	 * @default `"."`
+	 *
+	 * @since 0.0.6
+	 */
+	within?: string
 
 	/**
 	 * If enabled, the scan will return files that are ignored by the target matcher.

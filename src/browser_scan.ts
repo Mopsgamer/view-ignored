@@ -1,3 +1,5 @@
+import { resolve } from "node:path"
+
 import { normalizeCwd } from "./normalizeCwd.js"
 import { opendir } from "./opendir.js"
 import type { MatcherContext } from "./patterns/matcherContext.js"
@@ -26,6 +28,7 @@ export function scan(
 	const {
 		target,
 		cwd,
+		within: select = ".",
 		invert = false,
 		depth: maxDepth = Infinity,
 		signal = null,
@@ -52,6 +55,7 @@ export function scan(
 
 	const scanOptions: Required<ScanOptions> = {
 		cwd: normalCwd,
+		within: select,
 		depth: maxDepth,
 		fastDepth,
 		fastInternal,
@@ -61,7 +65,7 @@ export function scan(
 		target,
 	}
 
-	const result = opendir(fs, cwd, (entry) =>
+	const result = opendir(fs, resolve(cwd, select), (entry) =>
 		walkIncludes({
 			entry,
 			ctx,

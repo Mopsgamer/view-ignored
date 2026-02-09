@@ -1,4 +1,4 @@
-import * as nodepath from "node:path"
+import { resolve, dirname } from "node:path"
 
 import { getDepth } from "../getDepth.js"
 import { normalizeCwd } from "../normalizeCwd.js"
@@ -36,14 +36,14 @@ export async function matcherContextAddPath(
 		if (ctx.totalFiles >= 0) {
 			ctx.totalDirs++
 		}
-		const parent = nodepath.dirname(direntPath)
+		const parent = dirname(direntPath)
 		if (parent !== ".") {
 			void (await matcherContextAddPath(ctx, options, parent + "/"))
 		}
 		return true
 	}
 
-	const parent = nodepath.dirname(entry)
+	const parent = dirname(entry)
 
 	const isSource = target.extractors.some((e) => e.path === entry)
 	if (isSource) {
@@ -113,9 +113,7 @@ export async function matcherContextRemovePath(
 			}
 			if (ctx.external.delete(element) && ctx.failed.length) {
 				// 3.1. remove failed sources
-				const failedEntryIndex = ctx.failed.findIndex(
-					(fail) => nodepath.dirname(fail.path) === element,
-				)
+				const failedEntryIndex = ctx.failed.findIndex((fail) => dirname(fail.path) === element)
 				if (failedEntryIndex >= 0) {
 					ctx.failed.splice(failedEntryIndex, 1)
 				}
@@ -124,7 +122,7 @@ export async function matcherContextRemovePath(
 		return true
 	}
 
-	const parent = nodepath.dirname(entry)
+	const parent = dirname(entry)
 
 	const isSource = options.target.extractors.some((e) => e.path === entry)
 	if (isSource) {
@@ -168,7 +166,7 @@ async function rescan(
 ): Promise<void> {
 	if (entry !== ".") options.cwd += "/" + entry
 	const normalCwd = normalizeCwd(options.cwd)
-	await opendir(options.fs, options.cwd, (entry) =>
+	await opendir(options.fs, resolve(options.cwd, options.within), (entry) =>
 		walkIncludes({
 			entry,
 			ctx,
