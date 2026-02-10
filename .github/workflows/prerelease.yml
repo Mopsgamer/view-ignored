@@ -1,10 +1,10 @@
-name: Check
+name: Prerelease
 
 on:
   workflow_dispatch:
 
 jobs:
-  test:
+  prerelease:
     runs-on: ubuntu-latest
     permissions:
       contents: write
