@@ -37,7 +37,7 @@ export async function walkIncludes(options: WalkOptions): Promise<0 | 1 | 2> {
 		const { depth, depthSlash } = getDepth(path, maxDepth)
 		if (depth > maxDepth) {
 			const failedPrev = ctx.failed.length
-			let match = await target.ignores(fs, cwd, path, ctx)
+			let match = await target.ignores({ fs, cwd, entry: path, ctx })
 			if (invert) {
 				match.ignored = !match.ignored
 			}
@@ -70,7 +70,7 @@ export async function walkIncludes(options: WalkOptions): Promise<0 | 1 | 2> {
 	}
 
 	const failedPrev = ctx.failed.length
-	let match = await target.ignores(fs, cwd, path, ctx)
+	let match = await target.ignores({ fs, cwd, entry: path, ctx })
 	if (invert) {
 		match.ignored = !match.ignored
 	}

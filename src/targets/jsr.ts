@@ -41,13 +41,10 @@ signedPatternCompile(internal)
  */
 export const JSR: Target = {
 	extractors,
-	ignores(fs, cwd, entry, ctx) {
+	ignores(o) {
 		return signedPatternIgnores({
-			fs,
+			...o,
 			internal,
-			ctx,
-			cwd,
-			entry,
 			root: ".",
 			target: JSR,
 		})

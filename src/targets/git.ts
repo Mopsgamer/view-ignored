@@ -32,13 +32,10 @@ signedPatternCompile(internal)
  */
 export const Git: Target = {
 	extractors,
-	ignores(fs, cwd, entry, ctx) {
+	ignores(o) {
 		return signedPatternIgnores({
-			fs,
+			...o,
 			internal,
-			ctx,
-			cwd,
-			entry,
 			root: "/",
 			target: Git,
 		})

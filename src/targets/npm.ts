@@ -55,13 +55,10 @@ signedPatternCompile(internal)
  */
 export const NPM: Target = {
 	extractors,
-	ignores(fs, cwd, entry, ctx) {
+	ignores(o) {
 		return signedPatternIgnores({
-			fs,
+			...o,
 			internal,
-			ctx,
-			cwd,
-			entry,
 			root: ".",
 			target: NPM,
 		})

@@ -2,6 +2,13 @@ import type { MatcherContext } from "../patterns/matcherContext.js"
 import type { SignedPatternMatch } from "../patterns/signedPattern.js"
 import type { FsAdapter } from "../types.js"
 
+export interface IgnoresOptions {
+	fs: FsAdapter
+	cwd: string
+	entry: string
+	ctx: MatcherContext
+}
+
 /**
  * Checks whether a given entry path should be ignored based on its patterns.
  *
@@ -11,9 +18,4 @@ import type { FsAdapter } from "../types.js"
  *
  * @since 0.0.6
  */
-export type Ignores = (
-	fs: FsAdapter,
-	cwd: string,
-	entry: string,
-	ctx: MatcherContext,
-) => Promise<SignedPatternMatch>
+export type Ignores = (options: IgnoresOptions) => Promise<SignedPatternMatch>
