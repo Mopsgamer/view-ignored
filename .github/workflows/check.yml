@@ -1,21 +1,7 @@
-name: Release
+name: Check
 
 on:
   workflow_dispatch:
-    inputs:
-      release_type:
-        description: Select release type
-        required: true
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
-      dry_run:
-        description: Enable dry run
-        required: false
-        type: boolean
-        default: false
 
 jobs:
   release:
@@ -49,12 +35,8 @@ jobs:
       - name: Bun install
         run: bun install
 
-      - name: Run release
+      - name: Run prerelease
         env:
           PATH: /usr/local/bin:/usr/bin:/bin
         run: |
-          if [ "${{ inputs.dry_run }}" = "true" ]; then
-            bun run release:${{ inputs.release_type }} --ci --dry-run
-          else
-            bun run release:${{ inputs.release_type }} --ci
-          fi
+          bun run prerelease

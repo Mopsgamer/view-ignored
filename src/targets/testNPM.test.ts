@@ -1,5 +1,5 @@
 import { describe, test, expect } from "bun:test"
-import { dirname } from "node:path"
+import { dirname } from "node:path/posix"
 
 import type { NestedDirectoryJSON } from "memfs"
 

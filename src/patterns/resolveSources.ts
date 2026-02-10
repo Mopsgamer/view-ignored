@@ -1,4 +1,4 @@
-import { dirname, relative } from "node:path/posix"
+import { dirname, relative, resolve } from "node:path"
 
 import { normalizeCwd } from "../normalizeCwd.js"
 import type { Target } from "../targets/target.js"
@@ -104,7 +104,9 @@ export async function resolveSources(options: ResolveSourcesOptions): Promise<vo
 		}
 	}
 
-	const rels = noSourceDirList.map((rel) => normalizeCwd(process.cwd() + "/" + relative(rel, cwd)))
+	const rels = noSourceDirList.map((rel) =>
+		normalizeCwd(resolve(process.cwd(), relative(rel, cwd))),
+	)
 	source = await findSourceForAbsoluteDirs(rels, ctx, fs, target)
 	if (source !== undefined) {
 		for (const noSourceDir of noSourceDirList) {
@@ -146,7 +148,7 @@ async function tryExtractor(
 	ctx: MatcherContext,
 	extractor: Extractor,
 ): Promise<Source | "none"> {
-	const abs = cwd === "/" ? cwd + extractor.path : cwd + "/" + extractor.path
+	const abs = resolve(cwd, extractor.path)
 	const path = relative(cwd, abs)
 	const name = path.substring(path.lastIndexOf("/") + 1)
 

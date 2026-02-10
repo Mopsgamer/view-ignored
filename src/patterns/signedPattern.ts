@@ -1,4 +1,4 @@
-import { dirname } from "node:path"
+import { dirname } from "node:path/posix"
 
 import type { PatternFinderOptions } from "./extractor.js"
 import { patternMinimatchTest, type Pattern, type PatternMinimatch } from "./pattern.js"

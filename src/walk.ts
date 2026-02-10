@@ -1,5 +1,5 @@
 import type { Dirent } from "node:fs"
-import { posix } from "node:path"
+import { relative } from "node:path/posix"
 
 import { getDepth } from "./getDepth.js"
 import { normalizeCwd } from "./normalizeCwd.js"
@@ -21,7 +21,7 @@ export async function walkIncludes(options: WalkOptions): Promise<0 | 1 | 2> {
 
 	signal?.throwIfAborted()
 
-	const path = posix.relative(cwd, normalizeCwd(entry.parentPath) + "/" + entry.name)
+	const path = relative(cwd, normalizeCwd(entry.parentPath) + "/" + entry.name)
 
 	const isDir = entry.isDirectory()
 	let direntPath: string

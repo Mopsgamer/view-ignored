@@ -100,9 +100,13 @@ describe("Git", () => {
 					"main.js": "",
 					"helper.js": "",
 				},
+				out: {
+					"main.js": "",
+					"helper.js": "",
+				},
 				".gitignore": "src/",
 			},
-			[".gitignore"],
+			[".gitignore", "out/", "out/main.js", "out/helper.js"],
 		)
 	})
 

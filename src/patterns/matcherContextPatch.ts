@@ -49,7 +49,7 @@ export async function matcherContextAddPath(
 	if (isSource) {
 		// add pattern sources
 		await matcherContextRemovePath(ctx, options, parent + "/")
-		await rescan(ctx, options, entry)
+		await rescan(ctx, { ...options, within: parent })
 	}
 
 	// add paths
@@ -129,7 +129,7 @@ export async function matcherContextRemovePath(
 		// remove pattern sources
 		// rescan directory and repopulate stats
 		await matcherContextRemovePath(ctx, options, parent + "/")
-		await rescan(ctx, options, parent)
+		await rescan(ctx, { ...options, within: parent })
 		return true
 	}
 	// remove path
@@ -159,12 +159,7 @@ export async function matcherContextRemovePath(
 	return true
 }
 
-async function rescan(
-	ctx: MatcherContext,
-	options: Required<ScanOptions>,
-	entry: string,
-): Promise<void> {
-	if (entry !== ".") options.cwd += "/" + entry
+async function rescan(ctx: MatcherContext, options: Required<ScanOptions>): Promise<void> {
 	const normalCwd = normalizeCwd(options.cwd)
 	await opendir(options.fs, resolve(options.cwd, options.within), (entry) =>
 		walkIncludes({
