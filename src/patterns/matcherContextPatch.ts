@@ -12,7 +12,7 @@ import type { MatcherContext } from "./matcherContext.js"
  * Provides patching abilities for the given {@link MatcherContext}.
  * Directories should have the slash suffix.
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export async function matcherContextAddPath(
 	ctx: MatcherContext,
@@ -75,7 +75,7 @@ export async function matcherContextAddPath(
  * Provides patching abilities for the given {@link MatcherContext}.
  * Directories should have the slash suffix.
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export async function matcherContextRemovePath(
 	ctx: MatcherContext,

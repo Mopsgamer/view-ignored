@@ -12,14 +12,14 @@ import type { Source } from "./source.js"
  * @see {@link Source.pattern} for more details.
  * @throws Error if extraction fails. Processing stops.
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export type ExtractorFn = (source: Source, content: Buffer, ctx: MatcherContext) => void | "none"
 
 /**
  * Defines a method for extracting patterns from a specific source file.
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export interface Extractor {
 	/**
@@ -28,7 +28,7 @@ export interface Extractor {
 	 * @example
 	 * ".gitignore"
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	path: string
 	/**
@@ -36,7 +36,7 @@ export interface Extractor {
 	 *
 	 * @see {@link ExtractorFn}
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	extract: ExtractorFn
 }
@@ -47,38 +47,38 @@ export interface Extractor {
  * @see {@link resolveSources}
  * @see {@link signedPatternIgnores}
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export interface PatternFinderOptions {
 	/**
 	 * The file system adapter for directory walking and reading files.
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	fs: FsAdapter
 	/**
 	 * The context to modify.
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	ctx: MatcherContext
 	/**
 	 * The current working directory.
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	cwd: string
 	/**
 	 * The target implementation.
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	target: Target
 	/**
 	 * Initial search directory.
 	 * Relative to the `cwd` path or absolute path.
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	root: string
 }

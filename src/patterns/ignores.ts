@@ -16,6 +16,6 @@ export interface IgnoresOptions {
  * @see {@link signedPatternIgnores}
  * @see {@link https://github.com/Mopsgamer/view-ignored/tree/main/src/targets} for usage examples.
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export type Ignores = (options: IgnoresOptions) => Promise<SignedPatternMatch>

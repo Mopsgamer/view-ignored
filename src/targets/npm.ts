@@ -51,7 +51,7 @@ const internal: SignedPattern = {
 signedPatternCompile(internal)
 
 /**
- * @since 0.0.6
+ * @since 0.6.0
  */
 export const NPM: Target = {
 	extractors,

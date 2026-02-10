@@ -13,7 +13,7 @@ export type * from "./types.js"
 /**
  * @see {@link browserScan}
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export function scanStream(options: ScanOptions & { fs: FsAdapter; cwd: string }): MatcherStream {
 	const {

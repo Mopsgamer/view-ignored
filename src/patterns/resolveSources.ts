@@ -17,7 +17,7 @@ import type { Source } from "./source.js"
  *
  * @see {@link patternCompile}
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export function signedPatternCompile(signedPattern: SignedPattern): SignedPattern {
 	signedPattern.compiled = {
@@ -30,7 +30,7 @@ export function signedPatternCompile(signedPattern: SignedPattern): SignedPatter
 /**
  * @see {@link resolveSources}
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export interface ResolveSourcesOptions extends PatternFinderOptions {
 	/**
@@ -39,7 +39,7 @@ export interface ResolveSourcesOptions extends PatternFinderOptions {
 	 * @example
 	 * "dir/subdir"
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	dir: string
 }
@@ -47,7 +47,7 @@ export interface ResolveSourcesOptions extends PatternFinderOptions {
 /**
  * Populates the {@link MatcherContext.external} map with {@link Source} objects.
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export async function resolveSources(options: ResolveSourcesOptions): Promise<void> {
 	const { fs, ctx, cwd, target, root } = options

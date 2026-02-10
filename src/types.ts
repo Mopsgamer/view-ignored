@@ -5,7 +5,7 @@ import type { Target } from "./targets/target.js"
 /**
  * Minimal FS implementation needed for `scan`, `scanStream`, and their browser versions.
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export interface FsAdapter {
 	promises: {
@@ -17,13 +17,13 @@ export interface FsAdapter {
 /**
  * Used in multiple methods, primarily `scan`, `scanStream`, and their browser versions.
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export type ScanOptions = {
 	/**
 	 * Provides the matcher to use for scanning.
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	target: Target
 
@@ -32,7 +32,7 @@ export type ScanOptions = {
 	 *
 	 * @default `normalizeCwd(process.cwd())`
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	cwd?: string
 
@@ -44,7 +44,7 @@ export type ScanOptions = {
 	 *
 	 * @default `"."`
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	within?: string
 
@@ -53,7 +53,7 @@ export type ScanOptions = {
 	 *
 	 * @default `false`
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	invert?: boolean
 
@@ -63,7 +63,7 @@ export type ScanOptions = {
 	 *
 	 * @default `Infinity`
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	depth?: number
 
@@ -72,7 +72,7 @@ export type ScanOptions = {
 	 *
 	 * @default `undefined`
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	signal?: AbortSignal | null
 
@@ -92,7 +92,7 @@ export type ScanOptions = {
 	 *
 	 * @default `false`
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	fastDepth?: boolean
 
@@ -112,7 +112,7 @@ export type ScanOptions = {
 	 *
 	 * @default `false`
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	fastInternal?: boolean
 
@@ -121,7 +121,7 @@ export type ScanOptions = {
 	 *
 	 * @default `await import("node:fs")`
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	fs?: FsAdapter
 }

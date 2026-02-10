@@ -6,20 +6,20 @@ import { stringCompile } from "./stringCompile.js"
  * @see {@link stringCompile}
  * @see {@link signedPatternCompile}
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export type PatternMinimatch = {
 	re: RegExp
 	/**
 	 * The original pattern string this minimatch was compiled from.
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	pattern: string
 	/**
 	 * The original pattern list this pattern was compiled from.
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	patternContext: Pattern
 }
@@ -27,7 +27,7 @@ export type PatternMinimatch = {
 /**
  * Safely calls RegExp.test.
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export function patternMinimatchTest(pattern: PatternMinimatch, path: string): boolean {
 	pattern.re.lastIndex = 0
@@ -37,7 +37,7 @@ export function patternMinimatchTest(pattern: PatternMinimatch, path: string): b
 /**
  * Represents a list of positive minimatch patterns.
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export type Pattern = string[]
 
@@ -47,7 +47,7 @@ export type Pattern = string[]
  * @see {@link stringCompile}
  * @see {@link signedPatternCompile}
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export function patternCompile(pattern: Pattern): PatternMinimatch[] {
 	return pattern.map(stringCompile)

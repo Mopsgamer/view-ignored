@@ -3,7 +3,7 @@ import type { SignedPattern } from "./signedPattern.js"
 /**
  * Represents a source of external patterns.
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export type Source = {
 	/**
@@ -13,21 +13,21 @@ export type Source = {
 	 * @see {@link PatternMatcher}
 	 * @see {@link signedPatternIgnores}
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	pattern: SignedPattern
 
 	/**
 	 * Name of the source file.
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	name: string
 
 	/**
 	 * Relative path to the source file.
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	path: string
 
@@ -39,7 +39,7 @@ export type Source = {
 	 * @see {@link PatternMatcher}
 	 * @see {@link signedPatternIgnores}
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	inverted: boolean
 
@@ -48,7 +48,7 @@ export type Source = {
 	 *
 	 * @see {@link ExtractorFn}
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	error?: Error
 }
@@ -58,7 +58,7 @@ export type Source = {
  * Strips the leading '!' for include patterns,
  * and adds to exclude patterns otherwise.
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export function sourcePushNegatable(source: Source, pattern: string): void {
 	let exclude = source.pattern.exclude,

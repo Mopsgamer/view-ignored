@@ -17,7 +17,7 @@ const parse = type("string")
  *
  * @see {@link signedPatternCompile}
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export function extractPackageJson(source: Source, content: Buffer): void | "none" {
 	source.inverted = true

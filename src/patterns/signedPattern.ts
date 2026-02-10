@@ -14,7 +14,7 @@ import type { Source } from "./source.js"
  * @see {@link signedPatternCompile} compiles the signed pattern.
  * Use this or an extractor's method to compile.
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export type SignedPattern = {
 	/**
@@ -22,7 +22,7 @@ export type SignedPattern = {
 	 *
 	 * @see {@link signedPatternIgnores} provides the ignoring algorithm.
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	include: Pattern
 	/**
@@ -30,7 +30,7 @@ export type SignedPattern = {
 	 *
 	 * @see {@link signedPatternIgnores} provides the ignoring algorithm.
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	exclude: Pattern
 	/**
@@ -38,7 +38,7 @@ export type SignedPattern = {
 	 *
 	 * @see {@link signedPatternIgnores} provides the ignoring algorithm.
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	compiled: null | {
 		/**
@@ -46,7 +46,7 @@ export type SignedPattern = {
 		 *
 		 * @see {@link signedPatternIgnores} provides the ignoring algorithm.
 		 *
-		 * @since 0.0.6
+		 * @since 0.6.0
 		 */
 		include: PatternMinimatch[]
 		/**
@@ -54,7 +54,7 @@ export type SignedPattern = {
 		 *
 		 * @see {@link signedPatternIgnores} provides the ignoring algorithm.
 		 *
-		 * @since 0.0.6
+		 * @since 0.6.0
 		 */
 		exclude: PatternMinimatch[]
 	}
@@ -63,7 +63,7 @@ export type SignedPattern = {
 /**
  * @see {@link signedPatternIgnores}
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export type SignedPatternMatch =
 	| {
@@ -91,7 +91,7 @@ export type SignedPatternMatch =
 /**
  * @see {@link signedPatternIgnores}
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export interface SignedPatternIgnoresOptions extends PatternFinderOptions {
 	/**
@@ -101,13 +101,13 @@ export interface SignedPatternIgnoresOptions extends PatternFinderOptions {
 	 * "dir/subdir"
 	 * "dir/subdir/index.js"
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	entry: string
 	/**
 	 * The internal pattern. Should be compiled.
 	 *
-	 * @since 0.0.6
+	 * @since 0.6.0
 	 */
 	internal: SignedPattern
 }
@@ -210,7 +210,7 @@ function signedPatternCompiledMatchExternal(
  *      b. Check external include patterns. If matched, return false.
  * 4. If no patterns matched, return the inverted state.
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export async function signedPatternIgnores(
 	options: SignedPatternIgnoresOptions,

@@ -7,7 +7,7 @@ import type { PatternMinimatch, Pattern } from "./pattern.js"
  *
  * @see {@link patternCompile}
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export function stringCompile(
 	pattern: string,

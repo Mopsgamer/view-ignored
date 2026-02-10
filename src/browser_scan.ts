@@ -20,7 +20,7 @@ export type * from "./types.js"
  * @param options Scan options.
  * @returns A promise that resolves to a {@link MatcherContext} containing the scan results.
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export function scan(
 	options: ScanOptions & { fs: FsAdapter; cwd: string },

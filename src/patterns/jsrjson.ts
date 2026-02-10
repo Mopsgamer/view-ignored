@@ -22,7 +22,7 @@ const parse = type("string")
 /**
  * Extracts and compiles patterns from the file.
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export function extractJsrJson(source: Source, content: Buffer, ctx: MatcherContext): void {
 	const dist = parse(content.toString())
@@ -57,7 +57,7 @@ extractJsrJson satisfies ExtractorFn
  *
  * @see {@link signedPatternCompile}
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export function extractJsrJsonc(source: Source, content: Buffer, ctx: MatcherContext): void {
 	extractJsrJson(source, Buffer.from(stripJsonComments(content.toString())), ctx)

@@ -7,7 +7,7 @@ import { sourcePushNegatable, type Source } from "./source.js"
  *
  * @see {@link signedPatternCompile}
  *
- * @since 0.0.6
+ * @since 0.6.0
  */
 export function extractGitignore(source: Source, content: Buffer): void {
 	for (let line of content.toString().split("\n")) {
