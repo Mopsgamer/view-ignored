@@ -27,7 +27,7 @@ describe.skipIf(!!process.env.TEST_NO_SELF)("Git", () => {
 
 function gitFiles(): Promise<string[]> {
 	const git = spawn("git", ["ls-files", "--others", "--exclude-standard", "--cached"], {
-		env: { NO_COLOR: "1" },
+		env: { ...process.env, NO_COLOR: "1" },
 	})
 	return new Promise((resolve, reject) => {
 		let output = ""

@@ -28,7 +28,7 @@ describe.skipIf(!!process.env.TEST_NO_SELF)("NPM", () => {
 })
 
 function npmTotalFiles(): Promise<{ total: number; files: string[] }> {
-	const npm = spawn("npm", ["pack", "--dry-run"], { env: { NO_COLOR: "1" } })
+	const npm = spawn("npm", ["pack", "--dry-run"], { env: { ...process.env, NO_COLOR: "1" } })
 	return new Promise((resolve, reject) => {
 		let output = ""
 		npm.stdout.on("data", (data) => {
