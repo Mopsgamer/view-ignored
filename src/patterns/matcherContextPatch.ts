@@ -161,7 +161,7 @@ export async function matcherContextRemovePath(
 
 async function rescan(ctx: MatcherContext, options: Required<ScanOptions>): Promise<void> {
 	const normalCwd = normalizeCwd(options.cwd)
-	await opendir(options.fs, resolve(options.cwd, options.within), (entry) =>
+	await opendir(options.fs, resolve(normalCwd, options.within), (entry) =>
 		walkIncludes({
 			entry,
 			ctx,

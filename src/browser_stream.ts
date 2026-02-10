@@ -54,7 +54,7 @@ export function scanStream(options: ScanOptions & { fs: FsAdapter; cwd: string }
 		target,
 	}
 
-	const result = opendir(fs, resolve(cwd, select), (entry) =>
+	const result = opendir(fs, resolve(normalCwd, select), (entry) =>
 		walkIncludes({
 			entry,
 			ctx,

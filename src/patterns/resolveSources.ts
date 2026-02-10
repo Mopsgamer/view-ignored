@@ -105,7 +105,7 @@ export async function resolveSources(options: ResolveSourcesOptions): Promise<vo
 	}
 
 	const rels = noSourceDirList.map((rel) =>
-		normalizeCwd(resolve(process.cwd(), normalizeCwd(relative(rel, cwd)))),
+		normalizeCwd(resolve(process.cwd(), relative(normalizeCwd(rel), normalizeCwd(cwd)))),
 	)
 	source = await findSourceForAbsoluteDirs(rels, ctx, fs, target)
 	if (source !== undefined) {
