@@ -1,4 +1,5 @@
 import { resolve, dirname } from "node:path"
+import { relative } from "node:path/posix"
 
 import { getDepth } from "../getDepth.js"
 import { normalizeCwd } from "../normalizeCwd.js"
@@ -161,13 +162,15 @@ export async function matcherContextRemovePath(
 
 async function rescan(ctx: MatcherContext, options: Required<ScanOptions>): Promise<void> {
 	const normalCwd = normalizeCwd(options.cwd)
-	await opendir(options.fs, resolve(normalCwd, options.within), (entry) =>
-		walkIncludes({
+	await opendir(options.fs, resolve(normalCwd, options.within), (entry) => {
+		const path = relative(normalCwd, normalizeCwd(entry.parentPath) + "/" + entry.name)
+		return walkIncludes({
+			path,
 			entry,
 			ctx,
 			stream: undefined,
 			scanOptions: { ...options, cwd: normalCwd },
-		}),
-	)
+		})
+	})
 	ctx.totalDirs = ctx.totalFiles = ctx.totalMatchedFiles = -1
 }

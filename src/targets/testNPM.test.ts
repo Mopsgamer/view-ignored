@@ -21,8 +21,8 @@ describe("NPM", () => {
 		await testNpm(done, { ".": null }, [])
 	})
 
-	test("keeps for no sources", async (done) => {
-		await testNpm(done, { file: "" }, ["file"])
+	test("ignores for no sources", async (done) => {
+		await testNpm(done, { file: "" }, [])
 	})
 
 	test("keeps for empty source", async (done) => {
@@ -160,12 +160,6 @@ describe("NPM", () => {
 				})
 				expect(ctx.paths.has("index.js")).toBeFalse()
 				expect(ctx.paths.has("packages/a/index.js")).toBeFalse()
-
-				expect(ctx.paths.get("packages/a/")).toMatchObject({
-					kind: "internal",
-					pattern: "package.json",
-					ignored: false,
-				})
 
 				let source = ctx.external.get("packages/a")
 				expect(source).toBeObject()

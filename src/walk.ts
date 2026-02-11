@@ -1,13 +1,12 @@
 import type { Dirent } from "node:fs"
-import { relative } from "node:path/posix"
 
 import { getDepth } from "./getDepth.js"
-import { normalizeCwd } from "./normalizeCwd.js"
 import type { MatcherContext } from "./patterns/matcherContext.js"
 import type { MatcherStream } from "./patterns/matcherStream.js"
 import type { ScanOptions } from "./types.js"
 
 export type WalkOptions = {
+	path: string
 	entry: Dirent
 	ctx: MatcherContext
 	stream: MatcherStream | undefined
@@ -15,13 +14,11 @@ export type WalkOptions = {
 }
 
 export async function walkIncludes(options: WalkOptions): Promise<0 | 1 | 2> {
-	const { entry, ctx, stream, scanOptions } = options
+	const { entry, ctx, stream, scanOptions, path } = options
 
 	const { fs, target, cwd, depth: maxDepth, invert, signal, fastDepth, fastInternal } = scanOptions
 
 	signal?.throwIfAborted()
-
-	const path = relative(cwd, normalizeCwd(entry.parentPath) + "/" + entry.name)
 
 	const isDir = entry.isDirectory()
 	let direntPath: string
@@ -118,7 +115,7 @@ export async function walkIncludes(options: WalkOptions): Promise<0 | 1 | 2> {
 		if (lastSlash >= 0) {
 			const dir = path.substring(0, lastSlash) + "/"
 			const dirMatch = ctx.paths.get(dir)
-			if (!dirMatch || dirMatch.ignored) {
+			if (dirMatch?.ignored) {
 				ctx.paths.set(dir, match)
 				if (stream) {
 					stream.emit("dirent", { dirent: entry, match, path: direntPath, ctx })

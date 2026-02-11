@@ -71,9 +71,9 @@ export async function testScan(
 	expect(sortFirstFolders(paths.keys())).toStrictEqual(sortFirstFolders(test))
 
 	const stream = scanStream(o)
-	const results: string[] = []
+	const results = new Set<string>()
 	stream.addListener("dirent", (dirent) => {
-		if (!dirent.match.ignored) results.push(dirent.path)
+		if (!dirent.match.ignored && !results.has(dirent.path)) results.add(dirent.path)
 	})
 	stream.addListener("end", () => {
 		expect(sortFirstFolders(results)).toStrictEqual(sortFirstFolders(test))

@@ -1,6 +1,5 @@
 import { dirname, relative, resolve } from "node:path"
 
-import { normalizeCwd } from "../normalizeCwd.js"
 import type { Target } from "../targets/target.js"
 import type { FsAdapter } from "../types.js"
 
@@ -105,7 +104,7 @@ export async function resolveSources(options: ResolveSourcesOptions): Promise<vo
 	}
 
 	const rels = noSourceDirList.map((rel) =>
-		normalizeCwd(resolve(process.cwd(), relative(normalizeCwd(rel), normalizeCwd(cwd)))),
+		resolve(cwd, rel).replaceAll("\\", "/").replace(/\w:/, ""),
 	)
 	source = await findSourceForAbsoluteDirs(rels, ctx, fs, target)
 	if (source !== undefined) {
@@ -120,26 +119,20 @@ async function findSourceForAbsoluteDirs(
 	ctx: MatcherContext,
 	fs: FsAdapter,
 	target: Target,
-): Promise<Source | "none" | undefined> {
-	let source: Source | "none" | undefined
+): Promise<Source | "none"> {
 	for (const parent of paths) {
 		for (const extractor of target.extractors) {
 			const s = await tryExtractor(parent, fs, ctx, extractor)
 			if (typeof s === "object" && s.error) {
 				ctx.failed.push(s)
-				continue
+				return s
 			}
-			source = s
-			if (source === "none") {
-				continue
+			if (typeof s === "object") {
+				return s
 			}
-			break
-		}
-		if (source !== undefined) {
-			break
 		}
 	}
-	return source
+	return "none"
 }
 
 async function tryExtractor(

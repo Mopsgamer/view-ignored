@@ -1,4 +1,5 @@
 import { resolve } from "node:path"
+import { relative } from "node:path/posix"
 
 import { normalizeCwd } from "./normalizeCwd.js"
 import { opendir } from "./opendir.js"
@@ -28,7 +29,7 @@ export function scan(
 	const {
 		target,
 		cwd,
-		within: select = ".",
+		within = ".",
 		invert = false,
 		depth: maxDepth = Infinity,
 		signal = null,
@@ -55,7 +56,7 @@ export function scan(
 
 	const scanOptions: Required<ScanOptions> = {
 		cwd: normalCwd,
-		within: select,
+		within,
 		depth: maxDepth,
 		fastDepth,
 		fastInternal,
@@ -65,14 +66,16 @@ export function scan(
 		target,
 	}
 
-	const result = opendir(fs, resolve(normalCwd, select), (entry) =>
-		walkIncludes({
+	const result = opendir(fs, normalizeCwd(resolve(normalCwd, within)), (entry) => {
+		const path = relative(normalCwd, normalizeCwd(entry.parentPath) + "/" + entry.name)
+		return walkIncludes({
+			path,
 			entry,
 			ctx,
 			stream: undefined,
 			scanOptions,
-		}),
-	)
+		})
+	})
 
 	return (async (): Promise<MatcherContext> => {
 		await result

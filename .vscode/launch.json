@@ -49,6 +49,13 @@
 			"request": "launch",
 			"stopOnEntry": false,
 			"program": "./src/testDepth.test.ts"
+		},
+		{
+			"name": "Test cwd",
+			"type": "bun",
+			"request": "launch",
+			"stopOnEntry": false,
+			"program": "./src/testCwd.test.ts"
 		}
 	]
 }

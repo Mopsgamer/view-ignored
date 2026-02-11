@@ -1,14 +1,12 @@
-import { describe, test, expect } from "bun:test"
-
-import { minimatch } from "minimatch"
+import { describe, test } from "bun:test"
 
 import { Git as target } from "./targets/git.js"
 import { testScan, type PathHandlerOptions } from "./testScan.test.js"
-import { sortFirstFolders } from "./testSort.test.js"
 
 function testCwd(
 	done: () => void,
 	cwd: string,
+	within: string,
 	paths: string[] | ((o: PathHandlerOptions) => void | Promise<void>),
 ): Promise<void> {
 	return testScan(
@@ -17,55 +15,35 @@ function testCwd(
 			".git/HEAD": "",
 			file: "",
 			folder: { nested: "" },
+			".gitignore": "",
 		},
 		paths,
-		{ target, cwd },
+		{ target, cwd, within },
 	)
 }
 
 describe("Git", () => {
 	test("cwd works with ./test", async (done) => {
-		await testCwd(done, "./test", ["file", "folder/", "folder/nested"])
+		await testCwd(done, "./test", ".", ["file", ".gitignore", "folder/", "folder/nested"])
 	})
 	test("cwd works with ./test/folder", async (done) => {
-		await testCwd(done, "./test/folder", ["nested"])
+		await testCwd(done, "./test", "./folder", ["folder/nested"])
 	})
 	test("cwd works with .\\test", async (done) => {
-		await testCwd(done, ".\\test", ["file", "folder/", "folder/nested"])
+		await testCwd(done, ".\\test", ".", ["file", ".gitignore", "folder/", "folder/nested"])
 	})
 	test("cwd works with test", async (done) => {
-		await testCwd(done, "test", ["file", "folder/", "folder/nested"])
-	})
-	test("cwd works with ./", async (done) => {
-		await testCwd(done, "./", ["test/", "test/file", "test/folder/", "test/folder/nested"])
-	})
-	test("cwd works with ../", async (done) => {
-		await testCwd(done, "../", ({ ctx: { paths: map } }) => {
-			const paths = sortFirstFolders(map.keys())
-			expect(paths.length).toBe(5)
-			expect(minimatch.match([paths[0]!], "*/")).not.toBeEmpty()
-			expect(minimatch.match([paths[1]!], "*/test/")).not.toBeEmpty()
-			expect(minimatch.match([paths[2]!], "*/test/folder/")).not.toBeEmpty()
-			expect(minimatch.match([paths[3]!], "*/test/folder/nested")).not.toBeEmpty()
-			expect(minimatch.match([paths[4]!], "*/test/file")).not.toBeEmpty()
-		})
-	})
-	test("cwd works with ../../", async (done) => {
-		await testCwd(done, "../../", ({ ctx: { paths: map } }) => {
-			const paths = sortFirstFolders(map.keys())
-			expect(paths.length).toBe(6)
-			expect(minimatch.match([paths[0]!], "*/")).not.toBeEmpty()
-			expect(minimatch.match([paths[1]!], "*/*/")).not.toBeEmpty()
-			expect(minimatch.match([paths[2]!], "*/*/test/")).not.toBeEmpty()
-			expect(minimatch.match([paths[3]!], "*/*/test/folder/")).not.toBeEmpty()
-			expect(minimatch.match([paths[4]!], "*/*/test/folder/nested")).not.toBeEmpty()
-			expect(minimatch.match([paths[5]!], "*/*/test/file")).not.toBeEmpty()
-		})
+		await testCwd(done, "test", ".", ["file", ".gitignore", "folder/", "folder/nested"])
 	})
 	test("absolute cwd works with process.cwd()/test", async (done) => {
-		await testCwd(done, process.cwd() + "/test", ["file", "folder/", "folder/nested"])
+		await testCwd(done, process.cwd() + "/test", ".", [
+			"file",
+			".gitignore",
+			"folder/",
+			"folder/nested",
+		])
 	})
 	test("absolute cwd works with process.cwd()/test/folder", async (done) => {
-		await testCwd(done, process.cwd() + "/test/folder", ["nested"])
+		await testCwd(done, process.cwd() + "/test", "./folder", ["folder/nested"])
 	})
 })

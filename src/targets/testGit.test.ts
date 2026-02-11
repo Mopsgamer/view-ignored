@@ -19,8 +19,8 @@ describe("Git", () => {
 		await testGit(done, { ".": null }, [])
 	})
 
-	test("keeps for no sources", async (done) => {
-		await testGit(done, { file: "" }, ["file"])
+	test("ignores for no sources", async (done) => {
+		await testGit(done, { file: "" }, [])
 	})
 
 	test("keeps for empty source", async (done) => {
@@ -40,8 +40,9 @@ describe("Git", () => {
 			{
 				".git/HEAD": "",
 				file: "",
+				".gitignore": "",
 			},
-			["file"],
+			["file", ".gitignore"],
 		)
 	})
 

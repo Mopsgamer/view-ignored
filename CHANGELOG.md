@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- Ignore for "missing-source".
+- Change "since" from `0.0.6` to `0.6.0`.
+- Provide source value for "no-match", "broken-source", "invalid-pattern".
+- Provide pattern and error values for "invalid-internal-pattern".
+
 ## [0.6.0] - 2026-02-10
 
 - Replaces the 0.5.x release, which was untested and non functional.
