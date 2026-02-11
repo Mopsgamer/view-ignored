@@ -49,7 +49,7 @@ export interface ResolveSourcesOptions extends PatternFinderOptions {
  * @since 0.6.0
  */
 export async function resolveSources(options: ResolveSourcesOptions): Promise<void> {
-	const { fs, ctx, cwd, target, root } = options
+	const { fs, ctx, cwd, target, root, signal } = options
 	let dir = options.dir
 
 	if (ctx.external.has(dir)) {
@@ -64,6 +64,7 @@ export async function resolveSources(options: ResolveSourcesOptions): Promise<vo
 
 		// find source from an ancestor [dir < ... < cwd]
 		while (true) {
+			signal?.throwIfAborted()
 			source = ctx.external.get(dir)
 			if (source !== undefined) {
 				// if cache is found populate descendants [cwd > ... > dir]
@@ -88,6 +89,7 @@ export async function resolveSources(options: ResolveSourcesOptions): Promise<vo
 	{
 		let c = dirname(cwd)
 		while (true) {
+			signal?.throwIfAborted()
 			preCwdSegments.push(c)
 			if (c === "/" || c === root) break
 			const parent = dirname(c)
@@ -96,9 +98,10 @@ export async function resolveSources(options: ResolveSourcesOptions): Promise<vo
 		preCwdSegments.reverse()
 	}
 
-	source = await findSourceForAbsoluteDirs(preCwdSegments, ctx, fs, target)
+	source = await findSourceForAbsoluteDirs(preCwdSegments, ctx, fs, target, signal)
 	if (typeof source === "object") {
 		for (const noSourceDir of noSourceDirList) {
+			signal?.throwIfAborted()
 			ctx.external.set(noSourceDir, source)
 		}
 	}
@@ -106,9 +109,10 @@ export async function resolveSources(options: ResolveSourcesOptions): Promise<vo
 	const rels = noSourceDirList.map((rel) =>
 		resolve(cwd, rel).replaceAll("\\", "/").replace(/\w:/, ""),
 	)
-	source = await findSourceForAbsoluteDirs(rels, ctx, fs, target)
+	source = await findSourceForAbsoluteDirs(rels, ctx, fs, target, signal)
 	if (source !== undefined) {
 		for (const noSourceDir of noSourceDirList) {
+			signal?.throwIfAborted()
 			ctx.external.set(noSourceDir, source)
 		}
 	}
@@ -119,9 +123,11 @@ async function findSourceForAbsoluteDirs(
 	ctx: MatcherContext,
 	fs: FsAdapter,
 	target: Target,
+	signal: AbortSignal | null,
 ): Promise<Source | "none"> {
 	for (const parent of paths) {
 		for (const extractor of target.extractors) {
+			signal?.throwIfAborted()
 			const s = await tryExtractor(parent, fs, ctx, extractor)
 			if (typeof s === "object" && s.error) {
 				ctx.failed.push(s)

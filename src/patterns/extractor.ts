@@ -81,4 +81,10 @@ export interface PatternFinderOptions {
 	 * @since 0.6.0
 	 */
 	root: string
+	/**
+	 * Return as soon as possible.
+	 *
+	 * @since 0.7.1
+	 */
+	signal: AbortSignal | null
 }

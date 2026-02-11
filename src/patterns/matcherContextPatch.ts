@@ -24,7 +24,7 @@ export async function matcherContextAddPath(
 		return false
 	}
 
-	const { target, fs, cwd } = options
+	const { target, fs, cwd, signal } = options
 
 	const isDir = entry.endsWith("/")
 	if (isDir) {
@@ -33,7 +33,7 @@ export async function matcherContextAddPath(
 		if (direntPath === ".") {
 			return true
 		}
-		ctx.paths.set(entry, await target.ignores({ fs, cwd, entry: direntPath, ctx }))
+		ctx.paths.set(entry, await target.ignores({ fs, cwd, entry: direntPath, ctx, signal }))
 		if (ctx.totalFiles >= 0) {
 			ctx.totalDirs++
 		}
@@ -57,7 +57,7 @@ export async function matcherContextAddPath(
 	// 1. recursively populate parents
 	await matcherContextAddPath(ctx, options, parent + "/")
 	// 2. if ignored, remove, otherwise add
-	const match = await target.ignores({ fs, cwd, entry, ctx })
+	const match = await target.ignores({ fs, cwd, entry, ctx, signal })
 	if (match.ignored) {
 		// 2.1. remove
 		await matcherContextRemovePath(ctx, options, entry)
