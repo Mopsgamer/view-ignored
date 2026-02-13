@@ -156,7 +156,7 @@ The following built-in scanners are available:
   - See the implementation of [NPM target](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/npm.ts) for details.
 - Yarn
   - Modern Berry behavior, but does not include paths from `package.json` `main`, `module`, `browser` and `bin`.
-  - `YarnClassic` is not implemented yet.
+  - `YarnClassic` is available.
   - Starts searching from `.` (current working directory).
   - See the implementation of [Yarn target](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/yarn.ts) for details.
 - VSCE

@@ -9,7 +9,8 @@ and this project adheres to
 ## [Unreleased]
 
 - Add more patterns for NPM (npm-packlist, main),
-  VSCE (vscode-vsce, main), Yarn (berry, main, no classic).
+  VSCE (vscode-vsce, main), Yarn (berry, main).
+- Add YarnClassic.
 
 ## [0.7.1] - 2026-02-11
 

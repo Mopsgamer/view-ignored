@@ -6,6 +6,7 @@ import { stringCompile } from "./stringCompile.js"
 describe(".gitignore", () => {
 	test("stringCompile", () => {
 		expect(patternMinimatchTest(stringCompile(".git"), ".git/message")).toBeTrue()
+		expect(patternMinimatchTest(stringCompile(".git"), ".Git/message")).toBeTrue()
 		expect(patternMinimatchTest(stringCompile(".git"), ".github/message")).toBeFalse()
 
 		expect(
