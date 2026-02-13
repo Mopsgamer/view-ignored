@@ -32,6 +32,15 @@
 			"program": "./src/targets/testNPM.test.ts"
 		},
 		{
+			"name": "Test in-memory Yarn",
+			"type": "bun",
+			"request": "launch",
+			"presentation": {
+				"group": "targets"
+			},
+			"program": "./src/targets/testYarn.test.ts"
+		},
+		{
 			"name": "Test own Git",
 			"type": "bun",
 			"request": "launch",

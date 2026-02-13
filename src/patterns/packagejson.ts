@@ -4,13 +4,13 @@ import type { ExtractorFn } from "./extractor.js"
 import { signedPatternCompile } from "./resolveSources.js"
 import { sourcePushNegatable, type Source } from "./source.js"
 
-const nodeJsManifest = type({
-	files: "string[]?",
+const npmManifest = type({
+	"files?": "string[]",
 })
 
 const parse = type("string")
 	.pipe((s) => JSON.parse(s))
-	.pipe(nodeJsManifest)
+	.pipe(npmManifest)
 
 /**
  * Extracts and compiles patterns from the file.

@@ -30,7 +30,7 @@ export type ScanOptions = {
 	/**
 	 * Current working directory to start the scan from.
 	 *
-	 * @default `normalizeCwd(process.cwd())`
+	 * @default `unixify(process.cwd())`
 	 *
 	 * @since 0.6.0
 	 */

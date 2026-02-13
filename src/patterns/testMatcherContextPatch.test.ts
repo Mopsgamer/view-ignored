@@ -2,10 +2,10 @@ import { describe, test, expect } from "bun:test"
 
 import { Volume, type NestedDirectoryJSON } from "memfs"
 
-import { normalizeCwd } from "../normalizeCwd.js"
 import { scan, type ScanOptions } from "../scan.js"
 import { NPM as target } from "../targets/npm.js"
 import { createAdapter } from "../testScan.test.js"
+import { unixify } from "../unixify.js"
 
 import type { MatcherContext } from "./matcherContext.js"
 import { matcherContextAddPath, matcherContextRemovePath } from "./matcherContextPatch.js"
@@ -64,7 +64,7 @@ const fsJson = {
 	}),
 }
 
-const cwd = normalizeCwd(process.cwd())
+const cwd = unixify(process.cwd())
 function patchFS(transformFs: (newFsJson: typeof fsJson) => NestedDirectoryJSON) {
 	const newFsJson = transformFs(structuredClone(fsJson))
 	const vol = Volume.fromNestedJSON(newFsJson, cwd)

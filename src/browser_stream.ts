@@ -1,13 +1,13 @@
 import { resolve } from "node:path"
 import { relative } from "node:path/posix"
 
-import { normalizeCwd } from "./normalizeCwd.js"
 import { opendir } from "./opendir.js"
 import type { MatcherContext } from "./patterns/matcherContext.js"
 import { MatcherStream } from "./patterns/matcherStream.js"
 import type { SignedPatternMatch } from "./patterns/signedPattern.js"
 import type { Source } from "./patterns/source.js"
 import type { ScanOptions, FsAdapter } from "./types.js"
+import { unixify } from "./unixify.js"
 import { walkIncludes } from "./walk.js"
 export type * from "./types.js"
 
@@ -41,7 +41,7 @@ export function scanStream(options: ScanOptions & { fs: FsAdapter; cwd: string }
 
 	const stream = new MatcherStream({ captureRejections: false })
 
-	const normalCwd = normalizeCwd(cwd)
+	const normalCwd = unixify(cwd)
 
 	const scanOptions: Required<ScanOptions> = {
 		cwd: normalCwd,
@@ -55,19 +55,18 @@ export function scanStream(options: ScanOptions & { fs: FsAdapter; cwd: string }
 		target,
 	}
 
-	const result = opendir(fs, normalizeCwd(resolve(normalCwd, within)), (entry) => {
-		const path = relative(normalCwd, normalizeCwd(entry.parentPath) + "/" + entry.name)
-		return walkIncludes({
-			path,
-			entry,
-			ctx,
-			stream,
-			scanOptions,
-		})
-	})
-
 	void (async (): Promise<void> => {
-		await result
+		await target.init?.({ ctx, cwd, fs, signal })
+		await opendir(fs, unixify(resolve(normalCwd, within)), (entry) => {
+			const path = relative(normalCwd, unixify(entry.parentPath) + "/" + entry.name)
+			return walkIncludes({
+				path,
+				entry,
+				ctx,
+				stream,
+				scanOptions,
+			})
+		})
 		stream.emit("end", ctx)
 	})()
 

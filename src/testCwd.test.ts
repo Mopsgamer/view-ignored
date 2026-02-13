@@ -27,7 +27,7 @@ describe("Git", () => {
 		await testCwd(done, "./test", ".", ["file", ".gitignore", "folder/", "folder/nested"])
 	})
 	test("cwd works with ./test/folder", async (done) => {
-		await testCwd(done, "./test", "./folder", ["folder/nested"])
+		await testCwd(done, "./test", "./folder", ["folder/", "folder/nested"])
 	})
 	test("cwd works with .\\test", async (done) => {
 		await testCwd(done, ".\\test", ".", ["file", ".gitignore", "folder/", "folder/nested"])
@@ -44,6 +44,6 @@ describe("Git", () => {
 		])
 	})
 	test("absolute cwd works with process.cwd()/test/folder", async (done) => {
-		await testCwd(done, process.cwd() + "/test", "./folder", ["folder/nested"])
+		await testCwd(done, process.cwd() + "/test", "./folder", ["folder/", "folder/nested"])
 	})
 })

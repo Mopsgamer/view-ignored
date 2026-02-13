@@ -10,7 +10,12 @@ and this project adheres to
 
 - Add more patterns for NPM (npm-packlist, main),
   VSCE (vscode-vsce, main), Yarn (berry, main).
-- Add YarnClassic.
+- Add `YarnClassic` (yarn, main).
+- Add `nocase` option.
+- Add `stringCompile(string, context, {nocase})`.
+- Add `unixify(path)`.
+- Add `Target.init?(InitState)`.
+- Fix secondary "dirent" emit for directories (overriding event).
 
 ## [0.7.1] - 2026-02-11
 

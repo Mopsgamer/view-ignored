@@ -21,7 +21,7 @@ export type StringCompileOptions = {
  *
  * @see {@link patternCompile}
  *
- * @since 0.6.0
+ * @since 0.8.0
  */
 export function stringCompile(
 	pattern: string,

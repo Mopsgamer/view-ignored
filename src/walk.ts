@@ -115,10 +115,10 @@ export async function walkIncludes(options: WalkOptions): Promise<0 | 1 | 2> {
 		if (lastSlash >= 0) {
 			const dir = path.substring(0, lastSlash) + "/"
 			const dirMatch = ctx.paths.get(dir)
-			if (dirMatch?.ignored) {
+			if (dirMatch === undefined || dirMatch.ignored) {
 				ctx.paths.set(dir, match)
 				if (stream) {
-					stream.emit("dirent", { dirent: entry, match, path: direntPath, ctx })
+					stream.emit("dirent", { dirent: entry, match, path: dir, ctx })
 				}
 			}
 		}

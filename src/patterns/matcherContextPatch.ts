@@ -2,9 +2,9 @@ import { resolve, dirname } from "node:path"
 import { relative } from "node:path/posix"
 
 import { getDepth } from "../getDepth.js"
-import { normalizeCwd } from "../normalizeCwd.js"
 import { opendir } from "../opendir.js"
 import type { ScanOptions } from "../types.js"
+import { unixify } from "../unixify.js"
 import { walkIncludes } from "../walk.js"
 
 import type { MatcherContext } from "./matcherContext.js"
@@ -161,9 +161,9 @@ export async function matcherContextRemovePath(
 }
 
 async function rescan(ctx: MatcherContext, options: Required<ScanOptions>): Promise<void> {
-	const normalCwd = normalizeCwd(options.cwd)
+	const normalCwd = unixify(options.cwd)
 	await opendir(options.fs, resolve(normalCwd, options.within), (entry) => {
-		const path = relative(normalCwd, normalizeCwd(entry.parentPath) + "/" + entry.name)
+		const path = relative(normalCwd, unixify(entry.parentPath) + "/" + entry.name)
 		return walkIncludes({
 			path,
 			entry,
