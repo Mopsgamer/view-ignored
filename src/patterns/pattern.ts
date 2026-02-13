@@ -1,4 +1,4 @@
-import { stringCompile } from "./stringCompile.js"
+import { stringCompile, type StringCompileOptions } from "./stringCompile.js"
 
 /**
  * Compiled pattern.
@@ -49,6 +49,9 @@ export type Pattern = string[]
  *
  * @since 0.6.0
  */
-export function patternCompile(pattern: Pattern): PatternMinimatch[] {
-	return pattern.map(stringCompile)
+export function patternCompile(
+	pattern: Pattern,
+	options?: StringCompileOptions,
+): PatternMinimatch[] {
+	return pattern.map((p, _, pattern) => stringCompile(p, pattern, options))
 }

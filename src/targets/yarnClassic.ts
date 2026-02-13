@@ -3,27 +3,27 @@ import {
 	signedPatternIgnores,
 	type SignedPattern,
 	signedPatternCompile,
-	extractPackageJson,
-	extractGitignore,
+	extractPackageJsonNocase,
+	extractGitignoreNocase,
 } from "../patterns/index.js"
 
 import type { Target } from "./target.js"
 
 const extractors: Extractor[] = [
 	{
-		extract: extractPackageJson,
+		extract: extractPackageJsonNocase,
 		path: "package.json",
 	},
 	{
-		extract: extractGitignore,
+		extract: extractGitignoreNocase,
 		path: ".yarnignore",
 	},
 	{
-		extract: extractGitignore,
+		extract: extractGitignoreNocase,
 		path: ".npmignore",
 	},
 	{
-		extract: extractGitignore,
+		extract: extractGitignoreNocase,
 		path: ".gitignore",
 	},
 ]
@@ -74,10 +74,10 @@ const internal: SignedPattern = {
 	compiled: null,
 }
 
-signedPatternCompile(internal)
+signedPatternCompile(internal, { nocase: true })
 
 /**
- * @since 0.6.0
+ * @since 0.8.0
  */
 export const YarnClassic: Target = {
 	extractors,

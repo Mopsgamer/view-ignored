@@ -20,11 +20,32 @@ const parse = type("string")
  * @since 0.6.0
  */
 export function extractPackageJson(source: Source, content: Buffer): void | "none" {
+	const result = extract(source, content)
+	if (result === undefined) signedPatternCompile(source.pattern)
+	if (result === "error") return
+	return result
+}
+
+/**
+ * Extracts and compiles patterns from the file.
+ *
+ * @see {@link signedPatternCompile}
+ *
+ * @since 0.8.0
+ */
+export function extractPackageJsonNocase(source: Source, content: Buffer): void | "none" {
+	const result = extract(source, content)
+	if (result === undefined) signedPatternCompile(source.pattern, { nocase: true })
+	if (result === "error") return
+	return result
+}
+
+function extract(source: Source, content: Buffer): void | "error" | "none" {
 	source.inverted = true
 	const dist = parse(content.toString())
 	if (dist instanceof type.errors) {
 		source.error = new Error("Invalid '" + source.path + "': " + dist.summary, { cause: dist })
-		return
+		return "error"
 	}
 
 	if (!dist.files) {
@@ -34,7 +55,6 @@ export function extractPackageJson(source: Source, content: Buffer): void | "non
 	for (const pattern of dist.files) {
 		sourcePushNegatable(source, pattern)
 	}
-	signedPatternCompile(source.pattern)
 }
 
 extractPackageJson satisfies ExtractorFn

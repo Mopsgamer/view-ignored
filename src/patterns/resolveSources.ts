@@ -8,6 +8,7 @@ import type { MatcherContext } from "./matcherContext.js"
 import { patternCompile } from "./pattern.js"
 import type { SignedPattern } from "./signedPattern.js"
 import type { Source } from "./source.js"
+import type { StringCompileOptions } from "./stringCompile.js"
 
 /**
  * Compiles the {@link SignedPattern} (forced).
@@ -18,10 +19,13 @@ import type { Source } from "./source.js"
  *
  * @since 0.6.0
  */
-export function signedPatternCompile(signedPattern: SignedPattern): SignedPattern {
+export function signedPatternCompile(
+	signedPattern: SignedPattern,
+	options?: StringCompileOptions,
+): SignedPattern {
 	signedPattern.compiled = {
-		include: patternCompile(signedPattern.include),
-		exclude: patternCompile(signedPattern.exclude),
+		include: patternCompile(signedPattern.include, options),
+		exclude: patternCompile(signedPattern.exclude, options),
 	}
 	return signedPattern
 }

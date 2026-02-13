@@ -3,6 +3,20 @@ import { makeRe } from "minimatch"
 import type { PatternMinimatch, Pattern } from "./pattern.js"
 
 /**
+ * @since 0.8.0
+ */
+export type StringCompileOptions = {
+	/**
+	 * Disables case sensitivity.
+	 *
+	 * @default false
+	 *
+	 * @since 0.8.0
+	 */
+	nocase?: boolean
+}
+
+/**
  * Compiles a string of the {@link Pattern}.
  *
  * @see {@link patternCompile}
@@ -11,8 +25,8 @@ import type { PatternMinimatch, Pattern } from "./pattern.js"
  */
 export function stringCompile(
 	pattern: string,
-	_: number = -1,
-	array: Pattern = [],
+	context: Pattern = [],
+	options?: StringCompileOptions,
 ): PatternMinimatch {
 	const original = pattern
 	if (pattern.endsWith("/")) {
@@ -31,7 +45,8 @@ export function stringCompile(
 		nonegate: true,
 		nocomment: true,
 		nobrace: true,
+		nocase: options?.nocase ?? false,
 	}) as RegExp
 
-	return { re, pattern: original, patternContext: array }
+	return { re, pattern: original, patternContext: context }
 }
