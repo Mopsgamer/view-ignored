@@ -14,10 +14,10 @@ const extractors: Extractor[] = [
 		extract: extractPackageJson,
 		path: "package.json",
 	},
-	{
-		extract: extractGitignore,
-		path: ".yarnignore",
-	},
+	// { // legacy yarn
+	// 	extract: extractGitignore,
+	// 	path: ".yarnignore",
+	// },
 	{
 		extract: extractGitignore,
 		path: ".npmignore",
@@ -30,27 +30,31 @@ const extractors: Extractor[] = [
 
 const internal: SignedPattern = {
 	exclude: [
-		".git",
-		".DS_Store",
-		"node_modules",
-		".*.swp",
-		"._*",
-		".DS_Store",
-		".git",
-		".gitignore",
-		".hg",
-		".npmignore",
-		".npmrc",
-		".lock-wscript",
-		".svn",
-		".wafpickle-*",
-		"config.gypi",
-		"CVS",
-		"npm-debug.log",
-		".yarnignore",
-		".yarnrc",
+		// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L26
+		`/package.tgz`,
+
+		`.github`,
+		`.git`,
+		`.hg`,
+		`node_modules`,
+
+		`.npmignore`,
+		`.gitignore`,
+
+		`.#*`,
+		`.DS_Store`,
 	],
-	include: ["bin", "package.json", "README*", "LICENSE*", "LICENCE*"],
+	include: [
+		// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L10
+		// TODO: https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L215-L231
+		"/package.json",
+		"/README",
+		"/README.*",
+		"/LICENSE",
+		"/LICENSE.*",
+		"/LICENCE",
+		"/LICENCE.*",
+	],
 	compiled: null,
 }
 
