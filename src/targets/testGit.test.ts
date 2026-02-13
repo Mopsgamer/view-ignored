@@ -46,7 +46,7 @@ describe("Git", () => {
 		)
 	})
 
-	test("ignores file (.git/info/exclude)", async (done) => {
+	test("ignores filei (.git/info/exclude)", async (done) => {
 		await testGit(
 			done,
 			{
@@ -58,7 +58,7 @@ describe("Git", () => {
 		)
 	})
 
-	test("ignores file", async (done) => {
+	test("ignores filei", async (done) => {
 		await testGit(
 			done,
 			{
@@ -66,6 +66,17 @@ describe("Git", () => {
 				".gitignore": "filei",
 			},
 			[".gitignore"],
+		)
+	})
+
+	test("includes file (case File no match)", async (done) => {
+		await testGit(
+			done,
+			{
+				file: "",
+				".gitignore": "File",
+			},
+			[".gitignore", "file"],
 		)
 	})
 
