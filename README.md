@@ -43,7 +43,11 @@ const ctx = await vign.scan({ target })
 ctx.paths.has(".git/HEAD") // false
 ctx.paths.has("src") // true
 
-ctx.paths.get("src") // { ignored, match, kind, ... }
+const match = ctx.paths.get("src")
+if (match.kind === "external") {
+	console.log(match.source.path) // ".gitignore"
+	console.log(match.pattern) // "src/**"
+}
 ```
 
 ### Using custom target
@@ -144,14 +148,15 @@ The following built-in scanners are available:
   - Starts searching from `/`.
   - Check this scanner by running `git ls-files --others --exclude-standard --cached`.
   - See the implementation of [Git target](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/git.ts) for details.
-- NPM (compatible with Bun, PNPM, and others)
+- NPM (expecting to be compatible with Bun, PNPM, and others)
   - Reads `.npmignore` and `package.json` `files` field.
   - Starts searching from `.` (current working directory).
   - No additional checks for `name`, `version` or `publishConfig`.
   - Check this scanner by running `npm pack --dry-run`.
   - See the implementation of [NPM target](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/npm.ts) for details.
 - Yarn
-  - Same behavior as `npm`, but also reads `.yarnignore`.
+  - Modern Berry behavior, but does not include paths from `package.json` `main`, `module`, `browser` and `bin`.
+  - `YarnClassic` is not implemented yet.
   - Starts searching from `.` (current working directory).
   - See the implementation of [Yarn target](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/yarn.ts) for details.
 - VSCE
