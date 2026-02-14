@@ -1,12 +1,9 @@
-import { resolve } from "node:path"
-import { relative } from "node:path/posix"
-
 import { opendir } from "./opendir.js"
 import type { MatcherContext } from "./patterns/matcherContext.js"
 import type { SignedPatternMatch } from "./patterns/signedPattern.js"
 import type { Source } from "./patterns/source.js"
 import type { ScanOptions, FsAdapter } from "./types.js"
-import { unixify } from "./unixify.js"
+import { unixify, relative, join } from "./unixify.js"
 import { walkIncludes } from "./walk.js"
 export type * from "./types.js"
 
@@ -68,7 +65,8 @@ export function scan(
 
 	return (async (): Promise<MatcherContext> => {
 		await target.init?.({ ctx, cwd, fs, signal })
-		await opendir(fs, unixify(resolve(normalCwd, within)), (entry) => {
+		let from = join(unixify(normalCwd), within)
+		await opendir(fs, from, (entry) => {
 			const path = relative(normalCwd, unixify(entry.parentPath) + "/" + entry.name)
 			return walkIncludes({
 				path,

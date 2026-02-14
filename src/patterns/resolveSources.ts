@@ -1,7 +1,8 @@
-import { dirname, relative, resolve } from "node:path"
+import { dirname } from "node:path"
 
 import type { Target } from "../targets/target.js"
 import type { FsAdapter } from "../types.js"
+import { unixify, relative, join } from "../unixify.js"
 
 import type { PatternFinderOptions, Extractor } from "./extractor.js"
 import type { MatcherContext } from "./matcherContext.js"
@@ -110,10 +111,8 @@ export async function resolveSources(options: ResolveSourcesOptions): Promise<vo
 		}
 	}
 
-	const rels = noSourceDirList.map((rel) =>
-		resolve(cwd, rel).replaceAll("\\", "/").replace(/\w:/, ""),
-	)
-	source = await findSourceForAbsoluteDirs(rels, ctx, fs, target, signal)
+	const absPaths = noSourceDirList.map((rel) => join(cwd, rel))
+	source = await findSourceForAbsoluteDirs(absPaths, ctx, fs, target, signal)
 	if (source !== undefined) {
 		for (const noSourceDir of noSourceDirList) {
 			signal?.throwIfAborted()
@@ -151,7 +150,12 @@ async function tryExtractor(
 	ctx: MatcherContext,
 	extractor: Extractor,
 ): Promise<Source | "none"> {
-	const abs = resolve(cwd, extractor.path)
+	let abs = unixify(cwd)
+	if (abs.endsWith("/")) {
+		abs += extractor.path
+	} else {
+		abs += "/" + extractor.path
+	}
 	const path = relative(cwd, abs)
 	const name = path.substring(path.lastIndexOf("/") + 1)
 

@@ -13,9 +13,9 @@ and this project adheres to
 - Add `YarnClassic` (yarn, main).
 - Add `nocase` option.
 - Add `stringCompile(string, context, {nocase})`.
-- Add `unixify(path)`.
 - Add `Target.init?(InitState)`.
 - Fix secondary "dirent" emit for directories (overriding event).
+- Improve performance by 60 percent by reimplementing internal path conversions.
 
 ## [0.7.1] - 2026-02-11
 

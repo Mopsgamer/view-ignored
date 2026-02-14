@@ -1,5 +1,3 @@
-import { resolve } from "node:path/posix"
-
 import { type } from "arktype"
 
 import {
@@ -10,7 +8,7 @@ import {
 	extractPackageJsonNocase,
 	extractGitignoreNocase,
 } from "../patterns/index.js"
-import { unixify } from "../unixify.js"
+import { join, unixify } from "../unixify.js"
 
 import type { Target } from "./target.js"
 
@@ -99,7 +97,8 @@ export const Yarn: Target = {
 		const set = new Set<string>(include)
 
 		function normal(path: string): string {
-			return resolve(normalCwd, path).substring(normalCwd.length)
+			const result = unixify(join(normalCwd, path)).substring(normalCwd.length)
+			return result
 		}
 
 		if (dist.main) set.add(normal(dist.main))

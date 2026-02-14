@@ -1,10 +1,9 @@
 import { resolve, dirname } from "node:path"
-import { relative } from "node:path/posix"
 
 import { getDepth } from "../getDepth.js"
 import { opendir } from "../opendir.js"
 import type { ScanOptions } from "../types.js"
-import { unixify } from "../unixify.js"
+import { unixify, relative } from "../unixify.js"
 import { walkIncludes } from "../walk.js"
 
 import type { MatcherContext } from "./matcherContext.js"
