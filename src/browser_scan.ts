@@ -13,7 +13,7 @@ export type * from "./types.js"
 /**
  * Scan the directory for included files based on the provided targets.
  *
- * Note that this function uses `fs/promises.readFile` and `fs/promises.opendir` without options within
+ * Note that this function uses `fs.promises.readFile` and `fs.promises.opendir` without options within
  * custom recursion, instead of `fs.promises.readdir` with `{ withFileTypes: true }.
  * It also normalizes paths to use forward slashes.
  * Please report any issues if you encounter problems related to this behavior.
