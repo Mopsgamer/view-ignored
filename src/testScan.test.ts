@@ -63,6 +63,7 @@ export async function testScan(
 			})
 			done()
 		})
+		await stream.start()
 		return
 	}
 
@@ -81,6 +82,7 @@ export async function testScan(
 		expect(sortFirstFolders(results)).toStrictEqual(sortFirstFolders(test))
 		done()
 	})
+	await stream.start()
 }
 
 /**
@@ -98,6 +100,7 @@ export async function testStream(
 
 	if (typeof test === "function") {
 		const stream = scanStream(o)
+		await stream.start()
 		await test({
 			vol,
 			fs: adapter,

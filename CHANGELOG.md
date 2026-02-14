@@ -14,6 +14,7 @@ and this project adheres to
 - Add `nocase` option.
 - Add `stringCompile(string, context, {nocase})`.
 - Add `Target.init?(InitState)`.
+- Add `MatcherStream.start()`.
 - Fix secondary "dirent" emit for directories (overriding event).
 - Improve performance by 60 percent by reimplementing internal path conversions.
 

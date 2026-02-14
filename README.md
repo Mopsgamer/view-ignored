@@ -111,6 +111,7 @@ stream.on("end", (ctx) => {
 	ctx.paths.has("node_modules/") // false
 	ctx.paths.has("package.json") // true
 })
+stream.start() // important
 ```
 
 ### Browser and custom FS
