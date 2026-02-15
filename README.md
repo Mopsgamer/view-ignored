@@ -138,37 +138,33 @@ vign.scan({ target, cwd, fs })
 
 ## Targets
 
-> [!NOTE]
-> Each scanner expects minimal configurations, but the actual tool can have
-> more/less complex rules. Refer to the documentation of each tool for details.
-
 The following built-in scanners are available:
 
-- Git
+- Git ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/git.ts))
   - Reads `.gitignore` and `.git/info/exclude` but does not consider global settings.
   - Starts searching from `/`.
   - Check this scanner by running `git ls-files --others --exclude-standard --cached`.
-  - See the implementation of [Git target](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/git.ts) for details.
-- NPM (expecting to be compatible with Bun, PNPM, and others)
+- NPM ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/npm.ts))
+  - Expecting to be compatible with Bun, PNPM, and others.
   - Reads `.npmignore` and `package.json` `files` field.
   - Starts searching from `.` (current working directory).
   - No additional checks for `name`, `version` or `publishConfig`.
   - Check this scanner by running `npm pack --dry-run`.
-  - See the implementation of [NPM target](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/npm.ts) for details.
-- Yarn
-  - Modern Berry behavior, but does not include paths from `package.json` `main`, `module`, `browser` and `bin`.
-  - `YarnClassic` is available.
+- Yarn ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/yarn.ts))
+  - Modern Berry behavior.
+  - Requires `package.json`: includes paths from `main`, `module`, `browser` and `bin`.
+  - `YarnClassic` is available. ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/yarnClassic.ts))
   - Starts searching from `.` (current working directory).
-  - See the implementation of [Yarn target](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/yarn.ts) for details.
-- VSCE
+- VSCE ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/vsce.ts))
   - Reads `package.json` `files` field, `.vscodeignore` and `.gitignore`.
   - Starts searching from `.` (current working directory).
   - Check this scanner by running `vsce ls`.
-  - See the implementation of [VSCE target](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/vsce.ts) for details.
-- JSR (compatible with Deno)
+- JSR ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/jsr.ts))
+  - Reads `jsr.json(c)` `include` and `exclude` fields.
+  - Starts searching from `.` (current working directory).
+- Deno ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/deno.ts))
   - Reads `jsr.json(c)` and `deno.json(c)` `include` and `exclude` fields.
   - Starts searching from `.` (current working directory).
-  - See the implementation of [JSR target](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/jsr.ts) for details.
 
 ## See also
 

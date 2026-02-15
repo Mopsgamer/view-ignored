@@ -1,3 +1,4 @@
+export * from "./deno.js"
 export * from "./git.js"
 export * from "./jsr.js"
 export * from "./npm.js"

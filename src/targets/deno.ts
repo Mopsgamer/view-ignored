@@ -12,6 +12,14 @@ import type { Target } from "./target.js"
 const extractors: Extractor[] = [
 	{
 		extract: extractJsrJson,
+		path: "deno.json",
+	},
+	{
+		extract: extractJsrJsonc,
+		path: "deno.jsonc",
+	},
+	{
+		extract: extractJsrJson,
 		path: "jsr.json",
 	},
 	{
@@ -29,16 +37,16 @@ const internal: SignedPattern = {
 signedPatternCompile(internal)
 
 /**
- * @since 0.6.0
+ * @since 0.8.1
  */
-export const JSR: Target = {
+export const Deno: Target = {
 	extractors,
 	ignores(o) {
 		return signedPatternIgnores({
 			...o,
 			internal,
 			root: ".",
-			target: JSR,
+			target: Deno,
 		})
 	},
 }
