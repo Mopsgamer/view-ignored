@@ -145,16 +145,20 @@ The following built-in scanners are available:
   - Starts searching from `/`.
   - Check this scanner by running `git ls-files --others --exclude-standard --cached`.
 - NPM ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/npm.ts))
-  - Expecting to be compatible with Bun, PNPM, and others.
-  - Reads `.npmignore` and `package.json` `files` field.
+  - Expecting to be compatible with PNPM, and others.
+  - Reads `package.json` `files` field, `.npmignore` and `.gitignore`.
   - Starts searching from `.` (current working directory).
   - No additional checks for `name`, `version` or `publishConfig`.
   - Check this scanner by running `npm pack --dry-run`.
+- Bun ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/bun.ts))
+  - Bun tries to mimic NPM, but that does not mean it behaves the same way.
+  - Check this scanner by running `bun pm pack --dry-run`.
 - Yarn ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/yarn.ts))
   - Modern Berry behavior.
+  - Reads `package.json` `files` field, `.npmignore` and `.gitignore`.
   - Requires `package.json`: includes paths from `main`, `module`, `browser` and `bin`.
-  - `YarnClassic` is available. ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/yarnClassic.ts))
   - Starts searching from `.` (current working directory).
+  - `YarnClassic` is available. ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/yarnClassic.ts))
 - VSCE ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/vsce.ts))
   - Reads `package.json` `files` field, `.vscodeignore` and `.gitignore`.
   - Starts searching from `.` (current working directory).

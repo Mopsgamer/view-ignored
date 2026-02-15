@@ -40,6 +40,7 @@ signedPatternCompile(internal)
  * @since 0.8.1
  */
 export const Deno: Target = {
+	// TODO: Deno should validate manifest
 	extractors,
 	ignores(o) {
 		return signedPatternIgnores({

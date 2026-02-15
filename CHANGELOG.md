@@ -8,7 +8,8 @@ and this project adheres to
 
 ## [Unreleased]
 
-- Add Deno target
+- Add Bun target.
+- Add Deno target.
 - Remove the "deno.json(c)" extractor JSR.
 
 ## [0.8.0] - 2026-02-14

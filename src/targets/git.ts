@@ -31,6 +31,7 @@ signedPatternCompile(internal)
  * @since 0.6.0
  */
 export const Git: Target = {
+	// TODO: Git should read configs
 	extractors,
 	ignores(o) {
 		return signedPatternIgnores({

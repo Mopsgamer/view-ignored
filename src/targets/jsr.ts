@@ -32,6 +32,7 @@ signedPatternCompile(internal)
  * @since 0.6.0
  */
 export const JSR: Target = {
+	// TODO: JSR should validate manifest
 	extractors,
 	ignores(o) {
 		return signedPatternIgnores({

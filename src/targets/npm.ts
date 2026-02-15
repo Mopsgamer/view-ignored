@@ -77,6 +77,7 @@ signedPatternCompile(internal)
  * @since 0.6.0
  */
 export const NPM: Target = {
+	// TODO: NPM should validate package.json
 	extractors,
 	ignores(o) {
 		return signedPatternIgnores({
