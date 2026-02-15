@@ -1,6 +1,6 @@
 {
 	"name": "view-ignored",
-	"version": "0.8.0",
+	"version": "0.8.1",
 	"description": "Retrieve list of files ignored/included by Git, NPM, Yarn, JSR, VSCE or other tools.",
 	"keywords": [
 		".gitignore",
