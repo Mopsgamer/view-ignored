@@ -1,17 +1,16 @@
 import { describe, test, expect } from "bun:test"
-
 import { Volume, type NestedDirectoryJSON } from "memfs"
+
+import type { MatcherContext } from "./matcherContext.js"
+import type { PatternMinimatch, Pattern } from "./pattern.js"
+import type { SignedPatternMatch } from "./signedPattern.js"
+import type { Source } from "./source.js"
 
 import { scan, type ScanOptions } from "../scan.js"
 import { NPM as target } from "../targets/npm.js"
 import { createAdapter } from "../testScan.test.js"
 import { unixify } from "../unixify.js"
-
-import type { MatcherContext } from "./matcherContext.js"
 import { matcherContextAddPath, matcherContextRemovePath } from "./matcherContextPatch.js"
-import type { PatternMinimatch, Pattern } from "./pattern.js"
-import type { SignedPatternMatch } from "./signedPattern.js"
-import type { Source } from "./source.js"
 
 const fsJson = {
 	node_modules: {
@@ -91,35 +90,37 @@ function makePatternMinimatch(
 
 const sourcePackageJsonExclude = ["/out"]
 const sourcePackageJson: Source = {
-	inverted: true,
 	name: "package.json",
 	path: "package.json",
-	pattern: {
-		include: sourcePackageJsonExclude,
-		exclude: [],
-		compiled: {
-			include: [
+	pattern: [
+		{
+			excludes: false,
+			pattern: sourcePackageJsonExclude,
+			compiled: [
 				makePatternMinimatch(
 					/^out(?:\/|\/(?:(?!(?:\/|^)(?:\.{1,2})($|\/)).)*?)?$/,
 					"/out",
 					sourcePackageJsonExclude,
 				),
 			],
-			exclude: [],
 		},
-	},
+		{
+			excludes: true,
+			pattern: [],
+			compiled: [],
+		},
+	],
 }
 
 const sourceGitignoreExclude = ["node_modules", "out", "dist", "*.tgz", "*.cpuprofile"]
 const sourceGitignore: Source = {
 	name: ".gitignore",
 	path: ".gitignore",
-	inverted: false,
-	pattern: {
-		exclude: sourceGitignoreExclude,
-		include: [],
-		compiled: {
-			exclude: [
+	pattern: [
+		{
+			excludes: true,
+			pattern: sourceGitignoreExclude,
+			compiled: [
 				makePatternMinimatch(
 					/^(?:\/|(?:(?!(?:\/|^)(?:\.{1,2})($|\/)).)*?\/)?node_modules(?:\/|\/(?:(?!(?:\/|^)(?:\.{1,2})($|\/)).)*?)?$/,
 					"node_modules",
@@ -146,9 +147,8 @@ const sourceGitignore: Source = {
 					sourceGitignoreExclude,
 				),
 			],
-			include: [],
 		},
-	},
+	],
 }
 
 const opt: Required<ScanOptions> = {

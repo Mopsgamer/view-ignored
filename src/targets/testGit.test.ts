@@ -1,9 +1,8 @@
-import { test, describe } from "bun:test"
-
 import type { NestedDirectoryJSON } from "memfs"
 
-import { testScan, type PathHandlerOptions } from "../testScan.test.js"
+import { test, describe } from "bun:test"
 
+import { testScan, type PathHandlerOptions } from "../testScan.test.js"
 import { Git as target } from "./git.js"
 
 function testGit(
@@ -19,8 +18,8 @@ describe("Git", () => {
 		await testGit(done, { ".": null }, [])
 	})
 
-	test("ignores for no sources", async (done) => {
-		await testGit(done, { file: "" }, [])
+	test("includes for no sources", async (done) => {
+		await testGit(done, { file: "" }, ["file"])
 	})
 
 	test("keeps for empty source", async (done) => {

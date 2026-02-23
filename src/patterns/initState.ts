@@ -1,5 +1,4 @@
 import type { FsAdapter } from "../types.js"
-
 import type { MatcherContext } from "./matcherContext.js"
 
 /**

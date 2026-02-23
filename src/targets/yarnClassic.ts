@@ -1,3 +1,5 @@
+import type { Target } from "./target.js"
+
 import {
 	type Extractor,
 	signedPatternIgnores,
@@ -6,8 +8,6 @@ import {
 	extractPackageJsonNocase,
 	extractGitignoreNocase,
 } from "../patterns/index.js"
-
-import type { Target } from "./target.js"
 
 const extractors: Extractor[] = [
 	{
@@ -28,53 +28,64 @@ const extractors: Extractor[] = [
 	},
 ]
 
-const internal: SignedPattern = {
-	exclude: [
-		// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L26
-		".git",
-		"CVS",
-		".svn",
-		".hg",
+const internal: SignedPattern[] = [
+	signedPatternCompile(
+		{
+			excludes: true,
+			pattern: [
+				// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L26
+				".git",
+				"CVS",
+				".svn",
+				".hg",
 
-		"node_modules",
+				"node_modules",
 
-		"yarn.lock",
-		".lock-wscript",
-		".wafpickle-0",
-		".wafpickle-1",
-		".wafpickle-2",
-		".wafpickle-3",
-		".wafpickle-4",
-		".wafpickle-5",
-		".wafpickle-6",
-		".wafpickle-7",
-		".wafpickle-8",
-		".wafpickle-9",
-		"*.swp",
-		"._*",
-		"npm-debug.log",
-		"yarn-error.log",
-		".npmrc",
-		".yarnrc",
-		".yarnrc.yml",
-		".npmignore",
-		".gitignore",
-		".DS_Store",
-	],
-	include: [
-		// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L10
-		"/package.json",
-		"/readme*",
-		"/license*",
-		"/licence*",
-		"/changes*",
-		"/changelog*",
-		"/history*",
-	],
-	compiled: null,
-}
-
-signedPatternCompile(internal, { nocase: true })
+				"yarn.lock",
+				".lock-wscript",
+				".wafpickle-0",
+				".wafpickle-1",
+				".wafpickle-2",
+				".wafpickle-3",
+				".wafpickle-4",
+				".wafpickle-5",
+				".wafpickle-6",
+				".wafpickle-7",
+				".wafpickle-8",
+				".wafpickle-9",
+				"*.swp",
+				"._*",
+				"npm-debug.log",
+				"yarn-error.log",
+				".npmrc",
+				".yarnrc",
+				".yarnrc.yml",
+				".npmignore",
+				".gitignore",
+				".DS_Store",
+			],
+			compiled: null,
+		},
+		{ nocase: true },
+	),
+	signedPatternCompile(
+		{
+			excludes: false,
+			pattern: [
+				// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L10
+				"/package.json",
+				"/readme*",
+				"/license*",
+				"/licence*",
+				"/changes*",
+				"/changelog*",
+				"/history*",
+			],
+			compiled: null,
+		},
+		{ nocase: true },
+	),
+]
 
 /**
  * @since 0.8.0

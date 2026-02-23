@@ -1,9 +1,10 @@
 import type { Dirent } from "node:fs"
 
-import { getDepth } from "./getDepth.js"
 import type { MatcherContext } from "./patterns/matcherContext.js"
 import type { MatcherStream } from "./patterns/matcherStream.js"
 import type { ScanOptions } from "./types.js"
+
+import { getDepth } from "./getDepth.js"
 
 export type WalkOptions = {
 	path: string

@@ -1,3 +1,5 @@
+import type { Target } from "./target.js"
+
 import {
 	type Extractor,
 	extractGitignore,
@@ -5,8 +7,6 @@ import {
 	signedPatternCompile,
 	type SignedPattern,
 } from "../patterns/index.js"
-
-import type { Target } from "./target.js"
 
 const extractors: Extractor[] = [
 	{
@@ -19,13 +19,13 @@ const extractors: Extractor[] = [
 	},
 ]
 
-const internal: SignedPattern = {
-	exclude: [".git", ".DS_Store"],
-	include: [],
-	compiled: null,
-}
-
-signedPatternCompile(internal)
+const internal: SignedPattern[] = [
+	signedPatternCompile({
+		excludes: true,
+		pattern: [".git", ".DS_Store"],
+		compiled: null,
+	}),
+]
 
 /**
  * @since 0.6.0

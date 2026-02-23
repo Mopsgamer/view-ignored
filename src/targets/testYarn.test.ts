@@ -1,10 +1,10 @@
-import { describe, test, expect } from "bun:test"
-
 import type { NestedDirectoryJSON } from "memfs"
 
-import type { Source } from "../patterns/source.js"
-import { testScan, type PathHandlerOptions } from "../testScan.test.js"
+import { describe, test, expect } from "bun:test"
 
+import type { Source } from "../patterns/source.js"
+
+import { testScan, type PathHandlerOptions } from "../testScan.test.js"
 import { Yarn as target } from "./yarn.js"
 
 function testYarn(
@@ -20,8 +20,8 @@ describe("Yarn", () => {
 		await testYarn(done, { ".": null }, [])
 	})
 
-	test("ignores for no sources", async (done) => {
-		await testYarn(done, { file: "" }, [])
+	test("includes for no sources", async (done) => {
+		await testYarn(done, { file: "" }, ["file"])
 	})
 
 	test("keeps for empty source", async (done) => {

@@ -1,4 +1,6 @@
 import type { ExtractorFn } from "./extractor.js"
+import type { SignedPattern } from "./signedPattern.js"
+
 import { signedPatternCompile } from "./resolveSources.js"
 import { sourcePushNegatable, type Source } from "./source.js"
 
@@ -11,7 +13,9 @@ import { sourcePushNegatable, type Source } from "./source.js"
  */
 export function extractGitignore(source: Source, content: Buffer): void {
 	extract(source, content)
-	signedPatternCompile(source.pattern)
+	for (const element of source.pattern) {
+		signedPatternCompile(element)
+	}
 }
 
 /**
@@ -23,12 +27,16 @@ export function extractGitignore(source: Source, content: Buffer): void {
  */
 export function extractGitignoreNocase(source: Source, content: Buffer): void {
 	extract(source, content)
-	signedPatternCompile(source.pattern, { nocase: true })
+	for (const element of source.pattern) {
+		signedPatternCompile(element, { nocase: true })
+	}
 }
 
 extractGitignore satisfies ExtractorFn
 
 function extract(source: Source, content: Buffer) {
+	const include: SignedPattern = { compiled: null, excludes: false, pattern: [] }
+	const exclude: SignedPattern = { compiled: null, excludes: true, pattern: [] }
 	for (let line of content.toString().split("\n")) {
 		line = line.trim()
 		if (line === "" || line.startsWith("#")) {
@@ -39,6 +47,7 @@ function extract(source: Source, content: Buffer) {
 			line = line.substring(-cdx)
 		}
 
-		sourcePushNegatable(source, line)
+		sourcePushNegatable(line, false, include, exclude)
 	}
+	source.pattern.push(include, exclude)
 }

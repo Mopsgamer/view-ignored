@@ -1,8 +1,9 @@
-import { opendir } from "./opendir.js"
 import type { MatcherContext } from "./patterns/matcherContext.js"
 import type { SignedPatternMatch } from "./patterns/signedPattern.js"
 import type { Source } from "./patterns/source.js"
 import type { ScanOptions, FsAdapter } from "./types.js"
+
+import { opendir } from "./opendir.js"
 import { unixify, relative, join } from "./unixify.js"
 import { walkIncludes } from "./walk.js"
 export type * from "./types.js"

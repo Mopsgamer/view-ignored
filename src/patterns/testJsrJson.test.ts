@@ -1,17 +1,17 @@
 import { describe, test, expect } from "bun:test"
 
-import { extractJsrJson } from "./jsrjson.js"
 import type { MatcherContext } from "./matcherContext.js"
 import type { SignedPatternMatch } from "./signedPattern.js"
 import type { Source } from "./source.js"
 
+import { extractJsrJson } from "./jsrjson.js"
+
 describe("jsr.json", () => {
 	test("does not parse 0", () => {
 		const source: Source = {
-			inverted: true,
 			name: "jsr.json",
 			path: "jsr.json",
-			pattern: { exclude: [], include: [], compiled: null },
+			pattern: [],
 		}
 		const ctx: MatcherContext = {
 			paths: new Map<string, SignedPatternMatch>(),
@@ -30,10 +30,9 @@ describe("jsr.json", () => {
 	})
 	test("does not parse '{'", () => {
 		const source: Source = {
-			inverted: true,
 			name: "jsr.json",
 			path: "jsr.json",
-			pattern: { exclude: [], include: [], compiled: null },
+			pattern: [],
 		}
 		const ctx: MatcherContext = {
 			paths: new Map<string, SignedPatternMatch>(),
@@ -48,10 +47,9 @@ describe("jsr.json", () => {
 	})
 	test("parses '{}'", () => {
 		const source: Source = {
-			inverted: true,
 			name: "jsr.json",
 			path: "jsr.json",
-			pattern: { exclude: [], include: [], compiled: null },
+			pattern: [],
 		}
 		const ctx: MatcherContext = {
 			paths: new Map<string, SignedPatternMatch>(),

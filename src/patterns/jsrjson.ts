@@ -3,8 +3,10 @@ import stripJsonComments from "strip-json-comments"
 
 import type { ExtractorFn } from "./extractor.js"
 import type { MatcherContext } from "./matcherContext.js"
-import { signedPatternCompile } from "./resolveSources.js"
+import type { SignedPattern } from "./signedPattern.js"
 import type { Source } from "./source.js"
+
+import { signedPatternCompile } from "./resolveSources.js"
 
 const jsrManifest = type({
 	exclude: "string[]?",
@@ -26,6 +28,8 @@ const parse = type("string")
  */
 export function extractJsrJson(source: Source, content: Buffer, ctx: MatcherContext): void {
 	const dist = parse(content.toString())
+	const include: SignedPattern = { compiled: null, excludes: false, pattern: [] }
+	const exclude: SignedPattern = { compiled: null, excludes: true, pattern: [] }
 	if (dist instanceof type.errors) {
 		source.error = new Error("Invalid '" + source.path + "': " + dist.summary, { cause: dist })
 		ctx.failed.push(source)
@@ -34,20 +38,23 @@ export function extractJsrJson(source: Source, content: Buffer, ctx: MatcherCont
 
 	if (!dist.publish) {
 		if (dist.exclude) {
-			source.pattern.exclude.push(...dist.exclude)
+			exclude.pattern.push(...dist.exclude)
 		}
 	} else if (dist.publish.exclude) {
-		source.pattern.exclude.push(...dist.publish.exclude)
+		exclude.pattern.push(...dist.publish.exclude)
 	}
 
 	if (!dist.publish) {
 		if (dist.include) {
-			source.pattern.include.push(...dist.include)
+			include.pattern.push(...dist.include)
 		}
 	} else if (dist.publish.include) {
-		source.pattern.include.push(...dist.publish.include)
+		include.pattern.push(...dist.publish.include)
 	}
-	signedPatternCompile(source.pattern)
+
+	for (const element of source.pattern) {
+		signedPatternCompile(element)
+	}
 }
 
 extractJsrJson satisfies ExtractorFn

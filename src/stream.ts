@@ -1,9 +1,10 @@
 import * as nodefs from "node:fs"
 import * as process from "node:process"
 
-import { scanStream as browserStream } from "./browser_stream.js"
 import type { MatcherStream } from "./patterns/matcherStream.js"
 import type { ScanOptions } from "./types.js"
+
+import { scanStream as browserStream } from "./browser_stream.js"
 export type * from "./types.js"
 
 /**

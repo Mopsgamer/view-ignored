@@ -15,7 +15,7 @@ export type Source = {
 	 *
 	 * @since 0.6.0
 	 */
-	pattern: SignedPattern
+	pattern: SignedPattern[]
 
 	/**
 	 * Name of the source file.
@@ -60,10 +60,13 @@ export type Source = {
  *
  * @since 0.6.0
  */
-export function sourcePushNegatable(source: Source, pattern: string): void {
-	let exclude = source.pattern.exclude,
-		include = source.pattern.include
-	if (source.inverted) {
+export function sourcePushNegatable(
+	pattern: string,
+	invert: boolean,
+	include: SignedPattern,
+	exclude: SignedPattern,
+): void {
+	if (invert) {
 		;[exclude, include] = [include, exclude]
 	}
 
@@ -74,5 +77,5 @@ export function sourcePushNegatable(source: Source, pattern: string): void {
 		pattern = pattern.substring(1)
 	}
 
-	dist.push(pattern)
+	dist.pattern.push(pattern)
 }

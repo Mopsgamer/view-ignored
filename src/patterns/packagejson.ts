@@ -1,6 +1,8 @@
 import { type } from "arktype"
 
 import type { ExtractorFn } from "./extractor.js"
+import type { SignedPattern } from "./signedPattern.js"
+
 import { signedPatternCompile } from "./resolveSources.js"
 import { sourcePushNegatable, type Source } from "./source.js"
 
@@ -21,7 +23,11 @@ const parse = type("string")
  */
 export function extractPackageJson(source: Source, content: Buffer): void | "none" {
 	const result = extract(source, content)
-	if (result === undefined) signedPatternCompile(source.pattern)
+	if (result === undefined) {
+		for (const element of source.pattern) {
+			signedPatternCompile(element)
+		}
+	}
 	if (result === "error") return
 	return result
 }
@@ -35,13 +41,19 @@ export function extractPackageJson(source: Source, content: Buffer): void | "non
  */
 export function extractPackageJsonNocase(source: Source, content: Buffer): void | "none" {
 	const result = extract(source, content)
-	if (result === undefined) signedPatternCompile(source.pattern, { nocase: true })
+	if (result === undefined) {
+		for (const element of source.pattern) {
+			signedPatternCompile(element, { nocase: true })
+		}
+	}
 	if (result === "error") return
 	return result
 }
 
 function extract(source: Source, content: Buffer): void | "error" | "none" {
 	source.inverted = true
+	const include: SignedPattern = { compiled: null, excludes: false, pattern: [] }
+	const exclude: SignedPattern = { compiled: null, excludes: true, pattern: [] }
 	const dist = parse(content.toString())
 	if (dist instanceof type.errors) {
 		source.error = new Error("Invalid '" + source.path + "': " + dist.summary, { cause: dist })
@@ -53,8 +65,9 @@ function extract(source: Source, content: Buffer): void | "error" | "none" {
 	}
 
 	for (const pattern of dist.files) {
-		sourcePushNegatable(source, pattern)
+		sourcePushNegatable(pattern, true, include, exclude)
 	}
+	source.pattern.push(include, exclude)
 }
 
 extractPackageJson satisfies ExtractorFn

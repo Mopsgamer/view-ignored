@@ -1,5 +1,4 @@
 import type { SignedPatternMatch } from "../patterns/signedPattern.js"
-
 import type { InitState } from "./initState.js"
 
 /**

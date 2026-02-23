@@ -1,12 +1,12 @@
 import { resolve, dirname } from "node:path"
 
+import type { ScanOptions } from "../types.js"
+import type { MatcherContext } from "./matcherContext.js"
+
 import { getDepth } from "../getDepth.js"
 import { opendir } from "../opendir.js"
-import type { ScanOptions } from "../types.js"
 import { unixify, relative } from "../unixify.js"
 import { walkIncludes } from "../walk.js"
-
-import type { MatcherContext } from "./matcherContext.js"
 
 /**
  * Provides patching abilities for the given {@link MatcherContext}.

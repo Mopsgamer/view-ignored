@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- Improve the logic for signed patterns.
+  From now on, they are not truly signed patterns,
+  but rather positive patterns with the "inverted" property.
+  You can use an array to represent complex logic.
+- For the "missing-source" case, include the paths.
+- Respect `package.json` `main` value
+  when determining which files Bun should ignore.
+
 ## [0.8.1] - 2026-02-15
 
 - Add Bun target.

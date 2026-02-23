@@ -1,5 +1,7 @@
 import { type } from "arktype"
 
+import type { Target } from "./target.js"
+
 import {
 	type Extractor,
 	signedPatternIgnores,
@@ -9,8 +11,6 @@ import {
 	extractGitignoreNocase,
 } from "../patterns/index.js"
 import { join, unixify } from "../unixify.js"
-
-import type { Target } from "./target.js"
 
 const extractors: Extractor[] = [
 	{
@@ -27,27 +27,51 @@ const extractors: Extractor[] = [
 	},
 ]
 
-const internal: SignedPattern = {
-	exclude: [
-		// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L26
-		"/package.tgz",
-
-		".github",
-		".git",
-		".hg",
-		"node_modules",
-
-		".npmignore",
-		".gitignore",
-
-		".#*",
-		".DS_Store",
-	],
-	include: [], // see init
-	compiled: null,
+const internalInclude: SignedPattern = {
+	excludes: false,
+	pattern: [],
+	compiled: [],
 }
 
-signedPatternCompile(internal, { nocase: true })
+const internal: SignedPattern[] = [
+	internalInclude,
+	signedPatternCompile({
+		excludes: true,
+		pattern: [
+			// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L26
+			"/package.tgz",
+
+			".github",
+			".git",
+			".hg",
+			"node_modules",
+
+			".npmignore",
+			".gitignore",
+
+			".#*",
+			".DS_Store",
+		],
+		compiled: null,
+	}),
+	signedPatternCompile(
+		{
+			excludes: false,
+			pattern: [
+				// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L10
+				"/package.json",
+				"/README",
+				"/README.*",
+				"/LICENSE",
+				"/LICENSE.*",
+				"/LICENCE",
+				"/LICENCE.*",
+			],
+			compiled: null,
+		},
+		{ nocase: true },
+	),
+]
 
 const npmManifest = type({
 	"main?": "string",
@@ -83,16 +107,7 @@ export const Yarn: Target = {
 
 		// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L215-L231
 
-		const set = new Set<string>([
-			// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L10
-			"/package.json",
-			"/README",
-			"/README.*",
-			"/LICENSE",
-			"/LICENSE.*",
-			"/LICENCE",
-			"/LICENCE.*",
-		])
+		const set = new Set<string>()
 
 		function normal(path: string): string {
 			const result = unixify(join(normalCwd, path)).substring(normalCwd.length)
@@ -108,9 +123,8 @@ export const Yarn: Target = {
 			Object.values(dist.bin).forEach((binPath) => set.add(normal(binPath)))
 		}
 
-		internal.include.length = 0
-		internal.include.push(...set)
-		signedPatternCompile(internal, { nocase: true })
+		internalInclude.pattern = Array.from(set)
+		signedPatternCompile(internalInclude, { nocase: true })
 	},
 	extractors,
 	ignores(o) {

@@ -1,11 +1,11 @@
+import type { NestedDirectoryJSON } from "memfs"
+
 import { describe, test, expect } from "bun:test"
 import { dirname } from "node:path/posix"
 
-import type { NestedDirectoryJSON } from "memfs"
-
 import type { Source } from "../patterns/source.js"
-import { testScan, type PathHandlerOptions } from "../testScan.test.js"
 
+import { testScan, type PathHandlerOptions } from "../testScan.test.js"
 import { NPM as target } from "./npm.js"
 
 function testNpm(
@@ -21,8 +21,22 @@ describe("NPM", () => {
 		await testNpm(done, { ".": null }, [])
 	})
 
-	test("ignores for no sources", async (done) => {
-		await testNpm(done, { file: "" }, [])
+	test("includes for no sources", async (done) => {
+		await testNpm(done, { file: "" }, ["file"])
+	})
+
+	test("includes for no sources (package.json files)", async (done) => {
+		await testNpm(
+			done,
+			{
+				file: "",
+				"package.json": JSON.stringify({
+					name: "root",
+					version: "0.0.1",
+				}),
+			},
+			["file", "package.json"],
+		)
 	})
 
 	test("keeps for empty source", async (done) => {

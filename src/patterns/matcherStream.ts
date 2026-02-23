@@ -1,14 +1,15 @@
-import { EventEmitter } from "node:events"
 import type { Dirent } from "node:fs"
 
-import { opendir } from "../opendir.js"
+import { EventEmitter } from "node:events"
+
 import type { MatcherContext } from "../patterns/matcherContext.js"
 import type { ScanOptions, FsAdapter } from "../types.js"
-import { join, relative, unixify } from "../unixify.js"
-import { walkIncludes } from "../walk.js"
-
 import type { SignedPatternMatch } from "./signedPattern.js"
 import type { Source } from "./source.js"
+
+import { opendir } from "../opendir.js"
+import { join, relative, unixify } from "../unixify.js"
+import { walkIncludes } from "../walk.js"
 
 /**
  * Post-scan entry information.

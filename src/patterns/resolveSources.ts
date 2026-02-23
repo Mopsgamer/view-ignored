@@ -2,14 +2,14 @@ import { dirname } from "node:path"
 
 import type { Target } from "../targets/target.js"
 import type { FsAdapter } from "../types.js"
-import { unixify, relative, join } from "../unixify.js"
-
 import type { PatternFinderOptions, Extractor } from "./extractor.js"
 import type { MatcherContext } from "./matcherContext.js"
-import { patternCompile } from "./pattern.js"
 import type { SignedPattern } from "./signedPattern.js"
 import type { Source } from "./source.js"
 import type { StringCompileOptions } from "./stringCompile.js"
+
+import { unixify, relative, join } from "../unixify.js"
+import { patternCompile } from "./pattern.js"
 
 /**
  * Compiles the {@link SignedPattern} (forced).
@@ -24,10 +24,7 @@ export function signedPatternCompile(
 	signedPattern: SignedPattern,
 	options?: StringCompileOptions,
 ): SignedPattern {
-	signedPattern.compiled = {
-		include: patternCompile(signedPattern.include, options),
-		exclude: patternCompile(signedPattern.exclude, options),
-	}
+	signedPattern.compiled = patternCompile(signedPattern.pattern, options)
 	return signedPattern
 }
 
@@ -160,10 +157,9 @@ async function tryExtractor(
 	const name = path.substring(path.lastIndexOf("/") + 1)
 
 	const newSource: Source = {
-		inverted: false,
 		name,
 		path,
-		pattern: { exclude: [], include: [], compiled: null },
+		pattern: [],
 	}
 
 	let buff: Buffer | undefined
