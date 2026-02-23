@@ -1,3 +1,5 @@
+import { type } from "arktype"
+
 import {
 	type Extractor,
 	signedPatternIgnores,
@@ -6,6 +8,7 @@ import {
 	extractPackageJson,
 	extractGitignore,
 } from "../patterns/index.js"
+import { join, unixify } from "../unixify.js"
 
 import type { Target } from "./target.js"
 
@@ -63,28 +66,83 @@ const internal: SignedPattern = {
 		// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L285
 		"node_modules",
 	],
-	include: [
-		// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L2586
-		"package.json",
-
-		// the special?.* check works this way: https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L2599
-		"LICENSE",
-		"LICENSE.*",
-		"LICENCE",
-		"LICENCE.*",
-		"README",
-		"README.*",
-	],
+	include: [], // see init
 	compiled: null,
 }
 
 signedPatternCompile(internal)
 
+const npmManifest = type({
+	"main?": "string",
+	"module?": "string",
+	"browser?": "string",
+	"bin?": "string | Record<string, string>",
+	"bundledDependencies?": "string[]",
+	"bundleDependencies?": "string[]",
+	"optionalDependencies?": "Record<string, string>",
+	"devDependencies?": "Record<string, string>",
+	"dependencies?": "Record<string, string>",
+})
+
+const parse = type("string")
+	.pipe((s) => JSON.parse(s))
+	.pipe(npmManifest)
+
 /**
  * @since 0.8.1
  */
 export const Bun: Target = {
-	// TODO: Bun should include some paths: bins, bundled deps, nothing else.
+	async init({ fs, cwd }) {
+		let content: Buffer
+		const normalCwd = unixify(cwd)
+		try {
+			content = await fs.promises.readFile(normalCwd + "/" + "package.json")
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+				return // no package.json
+			}
+			throw new Error("Error while initializing Bun's ignoring implementation", { cause: error })
+		}
+
+		const dist = parse(content.toString())
+		if (dist instanceof type.errors) {
+			throw new Error("Invalid 'package.json': " + dist.summary, { cause: dist })
+		}
+
+		const set = new Set<string>([
+			// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L2586
+			"package.json",
+
+			// the special?.* check works this way: https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L2599
+			"LICENSE",
+			"LICENSE.*",
+			"LICENCE",
+			"LICENCE.*",
+			"README",
+			"README.*",
+		])
+
+		function normal(path: string): string {
+			const result = unixify(join(normalCwd, path)).substring(normalCwd.length)
+			return result
+		}
+
+		if (typeof dist.bin === "string") {
+			set.add(normal(dist.bin))
+		} else if (typeof dist.bin === "object" && dist.bin !== null) {
+			Object.values(dist.bin).forEach((binPath) => set.add(normal(binPath)))
+		}
+
+		// TODO: Bun should include bundled deps
+		// nothing else
+		// node_modules will be ignored because exclude is checked before include
+		// so the whole "internal" property should be reworked to allow that
+		// and so the "external" property should be reworked too.
+
+		internal.include.length = 0
+		internal.include.push(...set)
+		signedPatternCompile(internal, { nocase: true })
+	},
 	extractors,
 	ignores(o) {
 		return signedPatternIgnores({

@@ -27,17 +27,6 @@ const extractors: Extractor[] = [
 	},
 ]
 
-const include = [
-	// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L10
-	"/package.json",
-	"/README",
-	"/README.*",
-	"/LICENSE",
-	"/LICENSE.*",
-	"/LICENCE",
-	"/LICENCE.*",
-]
-
 const internal: SignedPattern = {
 	exclude: [
 		// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L26
@@ -54,7 +43,7 @@ const internal: SignedPattern = {
 		".#*",
 		".DS_Store",
 	],
-	include: [...include],
+	include: [], // see init
 	compiled: null,
 }
 
@@ -94,7 +83,16 @@ export const Yarn: Target = {
 
 		// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L215-L231
 
-		const set = new Set<string>(include)
+		const set = new Set<string>([
+			// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L10
+			"/package.json",
+			"/README",
+			"/README.*",
+			"/LICENSE",
+			"/LICENSE.*",
+			"/LICENCE",
+			"/LICENCE.*",
+		])
 
 		function normal(path: string): string {
 			const result = unixify(join(normalCwd, path)).substring(normalCwd.length)
