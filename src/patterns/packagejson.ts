@@ -3,16 +3,9 @@ import { type } from "arktype"
 import type { ExtractorFn } from "./extractor.js"
 import type { SignedPattern } from "./signedPattern.js"
 
+import { npmManifestParse } from "../targets/npmManifest.js"
 import { signedPatternCompile } from "./resolveSources.js"
 import { sourcePushNegatable, type Source } from "./source.js"
-
-const npmManifest = type({
-	"files?": "string[]",
-})
-
-const parse = type("string")
-	.pipe((s) => JSON.parse(s))
-	.pipe(npmManifest)
 
 /**
  * Extracts and compiles patterns from the file.
@@ -54,7 +47,7 @@ function extract(source: Source, content: Buffer): void | "error" | "none" {
 	source.inverted = true
 	const include: SignedPattern = { compiled: null, excludes: false, pattern: [] }
 	const exclude: SignedPattern = { compiled: null, excludes: true, pattern: [] }
-	const dist = parse(content.toString())
+	const dist = npmManifestParse(content.toString())
 	if (dist instanceof type.errors) {
 		source.error = new Error("Invalid '" + source.path + "': " + dist.summary, { cause: dist })
 		return "error"

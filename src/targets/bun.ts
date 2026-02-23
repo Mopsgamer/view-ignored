@@ -11,6 +11,7 @@ import {
 	extractGitignore,
 } from "../patterns/index.js"
 import { join, unixify } from "../unixify.js"
+import { npmManifestParse } from "./npmManifest.js"
 
 const extractors: Extractor[] = [
 	{
@@ -98,22 +99,6 @@ const internal: SignedPattern[] = [
 	),
 ]
 
-const npmManifest = type({
-	"main?": "string",
-	"module?": "string",
-	"browser?": "string",
-	"bin?": "string | Record<string, string>",
-	"bundledDependencies?": "string[]",
-	"bundleDependencies?": "string[]",
-	"optionalDependencies?": "Record<string, string>",
-	"devDependencies?": "Record<string, string>",
-	"dependencies?": "Record<string, string>",
-})
-
-const parse = type("string")
-	.pipe((s) => JSON.parse(s))
-	.pipe(npmManifest)
-
 /**
  * @since 0.8.1
  */
@@ -130,7 +115,7 @@ export const Bun: Target = {
 			throw new Error("Error while initializing Bun's ignoring implementation", { cause: error })
 		}
 
-		const dist = parse(content.toString())
+		const dist = npmManifestParse(content.toString())
 		if (dist instanceof type.errors) {
 			throw new Error("Invalid 'package.json': " + dist.summary, { cause: dist })
 		}

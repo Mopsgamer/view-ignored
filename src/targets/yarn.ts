@@ -11,6 +11,7 @@ import {
 	extractGitignoreNocase,
 } from "../patterns/index.js"
 import { join, unixify } from "../unixify.js"
+import { npmManifestParse } from "./npmManifest.js"
 
 const extractors: Extractor[] = [
 	{
@@ -73,17 +74,6 @@ const internal: SignedPattern[] = [
 	),
 ]
 
-const npmManifest = type({
-	"main?": "string",
-	"module?": "string",
-	"browser?": "string",
-	"bin?": "string | Record<string, string>",
-})
-
-const parse = type("string")
-	.pipe((s) => JSON.parse(s))
-	.pipe(npmManifest)
-
 /**
  * @since 0.6.0
  */
@@ -100,7 +90,7 @@ export const Yarn: Target = {
 			throw new Error("Error while initializing Yarn's ignoring implementation", { cause: error })
 		}
 
-		const dist = parse(content.toString())
+		const dist = npmManifestParse(content.toString())
 		if (dist instanceof type.errors) {
 			throw new Error("Invalid 'package.json': " + dist.summary, { cause: dist })
 		}
