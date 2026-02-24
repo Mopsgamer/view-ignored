@@ -146,28 +146,30 @@ The following built-in scanners are available:
   - Check this scanner by running `git ls-files --others --exclude-standard --cached`.
 - NPM ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/npm.ts))
   - Expecting to be compatible with PNPM, and others.
+  - Validates `package.json`.
   - Reads `package.json` `files` field, `.npmignore` and `.gitignore`.
   - Starts searching from `.` (current working directory).
-  - No additional checks for `name`, `version` or `publishConfig`.
   - Check this scanner by running `npm pack --dry-run`.
 - Bun ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/bun.ts))
   - Bun tries to mimic NPM, but that does not mean it behaves the same way.
   - Check this scanner by running `bun pm pack --dry-run`.
 - Yarn ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/yarn.ts))
   - Modern Berry behavior.
+  - Validates `package.json`.
   - Reads `package.json` `files` field, `.npmignore` and `.gitignore`.
   - Requires `package.json`: includes paths from `main`, `module`, `browser` and `bin`.
   - Starts searching from `.` (current working directory).
   - `YarnClassic` is available. ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/yarnClassic.ts))
 - VSCE ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/vsce.ts))
+  - Validates `package.json`.
   - Reads `package.json` `files` field, `.vscodeignore` and `.gitignore`.
   - Starts searching from `.` (current working directory).
   - Check this scanner by running `vsce ls`.
 - JSR ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/jsr.ts))
-  - Reads `jsr.json(c)` `include` and `exclude` fields.
+  - Validates and reads `jsr.json(c)` `include` and `exclude` fields.
   - Starts searching from `.` (current working directory).
 - Deno ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/deno.ts))
-  - Reads `jsr.json(c)` and `deno.json(c)` `include` and `exclude` fields.
+  - Validates and reads `jsr.json(c)` and `deno.json(c)` `include` and `exclude` fields.
   - Starts searching from `.` (current working directory).
 
 ## See also

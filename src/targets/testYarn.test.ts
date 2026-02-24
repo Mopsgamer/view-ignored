@@ -15,13 +15,18 @@ function testYarn(
 	return testScan(done, tree, handler, { target })
 }
 
+const packageJsonNoFiles = JSON.stringify({
+	name: "me",
+	version: "0.0.1",
+})
+
 describe("Yarn", () => {
 	test("empty for empty", async (done) => {
-		await testYarn(done, { ".": null }, [])
+		await testYarn(done, { ".": null, "package.json": packageJsonNoFiles }, ["package.json"])
 	})
 
 	test("includes for no sources", async (done) => {
-		await testYarn(done, { file: "" }, ["file"])
+		await testYarn(done, { file: "", "package.json": packageJsonNoFiles }, ["file", "package.json"])
 	})
 
 	test("keeps for empty source", async (done) => {
@@ -30,8 +35,9 @@ describe("Yarn", () => {
 			{
 				filekeep: "",
 				".npmignore": "",
+				"package.json": packageJsonNoFiles,
 			},
-			["filekeep"],
+			["filekeep", "package.json"],
 		)
 	})
 
@@ -41,8 +47,9 @@ describe("Yarn", () => {
 			{
 				file: "",
 				".npmignore": "file",
+				"package.json": packageJsonNoFiles,
 			},
-			[],
+			["package.json"],
 		)
 	})
 
@@ -52,8 +59,9 @@ describe("Yarn", () => {
 			{
 				file: "",
 				".npmignore": "File",
+				"package.json": packageJsonNoFiles,
 			},
-			[],
+			["package.json"],
 		)
 	})
 
@@ -64,8 +72,9 @@ describe("Yarn", () => {
 				"file1.txt": "",
 				"file2.txt": "",
 				".npmignore": "file1.txt\nfile2.txt",
+				"package.json": packageJsonNoFiles,
 			},
-			[],
+			["package.json"],
 		)
 	})
 
@@ -76,8 +85,9 @@ describe("Yarn", () => {
 				"foo.js": "",
 				"bar.js": "",
 				".npmignore": "*.js",
+				"package.json": packageJsonNoFiles,
 			},
-			[],
+			["package.json"],
 		)
 	})
 
@@ -90,8 +100,9 @@ describe("Yarn", () => {
 					"helper.js": "",
 				},
 				".npmignore": "src/",
+				"package.json": packageJsonNoFiles,
 			},
-			[],
+			["package.json"],
 		)
 	})
 
@@ -102,8 +113,9 @@ describe("Yarn", () => {
 				"foo.txt": "",
 				"bar.js": "",
 				".npmignore": "*.js",
+				"package.json": packageJsonNoFiles,
 			},
-			["foo.txt"],
+			["foo.txt", "package.json"],
 		)
 	})
 
@@ -114,8 +126,9 @@ describe("Yarn", () => {
 				"foo.js": "",
 				"bar.js": "",
 				".npmignore": "*.js\n!bar.js",
+				"package.json": packageJsonNoFiles,
 			},
-			["bar.js"],
+			["bar.js", "package.json"],
 		)
 	})
 

@@ -101,9 +101,6 @@ export const YarnClassic: Target = {
 		try {
 			content = await fs.promises.readFile(normalCwd + "/" + "package.json")
 		} catch (error) {
-			if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-				return // no package.json
-			}
 			throw new Error("Error while initializing Yarn classic", { cause: error })
 		}
 
