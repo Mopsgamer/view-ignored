@@ -38,7 +38,9 @@ export function stringCompile(
 		pattern = "**/" + pattern
 	}
 
-	pattern += "/**"
+	if (!pattern.endsWith("/**")) {
+		pattern += "/**"
+	}
 
 	const re = makeRe(pattern, {
 		dot: true,
