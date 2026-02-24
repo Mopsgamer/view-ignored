@@ -127,7 +127,7 @@ export const Bun: Target = {
 			return result
 		}
 
-		// TODO: link zig code
+		// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L1440
 		if (typeof dist.bin === "string") {
 			set.add(normal(dist.bin))
 		} else if (typeof dist.bin === "object" && dist.bin !== null) {

@@ -15,6 +15,7 @@ and this project adheres to
 - For the "missing-source" case, include the paths.
 - Respect `package.json` `main` value
   when determining which files Bun should ignore.
+- Validate `package.json` for NPM target.
 
 ## [0.8.1] - 2026-02-15
 

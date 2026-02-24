@@ -1,3 +1,5 @@
+import { type } from "arktype"
+
 import type { Target } from "./target.js"
 
 import {
@@ -8,6 +10,8 @@ import {
 	extractPackageJson,
 	extractGitignore,
 } from "../patterns/index.js"
+import { unixify } from "../unixify.js"
+import { npmManifestParse } from "./npmManifest.js"
 
 const extractors: Extractor[] = [
 	{
@@ -24,7 +28,14 @@ const extractors: Extractor[] = [
 	},
 ]
 
+const internalInclude: SignedPattern = {
+	excludes: false,
+	pattern: [], // filled within init
+	compiled: [],
+}
+
 const internal: SignedPattern[] = [
+	internalInclude,
 	signedPatternCompile({
 		excludes: true,
 		pattern: [
@@ -82,7 +93,30 @@ const internal: SignedPattern[] = [
  * @since 0.6.0
  */
 export const NPM: Target = {
-	// TODO: NPM should validate package.json
+	async init({ fs, cwd }) {
+		let content: Buffer
+		const normalCwd = unixify(cwd)
+		try {
+			content = await fs.promises.readFile(normalCwd + "/" + "package.json")
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+				return // no package.json
+			}
+			throw new Error("Error while initializing Bun's ignoring implementation", { cause: error })
+		}
+
+		const dist = npmManifestParse(content.toString())
+		if (dist instanceof type.errors) {
+			throw new Error("Invalid 'package.json': " + dist.summary, { cause: dist })
+		}
+
+		// const set = new Set<string>()
+
+		// TODO: NPM should include bundled deps
+
+		// internalInclude.pattern = Array.from(set)
+		// signedPatternCompile(internalInclude, { nocase: true })
+	},
 	extractors,
 	ignores(o) {
 		return signedPatternIgnores({

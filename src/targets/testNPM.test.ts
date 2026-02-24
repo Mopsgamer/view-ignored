@@ -1,7 +1,6 @@
 import type { NestedDirectoryJSON } from "memfs"
 
 import { describe, test, expect } from "bun:test"
-import { dirname } from "node:path/posix"
 
 import type { Source } from "../patterns/source.js"
 
@@ -124,23 +123,17 @@ describe("NPM", () => {
 	})
 
 	test("collects errors", async (done) => {
-		await testNpm(
-			done,
-			{
-				"foo.js": "",
-				"negkeep.js": "",
-				"package.json": "{",
-			},
-			({ ctx }) => {
-				expect(ctx.failed).toBeArray()
-				expect(ctx.failed).not.toBeEmpty()
-				const source = ctx.failed.find((fail) => dirname(fail.path) === ".")
-				expect(source).toBeTruthy()
-				expect(source!.error).toBeTruthy()
-				expect(source!.error instanceof Error).toBeTruthy()
-				expect((source!.error! as Error).message).toMatch("Expected")
-			},
-		)
+		expect(
+			testNpm(
+				done,
+				{
+					"foo.js": "",
+					"negkeep.js": "",
+					"package.json": "{",
+				},
+				[],
+			),
+		).rejects.toThrowError("Expected")
 	})
 	test("monorepo should use package.json if cwd is .", async (done) => {
 		await testScan(
