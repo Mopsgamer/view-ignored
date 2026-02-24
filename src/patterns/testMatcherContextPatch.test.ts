@@ -90,6 +90,7 @@ function makePatternMinimatch(
 
 const sourcePackageJsonExclude = ["/out"]
 const sourcePackageJson: Source = {
+	inverted: true,
 	name: "package.json",
 	path: "package.json",
 	pattern: [
@@ -114,6 +115,7 @@ const sourcePackageJson: Source = {
 
 const sourceGitignoreExclude = ["node_modules", "out", "dist", "*.tgz", "*.cpuprofile"]
 const sourceGitignore: Source = {
+	inverted: false,
 	name: ".gitignore",
 	path: ".gitignore",
 	pattern: [

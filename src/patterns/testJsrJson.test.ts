@@ -9,6 +9,7 @@ import { extractJsrJson } from "./jsrjson.js"
 describe("jsr.json", () => {
 	test("does not parse 0", () => {
 		const source: Source = {
+			inverted: false,
 			name: "jsr.json",
 			path: "jsr.json",
 			pattern: [],
@@ -30,6 +31,7 @@ describe("jsr.json", () => {
 	})
 	test("does not parse '{'", () => {
 		const source: Source = {
+			inverted: false,
 			name: "jsr.json",
 			path: "jsr.json",
 			pattern: [],
@@ -47,6 +49,7 @@ describe("jsr.json", () => {
 	})
 	test("parses '{}'", () => {
 		const source: Source = {
+			inverted: false,
 			name: "jsr.json",
 			path: "jsr.json",
 			pattern: [],
