@@ -1,3 +1,5 @@
+import { type } from "arktype"
+
 import type { Target } from "./target.js"
 
 import {
@@ -8,6 +10,8 @@ import {
 	extractPackageJson,
 	extractGitignore,
 } from "../patterns/index.js"
+import { unixify } from "../unixify.js"
+import { npmManifest } from "./npmManifest.js"
 
 const extractors: Extractor[] = [
 	{
@@ -65,10 +69,38 @@ const internal: SignedPattern[] = [
 	}),
 ]
 
+const vsceManifest = npmManifest.and({
+	engines: {
+		// https://github.com/microsoft/vscode-vsce/blob/main/src/validation.ts#L52
+		vscode: "/^\\*$|^(\\^|>=)?((\\d+)|x)\\.((\\d+)|x)\\.((\\d+)|x)(\\-.*)?$/",
+	},
+})
+
+const vsceManifestParse = type("string")
+	.pipe((s) => JSON.parse(s))
+	.pipe(vsceManifest)
+
 /**
  * @since 0.6.0
  */
 export const VSCE: Target = {
+	async init({ fs, cwd }) {
+		let content: Buffer
+		const normalCwd = unixify(cwd)
+		try {
+			content = await fs.promises.readFile(normalCwd + "/" + "package.json")
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+				return // no package.json
+			}
+			throw new Error("Error while initializing VSCE", { cause: error })
+		}
+
+		const dist = vsceManifestParse(content.toString())
+		if (dist instanceof type.errors) {
+			throw new Error("Invalid 'package.json': " + dist.summary, { cause: dist })
+		}
+	},
 	extractors,
 	ignores(o) {
 		return signedPatternIgnores({

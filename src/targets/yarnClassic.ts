@@ -1,3 +1,5 @@
+import { type } from "arktype"
+
 import type { Target } from "./target.js"
 
 import {
@@ -8,6 +10,8 @@ import {
 	extractPackageJsonNocase,
 	extractGitignoreNocase,
 } from "../patterns/index.js"
+import { unixify } from "../unixify.js"
+import { npmManifestParse } from "./npmManifest.js"
 
 const extractors: Extractor[] = [
 	{
@@ -91,6 +95,23 @@ const internal: SignedPattern[] = [
  * @since 0.8.0
  */
 export const YarnClassic: Target = {
+	async init({ fs, cwd }) {
+		let content: Buffer
+		const normalCwd = unixify(cwd)
+		try {
+			content = await fs.promises.readFile(normalCwd + "/" + "package.json")
+		} catch (error) {
+			if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+				return // no package.json
+			}
+			throw new Error("Error while initializing Yarn classic", { cause: error })
+		}
+
+		const dist = npmManifestParse(content.toString())
+		if (dist instanceof type.errors) {
+			throw new Error("Invalid 'package.json': " + dist.summary, { cause: dist })
+		}
+	},
 	extractors,
 	ignores(o) {
 		return signedPatternIgnores({

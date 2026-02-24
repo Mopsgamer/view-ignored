@@ -87,7 +87,7 @@ export const Yarn: Target = {
 			if ((error as NodeJS.ErrnoException).code === "ENOENT") {
 				return // no package.json
 			}
-			throw new Error("Error while initializing Yarn's ignoring implementation", { cause: error })
+			throw new Error("Error while initializing Yarn", { cause: error })
 		}
 
 		const dist = npmManifestParse(content.toString())

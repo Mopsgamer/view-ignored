@@ -102,7 +102,7 @@ export const NPM: Target = {
 			if ((error as NodeJS.ErrnoException).code === "ENOENT") {
 				return // no package.json
 			}
-			throw new Error("Error while initializing Bun's ignoring implementation", { cause: error })
+			throw new Error("Error while initializing NPM", { cause: error })
 		}
 
 		const dist = npmManifestParse(content.toString())
