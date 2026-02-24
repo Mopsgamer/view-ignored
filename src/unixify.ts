@@ -30,6 +30,10 @@ export function relative(base: string, to: string): string {
 	return result
 }
 
+export function base(path: string): string {
+	return path.substring(path.lastIndexOf("/") + 1)
+}
+
 function strip(path: string): string {
 	return path.replaceAll("\\", "/").replace(/\w:/, "")
 }

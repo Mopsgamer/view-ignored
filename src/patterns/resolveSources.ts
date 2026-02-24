@@ -159,6 +159,7 @@ async function tryExtractor(
 	const newSource: Source = {
 		name,
 		path,
+		inverted: false,
 		pattern: [],
 	}
 
