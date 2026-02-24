@@ -9,6 +9,11 @@ import { stringCompile, type StringCompileOptions } from "./stringCompile.js"
  * @since 0.6.0
  */
 export type PatternMinimatch = {
+	/**
+	 * The regular expression instance.
+	 *
+	 * @since 0.6.0
+	 */
 	re: RegExp
 	/**
 	 * The original pattern string this minimatch was compiled from.
