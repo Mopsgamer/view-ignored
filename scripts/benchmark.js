@@ -2,9 +2,9 @@ import walk from "ignore-walk"
 import { run, bench, do_not_optimize, summary, barplot } from "mitata"
 import * as fs from "node:fs"
 
-import { scan as browserScan } from "./out/browser.js"
-import { scan } from "./out/index.js"
-import { Git as target } from "./out/targets/index.js"
+import { scan as browserScan } from "../out/browser.js"
+import { scan } from "../out/index.js"
+import { Git as target } from "../out/targets/index.js"
 
 barplot(() => {
 	summary(() => {
