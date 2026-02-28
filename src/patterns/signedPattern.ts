@@ -45,37 +45,68 @@ export type SignedPattern = {
 }
 
 /**
+ * The kind of a pattern match.
+ *
+ * @since 0.9.1
+ */
+export type MatchKind = SignedPatternMatch["kind"]
+
+/**
+ * @see {@link SignedPatternMatch}
+ *
+ * @since 0.9.1
+ */
+export interface MatchBase<K extends string> {
+	kind: K
+	ignored: boolean
+}
+
+/**
+ * @see {@link SignedPatternMatch}
+ *
+ * @since 0.9.1
+ */
+export interface MatchBaseSource<K extends string> extends MatchBase<K> {
+	source: Source
+}
+
+/**
+ * @see {@link SignedPatternMatch}
+ *
+ * @since 0.9.1
+ */
+export interface MatchBasePattern<K extends string> extends MatchBase<K> {
+	pattern: string
+}
+
+/**
+ * @see {@link SignedPatternMatch}
+ *
+ * @since 0.9.1
+ */
+export interface MatchBaseErrorPattern<K extends string> extends MatchBasePattern<K> {
+	error: Error
+}
+
+/**
+ * @see {@link SignedPatternMatch}
+ *
+ * @since 0.9.1
+ */
+export interface MatchBaseSourcePattern<K extends string>
+	extends MatchBasePattern<K>, MatchBaseSource<K> {}
+
+/**
  * @see {@link signedPatternIgnores}
  *
  * @since 0.6.0
  */
 export type SignedPatternMatch =
-	| {
-			kind: "none" | "missing-source"
-			ignored: boolean
-	  }
-	| {
-			kind: "no-match" | "broken-source" | "invalid-pattern"
-			ignored: boolean
-			source: Source
-	  }
-	| {
-			kind: "invalid-internal-pattern"
-			pattern: string
-			error: Error
-			ignored: boolean
-	  }
-	| {
-			kind: "internal"
-			pattern: string
-			ignored: boolean
-	  }
-	| {
-			kind: "external"
-			pattern: string
-			source: Source
-			ignored: boolean
-	  }
+	| MatchBase<"none" | "missing-source">
+	| MatchBaseSource<"no-match" | "broken-source" | "invalid-pattern">
+	| MatchBaseErrorPattern<"invalid-internal-pattern">
+	| MatchBasePattern<"internal">
+	| MatchBaseSourcePattern<"external">
 
 /**
  * @see {@link signedPatternIgnores}
