@@ -3,37 +3,36 @@ package targets
 import (
 	"io/fs"
 
-	"github.com/Mopsgamer/view-ignored/internal/patterns"
 	"github.com/gookit/color"
 )
 
-var Yarn = PrintableTarget{
+var Yarn = shared.PrintableTarget{
 	Name:       "Yarn",
 	TargetName: TargetYarn,
 	Icon:       "",
 	Color:      color.Hex("#2E2A65"),
-	Target: Target{
-		Ignores: func(fs fs.FS, cwd string, entry string, ctx *patterns.MatcherContext) patterns.SignedPatternMatch {
-			extractors := []patterns.Extractor{
+	Target: shared.Target{
+		Ignores: func(fs fs.FS, cwd string, entry string, ctx *shared.MatcherContext) shared.SignedPatternMatch {
+			extractors := []shared.Extractor{
 				{
-					Extract: patterns.ExtractPackageJson,
+					Extract: shared.ExtractPackageJson,
 					Path:    "package.json",
 				},
 				{
-					Extract: patterns.ExtractGitignore,
+					Extract: shared.ExtractGitignore,
 					Path:    ".yarnignore",
 				},
 				{
-					Extract: patterns.ExtractGitignore,
+					Extract: shared.ExtractGitignore,
 					Path:    ".npmignore",
 				},
 				{
-					Extract: patterns.ExtractGitignore,
+					Extract: shared.ExtractGitignore,
 					Path:    ".gitignore",
 				},
 			}
 
-			internal := patterns.SignedPattern{
+			internal := shared.SignedPattern{
 				Exclude: []string{
 					".git",
 					".DS_Store",
@@ -64,8 +63,8 @@ var Yarn = PrintableTarget{
 				},
 			}
 
-			return internal.Ignores(patterns.SignedPatternIgnoresOptions{
-				PatternFinderOptions: patterns.PatternFinderOptions{
+			return internal.Ignores(shared.SignedPatternIgnoresOptions{
+				PatternFinderOptions: shared.PatternFinderOptions{
 					FS:         fs,
 					Ctx:        ctx,
 					Cwd:        cwd,

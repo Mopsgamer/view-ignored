@@ -1,4 +1,4 @@
-package patterns
+package shared
 
 import "io/fs"
 

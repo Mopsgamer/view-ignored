@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+
+	"github.com/Mopsgamer/view-ignored/internal/shared"
 )
 
 type TargetName string
@@ -14,8 +16,8 @@ func (t TargetName) String() string {
 	return string(t)
 }
 
-func (t TargetName) Target() PrintableTarget {
-	var matcher PrintableTarget
+func (t TargetName) Target() shared.PrintableTarget {
+	var matcher shared.PrintableTarget
 	switch t {
 	case TargetGit:
 		matcher = Git

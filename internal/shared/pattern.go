@@ -1,4 +1,4 @@
-package patterns
+package shared
 
 // Compiled pattern.
 //
@@ -11,14 +11,14 @@ type PatternMinimatch struct {
 	//
 	// # Since 0.6.0
 	Re func(path string) (bool, error)
-	// The original pattern string this minimatch was compiled from.
+	// The original Pattern string this minimatch was compiled from.
 	//
 	// # Since 0.6.0
-	pattern string
+	Pattern string
 	// The original pattern list this pattern was compiled from.
 	//
 	// # Since 0.6.0
-	patternContext Pattern
+	PatternContext Pattern
 }
 
 func (pm PatternMinimatch) Test(path string) (bool, error) {

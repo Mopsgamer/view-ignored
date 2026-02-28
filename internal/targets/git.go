@@ -3,36 +3,36 @@ package targets
 import (
 	"io/fs"
 
-	"github.com/Mopsgamer/view-ignored/internal/patterns"
+	"github.com/Mopsgamer/view-ignored/internal/shared"
 	"github.com/gookit/color"
 )
 
-var Git = PrintableTarget{
+var Git = shared.PrintableTarget{
 	Name:       "Git",
-	TargetName: TargetGit,
+	TargetName: TargetGit.String(),
 	Check:      "git ls-tree -r <git-branch-name> --name-only",
 	Icon:       "",
 	Color:      color.Hex("#F44E28"),
-	Target: Target{
-		Ignores: func(fs fs.FS, cwd string, entry string, ctx *patterns.MatcherContext) patterns.SignedPatternMatch {
-			extractors := []patterns.Extractor{
+	Target: shared.Target{
+		Ignores: func(fs fs.FS, cwd string, entry string, ctx *shared.MatcherContext) shared.SignedPatternMatch {
+			extractors := []shared.Extractor{
 				{
-					Extract: patterns.ExtractGitignore,
+					Extract: shared.ExtractGitignore,
 					Path:    ".gitignore",
 				},
 				{
-					Extract: patterns.ExtractGitignore,
+					Extract: shared.ExtractGitignore,
 					Path:    ".git/info/exclude",
 				},
 			}
 
-			internal := patterns.SignedPattern{
+			internal := shared.SignedPattern{
 				Exclude: []string{".git", ".DS_Store"},
 				Include: []string{},
 			}
 
-			return internal.Ignores(patterns.SignedPatternIgnoresOptions{
-				PatternFinderOptions: patterns.PatternFinderOptions{
+			return internal.Ignores(shared.SignedPatternIgnoresOptions{
+				PatternFinderOptions: shared.PatternFinderOptions{
 					FS:         fs,
 					Ctx:        ctx,
 					Cwd:        cwd,

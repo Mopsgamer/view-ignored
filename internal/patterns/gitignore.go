@@ -2,6 +2,8 @@ package patterns
 
 import (
 	"strings"
+
+	"github.com/Mopsgamer/view-ignored/internal/shared"
 )
 
 // Extracts and compiles patterns from the file.
@@ -9,19 +11,19 @@ import (
 // See [SignedPattern.Compile].
 //
 // # Since 0.6.0
-func ExtractGitignore(source *Source, content []byte, _ *MatcherContext) ExtractorNext {
+func ExtractGitignore(source *shared.Source, content []byte, _ *shared.MatcherContext) shared.ExtractorNext {
 	extractGitignore(source, content)
-	for element := range source.Pattern {
-		element.Compile(StringCompileOptions{NoCase: true})
+	for _, element := range source.Pattern {
+		element.Compile(shared.StringCompileOptions{NoCase: true})
 	}
-	return ExtractorBreak
+	return shared.ExtractorBreak
 }
 
-var _ ExtractorFn = (ExtractorFn)(ExtractGitignore)
+var _ shared.ExtractorFn = (shared.ExtractorFn)(ExtractGitignore)
 
-func extractGitignore(source *Source, content []byte) {
-	include := SignedPattern{}
-	exclude := SignedPattern{Excludes: true}
+func extractGitignore(source *shared.Source, content []byte) {
+	include := shared.SignedPattern{}
+	exclude := shared.SignedPattern{Excludes: true}
 	for line := range strings.SplitSeq(string(content), "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "#") {

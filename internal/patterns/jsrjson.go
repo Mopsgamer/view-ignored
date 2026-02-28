@@ -2,6 +2,8 @@ package patterns
 
 import (
 	"encoding/json"
+
+	"github.com/Mopsgamer/view-ignored/internal/shared"
 )
 
 type JsrManifest struct {
@@ -13,15 +15,15 @@ type JsrManifest struct {
 	} `json:"publish"`
 }
 
-func ExtractJsrJson(source *Source, content []byte, ctx *MatcherContext) ExtractorNext {
+func ExtractJsrJson(source *shared.Source, content []byte, ctx *shared.MatcherContext) shared.ExtractorNext {
 	dist := JsrManifest{}
-	include := SignedPattern{}
-	exclude := SignedPattern{Excludes: true}
+	include := shared.SignedPattern{}
+	exclude := shared.SignedPattern{Excludes: true}
 	err := json.Unmarshal(content, &dist)
 	if err != nil {
 		source.Error = err
 		ctx.Failed = true
-		return ExtractorBreak
+		return shared.ExtractorBreak
 	}
 
 	if dist.Publish == nil {
@@ -40,20 +42,20 @@ func ExtractJsrJson(source *Source, content []byte, ctx *MatcherContext) Extract
 		include.Pattern = append(include.Pattern, *dist.Publish.Include...)
 	}
 
-	for element := range source.Pattern {
-		element.Compile()
+	for _, element := range source.Pattern {
+		element.Compile(shared.StringCompileOptions{NoCase: false})
 	}
-	return ExtractorBreak
+	return shared.ExtractorBreak
 }
 
-var _ ExtractorFn = (ExtractorFn)(ExtractJsrJson)
+var _ shared.ExtractorFn = (shared.ExtractorFn)(ExtractJsrJson)
 
-func ExtractJsrJsonc(source *Source, content []byte, ctx *MatcherContext) ExtractorNext {
+func ExtractJsrJsonc(source *shared.Source, content []byte, ctx *shared.MatcherContext) shared.ExtractorNext {
 	content = StripJSONC(content)
 	return ExtractJsrJson(source, content, ctx)
 }
 
-var _ ExtractorFn = (ExtractorFn)(ExtractJsrJsonc)
+var _ shared.ExtractorFn = (shared.ExtractorFn)(ExtractJsrJsonc)
 
 func StripJSONC(src []byte) []byte {
 	out := make([]byte, 0, len(src))

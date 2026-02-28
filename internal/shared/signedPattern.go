@@ -1,6 +1,8 @@
-package patterns
+package shared
 
-import "path"
+import (
+	"path"
+)
 
 // Represents a set of include and exclude patterns.
 // These patterns are positive minimatch patterns.
@@ -129,15 +131,25 @@ type SignedPatternMatch interface {
 // # Since 0.6.0
 type SignedPatternIgnoresOptions struct {
 	PatternFinderOptions
-	Entry    string
-	Internal SignedPattern
+	// Relative entry path.
+	//
+	// Example:
+	//  "dir/subdir"
+	//  "dir/subdir/index.js"
+	//
+	// # Since 0.6.0
+	Entry string
+	// The internal pattern. Should be compiled.
+	//
+	// # Since 0.6.0
+	Internal []SignedPattern
 }
 
 func patternRegExpTest(path string, rs []PatternMinimatch) (string, error) {
 	for _, r := range rs {
 		ok, err := r.Test(path)
 		if ok {
-			return r.pattern, err
+			return r.Pattern, err
 		}
 	}
 	return "", nil
@@ -149,18 +161,18 @@ func InvertSignedPatternMatch(match SignedPatternMatch, invert bool) {
 	}
 }
 
-func signedPatternCompileMatchInternal(
+func signedPatternCompiledMatchInternal(
 	options SignedPatternIgnoresOptions,
 	path string,
 ) SignedPatternMatch {
-	for _, si := range options.internal {
-		const compiled = si.Compiled
+	for _, si := range options.Internal {
+		compiled := si.Compiled
 		if compiled == nil {
 			continue
 		}
 
-		patternMatch, errp := patternRegExpTest(path, compiled)
-		if errp != nil {
+		patternMatch, err := patternRegExpTest(path, compiled)
+		if err != nil {
 			return SignedPatternMatch_PatternError{
 				SignedPatternMatch_Pattern: SignedPatternMatch_Pattern{
 					SignedPatternMatch_: SignedPatternMatch_{
@@ -169,20 +181,66 @@ func signedPatternCompileMatchInternal(
 					},
 					Pattern: patternMatch,
 				},
-				Error: errp,
+				Error: err,
 			}
 		}
 		if len(patternMatch) > 0 {
 			return SignedPatternMatch_Pattern{
 				SignedPatternMatch_: SignedPatternMatch_{
 					Kind:    MatchKindInternal,
-					Ignored: si.excludes,
+					Ignored: si.Excludes,
 				},
 				Pattern: patternMatch,
 			}
 		}
 	}
 	return nil
+}
+
+func signedPatternCompiledMatchExternal(
+	options SignedPatternIgnoresOptions,
+	path string,
+	source Source,
+) SignedPatternMatch {
+	for _, si := range source.Pattern {
+		compiled := si.Compiled
+		if compiled == nil {
+			continue
+		}
+
+		patternMatch, err := patternRegExpTest(path, compiled)
+		if err != nil {
+			source.Error = err
+			if options.Ctx != nil {
+				options.Ctx.Failed = append(options.Ctx.Failed, source)
+			}
+			return SignedPatternMatch_Source{
+				SignedPatternMatch_: SignedPatternMatch_{
+					Kind:    MatchKindInvalidPattern,
+					Ignored: false,
+				},
+				Source: source,
+			}
+		}
+		if len(patternMatch) > 0 {
+			return SignedPatternMatch_PatternSource{
+				SignedPatternMatch_: SignedPatternMatch_{
+					Kind:    MatchKindExternal,
+					Ignored: si.Excludes,
+				},
+				Pattern: patternMatch,
+				Source:  source,
+			}
+		}
+	}
+
+	return SignedPatternMatch_Source{
+		SignedPatternMatch_: SignedPatternMatch_{
+			Kind:    MatchKindNoMatch,
+			Ignored: source.Inverted,
+		},
+		Source: source,
+	}
 }
 
 // Checks whether a given entry should be ignored based on internal and external patterns.
@@ -196,7 +254,12 @@ func (ointernal SignedPattern) Ignores(
 	source := options.Ctx.External[parent]
 
 	if source == nil {
-		resolveSources(ResolveSourceOptions{options, dir: parent, root: options.root})
+		o := options.PatternFinderOptions
+		o.Root = options.Root
+		ResolveSources(ResolveSourcesOptions{
+			PatternFinderOptions: o,
+			Dir:                  parent,
+		})
 		source = options.Ctx.External[parent]
 	}
 
@@ -222,6 +285,6 @@ func (ointernal SignedPattern) Ignores(
 		return internalMatch
 	}
 
-	const externalMatch = signedPatternCompiledMatchExternal(options, options.Entry, source)
+	externalMatch := signedPatternCompiledMatchExternal(options, options.Entry, source)
 	return externalMatch
 }

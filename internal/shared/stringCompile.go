@@ -1,4 +1,4 @@
-package patterns
+package shared
 
 import (
 	"strings"
@@ -21,7 +21,12 @@ type StringCompileOptions struct {
 // See [Pattern.Compile].
 //
 // # Since 0.8.0
-func StringCompile(pattern string, context Pattern, options StringCompileCoptions) PatternMinimatch {
+func StringCompile(
+	pattern string,
+	context Pattern,
+	options StringCompileOptions,
+) PatternMinimatch {
+	original := pattern
 	if strings.HasSuffix(pattern, "/") {
 		pattern += "**"
 	}
@@ -33,6 +38,11 @@ func StringCompile(pattern string, context Pattern, options StringCompileCoption
 	if !strings.HasSuffix(pattern, "/**") {
 		pattern = pattern + "/**"
 	}
-	matched, err := doublestar.Match(pattern, path)
-	return matched, err
+	return PatternMinimatch{
+		Re: func(path string) (bool, error) {
+			return doublestar.Match(pattern, path)
+		},
+		Pattern:        original,
+		PatternContext: context,
+	}
 }

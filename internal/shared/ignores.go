@@ -1,4 +1,4 @@
-package patterns
+package shared
 
 /**
  * Used in {@link Ignores}.

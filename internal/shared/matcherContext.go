@@ -1,4 +1,4 @@
-package patterns
+package shared
 
 // Post-scan results.
 //
@@ -17,7 +17,7 @@ type MatcherContext struct {
 	//  "dir/subdir" => Source
 	//
 	// # Since 0.6.0
-	External map[string]*Source
+	External map[string]SourceProvider
 
 	// If any fatal errors were encountered during source extractions,
 	// this property will contain an array of failed sources.

@@ -1,4 +1,4 @@
-package patterns
+package shared
 
 // Initializes the target. For example,
 // Yarn reads `package.json` to find `main` and `bin` values,
