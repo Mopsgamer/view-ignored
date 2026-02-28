@@ -8,13 +8,21 @@ import { Git as target } from "../out/targets/index.js"
 
 barplot(() => {
 	summary(() => {
+		bench("scan (fast)", async () => {
+			return do_not_optimize(
+				await scan({ target, fs, cwd: process.cwd(), fastInternal: true, fastDepth: true }),
+			)
+		})
+		bench("browserScan (fast)", async () => {
+			return do_not_optimize(
+				await browserScan({ target, fs, cwd: process.cwd(), fastInternal: true, fastDepth: true }),
+			)
+		})
 		bench("scan", async () => {
-			return do_not_optimize(await scan({ target, fs, cwd: process.cwd(), fastInternal: true }))
+			return do_not_optimize(await scan({ target, fs, cwd: process.cwd() }))
 		})
 		bench("browserScan", async () => {
-			return do_not_optimize(
-				await browserScan({ target, fs, cwd: process.cwd(), fastInternal: true }),
-			)
+			return do_not_optimize(await browserScan({ target, fs, cwd: process.cwd() }))
 		})
 		bench("ignoreWalk", () => {
 			return do_not_optimize(walk.sync({ ignoreFiles: [".gitignore"] }))

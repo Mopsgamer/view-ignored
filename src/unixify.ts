@@ -35,5 +35,5 @@ export function base(path: string): string {
 }
 
 function strip(path: string): string {
-	return path.replaceAll("\\", "/").replace(/\w:/, "")
+	return path.replaceAll("\\", "/").replace(/^[a-zA-Z]:/, "")
 }

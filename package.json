@@ -78,8 +78,8 @@
 	"scripts": {
 		"prerelease": "bun run test && bun run prod && bun run lint && bun run fmt --check && bun publint --pack bun --strict",
 		"cpu": "bun run cpu:igw; bun run cpu:me",
-		"cpu:igw": "bun run --cpu-prof-md --cpu-prof-name CPU.igw.md scripts/ignoreWalk.js",
-		"cpu:me": "bun run --cpu-prof-md --cpu-prof-name CPU.me.md scripts/scan.js --fastInternal",
+		"cpu:igw": "bun run --cpu-prof --cpu-prof-md --cpu-prof-name CPU.igw scripts/ignoreWalk.js",
+		"cpu:me": "bun run --cpu-prof --cpu-prof-md --cpu-prof-name CPU.me scripts/scan.js --fastInternal",
 		"test": "bun test src",
 		"test:patterns": "bun test src/patterns",
 		"test:targets": "bun test src/targets",

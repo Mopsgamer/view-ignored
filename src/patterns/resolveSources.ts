@@ -77,7 +77,7 @@ export async function resolveSources(options: ResolveSourcesOptions): Promise<vo
 			}
 			noSourceDirList.push(dir)
 			const parent = dirname(dir)
-			if (dir === dir) break
+			if (dir === parent) break
 			dir = parent
 			continue
 		}
@@ -86,25 +86,25 @@ export async function resolveSources(options: ResolveSourcesOptions): Promise<vo
 	// else
 	// find non-cwd source [root > cwd) and populate [cwd > ... > dir]
 
-	// root, root/cwd[0], root/cwd[0]/cwd[2]
 	const preCwdSegments: string[] = []
-	{
+	if (root.startsWith("/")) {
 		let c = dirname(cwd)
 		while (true) {
 			signal?.throwIfAborted()
 			preCwdSegments.push(c)
-			if (c === "/" || c === root) break
+			if (c === root) break
 			const parent = dirname(c)
 			c = parent
 		}
 		preCwdSegments.reverse()
-	}
 
-	source = await findSourceForAbsoluteDirs(preCwdSegments, ctx, fs, target, signal)
-	if (typeof source === "object") {
-		for (const noSourceDir of noSourceDirList) {
-			signal?.throwIfAborted()
-			ctx.external.set(noSourceDir, source)
+		source = await findSourceForAbsoluteDirs(preCwdSegments, ctx, fs, target, signal)
+		if (typeof source === "object") {
+			for (const noSourceDir of noSourceDirList) {
+				signal?.throwIfAborted()
+				ctx.external.set(noSourceDir, source)
+			}
+			return
 		}
 	}
 
