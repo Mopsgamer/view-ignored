@@ -10,7 +10,6 @@ import { resolveSources } from "./resolveSources.js"
  * Represents a set of include and exclude patterns.
  * These patterns are positive minimatch patterns.
  *
- * @see {@link PatternMatcher} uses it.
  * @see {@link signedPatternIgnores} provides the ignoring algorithm.
  * @see {@link signedPatternCompile} compiles the signed pattern.
  * Use this or an extractor's method to compile.
