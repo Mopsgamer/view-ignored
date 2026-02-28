@@ -1,9 +1,42 @@
 import type { ExtractorFn } from "./extractor.js"
-import type { PatternMinimatch } from "./pattern.js"
-import { makeRe } from "minimatch"
+import type { SignedPattern } from "./signedPattern.js"
+
+import { signedPatternCompile } from "./resolveSources.js"
 import { sourcePushNegatable, type Source } from "./source.js"
 
+/**
+ * Extracts and compiles patterns from the file.
+ *
+ * @see {@link signedPatternCompile}
+ *
+ * @since 0.6.0
+ */
 export function extractGitignore(source: Source, content: Buffer): void {
+	extract(source, content)
+	for (const element of source.pattern) {
+		signedPatternCompile(element)
+	}
+}
+
+/**
+ * Extracts and compiles patterns from the file.
+ *
+ * @see {@link signedPatternCompile}
+ *
+ * @since 0.6.0
+ */
+export function extractGitignoreNocase(source: Source, content: Buffer): void {
+	extract(source, content)
+	for (const element of source.pattern) {
+		signedPatternCompile(element, { nocase: true })
+	}
+}
+
+extractGitignore satisfies ExtractorFn
+
+function extract(source: Source, content: Buffer) {
+	const include: SignedPattern = { compiled: null, excludes: false, pattern: [] }
+	const exclude: SignedPattern = { compiled: null, excludes: true, pattern: [] }
 	for (let line of content.toString().split("\n")) {
 		line = line.trim()
 		if (line === "" || line.startsWith("#")) {
@@ -14,27 +47,7 @@ export function extractGitignore(source: Source, content: Buffer): void {
 			line = line.substring(-cdx)
 		}
 
-		sourcePushNegatable(source, line)
+		sourcePushNegatable(line, false, include, exclude)
 	}
-	// TODO: validate gitignore
-}
-
-extractGitignore satisfies ExtractorFn
-
-export function gitignoreCompile(pattern: string): PatternMinimatch {
-	if (pattern.endsWith("/")) {
-		pattern = pattern.substring(0, pattern.length - 1)
-	}
-	if (pattern.startsWith("/")) {
-		pattern = pattern.substring(1)
-	} else if (!pattern.startsWith("**/")) {
-		pattern = "**/" + pattern
-	}
-
-	pattern += "/**"
-
-	const r = makeRe(pattern, { dot: true, nonegate: true, nocomment: true, nobrace: true }) as RegExp
-	;(r as PatternMinimatch).context = pattern
-
-	return r as PatternMinimatch
+	source.pattern.push(include, exclude)
 }

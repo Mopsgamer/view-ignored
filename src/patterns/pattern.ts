@@ -1,22 +1,62 @@
-import { gitignoreCompile } from "./gitignore.js"
+import { stringCompile, type StringCompileOptions } from "./stringCompile.js"
 
-export type PatternMinimatch = RegExp & {
+/**
+ * Compiled pattern.
+ *
+ * @see {@link stringCompile}
+ * @see {@link signedPatternCompile}
+ *
+ * @since 0.6.0
+ */
+export type PatternMinimatch = {
 	/**
-	 * The original pattern string used to create this RegExp.
+	 * The regular expression instance.
+	 *
+	 * @since 0.6.0
 	 */
-	context: string
+	re: RegExp
+	/**
+	 * The original pattern string this minimatch was compiled from.
+	 *
+	 * @since 0.6.0
+	 */
+	pattern: string
+	/**
+	 * The original pattern list this pattern was compiled from.
+	 *
+	 * @since 0.6.0
+	 */
+	patternContext: Pattern
 }
 
+/**
+ * Safely calls RegExp.test.
+ *
+ * @since 0.6.0
+ */
 export function patternMinimatchTest(pattern: PatternMinimatch, path: string): boolean {
-	pattern.lastIndex = 0
-	return pattern.test(path)
+	pattern.re.lastIndex = 0
+	return pattern.re.test(path)
 }
 
 /**
  * Represents a list of positive minimatch patterns.
+ *
+ * @since 0.6.0
  */
 export type Pattern = string[]
 
-export function patternCompile(pattern: Pattern): PatternMinimatch[] {
-	return pattern.map(gitignoreCompile)
+/**
+ * Compiles the {@link Pattern}.
+ *
+ * @see {@link stringCompile}
+ * @see {@link signedPatternCompile}
+ *
+ * @since 0.6.0
+ */
+export function patternCompile(
+	pattern: Pattern,
+	options?: StringCompileOptions,
+): PatternMinimatch[] {
+	return pattern.map((p, _, pattern) => stringCompile(p, pattern, options))
 }

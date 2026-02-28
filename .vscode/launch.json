@@ -83,50 +83,66 @@
 			}
 		},
 		{
-			"name": "test add",
-			"type": "node",
+			"name": "Test watcher patchers",
+			"type": "bun",
 			"request": "launch",
-			"skipFiles": ["<node_internals>/**"],
-			"args": ["--enable-source-maps", "--test", "./out/edit.test.js"],
-			"console": "integratedTerminal",
-			"sourceMaps": true
+			"presentation": {
+				"group": "patterns"
+			},
+			"program": "./src/patterns/testMatcherContextPatch.test.ts"
 		},
 		{
-			"name": "test git",
-			"type": "node",
+			"name": "Test in-memory Git",
+			"type": "bun",
 			"request": "launch",
-			"skipFiles": ["<node_internals>/**"],
-			"args": ["--enable-source-maps", "--test", "./out/targets/git.test.js"],
-			"console": "integratedTerminal",
-			"sourceMaps": true
+			"presentation": {
+				"group": "targets"
+			},
+			"program": "./src/targets/testGit.test.ts"
 		},
 		{
-			"name": "test npm",
-			"type": "node",
+			"name": "Test in-memory NPM",
+			"type": "bun",
 			"request": "launch",
-			"skipFiles": ["<node_internals>/**"],
-			"args": ["--enable-source-maps", "--test", "./out/targets/npm.test.js"],
-			"console": "integratedTerminal",
-			"sourceMaps": true
+			"presentation": {
+				"group": "targets"
+			},
+			"program": "./src/targets/testNPM.test.ts"
 		},
 		{
-			"name": "test git (self)",
-			"type": "node",
+			"name": "Test in-memory Yarn",
+			"type": "bun",
 			"request": "launch",
-			"skipFiles": ["<node_internals>/**"],
-			"args": ["--enable-source-maps", "--test", "./out/scan_self_git.test.js"],
-			"console": "integratedTerminal",
-			"sourceMaps": true,
-			"stopOnEntry": true
+			"presentation": {
+				"group": "targets"
+			},
+			"program": "./src/targets/testYarn.test.ts"
 		},
 		{
-			"name": "test npm (self)",
-			"type": "node",
+			"name": "Test own Git",
+			"type": "bun",
 			"request": "launch",
-			"skipFiles": ["<node_internals>/**"],
-			"args": ["--enable-source-maps", "--test", "./out/scan_self_npm.test.js"],
-			"console": "integratedTerminal",
-			"sourceMaps": true
+			"program": "./src/testSelfGit.test.ts"
+		},
+		{
+			"name": "Test own NPM",
+			"type": "bun",
+			"request": "launch",
+			"program": "./src/testSelfNPM.test.ts"
+		},
+		{
+			"name": "Test depth",
+			"type": "bun",
+			"request": "launch",
+			"stopOnEntry": false,
+			"program": "./src/testDepth.test.ts"
+		},
+		{
+			"name": "Test cwd",
+			"type": "bun",
+			"request": "launch",
+			"stopOnEntry": false,
+			"program": "./src/testCwd.test.ts"
 		}
 	]
 }

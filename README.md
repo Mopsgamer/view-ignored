@@ -17,11 +17,12 @@ Node.js 18 or later
 - **Reader.** Get a list of included files using configuration file
   readers, not command-line wrappers.
 - **Plugins.** Built-in [targets](#targets) for popular tools. Use custom
-  targets by implementing the `Target` interface.
+  targets by implementing/extending the `Target` interface.
 - **TypeScript.** Written in TypeScript with type definitions included.
 - **Lightweight.** Minimal dependencies for fast performance and small bundle size.
 - **Easy-to-modify.** Well-written and MIT-licensed.
-- **Broswer.** Can be bundled for browser use. See `ScanOptions.fs` and `import ... "view-ignored/browser"`.
+- **Browser.** Can be bundled for browser use. See `ScanOptions.fs` and `import ... "view-ignored/browser"`.
+- **Windows.** Windows paths are converted to Unix paths for compatibility with `memfs` based tests and browsers.
 
 > [!NOTE]
 > Despite the name of the package being "view-ignored",
@@ -29,13 +30,6 @@ Node.js 18 or later
 > **included** files, i.e., files that are **not ignored**.
 > You can invert the results if you need the ignored files
 > by setting the `invert` option to `true`.
-
-## Plans
-
-- While v0.4 was highly experimental, it introduced some mess without enough useful features.
-- v0.5 was a rewrite, but lacked tests due to missing features in `memfs`. It's not fully functional, though some users might rely on it (with caution).
-- v0.6 brings new features: optimization options, improved support for Node 18 and browsers, and adds some tests. The library works at least half of the time, but can't guarantee the streaming API or all targets are reliable yet.
-- The goal is for v0.7 or a v0.6.x release to deliver a fully tested project. After that, the library will be stabilized and released as v1.0.0.
 
 ## Usage
 
@@ -48,18 +42,26 @@ import { Git as target } from "view-ignored/targets"
 const ctx = await vign.scan({ target })
 ctx.paths.has(".git/HEAD") // false
 ctx.paths.has("src") // true
+
+const match = ctx.paths.get("src")
+if (match.kind === "external") {
+	console.log(match.source.path) // ".gitignore"
+	console.log(match.pattern) // "src/**"
+}
 ```
 
 ### Using custom target
 
 ```ts
-import type { Target } from "view-ignored/targets"
 import {
 	type Extractor,
-	type SignedPattern,
-	signedPatternIgnores,
 	extractGitignore,
+	signedPatternIgnores,
+	signedPatternCompile,
+	type SignedPattern,
 } from "view-ignored/patterns"
+
+import type { Target } from "view-ignored/targets"
 
 const extractors: Extractor[] = [
 	{
@@ -81,14 +83,13 @@ const internal: SignedPattern = {
 signedPatternCompile(internal)
 
 export const Git: Target = {
-	ignores(fs, cwd, entry, ctx) {
+	extractors,
+	ignores(o) {
 		return signedPatternIgnores({
-			fs,
+			...o,
 			internal,
-			ctx,
-			cwd,
-			entry,
-			extractors,
+			root: "/",
+			target: Git,
 		})
 	},
 }
@@ -110,6 +111,7 @@ stream.on("end", (ctx) => {
 	ctx.paths.has("node_modules/") // false
 	ctx.paths.has("package.json") // true
 })
+stream.start() // important
 ```
 
 ### Browser and custom FS
@@ -122,7 +124,7 @@ import * as vign from "view-ignored/browser"
 // or view-ignored/browser/scan
 import { Git as target } from "view-ignored/targets"
 
-export const cwd = cwd().replace(/\w:/, "").replaceAll("\\", "/")
+export const cwd = process.cwd()
 
 const customFs = {
 	promises: {
@@ -136,35 +138,43 @@ vign.scan({ target, cwd, fs })
 
 ## Targets
 
-> [!NOTE]
-> Each scanner expects minimal configurations, but the actual tool can have
-> more/less complex rules. Refer to the documentation of each tool for details.
-
 The following built-in scanners are available:
 
-- Git
-  - Reads `.gitignore` and `.git/info/exclude` files but does not consider global settings.
-  - Check this scanner by running `git ls-tree -r HEAD --name-only`.
-  - See the implementation of [Git target](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/git.ts) for details.
-- NPM (compatible with Bun, PNPM, and others)
-  - Reads `.npmignore` and `package.json` `files` field.
-  - No additional checks for `name`, `version` or `publishConfig`.
+- Git ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/git.ts))
+  - Reads `.gitignore` and `.git/info/exclude` but does not consider global settings.
+  - Starts searching from `/`.
+  - Check this scanner by running `git ls-files --others --exclude-standard --cached`.
+- NPM ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/npm.ts))
+  - Expecting to be compatible with PNPM, and others.
+  - Validates `package.json`.
+  - Reads `package.json` `files` field, `.npmignore` and `.gitignore`.
+  - Starts searching from `.` (current working directory).
   - Check this scanner by running `npm pack --dry-run`.
-  - See the implementation of [NPM target](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/npm.ts) for details.
-- Yarn
-  - Same behavior as `npm`, but also reads `.yarnignore`.
-  - See the implementation of [Yarn target](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/yarn.ts) for details.
-- VSCE
+- Bun ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/bun.ts))
+  - Bun tries to mimic NPM, but that does not mean it behaves the same way.
+  - Check this scanner by running `bun pm pack --dry-run`.
+- Yarn ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/yarn.ts))
+  - Modern Berry behavior.
+  - Validates `package.json`.
+  - Reads `package.json` `files` field, `.npmignore` and `.gitignore`.
+  - Requires `package.json`: includes paths from `main`, `module`, `browser` and `bin`.
+  - Starts searching from `.` (current working directory).
+  - `YarnClassic` is available. ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/yarnClassic.ts))
+- VSCE ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/vsce.ts))
+  - Validates `package.json`.
   - Reads `package.json` `files` field, `.vscodeignore` and `.gitignore`.
+  - Starts searching from `.` (current working directory).
   - Check this scanner by running `vsce ls`.
-  - See the implementation of [VSCE target](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/vsce.ts) for details.
-- JSR (compatible with Deno)
-  - Reads `jsr.json(c)` and `deno.json(c)` `include` and `exclude` fields.
-  - See the implementation of [JSR target](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/jsr.ts) for details.
+- JSR ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/jsr.ts))
+  - Validates and reads `jsr.json(c)` `include` and `exclude` fields.
+  - Starts searching from `.` (current working directory).
+- Deno ([implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/deno.ts))
+  - Validates and reads `jsr.json(c)` and `deno.json(c)` `include` and `exclude` fields.
+  - Starts searching from `.` (current working directory).
 
 ## See also
 
-- https://jsr.io/@m234/path - Utility to sort paths.
+- https://jsr.io/@m234/path - Utility to sort, convert and format paths.
 
 ## License
 

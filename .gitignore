@@ -4,3 +4,4 @@ wasi
 dist
 *.tgz
 *.cpuprofile
+CPU.*.*

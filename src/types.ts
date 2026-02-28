@@ -1,6 +1,12 @@
-import type { Target } from "./targets/target.js"
 import type * as fs from "node:fs"
 
+import type { Target } from "./targets/target.js"
+
+/**
+ * Minimal FS implementation needed for `scan`, `scanStream`, and their browser versions.
+ *
+ * @since 0.6.0
+ */
 export interface FsAdapter {
 	promises: {
 		opendir: typeof fs.promises.opendir
@@ -8,36 +14,65 @@ export interface FsAdapter {
 	}
 }
 
-export type DepthMode = "files" | undefined
-
+/**
+ * Used in multiple methods, primarily `scan`, `scanStream`, and their browser versions.
+ *
+ * @since 0.6.0
+ */
 export type ScanOptions = {
 	/**
 	 * Provides the matcher to use for scanning.
+	 *
+	 * @since 0.6.0
 	 */
 	target: Target
 
 	/**
 	 * Current working directory to start the scan from.
-	 * @default `(await import("node:process")).cwd().replaceAll("\\", "/")`
+	 *
+	 * @default `unixify(process.cwd())`
+	 *
+	 * @since 0.6.0
 	 */
 	cwd?: string
 
 	/**
+	 * Limits the scan to a subdirectory of `cwd`.
+	 * Traversal starts from this subdirectory, but returned paths
+	 * remain relative to `cwd`, and ignore files from `cwd`
+	 * are still applied.
+	 *
+	 * @default `"."`
+	 *
+	 * @since 0.6.0
+	 */
+	within?: string
+
+	/**
 	 * If enabled, the scan will return files that are ignored by the target matcher.
+	 *
 	 * @default `false`
+	 *
+	 * @since 0.6.0
 	 */
 	invert?: boolean
 
 	/**
 	 * Starting from depth `0` means you will see
 	 * children of the current working directory.
+	 *
 	 * @default `Infinity`
+	 *
+	 * @since 0.6.0
 	 */
 	depth?: number
 
 	/**
 	 * Return as soon as possible.
+	 *
 	 * @default `undefined`
+	 *
+	 * @since 0.6.0
 	 */
 	signal?: AbortSignal | null
 
@@ -53,8 +88,11 @@ export type ScanOptions = {
 	 * and {@link MatcherContext.depthPaths}.
 	 *
 	 * It's recommended to use this option unless you
-	 * need precise statistics.
+	 * need precise statistics
+	 *
 	 * @default `false`
+	 *
+	 * @since 0.6.0
 	 */
 	fastDepth?: boolean
 
@@ -71,13 +109,19 @@ export type ScanOptions = {
 	 * It's recommended to use this option unless the target
 	 * allows overriding internal patterns.
 	 * This option should never affect {@link MatcherContext.totalMatchedFiles}.
+	 *
 	 * @default `false`
+	 *
+	 * @since 0.6.0
 	 */
 	fastInternal?: boolean
 
 	/**
 	 * File system interface.
+	 *
 	 * @default `await import("node:fs")`
+	 *
+	 * @since 0.6.0
 	 */
 	fs?: FsAdapter
 }

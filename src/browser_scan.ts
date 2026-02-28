@@ -1,21 +1,25 @@
-import type { ScanOptions, FsAdapter } from "./types.js"
-import type { Source } from "./patterns/source.js"
 import type { MatcherContext } from "./patterns/matcherContext.js"
+import type { SignedPatternMatch } from "./patterns/signedPattern.js"
+import type { Source } from "./patterns/source.js"
+import type { ScanOptions, FsAdapter } from "./types.js"
+
 import { opendir } from "./opendir.js"
+import { unixify, relative, join } from "./unixify.js"
 import { walkIncludes } from "./walk.js"
-import { populateDirs } from "./populateDirs.js"
 export type * from "./types.js"
 
 /**
  * Scan the directory for included files based on the provided targets.
  *
- * Note that this function uses `fs/promises.readFile` and `fs/promises.opendir` without options within
+ * Note that this function uses `fs.promises.readFile` and `fs.promises.opendir` without options within
  * custom recursion, instead of `fs.promises.readdir` with `{ withFileTypes: true }.
  * It also normalizes paths to use forward slashes.
  * Please report any issues if you encounter problems related to this behavior.
  *
  * @param options Scan options.
  * @returns A promise that resolves to a {@link MatcherContext} containing the scan results.
+ *
+ * @since 0.6.0
  */
 export function scan(
 	options: ScanOptions & { fs: FsAdapter; cwd: string },
@@ -23,6 +27,7 @@ export function scan(
 	const {
 		target,
 		cwd,
+		within = ".",
 		invert = false,
 		depth: maxDepth = Infinity,
 		signal = null,
@@ -36,17 +41,20 @@ export function scan(
 	}
 
 	const ctx: MatcherContext = {
-		paths: new Set<string>(),
+		paths: new Map<string, SignedPatternMatch>(),
 		external: new Map<string, Source>(),
-		failed: false,
+		failed: [],
 		depthPaths: new Map<string, number>(),
 		totalFiles: 0,
 		totalMatchedFiles: 0,
 		totalDirs: 0,
 	}
 
+	const normalCwd = unixify(cwd)
+
 	const scanOptions: Required<ScanOptions> = {
-		cwd,
+		cwd: normalCwd,
+		within,
 		depth: maxDepth,
 		fastDepth,
 		fastInternal,
@@ -56,18 +64,19 @@ export function scan(
 		target,
 	}
 
-	const result = opendir(fs, cwd, (entry) =>
-		walkIncludes({
-			entry,
-			ctx,
-			stream: undefined,
-			scanOptions,
-		}),
-	)
-
 	return (async (): Promise<MatcherContext> => {
-		await result
-		populateDirs(signal, ctx)
+		await target.init?.({ ctx, cwd, fs, signal })
+		let from = join(unixify(normalCwd), within)
+		await opendir(fs, from, (entry) => {
+			const path = relative(normalCwd, unixify(entry.parentPath) + "/" + entry.name)
+			return walkIncludes({
+				path,
+				entry,
+				ctx,
+				stream: undefined,
+				scanOptions,
+			})
+		})
 		return ctx
 	})()
 }

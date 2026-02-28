@@ -6,24 +6,52 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.9.0] - 2026-02-24
 
-- BREAKING CHANGE: Target fixes and related refactorings,
-  including some renamings.
-- BREAKING CHANGE: Change implementations of some pattern extractors.
-- BREAKING CHANGE: Show directories.
-- BREAKING CHANGE: Improve and fix `Extractor`.
-- Use Node 18.
-- Add `stream` function, `view-ignored/browser` API.
-- Add `view-ignored/scan`, `view-ignored/stream`.
-- Add `view-ignored/browser/scan`, `view-ignored/browser/stream`.
-- Add MatcherContext-patching API for watching: `matcherContextAddPath`,
-  `matcherContextRemovePath`, `matcherContextRefreshDir`.
-- Add `Source.error` and `MatcherContext.failed`.
-  Remove `MatcherContext.sourceErrors`.
-- Replace eslint with oxlint and oxfmt.
-- Add tests for Git and NPM targets.
-  Also, test outputs for them for the project itself.
+- Improve the logic for signed patterns.
+  From now on, they are not truly signed patterns,
+  but rather positive patterns with the "inverted" property.
+  You can use an array to represent complex logic.
+- For the "missing-source" case, include the paths.
+- Respect `package.json` `main` value
+  when determining which files Bun should ignore.
+- Validate `package.json` for Deno, NPM, VSCE and classic Yarn.
+
+## [0.8.1] - 2026-02-15
+
+- Add Bun target.
+- Add Deno target.
+- Remove the "deno.json(c)" extractor JSR.
+
+## [0.8.0] - 2026-02-14
+
+- Add more patterns for NPM (npm-packlist, main),
+  VSCE (vscode-vsce, main), Yarn (berry, main).
+- Add `YarnClassic` (yarn, main).
+- Add `nocase` option.
+- Add `stringCompile(string, context, {nocase})`.
+- Add `Target.init?(InitState)`.
+- Add `MatcherStream.start()`.
+- Fix secondary "dirent" emit for directories (overriding event).
+- Improve performance by 60 percent by reimplementing internal path conversions.
+
+## [0.7.1] - 2026-02-11
+
+- Add `signal` option for `Target.ignores` and `resolveSources`.
+
+## [0.7.0] - 2026-02-11
+
+- Ignore for "missing-source".
+- Change "since" from `0.0.6` to `0.6.0`.
+- Provide source value for "no-match", "broken-source", "invalid-pattern".
+- Provide pattern and error values for "invalid-internal-pattern".
+
+## [0.6.0] - 2026-02-10
+
+- Replaces the 0.5.x release, which was untested and non functional.
+- Introduces improved APIs building on 0.5.x, including new scanning options
+  such as `within`, `fastInternal`, `fs`, and more.
+- Node 18 support.
 
 ## [0.5.2] - 2025-12-15
 

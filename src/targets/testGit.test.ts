@@ -1,27 +1,30 @@
-import { test, describe } from "bun:test"
-import { ok, equal } from "node:assert/strict"
-import { Git as target } from "./git.js"
-import { testScan, type PathHandlerOptions } from "../0_testScan.test.js"
 import type { NestedDirectoryJSON } from "memfs"
 
+import { test, describe } from "bun:test"
+
+import { testScan, type PathHandlerOptions } from "../testScan.test.js"
+import { Git as target } from "./git.js"
+
 function testGit(
+	done: () => void,
 	tree: NestedDirectoryJSON,
 	handler: ((o: PathHandlerOptions) => void | Promise<void>) | string[],
 ) {
-	return testScan(tree, handler, { target })
+	return testScan(done, tree, handler, { target })
 }
 
 describe("Git", () => {
-	test("empty for empty", async () => {
-		await testGit({ ".": null }, [])
+	test("empty for empty", async (done) => {
+		await testGit(done, { ".": null }, [])
 	})
 
-	test("keeps for no sources", async () => {
-		await testGit({ file: "" }, ["file"])
+	test("includes for no sources", async (done) => {
+		await testGit(done, { file: "" }, ["file"])
 	})
 
-	test("keeps for empty source", async () => {
+	test("keeps for empty source", async (done) => {
 		await testGit(
+			done,
 			{
 				file: "",
 				".gitignore": "",
@@ -30,18 +33,21 @@ describe("Git", () => {
 		)
 	})
 
-	test("ignores .git/", async () => {
+	test("ignores .git/", async (done) => {
 		await testGit(
+			done,
 			{
 				".git/HEAD": "",
 				file: "",
+				".gitignore": "",
 			},
-			["file"],
+			["file", ".gitignore"],
 		)
 	})
 
-	test("ignores file (.git/info/exclude)", async () => {
+	test("ignores filei (.git/info/exclude)", async (done) => {
 		await testGit(
+			done,
 			{
 				filei: "",
 				file: "",
@@ -51,8 +57,9 @@ describe("Git", () => {
 		)
 	})
 
-	test("ignores file", async () => {
+	test("ignores filei", async (done) => {
 		await testGit(
+			done,
 			{
 				filei: "",
 				".gitignore": "filei",
@@ -61,8 +68,20 @@ describe("Git", () => {
 		)
 	})
 
-	test("ignores multiple files", async () => {
+	test("includes file (case File no match)", async (done) => {
 		await testGit(
+			done,
+			{
+				file: "",
+				".gitignore": "File",
+			},
+			[".gitignore", "file"],
+		)
+	})
+
+	test("ignores multiple files", async (done) => {
+		await testGit(
+			done,
 			{
 				"file1.txt": "",
 				"file2.txt": "",
@@ -72,8 +91,9 @@ describe("Git", () => {
 		)
 	})
 
-	test("ignores files with pattern", async () => {
+	test("ignores files with pattern", async (done) => {
 		await testGit(
+			done,
 			{
 				"foo.js": "",
 				"bar.js": "",
@@ -83,21 +103,27 @@ describe("Git", () => {
 		)
 	})
 
-	test("ignores files in subdirectory", async () => {
+	test("ignores files in subdirectory", async (done) => {
 		await testGit(
+			done,
 			{
 				src: {
 					"main.js": "",
 					"helper.js": "",
 				},
+				out: {
+					"main.js": "",
+					"helper.js": "",
+				},
 				".gitignore": "src/",
 			},
-			[".gitignore"],
+			[".gitignore", "out/", "out/main.js", "out/helper.js"],
 		)
 	})
 
-	test("does not ignore files not matching pattern", async () => {
+	test("does not ignore files not matching pattern", async (done) => {
 		await testGit(
+			done,
 			{
 				"foo.txt": "",
 				"bar.js": "",
@@ -107,32 +133,15 @@ describe("Git", () => {
 		)
 	})
 
-	test("negation pattern keeps file", async () => {
+	test("negation pattern keeps file", async (done) => {
 		await testGit(
+			done,
 			{
 				"foo.js": "",
 				"negkeep.js": "",
 				".gitignore": "*.js\n!negkeep.js",
 			},
 			["negkeep.js", ".gitignore"],
-		)
-	})
-
-	test.skip("collects errors", async () => {
-		await testGit(
-			{
-				"foo.js": "",
-				"negkeep.js": "",
-				".gitignore": "\\",
-			},
-			({ ctx }) => {
-				ok(ctx.failed)
-				const source = ctx.external.get(".")
-				ok(source)
-				ok(source.error)
-				ok(source.error instanceof Error)
-				equal(source.error.message, "Invalid usage of '/'")
-			},
 		)
 	})
 })

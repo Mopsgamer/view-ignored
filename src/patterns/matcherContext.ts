@@ -1,36 +1,42 @@
-import type { ScanOptions } from "../types.js"
+import type { SignedPatternMatch } from "./signedPattern.js"
 import type { Source } from "./source.js"
-import { dirname } from "node:path"
-import { scan } from "../scan.js"
-import { getDepth } from "../getDepth.js"
-import * as nodefs from "node:fs"
 
 /**
- * The results and stats of a scanning operation.
+ * Post-scan results.
+ *
+ * @since 0.6.0
  */
 export interface MatcherContext {
 	/**
-	 * `Set` can be sorted, but `view-ignored`
-	 * does not sort paths.
-	 * @example
-	 * new Set(sort(new Set(['a/b', 'a/a'])))
+	 * Paths and their corresponding sources.
+	 * Directory paths are having the slash suffix.
+	 *
+	 * @since 0.6.0
 	 */
-	paths: Set<string>
+	paths: Map<string, SignedPatternMatch>
 
 	/**
 	 * Maps directory paths to their corresponding sources.
+	 *
 	 * @example
-	 * "src" => Source
+	 * "dir" => Source
+	 * "dir/subdir" => Source
+	 *
+	 * @since 0.6.0
 	 */
-	external: Map<string, Source>
+	external: Map<string, Source | "none">
 
 	/**
-	 * If any fatal errors were encountered during source extraction.
+	 * If any fatal errors were encountered during source extractions,
+	 * this property will contain an array of failed sources.
+	 *
+	 * @since 0.6.0
 	 */
-	failed: boolean
+	failed: Source[]
 
 	/**
 	 * Maps directory paths to the quantity of files they contain.
+	 *
 	 * @example
 	 * // for
 	 * "src/"
@@ -39,185 +45,34 @@ export interface MatcherContext {
 	 * "src/views/index.html"
 	 *
 	 * // depth: 0
-	 * "src/" => 1
+	 * "src" => 1
 	 *
 	 * // depth: 1
-	 * "src/components/" => 0
-	 * "src/views/" => 1
+	 * "src/components" => 0
+	 * "src/views" => 1
+	 *
+	 * @since 0.6.0
 	 */
 	depthPaths: Map<string, number>
 
 	/**
 	 * Total number of files scanned.
+	 *
+	 * @since 0.6.0
 	 */
 	totalFiles: number
 
 	/**
 	 * Total number of files matched by the target.
+	 *
+	 * @since 0.6.0
 	 */
 	totalMatchedFiles: number
 
 	/**
 	 * Total number of directories scanned.
+	 *
+	 * @since 0.6.0
 	 */
 	totalDirs: number
-}
-
-/**
- * Returns `true` if the path is included.
- * If it is not ignored by the target,
- * adds it to the {@link MatcherContext.paths}
- * and updates stats.
- */
-export async function matcherContextAddPath(
-	ctx: MatcherContext,
-	entry: string,
-	options: Pick<ScanOptions, "target" | "cwd" | "fs">,
-): Promise<boolean> {
-	if (ctx.paths.has(entry)) {
-		return true
-	}
-
-	const {
-		target,
-		fs = nodefs,
-		cwd = (await import("node:process")).cwd().replaceAll("\\", "/"),
-	} = options
-
-	{
-		const parent = dirname(entry)
-		if (!(parent === "." || ctx.paths.has(parent))) {
-			await matcherContextAddPath(ctx, parent + "/", options)
-		}
-	}
-
-	const isDir = entry.endsWith("/")
-	if (isDir) {
-		const match = await target.ignores(fs, cwd, entry.substring(0, entry.length - 1), ctx)
-		return !match.ignored
-	}
-	const match = await target.ignores(fs, cwd, entry, ctx)
-	if (match.ignored) {
-		return false
-	}
-	ctx.paths.add(entry)
-	ctx.totalFiles++
-	ctx.totalMatchedFiles++
-	return true
-}
-
-/**
- * Removes a path from the {@link MatcherContext.paths} and updates statistics.
- * If you want to remove a source, use {@link matcherContextRefreshDir} instead.
- */
-export async function matcherContextRemovePath(
-	ctx: MatcherContext,
-	entry: string,
-	options: Pick<ScanOptions, "depth">,
-): Promise<void> {
-	if (entry === ".") {
-		entry = "./"
-	}
-	const isDir = entry.endsWith("/")
-
-	if (!isDir) {
-		if (ctx.paths.delete(entry)) {
-			const parent = dirname(entry)
-			if (ctx.external.get(parent)?.path === entry) {
-				ctx.external.delete(dirname(entry))
-			}
-			ctx.totalFiles--
-			ctx.totalMatchedFiles--
-		}
-		return
-	}
-
-	entry = entry.substring(0, entry.length - 1)
-
-	// if directory
-	ctx.external.delete(entry + "/")
-	if (ctx.paths.delete(entry + "/")) {
-		ctx.totalDirs--
-	}
-
-	const { depth: maxDepth = Infinity } = options
-	const { depthSlash, depth } = getDepth(entry, maxDepth)
-	if (depth > 0) {
-		const parent = entry.substring(0, depthSlash)
-		const count = (ctx.depthPaths.get(parent) ?? 1) - 1
-		if (count > 0) {
-			ctx.depthPaths.set(parent, count)
-		}
-		ctx.depthPaths.delete(entry)
-	}
-
-	const a = [...ctx.paths]
-	for (const path of a) {
-		if (depth > 0 && !path.startsWith(entry)) {
-			continue
-		}
-
-		const isDir = path.endsWith("/")
-		if (!isDir) {
-			let subpath = path
-			if (depth > 0) {
-				subpath = path.substring(entry.length)
-			}
-			if (!subpath.includes("/")) {
-				await matcherContextRemovePath(ctx, path, options)
-			}
-			continue
-		}
-
-		await matcherContextRemovePath(ctx, path, options)
-	}
-}
-
-/**
- * Refreshes a directory path in the {@link MatcherContext.paths}.
- * Updates paths and statistics.
- */
-export async function matcherContextRefreshDir(
-	ctx: MatcherContext,
-	dir: string,
-	options: ScanOptions,
-): Promise<void> {
-	if (dir.endsWith("/")) {
-		dir = dir.substring(0, dir.length - 1)
-	}
-
-	await matcherContextRemovePath(ctx, dir + "/", options)
-
-	const { cwd: cwdo = (await import("node:process")).cwd().replaceAll("\\", "/") } = options
-	let cwd = cwdo + "/" + dir
-	if (dir === ".") {
-		cwd = cwdo
-	}
-	const subctx = await scan({ ...options, cwd })
-
-	for (const path of subctx.paths) {
-		let fullPath = dir + "/" + path
-		if (dir === ".") {
-			fullPath = path
-		}
-		ctx.paths.add(fullPath)
-	}
-	for (const [path, count] of subctx.depthPaths) {
-		let fullPath = dir + "/" + path
-		if (dir === ".") {
-			fullPath = path
-		}
-		ctx.depthPaths.set(fullPath, count)
-	}
-	for (const [path, source] of subctx.external) {
-		let fullPath = dir + "/" + path
-		if (dir === ".") {
-			fullPath = path
-		}
-		ctx.external.set(fullPath, source)
-	}
-	ctx.totalFiles += subctx.totalFiles
-	ctx.totalDirs += subctx.totalDirs
-	ctx.totalMatchedFiles += subctx.totalMatchedFiles
-	ctx.failed ||= subctx.failed
 }

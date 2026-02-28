@@ -1,69 +1,125 @@
-import type { Extractor } from "../patterns/extractor.js"
+import { type } from "arktype"
+
 import type { Target } from "./target.js"
+
 import {
-	signedPatternCompile,
+	type Extractor,
 	signedPatternIgnores,
 	type SignedPattern,
+	signedPatternCompile,
+	extractPackageJsonNocase,
+	extractGitignoreNocase,
 } from "../patterns/index.js"
-import { extractGitignore } from "../patterns/gitignore.js"
-import { extractPackageJson } from "../patterns/packagejson.js"
+import { join, unixify } from "../unixify.js"
+import { npmManifestParse } from "./npmManifest.js"
 
 const extractors: Extractor[] = [
 	{
-		extract: extractPackageJson,
+		extract: extractPackageJsonNocase,
 		path: "package.json",
 	},
 	{
-		extract: extractGitignore,
-		path: ".yarnignore",
-	},
-	{
-		extract: extractGitignore,
+		extract: extractGitignoreNocase,
 		path: ".npmignore",
 	},
 	{
-		extract: extractGitignore,
+		extract: extractGitignoreNocase,
 		path: ".gitignore",
 	},
 ]
 
-const internal: SignedPattern = {
-	exclude: [
-		".git",
-		".DS_Store",
-		"node_modules",
-		".*.swp",
-		"._*",
-		".DS_Store",
-		".git",
-		".gitignore",
-		".hg",
-		".npmignore",
-		".npmrc",
-		".lock-wscript",
-		".svn",
-		".wafpickle-*",
-		"config.gypi",
-		"CVS",
-		"npm-debug.log",
-		".yarnignore",
-		".yarnrc",
-	],
-	include: ["bin", "package.json", "README*", "LICENSE*", "LICENCE*"],
-	compiled: null,
+const internalInclude: SignedPattern = {
+	excludes: false,
+	pattern: [],
+	compiled: [],
 }
 
-signedPatternCompile(internal)
+const internal: SignedPattern[] = [
+	internalInclude,
+	signedPatternCompile({
+		excludes: true,
+		pattern: [
+			// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L26
+			"/package.tgz",
 
+			".github",
+			".git",
+			".hg",
+			"node_modules",
+
+			".npmignore",
+			".gitignore",
+
+			".#*",
+			".DS_Store",
+		],
+		compiled: null,
+	}),
+	signedPatternCompile(
+		{
+			excludes: false,
+			pattern: [
+				// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L10
+				"/package.json",
+				"/README",
+				"/README.*",
+				"/LICENSE",
+				"/LICENSE.*",
+				"/LICENCE",
+				"/LICENCE.*",
+			],
+			compiled: null,
+		},
+		{ nocase: true },
+	),
+]
+
+/**
+ * @since 0.6.0
+ */
 export const Yarn: Target = {
-	ignores(fs, cwd, entry, ctx) {
+	async init({ fs, cwd }) {
+		let content: Buffer
+		const normalCwd = unixify(cwd)
+		try {
+			content = await fs.promises.readFile(normalCwd + "/" + "package.json")
+		} catch (error) {
+			throw new Error("Error while initializing Yarn", { cause: error })
+		}
+
+		const dist = npmManifestParse(content.toString())
+		if (dist instanceof type.errors) {
+			throw new Error("Invalid 'package.json': " + dist.summary, { cause: dist })
+		}
+
+		// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L215-L231
+
+		const set = new Set<string>()
+
+		function normal(path: string): string {
+			const result = unixify(join(normalCwd, path)).substring(normalCwd.length)
+			return result
+		}
+
+		if (dist.main) set.add(normal(dist.main))
+		if (dist.module) set.add(normal(dist.module))
+		if (dist.browser) set.add(normal(dist.browser))
+		if (typeof dist.bin === "string") {
+			set.add(normal(dist.bin))
+		} else if (typeof dist.bin === "object" && dist.bin !== null) {
+			Object.values(dist.bin).forEach((binPath) => set.add(normal(binPath)))
+		}
+
+		internalInclude.pattern = Array.from(set)
+		signedPatternCompile(internalInclude, { nocase: true })
+	},
+	extractors,
+	ignores(o) {
 		return signedPatternIgnores({
-			fs,
+			...o,
 			internal,
-			ctx,
-			cwd,
-			entry,
-			extractors,
+			root: ".",
+			target: Yarn,
 		})
 	},
 }
