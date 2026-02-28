@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  prerelease:
+  benchmark:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -37,8 +37,8 @@ jobs:
         env:
           PATH: /usr/local/bin:/usr/bin:/bin
         run: |
-          bun scripts/benchmark.js
+          bun --expose-gc scripts/benchmark.js
 
       - name: Benchmark Node
         run: |
-          node scripts/benchmark.js
+          node --expose-gc scripts/benchmark.js
