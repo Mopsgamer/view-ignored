@@ -149,35 +149,25 @@ function signedPatternCompiledMatchInternal(
 	options: SignedPatternIgnoresOptions,
 	path: string,
 ): SignedPatternMatch | null {
-	let patternMatch: string = ""
-	let err: Error | undefined
-	const kind = "internal" as const
+	for (const si of options.internal) {
+		const compiled = si.compiled
+		if (compiled === null) continue
 
-	const signedPattern = options.internal
-
-	try {
-		for (const si of signedPattern) {
-			const compiled = si.compiled
-			if (compiled === null) {
-				continue
+		let [patternMatch, error] = patternRegExpTest(path, compiled)
+		if (error)
+			return {
+				kind: "invalid-internal-pattern",
+				pattern: patternMatch,
+				error,
+				ignored: false,
 			}
 
-			;[patternMatch, err] = patternRegExpTest(path, compiled)
-			if (err) {
-				throw err
+		if (patternMatch)
+			return {
+				kind: "internal",
+				pattern: patternMatch,
+				ignored: si.excludes,
 			}
-			if (patternMatch) {
-				// return true
-				return { kind, pattern: patternMatch, ignored: si.excludes }
-			}
-		}
-	} catch (error) {
-		return {
-			kind: "invalid-internal-pattern",
-			pattern: patternMatch,
-			error: error as Error,
-			ignored: false,
-		}
 	}
 
 	return null
@@ -188,32 +178,36 @@ function signedPatternCompiledMatchExternal(
 	path: string,
 	source: Source,
 ): SignedPatternMatch {
-	let patternMatch: string = ""
-	let err: Error | undefined
-	const kind = "external" as const
+	for (const si of source.pattern) {
+		const compiled = si.compiled
+		if (compiled === null) {
+			continue
+		}
 
-	try {
-		for (const si of source.pattern) {
-			const compiled = si.compiled
-			if (compiled === null) {
-				continue
-			}
-
-			;[patternMatch, err] = patternRegExpTest(path, compiled)
-			if (err) {
-				throw err
-			}
-			if (patternMatch) {
-				// return true
-				return { kind, pattern: patternMatch, ignored: si.excludes, source }
+		let [patternMatch, err] = patternRegExpTest(path, compiled)
+		if (err) {
+			source.error = err
+			options.ctx?.failed.push(source)
+			return {
+				kind: "invalid-pattern",
+				ignored: false,
+				source,
 			}
 		}
-	} catch (err) {
-		source.error = err as Error
-		options.ctx?.failed.push(source!)
-		return { kind: "invalid-pattern", ignored: false, source }
+		if (patternMatch)
+			return {
+				kind: "external",
+				pattern: patternMatch,
+				ignored: si.excludes,
+				source,
+			}
 	}
-	return { kind: "no-match", ignored: source.inverted, source }
+
+	return {
+		kind: "no-match",
+		ignored: source.inverted,
+		source,
+	}
 }
 
 /**
