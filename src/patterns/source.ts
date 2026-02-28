@@ -10,7 +10,6 @@ export type Source = {
 	 * Patterns defined within the source file.
 	 * Those patterns are for ignoring files.
 	 *
-	 * @see {@link PatternMatcher}
 	 * @see {@link signedPatternIgnores}
 	 *
 	 * @since 0.6.0
@@ -36,7 +35,6 @@ export type Source = {
 	 * For example, `package.json` `files` field inverts the matching logic,
 	 * because it specifies files to include rather than exclude.
 	 *
-	 * @see {@link PatternMatcher}
 	 * @see {@link signedPatternIgnores}
 	 *
 	 * @since 0.6.0

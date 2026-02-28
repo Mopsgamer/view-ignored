@@ -11,6 +11,7 @@ and this project adheres to
 - Add `MatchKind`.
 - Add `SignedPatternMatch` bases.
 - Fix `extractJsrJson(c)` source population.
+- Remove `PatternMatcher`.
 
 ## [0.9.0] - 2026-02-24
 
