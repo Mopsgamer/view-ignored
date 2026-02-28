@@ -13,37 +13,44 @@ type JsrManifest struct {
 	} `json:"publish"`
 }
 
-func ExtractJsrJson(source *Source, content []byte, ctx *MatcherContext) {
+func ExtractJsrJson(source *Source, content []byte, ctx *MatcherContext) ExtractorNext {
 	dist := JsrManifest{}
+	include := SignedPattern{}
+	exclude := SignedPattern{Excludes: true}
 	err := json.Unmarshal(content, &dist)
 	if err != nil {
 		source.Error = err
 		ctx.Failed = true
-		return
+		return ExtractorBreak
 	}
 
 	if dist.Publish == nil {
 		if dist.Exclude != nil {
-			source.Pattern.Exclude = append(source.Pattern.Exclude, *dist.Exclude...)
+			exclude.Pattern = append(exclude.Pattern, *dist.Exclude...)
 		}
 	} else if dist.Publish.Exclude != nil {
-		source.Pattern.Exclude = append(source.Pattern.Exclude, *dist.Publish.Exclude...)
+		exclude.Pattern = append(exclude.Pattern, *dist.Publish.Exclude...)
 	}
 
 	if dist.Publish == nil {
 		if dist.Include != nil {
-			source.Pattern.Include = append(source.Pattern.Include, *dist.Include...)
+			include.Pattern = append(include.Pattern, *dist.Include...)
 		}
 	} else if dist.Publish.Include != nil {
-		source.Pattern.Include = append(source.Pattern.Include, *dist.Publish.Include...)
+		include.Pattern = append(include.Pattern, *dist.Publish.Include...)
 	}
+
+	for element := range source.Pattern {
+		element.Compile()
+	}
+	return ExtractorBreak
 }
 
 var _ ExtractorFn = (ExtractorFn)(ExtractJsrJson)
 
-func ExtractJsrJsonc(source *Source, content []byte, ctx *MatcherContext) {
+func ExtractJsrJsonc(source *Source, content []byte, ctx *MatcherContext) ExtractorNext {
 	content = StripJSONC(content)
-	ExtractJsrJson(source, content, ctx)
+	return ExtractJsrJson(source, content, ctx)
 }
 
 var _ ExtractorFn = (ExtractorFn)(ExtractJsrJsonc)

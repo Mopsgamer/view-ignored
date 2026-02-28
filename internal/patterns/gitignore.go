@@ -2,11 +2,26 @@ package patterns
 
 import (
 	"strings"
-
-	"github.com/bmatcuk/doublestar/v4"
 )
 
-func ExtractGitignore(source *Source, content []byte, _ *MatcherContext) {
+// Extracts and compiles patterns from the file.
+//
+// See [SignedPattern.Compile].
+//
+// # Since 0.6.0
+func ExtractGitignore(source *Source, content []byte, _ *MatcherContext) ExtractorNext {
+	extractGitignore(source, content)
+	for element := range source.Pattern {
+		element.Compile(StringCompileOptions{NoCase: true})
+	}
+	return ExtractorBreak
+}
+
+var _ ExtractorFn = (ExtractorFn)(ExtractGitignore)
+
+func extractGitignore(source *Source, content []byte) {
+	include := SignedPattern{}
+	exclude := SignedPattern{Excludes: true}
 	for line := range strings.SplitSeq(string(content), "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "#") {
@@ -16,25 +31,6 @@ func ExtractGitignore(source *Source, content []byte, _ *MatcherContext) {
 			line = line[:cdx]
 		}
 
-		source.PushNegatable(line)
+		source.PushNegatable(line, false, include, exclude)
 	}
-	// TODO: validate gitignore
-}
-
-var _ ExtractorFn = (ExtractorFn)(ExtractGitignore)
-
-func GitignoreMatch(pattern, path string) (bool, error) {
-	if strings.HasSuffix(pattern, "/") {
-		pattern += "**"
-	}
-	if strings.HasPrefix(pattern, "/") {
-		pattern = pattern[1:]
-	} else if !strings.HasPrefix(pattern, "**/") {
-		pattern = "**/" + pattern
-	}
-	if !strings.HasSuffix(pattern, "/**") {
-		pattern = pattern + "/**"
-	}
-	matched, err := doublestar.Match(pattern, path)
-	return matched, err
 }

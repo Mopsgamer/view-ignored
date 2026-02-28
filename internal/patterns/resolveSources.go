@@ -8,15 +8,20 @@ import (
 	"strings"
 )
 
-// See [SourcesBackwards].
-type SourcesBackwardsOptions struct {
+// See [ResolveSources].
+type ResolveSourcesOptions struct {
 	PatternFinderOptions
 	Dir string
 }
 
 // Populates the [MatcherContext.External] map with [Source] objects.
-func SourceBackwards(options SourcesBackwardsOptions) {
+func ResolveSources(options ResolveSourcesOptions) {
 	dir := options.Dir
+
+	if _, has := options.Ctx.External[dir]; has {
+		return
+	}
+
 	for {
 		if _, ok := options.Ctx.External[dir]; ok {
 			break

@@ -64,8 +64,8 @@ func walkIncludes(options WalkOptions) error {
 				return fs.SkipAll
 			}
 
-			if *match.Ignored() {
-				if isDir && fastInternal && match.Kind() == patterns.MatchKindGroupInternal {
+			if *match.GetIgnored() {
+				if isDir && fastInternal && match.GetKind() == patterns.MatchKindInternal {
 					return fs.SkipDir
 				}
 				return nil
@@ -91,8 +91,8 @@ func walkIncludes(options WalkOptions) error {
 		return fs.SkipAll
 	}
 
-	if *match.Ignored() {
-		if isDir && fastInternal && match.Kind() == patterns.MatchKindGroupInternal {
+	if *match.GetIgnored() {
+		if isDir && fastInternal && match.GetKind() == patterns.MatchKindInternal {
 			return fs.SkipDir
 		}
 		return nil

@@ -1,181 +1,227 @@
 package patterns
 
-import (
-	"path"
-)
+import "path"
 
 // Represents a set of include and exclude patterns.
 // These patterns are positive minimatch patterns.
 //
-// See [PatternMatcher].
+// [PatternMatcher] uses it.
+// [SignedPattern.Ignores] provides the ignoring algorithm.
+// [SignedPattern.Compile] compiles the signed pattern.
+// Use this or an extractor's method to compile.
+//
+// # Since 0.6.0
 type SignedPattern struct {
-	Include, Exclude Pattern
+	// Provides ignored or included file and directory patterns.
+	//
+	// [SignedPattern.Ignores] provides the ignoring algorithm.
+	//
+	// # Since 0.9.0
+	Pattern Pattern
+	// If `true`, pattern "test" will exclude file named "test".
+	//
+	// [SignedPattern.Ignores] provides the ignoring algorithm.
+	//
+	// # Since 0.9.0
+	Excludes bool
+	// Provides compiled ignored or included file and directory patterns.
+	//
+	// [SignedPattern.Ignores] provides the ignoring algorithm.
+	//
+	// # Since 0.6.0
+	Compiled []PatternMinimatch
+}
+
+// Compiles the {@link SignedPattern} (forced).
+// Can be compiled at any time.
+// Extractors are compiling it.
+//
+// See [Pattern.Compile].
+//
+// # Since 0.6.0
+func (signedPattern SignedPattern) Compile(
+	options StringCompileOptions,
+) SignedPattern {
+	signedPattern.Compiled = signedPattern.Pattern.Compile(options)
+	return signedPattern
+}
+
+type MatchKind = int
+
+const (
+	MatchKindNone MatchKind = iota
+	MatchKindMissingSource
+
+	MatchKindNoMatch
+	MatchKindBrokenSource
+	MatchKindInvalidPattern
+
+	MatchKindInvalidInternalPattern
+
+	MatchKindInternal
+
+	MatchKindExternal
+)
+
+// "none" | "missing-source"
+
+type SignedPatternMatch_ struct {
+	Kind    MatchKind
+	Ignored bool
+}
+
+var _ SignedPatternMatch = (*SignedPatternMatch_)(nil)
+
+func (p SignedPatternMatch_) GetKind() MatchKind {
+	return p.Kind
+}
+func (p SignedPatternMatch_) GetIgnored() *bool {
+	return &p.Ignored
+}
+
+// "no-match" | "broken-source" | "invalid-pattern"
+
+type SignedPatternMatch_Source struct {
+	SignedPatternMatch_
+	Source Source
+}
+
+var _ SignedPatternMatch = (*SignedPatternMatch_Source)(nil)
+
+// "invalid-internal-pattern"
+
+type SignedPatternMatch_PatternError struct {
+	SignedPatternMatch_Pattern
+	Error error
+}
+
+var _ SignedPatternMatch = (*SignedPatternMatch_PatternError)(nil)
+
+// "internal"
+
+type SignedPatternMatch_Pattern struct {
+	SignedPatternMatch_
+	Pattern string
+}
+
+var _ SignedPatternMatch = (*SignedPatternMatch_Pattern)(nil)
+
+// "external"
+
+type SignedPatternMatch_PatternSource struct {
+	SignedPatternMatch_
+	Pattern string
+	Source  Source
+}
+
+var _ SignedPatternMatch = (*SignedPatternMatch_PatternSource)(nil)
+
+// See [SignedPattern.Ignores].
+//
+// # Since 0.6.0
+type SignedPatternMatch interface {
+	GetKind() int
+	GetIgnored() *bool
 }
 
 // See [SignedPattern.Ignores].
+//
+// # Since 0.6.0
 type SignedPatternIgnoresOptions struct {
 	PatternFinderOptions
 	Entry    string
 	Internal SignedPattern
 }
 
-type MatchKind = int
-type MatchKindGroup = int
-
-const (
-	MatchKindNone MatchKind = iota
-	MatchKindNoMatch
-	MatchKindInvalidInternalPattern
-	MatchKindMissingSource
-	MatchKindBrokenSource
-	MatchKindInvalidPattern
-
-	MatchKindGroupInternal MatchKindGroup = iota
-	MatchKindGroupExternal
-)
-
-type SignedPatternMatchInvalid struct {
-	kind    MatchKind
-	ignored bool
-}
-
-var _ SignedPatternMatch = (*SignedPatternMatchInvalid)(nil)
-
-func (p SignedPatternMatchInvalid) Kind() MatchKind {
-	return p.kind
-}
-func (p SignedPatternMatchInvalid) Ignored() *bool {
-	return &p.ignored
-}
-
-type SignedPatternMatchValid struct {
-	kind    MatchKindGroup
-	Negated bool
-	Pattern string
-	ignored bool
-}
-
-var _ SignedPatternMatch = (*SignedPatternMatchValid)(nil)
-
-func (p SignedPatternMatchValid) Kind() MatchKindGroup {
-	return p.kind
-}
-func (p SignedPatternMatchValid) Ignored() *bool {
-	return &p.ignored
-}
-
-type SignedPatternMatch interface {
-	Kind() int
-	Ignored() *bool
+func patternRegExpTest(path string, rs []PatternMinimatch) (string, error) {
+	for _, r := range rs {
+		ok, err := r.Test(path)
+		if ok {
+			return r.pattern, err
+		}
+	}
+	return "", nil
 }
 
 func InvertSignedPatternMatch(match SignedPatternMatch, invert bool) {
 	if invert {
-		*match.Ignored() = !*match.Ignored()
+		*match.GetIgnored() = !*match.GetIgnored()
 	}
 }
 
+func signedPatternCompileMatchInternal(
+	options SignedPatternIgnoresOptions,
+	path string,
+) SignedPatternMatch {
+	for _, si := range options.internal {
+		const compiled = si.Compiled
+		if compiled == nil {
+			continue
+		}
+
+		patternMatch, errp := patternRegExpTest(path, compiled)
+		if errp != nil {
+			return SignedPatternMatch_PatternError{
+				SignedPatternMatch_Pattern: SignedPatternMatch_Pattern{
+					SignedPatternMatch_: SignedPatternMatch_{
+						Kind:    MatchKindInvalidInternalPattern,
+						Ignored: false,
+					},
+					Pattern: patternMatch,
+				},
+				Error: errp,
+			}
+		}
+		if len(patternMatch) > 0 {
+			return SignedPatternMatch_Pattern{
+				SignedPatternMatch_: SignedPatternMatch_{
+					Kind:    MatchKindInternal,
+					Ignored: si.excludes,
+				},
+				Pattern: patternMatch,
+			}
+		}
+	}
+	return nil
+}
+
 // Checks whether a given entry should be ignored based on internal and external patterns.
-// Populates unknown sources using [SourcesBackwards].
+// Populates unknown sources using [ResolveSources].
 //
-// Algorithm:
-//
-// 1. Check internal exclude patterns. If matched, return true.
-//
-// 2. Check internal include patterns. If matched, return false.
-//
-// 3. Check external patterns:
-//   - If not inverted:
-//     a. Check external include patterns. If matched, return false.
-//     b. Check external exclude patterns. If matched, return true.
-//   - If inverted:
-//     a. Check external exclude patterns. If matched, return true.
-//     b. Check external include patterns. If matched, return false.
-//
-// 4. If no patterns matched, return true if external is inverted, else false.
+// # Since 0.6.0
 func (ointernal SignedPattern) Ignores(
 	options SignedPatternIgnoresOptions,
 ) SignedPatternMatch {
 	parent := path.Dir(options.Entry)
-	source, ok := options.Ctx.External[parent]
-	if !ok {
-		SourceBackwards(SourcesBackwardsOptions{
-			PatternFinderOptions: options.PatternFinderOptions,
-			Dir:                  parent,
-		})
+	source := options.Ctx.External[parent]
 
-		if options.Ctx.Failed {
-			return SignedPatternMatchInvalid{kind: MatchKindBrokenSource, ignored: false}
-		}
-
+	if source == nil {
+		resolveSources(ResolveSourceOptions{options, dir: parent, root: options.root})
 		source = options.Ctx.External[parent]
 	}
 
-	internal := options.Internal
-
-	check := ""
-	var err error
-
-	check, err = internal.Exclude.Matches(options.Entry)
-	if err != nil {
-		return SignedPatternMatchInvalid{MatchKindInvalidInternalPattern, false}
-	}
-	if check != "" {
-		return SignedPatternMatchValid{MatchKindGroupInternal, true, check, true}
-	}
-
-	check, err = internal.Include.Matches(options.Entry)
-	if err != nil {
-		return SignedPatternMatchInvalid{MatchKindInvalidInternalPattern, false}
-	}
-	if check != "" {
-		return SignedPatternMatchValid{MatchKindGroupInternal, false, check, false}
-	}
-
-	if source == nil {
-		return SignedPatternMatchInvalid{MatchKindNoMatch, false}
-	}
-
-	external := source.Pattern
-
-	if !source.Inverted {
-		check, err = external.Include.Matches(options.Entry)
-		if err != nil {
-			goto Error
-		}
-		if check != "" {
-			return SignedPatternMatchValid{MatchKindGroupExternal, true, check, false}
-		}
-
-		check, err = external.Exclude.Matches(options.Entry)
-		if err != nil {
-			goto Error
-		}
-		if check != "" {
-			return SignedPatternMatchValid{MatchKindGroupExternal, false, check, true}
-		}
-	} else {
-		check, err = external.Exclude.Matches(options.Entry)
-		if err != nil {
-			goto Error
-		}
-		if check != "" {
-			return SignedPatternMatchValid{MatchKindGroupExternal, false, check, true}
-		}
-
-		check, err = external.Include.Matches(options.Entry)
-		if err != nil {
-			goto Error
-		}
-		if check != "" {
-			return SignedPatternMatchValid{MatchKindGroupExternal, true, check, false}
+	if source == nil || source == ExtractorContinue {
+		return SignedPatternMatch_{
+			Kind:    MatchKindMissingSource,
+			Ignored: false,
 		}
 	}
 
-	return SignedPatternMatchInvalid{MatchKindNoMatch, source.Inverted}
+	if source != nil && source.Error != nil {
+		return SignedPatternMatch_Source{
+			SignedPatternMatch_: SignedPatternMatch_{
+				Kind:    MatchKindBrokenSource,
+				Ignored: true,
+			},
+			Source: *source,
+		}
+	}
 
-Error:
-	source.Error = err
-	options.Ctx.Failed = true
-	return SignedPatternMatchInvalid{MatchKindInvalidInternalPattern, false}
+	internalMatch := signedPatternCompiledMatchInternal(options, options.Entry)
+	if internalMatch != nil {
+		return internalMatch
+	}
+
+	const externalMatch = signedPatternCompiledMatchExternal(options, options.Entry, source)
+	return externalMatch
 }
