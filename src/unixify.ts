@@ -13,11 +13,15 @@ export function unixify(path: string): string {
 export function join(from: string, p2: string): string {
 	if (p2 === "." || p2 === "./") {
 		return from
-	} else if (p2.startsWith("./")) {
-		from += "/" + p2.substring(2)
-	} else {
-		from += "/" + p2
 	}
+	let start = 0
+	if (p2.startsWith("./")) {
+		start = 2
+	}
+	if (!from.endsWith("/")) {
+		from += "/"
+	}
+	from += p2.substring(start)
 
 	return from
 }

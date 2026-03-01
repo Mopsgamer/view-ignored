@@ -140,7 +140,7 @@ export class MatcherStream extends EventEmitter<EventMap> {
 		}
 
 		await target.init?.({ ctx, cwd, fs, signal })
-		let from = join(unixify(normalCwd), within)
+		let from = join(normalCwd, within)
 		await opendir(fs, from, (entry) => {
 			const path = relative(normalCwd, unixify(entry.parentPath) + "/" + entry.name)
 			return walkIncludes({

@@ -8,7 +8,7 @@ import type { SignedPattern } from "./signedPattern.js"
 import type { Source } from "./source.js"
 import type { StringCompileOptions } from "./stringCompile.js"
 
-import { unixify, relative, join } from "../unixify.js"
+import { join, base } from "../unixify.js"
 import { patternCompile } from "./pattern.js"
 
 /**
@@ -147,18 +147,12 @@ async function tryExtractor(
 	ctx: MatcherContext,
 	extractor: Extractor,
 ): Promise<Source | "none"> {
-	let abs = unixify(cwd)
-	if (abs.endsWith("/")) {
-		abs += extractor.path
-	} else {
-		abs += "/" + extractor.path
-	}
-	const path = relative(cwd, abs)
-	const name = path.substring(path.lastIndexOf("/") + 1)
+	let abs = join(cwd, extractor.path)
+	const name = base(extractor.path)
 
 	const newSource: Source = {
 		name,
-		path,
+		path: extractor.path,
 		inverted: false,
 		pattern: [],
 	}
