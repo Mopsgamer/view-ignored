@@ -23,15 +23,15 @@ var extractorsNpm = []shared.Extractor{
 	},
 }
 
-var internalIncludeNpm = shared.SignedPattern{
+var internalIncludeNpm = new(shared.SignedPattern{
 	Excludes: false,
 	Pattern:  shared.Pattern{}, // filled within init
 	Compiled: []shared.PatternMinimatch{},
-}
+})
 
-var internalNpm = []shared.SignedPattern{
+var internalNpm = []*shared.SignedPattern{
 	internalIncludeNpm,
-	shared.SignedPattern{
+	new(shared.SignedPattern{
 		Excludes: true,
 		Pattern: shared.Pattern{
 			// https://github.com/npm/npm-packlist/blob/main/lib/index.js#L16
@@ -63,8 +63,8 @@ var internalNpm = []shared.SignedPattern{
 			"/pnpm-lock.yaml",
 			"/bun.lockb",
 		},
-	}.Compile(shared.StringCompileOptions{}),
-	shared.SignedPattern{
+	}).Compile(shared.StringCompileOptions{}),
+	new(shared.SignedPattern{
 		Excludes: false,
 		Pattern: shared.Pattern{
 			// https://github.com/npm/npm-packlist/blob/main/lib/index.js#L287
@@ -79,7 +79,7 @@ var internalNpm = []shared.SignedPattern{
 			"LICENSE.*",
 			"LICENCE.*",
 		},
-	}.Compile(shared.StringCompileOptions{}),
+	}).Compile(shared.StringCompileOptions{}),
 }
 
 var NPM = shared.PrintableTarget{
@@ -92,8 +92,7 @@ var NPM = shared.PrintableTarget{
 		Extractors: extractorsNpm,
 		Init: func(options shared.InitState) error {
 			var content []byte
-			normalCwd := shared.Unixify(options.Cwd)
-			content, err := fs.ReadFile(options.FS, normalCwd+"/"+"package.json")
+			content, err := fs.ReadFile(options.FS, "package.json")
 			if err != nil {
 				return err
 			}
@@ -123,6 +122,7 @@ var NPM = shared.PrintableTarget{
 					Target: o.Target,
 				},
 				Internal: internalNpm,
+				Entry:    o.Entry,
 			})
 		},
 	},

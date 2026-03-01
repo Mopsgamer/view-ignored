@@ -41,9 +41,9 @@ type SignedPattern struct {
 // See [Pattern.Compile].
 //
 // # Since 0.6.0
-func (signedPattern SignedPattern) Compile(
+func (signedPattern *SignedPattern) Compile(
 	options StringCompileOptions,
-) SignedPattern {
+) *SignedPattern {
 	signedPattern.Compiled = signedPattern.Pattern.Compile(options)
 	return signedPattern
 }
@@ -142,7 +142,7 @@ type SignedPatternIgnoresOptions struct {
 	// The internal pattern. Should be compiled.
 	//
 	// # Since 0.6.0
-	Internal []SignedPattern
+	Internal []*SignedPattern
 }
 
 func patternRegExpTest(path string, rs []PatternMinimatch) (string, error) {

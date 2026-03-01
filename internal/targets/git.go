@@ -17,11 +17,11 @@ var extractorsGit = []shared.Extractor{
 	},
 }
 
-var internalGit = []shared.SignedPattern{
-	shared.SignedPattern{
+var internalGit = []*shared.SignedPattern{
+	new(shared.SignedPattern{
 		Excludes: true,
 		Pattern:  []string{".git", ".DS_Store"},
-	}.Compile(shared.StringCompileOptions{}),
+	}).Compile(shared.StringCompileOptions{}),
 }
 
 // # Since 0.6.0
@@ -44,6 +44,7 @@ var Git = shared.PrintableTarget{
 					Target: o.Target,
 				},
 				Internal: internalGit,
+				Entry:    o.Entry,
 			})
 		},
 	},

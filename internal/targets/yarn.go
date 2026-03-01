@@ -21,15 +21,14 @@ var extractorsYarn = []shared.Extractor{
 	},
 }
 
-var internalIncludeYarn = shared.SignedPattern{
+var internalIncludeYarn = new(shared.SignedPattern{
 	Excludes: false,
 	Pattern:  shared.Pattern{},
-	Compiled: []shared.PatternMinimatch{},
-}
+}).Compile(shared.StringCompileOptions{})
 
-var internalYarn = []shared.SignedPattern{
+var internalYarn = []*shared.SignedPattern{
 	internalIncludeYarn,
-	shared.SignedPattern{
+	new(shared.SignedPattern{
 		Excludes: true,
 		Pattern: []string{
 			// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L26
@@ -46,8 +45,8 @@ var internalYarn = []shared.SignedPattern{
 			".#*",
 			".DS_Store",
 		},
-	}.Compile(shared.StringCompileOptions{}),
-	shared.SignedPattern{
+	}).Compile(shared.StringCompileOptions{}),
+	new(shared.SignedPattern{
 
 		Excludes: false,
 		Pattern: []string{
@@ -60,7 +59,7 @@ var internalYarn = []shared.SignedPattern{
 			"/LICENCE",
 			"/LICENCE.*",
 		},
-	}.Compile(shared.StringCompileOptions{NoCase: true}),
+	}).Compile(shared.StringCompileOptions{NoCase: true}),
 }
 
 var Yarn = shared.PrintableTarget{
@@ -81,6 +80,7 @@ var Yarn = shared.PrintableTarget{
 					Target: o.Target,
 				},
 				Internal: internalYarn,
+				Entry:    o.Entry,
 			})
 		},
 	},

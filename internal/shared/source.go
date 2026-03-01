@@ -8,7 +8,7 @@ type Source struct {
 	// Those patterns are for ignoring files.
 	//
 	// # Since 0.6.0
-	Pattern []SignedPattern
+	Pattern []*SignedPattern
 
 	// Name of the source file.
 	//
@@ -43,7 +43,7 @@ type Source struct {
 func (source *Source) PushNegatable(
 	pattern string,
 	invert bool,
-	include, exclude SignedPattern,
+	include, exclude *SignedPattern,
 ) {
 	if invert {
 		exclude, include = include, exclude

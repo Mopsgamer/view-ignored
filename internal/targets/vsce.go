@@ -21,8 +21,8 @@ var extractorsVsce = []shared.Extractor{
 	},
 }
 
-var internalVsce = []shared.SignedPattern{
-	shared.SignedPattern{
+var internalVsce = []*shared.SignedPattern{
+	new(shared.SignedPattern{
 		Excludes: true,
 		Pattern: []string{
 			// https://github.com/microsoft/vscode-vsce/blob/main/src/package.ts#L1633
@@ -58,7 +58,7 @@ var internalVsce = []shared.SignedPattern{
 			".vscode-test",
 			".vscode-test-web",
 		},
-	},
+	}).Compile(shared.StringCompileOptions{}),
 }
 
 var Vsce = shared.PrintableTarget{
@@ -80,6 +80,7 @@ var Vsce = shared.PrintableTarget{
 					Target: o.Target,
 				},
 				Internal: internalVsce,
+				Entry:    o.Entry,
 			})
 		},
 	},

@@ -19,13 +19,13 @@ type NodeJsManifest struct {
 // # Since 0.6.0
 func ExtractPackageJson(source *shared.Source, content []byte, _ *shared.MatcherContext) shared.ExtractorNext {
 	result := extractPackageJson(source, content)
-	if result == shared.ExtractorBreak {
+	if result == shared.ExtractorFound {
 		for _, element := range source.Pattern {
 			element.Compile(shared.StringCompileOptions{})
 		}
 	}
 	if result == ExtractorError {
-		return shared.ExtractorBreak
+		return shared.ExtractorFound
 	}
 	return result
 }
@@ -37,13 +37,13 @@ func ExtractPackageJson(source *shared.Source, content []byte, _ *shared.Matcher
 // # Since 0.8.0
 func ExtractPackageJsonNocase(source *shared.Source, content []byte, _ *shared.MatcherContext) shared.ExtractorNext {
 	result := extractPackageJson(source, content)
-	if result == shared.ExtractorBreak {
+	if result == shared.ExtractorFound {
 		for _, element := range source.Pattern {
 			element.Compile(shared.StringCompileOptions{NoCase: true})
 		}
 	}
 	if result == ExtractorError {
-		return shared.ExtractorBreak
+		return shared.ExtractorFound
 	}
 	return result
 }
@@ -62,13 +62,13 @@ func extractPackageJson(source *shared.Source, content []byte) shared.ExtractorN
 	}
 
 	if dist.Files == nil {
-		return shared.ExtractorBreak
+		return shared.ExtractorFound
 	}
 
 	for _, pattern := range *dist.Files {
-		source.PushNegatable(pattern, true, include, exclude)
+		source.PushNegatable(pattern, true, &include, &exclude)
 	}
-	source.Pattern = append(source.Pattern, include, exclude)
+	source.Pattern = append(source.Pattern, &include, &exclude)
 
-	return shared.ExtractorBreak
+	return shared.ExtractorFound
 }

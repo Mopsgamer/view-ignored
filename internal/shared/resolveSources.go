@@ -143,12 +143,13 @@ func findSourceForAbsoluteDirs(
 				continue
 			}
 			source, ok := sourcep.(Source)
-			if ok {
-				if source.Error != nil {
-					ctx.Failed = append(ctx.Failed, &source)
-				}
-				return source, nil
+			if !ok {
+				continue
 			}
+			if source.Error != nil {
+				ctx.Failed = append(ctx.Failed, &source)
+			}
+			return source, nil
 		}
 	}
 	return SourceNone{}, nil
@@ -167,7 +168,7 @@ func tryExtractor(
 	newSource := Source{
 		Name:     name,
 		Path:     path,
-		Pattern:  []SignedPattern{},
+		Pattern:  []*SignedPattern{},
 		Inverted: false,
 		Error:    nil,
 	}
@@ -182,7 +183,7 @@ func tryExtractor(
 	}
 
 	act := extractor.Extract(&newSource, buff, ctx)
-	if act == ExtractorContinue {
+	if act == ExtractorNotFound {
 		return SourceNone{}
 	}
 	return newSource

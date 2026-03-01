@@ -17,11 +17,11 @@ var extractorsJsr = []shared.Extractor{
 	},
 }
 
-var internalJsr = []shared.SignedPattern{
-	shared.SignedPattern{
+var internalJsr = []*shared.SignedPattern{
+	new(shared.SignedPattern{
 		Excludes: true,
 		Pattern:  []string{".git", ".DS_Store"},
-	}.Compile(shared.StringCompileOptions{}),
+	}).Compile(shared.StringCompileOptions{}),
 }
 
 // # Since 0.6.0
@@ -43,6 +43,7 @@ var Jsr = shared.PrintableTarget{
 					Target: o.Target,
 				},
 				Internal: internalJsr,
+				Entry:    o.Entry,
 			})
 		},
 	},

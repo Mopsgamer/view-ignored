@@ -40,7 +40,7 @@ func extractJsrJson(source *shared.Source, content []byte, ctx *shared.MatcherCo
 	if err != nil {
 		source.Error = err
 		ctx.Failed = append(ctx.Failed, source)
-		return shared.ExtractorBreak
+		return shared.ExtractorFound
 	}
 
 	if dist.Publish == nil {
@@ -61,11 +61,11 @@ func extractJsrJson(source *shared.Source, content []byte, ctx *shared.MatcherCo
 
 	for _, si := range []shared.SignedPattern{include, exclude} {
 		for _, pattern := range si.Pattern {
-			source.PushNegatable(pattern, true, include, exclude)
+			source.PushNegatable(pattern, true, &include, &exclude)
 		}
 	}
-	source.Pattern = append(source.Pattern, include, exclude)
-	return shared.ExtractorBreak
+	source.Pattern = append(source.Pattern, &include, &exclude)
+	return shared.ExtractorFound
 }
 
 func StripJSONC(src []byte) []byte {

@@ -16,7 +16,7 @@ func ExtractGitignore(source *shared.Source, content []byte, _ *shared.MatcherCo
 	for _, element := range source.Pattern {
 		element.Compile(shared.StringCompileOptions{})
 	}
-	return shared.ExtractorBreak
+	return shared.ExtractorFound
 }
 
 var _ shared.ExtractorFn = (shared.ExtractorFn)(ExtractGitignore)
@@ -31,7 +31,7 @@ func ExtractGitignoreNocase(source *shared.Source, content []byte, _ *shared.Mat
 	for _, element := range source.Pattern {
 		element.Compile(shared.StringCompileOptions{NoCase: true})
 	}
-	return shared.ExtractorBreak
+	return shared.ExtractorFound
 }
 
 var _ shared.ExtractorFn = (shared.ExtractorFn)(ExtractGitignore)
@@ -48,6 +48,7 @@ func extractGitignore(source *shared.Source, content []byte) {
 			line = line[:cdx]
 		}
 
-		source.PushNegatable(line, false, include, exclude)
+		source.PushNegatable(line, false, &include, &exclude)
 	}
+	source.Pattern = append(source.Pattern, &include, &exclude)
 }

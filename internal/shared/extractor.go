@@ -3,13 +3,13 @@ package shared
 type ExtractorNext int
 
 const (
-	ExtractorContinue ExtractorNext = iota
-	ExtractorBreak
+	ExtractorNotFound ExtractorNext = iota
+	ExtractorFound
 )
 
 // Populates the [Source] object from the content of a source file.
 // Results are available in [MatcherContext.External].
-// If [ExtractorContinue] returned, will skip the extractor.
+// If [ExtractorNotFound] returned, will skip the extractor.
 //
 // See [Source.Pattern] for more details.
 //
