@@ -8,7 +8,7 @@ import type { SignedPatternMatch } from "./signedPattern.js"
 import type { Source } from "./source.js"
 
 import { opendir } from "../opendir.js"
-import { join, relative, unixify } from "../unixify.js"
+import { join, unixify } from "../unixify.js"
 import { walkIncludes } from "../walk.js"
 
 /**
@@ -141,8 +141,8 @@ export class MatcherStream extends EventEmitter<EventMap> {
 
 		await target.init?.({ ctx, cwd, fs, signal })
 		let from = join(normalCwd, within)
-		await opendir(fs, from, (entry) => {
-			const path = relative(normalCwd, unixify(entry.parentPath) + "/" + entry.name)
+		await opendir(fs, from, (entry, from) => {
+			const path = from.substring(normalCwd.length + 1)
 			return walkIncludes({
 				path,
 				entry,
