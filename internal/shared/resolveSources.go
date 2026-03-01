@@ -105,7 +105,7 @@ func ResolveSources(options ResolveSourcesOptions) error {
 
 	absPaths := []string{}
 	for _, rel := range noSourceDirList {
-		absPaths = append(absPaths, path.Join(options.Cwd, rel))
+		absPaths = append(absPaths, Join(options.Cwd, rel))
 	}
 	sourcep, err = findSourceForAbsoluteDirs(absPaths, options.Ctx, options.FS, options.Target, options.Signal)
 	if err != nil {
@@ -128,8 +128,8 @@ func findSourceForAbsoluteDirs(
 	paths []string,
 	ctx *MatcherContext,
 	fs_ fs.FS,
-	target Target,
-	signal chan struct{},
+	target *Target,
+	signal <-chan struct{},
 ) (SourceProvider, error) {
 	for _, parent := range paths {
 		for _, extractor := range target.Extractors {
@@ -145,7 +145,7 @@ func findSourceForAbsoluteDirs(
 			source, ok := sourcep.(Source)
 			if ok {
 				if source.Error != nil {
-					ctx.Failed = append(ctx.Failed, source)
+					ctx.Failed = append(ctx.Failed, &source)
 				}
 				return source, nil
 			}
@@ -160,12 +160,7 @@ func tryExtractor(
 	ctx *MatcherContext,
 	extractor Extractor,
 ) SourceProvider {
-	abs := Unixify(cwd)
-	if strings.HasSuffix(abs, "/") {
-		abs += extractor.Path
-	} else {
-		abs += "/" + extractor.Path
-	}
+	abs := Join(cwd, extractor.Path)
 	path := Relative(cwd, abs)
 	name := Base(path)
 
@@ -177,7 +172,7 @@ func tryExtractor(
 		Error:    nil,
 	}
 
-	buff, err := fs.ReadFile(fs_, abs)
+	buff, err := fs.ReadFile(fs_, path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return SourceNone{}

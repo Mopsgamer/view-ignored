@@ -20,4 +20,6 @@ type InitState struct {
 	//
 	// # Since 0.7.1
 	Signal <-chan struct{}
+	// go specific
+	Target *Target
 }

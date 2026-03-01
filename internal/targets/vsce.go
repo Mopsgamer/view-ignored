@@ -1,10 +1,65 @@
 package targets
 
 import (
-	"io/fs"
-
+	"github.com/Mopsgamer/view-ignored/internal/patterns"
+	"github.com/Mopsgamer/view-ignored/internal/shared"
 	"github.com/gookit/color"
 )
+
+var extractorsVsce = []shared.Extractor{
+	{
+		Extract: patterns.ExtractPackageJson,
+		Path:    "package.json",
+	},
+	{
+		Extract: patterns.ExtractGitignore,
+		Path:    ".vscodeignore",
+	},
+	{
+		Extract: patterns.ExtractGitignore,
+		Path:    ".gitignore",
+	},
+}
+
+var internalVsce = []shared.SignedPattern{
+	shared.SignedPattern{
+		Excludes: true,
+		Pattern: []string{
+			// https://github.com/microsoft/vscode-vsce/blob/main/src/package.ts#L1633
+			".vscodeignore",
+			"package-lock.json",
+			"npm-debug.log",
+			"yarn.lock",
+			"yarn-error.log",
+			"npm-shrinkwrap.json",
+			".editorconfig",
+			".npmrc",
+			".yarnrc",
+			".gitattributes",
+			"*.todo",
+			"tslint.yaml",
+			".eslintrc*",
+			".babelrc*",
+			".prettierrc*",
+			".cz-config.js",
+			".commitlintrc*",
+			"webpack.config.js",
+			"ISSUE_TEMPLATE.md",
+			"CONTRIBUTING.md",
+			"PULL_REQUEST_TEMPLATE.md",
+			"CODE_OF_CONDUCT.md",
+			".github",
+			".travis.yml",
+			"appveyor.yml",
+			".git",
+			"*.vsix",
+			".DS_Store",
+			"*.vsixmanifest",
+			".vscode-test",
+			".vscode-test-web",
+		},
+	},
+}
 
 var Vsce = shared.PrintableTarget{
 	Name:       "VSCE",
@@ -13,36 +68,18 @@ var Vsce = shared.PrintableTarget{
 	Icon:       "󰨞",
 	Color:      color.Hex("#23A9F1"),
 	Target: shared.Target{
-		Ignores: func(fs fs.FS, cwd string, entry string, ctx *shared.MatcherContext) shared.SignedPatternMatch {
-			extractors := []shared.Extractor{
-				{
-					Extract: shared.ExtractPackageJson,
-					Path:    "package.json",
-				},
-				{
-					Extract: shared.ExtractGitignore,
-					Path:    ".vscodeignore",
-				},
-				{
-					Extract: shared.ExtractGitignore,
-					Path:    ".gitignore",
-				},
-			}
-
-			internal := shared.SignedPattern{
-				Exclude: []string{".git", ".DS_Store"},
-				Include: []string{},
-			}
-
-			return internal.Ignores(shared.SignedPatternIgnoresOptions{
+		Extractors: extractorsVsce,
+		Ignores: func(o shared.IgnoresOptions) (shared.SignedPatternMatch, error) {
+			return shared.SignedPatternIgnores(shared.SignedPatternIgnoresOptions{
 				PatternFinderOptions: shared.PatternFinderOptions{
-					FS:         fs,
-					Ctx:        ctx,
-					Cwd:        cwd,
-					Extractors: extractors,
+					FS:     o.FS,
+					Ctx:    o.Ctx,
+					Cwd:    o.Cwd,
+					Signal: o.Signal,
+					Root:   ".",
+					Target: o.Target,
 				},
-				Internal: internal,
-				Entry:    entry,
+				Internal: internalVsce,
 			})
 		},
 	},

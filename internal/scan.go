@@ -4,6 +4,7 @@ import (
 	"io/fs"
 	"math"
 	"os"
+	"path"
 
 	"github.com/Mopsgamer/view-ignored/internal/shared"
 )
@@ -17,27 +18,52 @@ const (
 
 type ScanOptions struct {
 	// Provides the matcher to use for scanning.
+	//
+	// # Since 0.6.0
 	Target shared.Target
 
 	// Current working directory to start the scan from.
+	//
 	// Default:
 	// 	"."
+	//
+	// # Since 0.6.0
 	Cwd *string
 
+	// Limits the scan to a subdirectory of `cwd`.
+	// Traversal starts from this subdirectory, but returned paths
+	// remain relative to `cwd`, and ignore files from `cwd`
+	// are still applied.
+	//
+	// Default:
+	//  "."
+	//
+	// # Since 0.6.0
+	Within *string
+
 	// If enabled, the scan will return files that are ignored by the target matchers.
+	//
 	// Default:
 	// 	false
+	//
+	// # Since 0.6.0
 	Invert *bool
 
 	// Starting from depth `0` means you will see
 	// children of the current working directory.
+	//
 	// Default:
 	// 	math.MaxInt
+	//
+	// # Since 0.6.0
 	Depth *int
 
 	// Return as soon as possible.
+	//
 	// Default:
 	// 	nil
+	//
+	// # Since 0.6.0
 	Signal <-chan struct{}
 
 	// Works together with [ScanOptions.Depth].
@@ -79,9 +105,12 @@ type ScanOptions struct {
 }
 
 // Scan the directory for included files based on the provided targets.
-func Scan(options ScanOptions) shared.MatcherContext {
+func Scan(options ScanOptions) (shared.MatcherContext, error) {
 	if options.Cwd == nil {
 		options.Cwd = new(".")
+	}
+	if options.Within == nil {
+		options.Within = new(".")
 	}
 	if options.Depth == nil {
 		options.Depth = new(math.MaxInt)
@@ -106,19 +135,40 @@ func Scan(options ScanOptions) shared.MatcherContext {
 		DepthPaths: make(map[string]int),
 	}
 
+	if options.Target.Init != nil {
+		err := options.Target.Init(shared.InitState{
+			Ctx:    &ctx,
+			Cwd:    *options.Cwd,
+			FS:     options.FS,
+			Signal: options.Signal,
+			Target: &options.Target,
+		})
+		if err != nil {
+			return ctx, err
+		}
+	}
+
+	cwd := options.Cwd
+	normalCwd := shared.Unixify(*cwd)
+	options.Cwd = &normalCwd
+
+	from := shared.Join(*cwd, *options.Within)
+
 	fs.WalkDir(
 		options.FS,
-		*options.Cwd,
-		func(path string, d fs.DirEntry, err error) error {
+		from,
+		func(p string, d fs.DirEntry, err error) error {
+			parentPath := path.Dir(p)
+			p = shared.Relative(normalCwd, shared.Unixify(parentPath)+"/"+d.Name())
 			return walkIncludes(WalkOptions{
 				ScanOptions: options,
 				Ctx:         &ctx,
 				Entry:       d,
-				Path:        path,
+				Path:        p,
 				Error:       err,
 			})
 		},
 	)
 
-	return ctx
+	return ctx, nil
 }

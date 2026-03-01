@@ -1,77 +1,86 @@
 package targets
 
 import (
-	"io/fs"
-
+	"github.com/Mopsgamer/view-ignored/internal/patterns"
+	"github.com/Mopsgamer/view-ignored/internal/shared"
 	"github.com/gookit/color"
 )
 
+var extractorsYarn = []shared.Extractor{
+	{
+		Extract: patterns.ExtractPackageJsonNocase,
+		Path:    "package.json",
+	},
+	{
+		Extract: patterns.ExtractGitignoreNocase,
+		Path:    ".npmignore",
+	},
+	{
+		Extract: patterns.ExtractGitignoreNocase,
+		Path:    ".gitignore",
+	},
+}
+
+var internalIncludeYarn = shared.SignedPattern{
+	Excludes: false,
+	Pattern:  shared.Pattern{},
+	Compiled: []shared.PatternMinimatch{},
+}
+
+var internalYarn = []shared.SignedPattern{
+	internalIncludeYarn,
+	shared.SignedPattern{
+		Excludes: true,
+		Pattern: []string{
+			// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L26
+			"/package.tgz",
+
+			".github",
+			".git",
+			".hg",
+			"node_modules",
+
+			".npmignore",
+			".gitignore",
+
+			".#*",
+			".DS_Store",
+		},
+	}.Compile(shared.StringCompileOptions{}),
+	shared.SignedPattern{
+
+		Excludes: false,
+		Pattern: []string{
+			// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L10
+			"/package.json",
+			"/README",
+			"/README.*",
+			"/LICENSE",
+			"/LICENSE.*",
+			"/LICENCE",
+			"/LICENCE.*",
+		},
+	}.Compile(shared.StringCompileOptions{NoCase: true}),
+}
+
 var Yarn = shared.PrintableTarget{
 	Name:       "Yarn",
-	TargetName: TargetYarn,
+	TargetName: TargetYarn.String(),
 	Icon:       "",
 	Color:      color.Hex("#2E2A65"),
 	Target: shared.Target{
-		Ignores: func(fs fs.FS, cwd string, entry string, ctx *shared.MatcherContext) shared.SignedPatternMatch {
-			extractors := []shared.Extractor{
-				{
-					Extract: shared.ExtractPackageJson,
-					Path:    "package.json",
-				},
-				{
-					Extract: shared.ExtractGitignore,
-					Path:    ".yarnignore",
-				},
-				{
-					Extract: shared.ExtractGitignore,
-					Path:    ".npmignore",
-				},
-				{
-					Extract: shared.ExtractGitignore,
-					Path:    ".gitignore",
-				},
-			}
-
-			internal := shared.SignedPattern{
-				Exclude: []string{
-					".git",
-					".DS_Store",
-					"node_modules",
-					".*.swp",
-					"._*",
-					".DS_Store",
-					".git",
-					".gitignore",
-					".hg",
-					".npmignore",
-					".npmrc",
-					".lock-wscript",
-					".svn",
-					".wafpickle-*",
-					"config.gypi",
-					"CVS",
-					"npm-debug.log",
-					".yarnignore",
-					".yarnrc",
-				},
-				Include: []string{
-					"bin",
-					"package.json",
-					"README*",
-					"LICENSE*",
-					"LICENCE*",
-				},
-			}
-
-			return internal.Ignores(shared.SignedPatternIgnoresOptions{
+		Extractors: extractorsYarn,
+		Ignores: func(o shared.IgnoresOptions) (shared.SignedPatternMatch, error) {
+			return shared.SignedPatternIgnores(shared.SignedPatternIgnoresOptions{
 				PatternFinderOptions: shared.PatternFinderOptions{
-					FS:         fs,
-					Ctx:        ctx,
-					Cwd:        cwd,
-					Extractors: extractors,
+					FS:     o.FS,
+					Ctx:    o.Ctx,
+					Cwd:    o.Cwd,
+					Signal: o.Signal,
+					Root:   ".",
+					Target: o.Target,
 				},
-				Internal: internal,
-				Entry:    entry,
+				Internal: internalYarn,
 			})
 		},
 	},

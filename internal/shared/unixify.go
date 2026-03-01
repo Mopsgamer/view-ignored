@@ -10,6 +10,9 @@ var cwd, _ = os.Getwd()
 var strippedCwd = strip(cwd)
 
 func Unixify(path string) string {
+	if path == "." {
+		return strippedCwd
+	}
 	result := strip(path)
 	if strings.HasPrefix(result, "./") {
 		result = strippedCwd + result[1:]

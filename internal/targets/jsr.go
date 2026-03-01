@@ -1,52 +1,48 @@
 package targets
 
 import (
-	"io/fs"
-
+	"github.com/Mopsgamer/view-ignored/internal/patterns"
 	"github.com/Mopsgamer/view-ignored/internal/shared"
 	"github.com/gookit/color"
 )
 
+var extractorsJsr = []shared.Extractor{
+	{
+		Extract: patterns.ExtractJsrJson,
+		Path:    "jsr.json",
+	},
+	{
+		Extract: patterns.ExtractJsrJsonc,
+		Path:    "jsr.jsonc",
+	},
+}
+
+var internalJsr = []shared.SignedPattern{
+	shared.SignedPattern{
+		Excludes: true,
+		Pattern:  []string{".git", ".DS_Store"},
+	}.Compile(shared.StringCompileOptions{}),
+}
+
+// # Since 0.6.0
 var Jsr = shared.PrintableTarget{
 	Name:       "JSR",
 	TargetName: TargetJsr.String(),
 	Icon:       "",
 	Color:      color.Hex("#F5DD1E"),
 	Target: shared.Target{
-		Ignores: func(fs fs.FS, cwd string, entry string, ctx *shared.MatcherContext) shared.SignedPatternMatch {
-			extractors := []shared.Extractor{
-				{
-					Extract: shared.ExtractJsrJson,
-					Path:    "deno.json",
-				},
-				{
-					Extract: shared.ExtractJsrJsonc,
-					Path:    "deno.jsonc",
-				},
-				{
-					Extract: shared.ExtractJsrJson,
-					Path:    "jsr.json",
-				},
-				{
-					Extract: shared.ExtractJsrJsonc,
-					Path:    "jsr.jsonc",
-				},
-			}
-
-			internal := shared.SignedPattern{
-				Exclude: []string{".git", ".DS_Store"},
-				Include: []string{},
-			}
-
-			return internal.Ignores(shared.SignedPatternIgnoresOptions{
+		Extractors: extractorsJsr,
+		Ignores: func(o shared.IgnoresOptions) (shared.SignedPatternMatch, error) {
+			return shared.SignedPatternIgnores(shared.SignedPatternIgnoresOptions{
 				PatternFinderOptions: shared.PatternFinderOptions{
-					FS:         fs,
-					Ctx:        ctx,
-					Cwd:        cwd,
-					Extractors: extractors,
+					FS:     o.FS,
+					Ctx:    o.Ctx,
+					Cwd:    o.Cwd,
+					Signal: o.Signal,
+					Root:   ".",
+					Target: o.Target,
 				},
-				Internal: internal,
-				Entry:    entry,
+				Internal: internalJsr,
 			})
 		},
 	},

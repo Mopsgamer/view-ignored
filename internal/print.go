@@ -22,7 +22,11 @@ type PrintOptions struct {
 
 func Print(targetName targets.TargetName, options *PrintOptions) bool {
 	if *options.Paths {
-		ctx := Scan(options.ScanOptions)
+		ctx, err := Scan(options.ScanOptions)
+		if err != nil {
+			fmt.Println(err)
+			return false
+		}
 		errors := uniqueValues(ctx.External)
 		perrors := pluralizeErrors(len(errors))
 		if len(errors) > 0 {
@@ -55,7 +59,11 @@ func Print(targetName targets.TargetName, options *PrintOptions) bool {
 	fmt.Println(head + "..")
 
 	start := time.Now()
-	ctx := Scan(options.ScanOptions)
+	ctx, err := Scan(options.ScanOptions)
+	if err != nil {
+		fmt.Println(err)
+		return false
+	}
 	errors := uniqueValues(ctx.External)
 	perrors := pluralizeErrors(len(errors))
 	if len(errors) > 0 {

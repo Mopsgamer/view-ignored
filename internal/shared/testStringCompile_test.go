@@ -7,7 +7,7 @@ import (
 )
 
 func stringCompile(pattern string) PatternMinimatch {
-	return StringCompile(pattern, []string{}, StringCompileOptions{NoCase: false})
+	return StringCompile(pattern, []string{}, StringCompileOptions{})
 }
 
 func TestStringCompile(t *testing.T) {

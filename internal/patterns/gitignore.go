@@ -14,6 +14,21 @@ import (
 func ExtractGitignore(source *shared.Source, content []byte, _ *shared.MatcherContext) shared.ExtractorNext {
 	extractGitignore(source, content)
 	for _, element := range source.Pattern {
+		element.Compile(shared.StringCompileOptions{})
+	}
+	return shared.ExtractorBreak
+}
+
+var _ shared.ExtractorFn = (shared.ExtractorFn)(ExtractGitignore)
+
+// Extracts and compiles patterns from the file.
+//
+// See [SignedPattern.Compile].
+//
+// # Since 0.8.0
+func ExtractGitignoreNocase(source *shared.Source, content []byte, _ *shared.MatcherContext) shared.ExtractorNext {
+	extractGitignore(source, content)
+	for _, element := range source.Pattern {
 		element.Compile(shared.StringCompileOptions{NoCase: true})
 	}
 	return shared.ExtractorBreak

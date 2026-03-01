@@ -38,10 +38,21 @@ func StringCompile(
 	if !strings.HasSuffix(pattern, "/**") {
 		pattern = pattern + "/**"
 	}
-	return PatternMinimatch{
-		Re: func(path string) (bool, error) {
+
+	var re func(path string) (bool, error)
+	if options.NoCase {
+		pattern = strings.ToLower(pattern)
+		re = func(path string) (bool, error) {
+			path = strings.ToLower(path)
 			return doublestar.Match(pattern, path)
-		},
+		}
+	} else {
+		re = func(path string) (bool, error) {
+			return doublestar.Match(pattern, path)
+		}
+	}
+	return PatternMinimatch{
+		Re:             re,
 		Pattern:        original,
 		PatternContext: context,
 	}

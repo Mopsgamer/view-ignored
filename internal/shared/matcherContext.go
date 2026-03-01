@@ -23,7 +23,7 @@ type MatcherContext struct {
 	// this property will contain an array of failed sources.
 	//
 	// # Since 0.6.0
-	Failed []Source
+	Failed []*Source
 
 	// Maps directory paths to the quantity of files they contain.
 	//

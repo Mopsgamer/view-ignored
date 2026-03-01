@@ -12,7 +12,30 @@ type NodeJsManifest struct {
 	Files *[]string `json:"files"`
 }
 
+// Extracts and compiles patterns from the file.
+//
+// See [SignedPattern.Compile].
+//
+// # Since 0.6.0
 func ExtractPackageJson(source *shared.Source, content []byte, _ *shared.MatcherContext) shared.ExtractorNext {
+	result := extractPackageJson(source, content)
+	if result == shared.ExtractorBreak {
+		for _, element := range source.Pattern {
+			element.Compile(shared.StringCompileOptions{})
+		}
+	}
+	if result == ExtractorError {
+		return shared.ExtractorBreak
+	}
+	return result
+}
+
+// Extracts and compiles patterns from the file.
+//
+// See [SignedPattern.Compile].
+//
+// # Since 0.8.0
+func ExtractPackageJsonNocase(source *shared.Source, content []byte, _ *shared.MatcherContext) shared.ExtractorNext {
 	result := extractPackageJson(source, content)
 	if result == shared.ExtractorBreak {
 		for _, element := range source.Pattern {

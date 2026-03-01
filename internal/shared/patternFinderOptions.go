@@ -26,7 +26,7 @@ type PatternFinderOptions struct {
 	// The Target implementation.
 	//
 	// # Since 0.6.0
-	Target Target
+	Target *Target
 	// Initial search directory.
 	// Relative to the `cwd` path or absolute path.
 	//

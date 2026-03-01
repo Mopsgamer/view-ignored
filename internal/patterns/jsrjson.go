@@ -16,13 +16,30 @@ type JsrManifest struct {
 }
 
 func ExtractJsrJson(source *shared.Source, content []byte, ctx *shared.MatcherContext) shared.ExtractorNext {
+	r := extractJsrJson(source, content, ctx)
+	for _, element := range source.Pattern {
+		element.Compile(shared.StringCompileOptions{})
+	}
+	return r
+}
+
+var _ shared.ExtractorFn = (shared.ExtractorFn)(ExtractJsrJson)
+
+func ExtractJsrJsonc(source *shared.Source, content []byte, ctx *shared.MatcherContext) shared.ExtractorNext {
+	content = StripJSONC(content)
+	return ExtractJsrJson(source, content, ctx)
+}
+
+var _ shared.ExtractorFn = (shared.ExtractorFn)(ExtractJsrJsonc)
+
+func extractJsrJson(source *shared.Source, content []byte, ctx *shared.MatcherContext) shared.ExtractorNext {
 	dist := JsrManifest{}
 	include := shared.SignedPattern{}
 	exclude := shared.SignedPattern{Excludes: true}
 	err := json.Unmarshal(content, &dist)
 	if err != nil {
 		source.Error = err
-		ctx.Failed = true
+		ctx.Failed = append(ctx.Failed, source)
 		return shared.ExtractorBreak
 	}
 
@@ -42,20 +59,14 @@ func ExtractJsrJson(source *shared.Source, content []byte, ctx *shared.MatcherCo
 		include.Pattern = append(include.Pattern, *dist.Publish.Include...)
 	}
 
-	for _, element := range source.Pattern {
-		element.Compile(shared.StringCompileOptions{NoCase: false})
+	for _, si := range []shared.SignedPattern{include, exclude} {
+		for _, pattern := range si.Pattern {
+			source.PushNegatable(pattern, true, include, exclude)
+		}
 	}
+	source.Pattern = append(source.Pattern, include, exclude)
 	return shared.ExtractorBreak
 }
-
-var _ shared.ExtractorFn = (shared.ExtractorFn)(ExtractJsrJson)
-
-func ExtractJsrJsonc(source *shared.Source, content []byte, ctx *shared.MatcherContext) shared.ExtractorNext {
-	content = StripJSONC(content)
-	return ExtractJsrJson(source, content, ctx)
-}
-
-var _ shared.ExtractorFn = (shared.ExtractorFn)(ExtractJsrJsonc)
 
 func StripJSONC(src []byte) []byte {
 	out := make([]byte, 0, len(src))

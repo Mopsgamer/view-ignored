@@ -63,6 +63,7 @@ func walkIncludes(options WalkOptions) error {
 					Cwd:    cwd,
 					Ctx:    ctx,
 					Signal: signal,
+					Target: &target,
 				},
 				Entry: path,
 			})
@@ -101,6 +102,7 @@ func walkIncludes(options WalkOptions) error {
 			Cwd:    cwd,
 			Ctx:    ctx,
 			Signal: signal,
+			Target: &target,
 		},
 		Entry: path,
 	})

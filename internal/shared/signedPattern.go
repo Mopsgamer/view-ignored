@@ -212,7 +212,7 @@ func signedPatternCompiledMatchExternal(
 		if err != nil {
 			source.Error = err
 			if options.Ctx != nil {
-				options.Ctx.Failed = append(options.Ctx.Failed, source)
+				options.Ctx.Failed = append(options.Ctx.Failed, &source)
 			}
 			return SignedPatternMatch_Source{
 				SignedPatternMatch_: SignedPatternMatch_{
@@ -254,10 +254,8 @@ func SignedPatternIgnores(
 	sourcep := options.Ctx.External[parent]
 
 	if sourcep == nil {
-		o := options.PatternFinderOptions
-		o.Root = options.Root
 		err := ResolveSources(ResolveSourcesOptions{
-			PatternFinderOptions: o,
+			PatternFinderOptions: options.PatternFinderOptions,
 			Dir:                  parent,
 		})
 		if err != nil {

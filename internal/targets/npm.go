@@ -8,11 +8,7 @@ import (
 	"github.com/gookit/color"
 )
 
-func init() {
-	NPM.Target.Ignores = ignores
-}
-
-var extractors = []shared.Extractor{
+var extractorsNpm = []shared.Extractor{
 	{
 		Extract: patterns.ExtractPackageJson,
 		Path:    "package.json",
@@ -27,14 +23,14 @@ var extractors = []shared.Extractor{
 	},
 }
 
-var internalInclude = shared.SignedPattern{
+var internalIncludeNpm = shared.SignedPattern{
 	Excludes: false,
 	Pattern:  shared.Pattern{}, // filled within init
 	Compiled: []shared.PatternMinimatch{},
 }
 
-var internal = []shared.SignedPattern{
-	internalInclude,
+var internalNpm = []shared.SignedPattern{
+	internalIncludeNpm,
 	shared.SignedPattern{
 		Excludes: true,
 		Pattern: shared.Pattern{
@@ -67,7 +63,7 @@ var internal = []shared.SignedPattern{
 			"/pnpm-lock.yaml",
 			"/bun.lockb",
 		},
-	}.Compile(shared.StringCompileOptions{NoCase: false}),
+	}.Compile(shared.StringCompileOptions{}),
 	shared.SignedPattern{
 		Excludes: false,
 		Pattern: shared.Pattern{
@@ -83,21 +79,7 @@ var internal = []shared.SignedPattern{
 			"LICENSE.*",
 			"LICENCE.*",
 		},
-	}.Compile(shared.StringCompileOptions{NoCase: false}),
-}
-
-func ignores(o shared.IgnoresOptions) (shared.SignedPatternMatch, error) {
-	return shared.SignedPatternIgnores(shared.SignedPatternIgnoresOptions{
-		PatternFinderOptions: shared.PatternFinderOptions{
-			FS:     o.FS,
-			Ctx:    o.Ctx,
-			Cwd:    o.Cwd,
-			Signal: o.Signal,
-			Root:   ".",
-			Target: NPM.Target,
-		},
-		Internal: internal,
-	})
+	}.Compile(shared.StringCompileOptions{}),
 }
 
 var NPM = shared.PrintableTarget{
@@ -107,7 +89,7 @@ var NPM = shared.PrintableTarget{
 	Icon:       "",
 	Color:      color.Hex("#CA0404"),
 	Target: shared.Target{
-		Extractors: extractors,
+		Extractors: extractorsNpm,
 		Init: func(options shared.InitState) error {
 			var content []byte
 			normalCwd := shared.Unixify(options.Cwd)
@@ -129,6 +111,19 @@ var NPM = shared.PrintableTarget{
 			// signedPatternCompile(internalInclude, { nocase: true })
 
 			return nil
+		},
+		Ignores: func(o shared.IgnoresOptions) (shared.SignedPatternMatch, error) {
+			return shared.SignedPatternIgnores(shared.SignedPatternIgnoresOptions{
+				PatternFinderOptions: shared.PatternFinderOptions{
+					FS:     o.FS,
+					Ctx:    o.Ctx,
+					Cwd:    o.Cwd,
+					Signal: o.Signal,
+					Root:   ".",
+					Target: o.Target,
+				},
+				Internal: internalNpm,
+			})
 		},
 	},
 }

@@ -21,7 +21,10 @@ func TestScanGitSelf(t *testing.T) {
 	if err != nil {
 		t.Fatalf("gitFiles error: %v", err)
 	}
-	ctx := internal.Scan(internal.ScanOptions{Target: targets.Git.Target, FastInternal: new(true)})
+	ctx, err := internal.Scan(internal.ScanOptions{Target: targets.Git.Target, FastInternal: new(true)})
+	if !assert.NoError(err) {
+		return
+	}
 	if !assert.Empty(ctx.Failed) {
 		return
 	}

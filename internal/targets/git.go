@@ -1,12 +1,30 @@
 package targets
 
 import (
-	"io/fs"
-
+	"github.com/Mopsgamer/view-ignored/internal/patterns"
 	"github.com/Mopsgamer/view-ignored/internal/shared"
 	"github.com/gookit/color"
 )
 
+var extractorsGit = []shared.Extractor{
+	{
+		Extract: patterns.ExtractGitignore,
+		Path:    ".gitignore",
+	},
+	{
+		Extract: patterns.ExtractGitignore,
+		Path:    ".git/info/exclude",
+	},
+}
+
+var internalGit = []shared.SignedPattern{
+	shared.SignedPattern{
+		Excludes: true,
+		Pattern:  []string{".git", ".DS_Store"},
+	}.Compile(shared.StringCompileOptions{}),
+}
+
+// # Since 0.6.0
 var Git = shared.PrintableTarget{
 	Name:       "Git",
 	TargetName: TargetGit.String(),
@@ -14,32 +32,18 @@ var Git = shared.PrintableTarget{
 	Icon:       "",
 	Color:      color.Hex("#F44E28"),
 	Target: shared.Target{
-		Ignores: func(fs fs.FS, cwd string, entry string, ctx *shared.MatcherContext) shared.SignedPatternMatch {
-			extractors := []shared.Extractor{
-				{
-					Extract: shared.ExtractGitignore,
-					Path:    ".gitignore",
-				},
-				{
-					Extract: shared.ExtractGitignore,
-					Path:    ".git/info/exclude",
-				},
-			}
-
-			internal := shared.SignedPattern{
-				Exclude: []string{".git", ".DS_Store"},
-				Include: []string{},
-			}
-
-			return internal.Ignores(shared.SignedPatternIgnoresOptions{
+		Extractors: extractorsGit,
+		Ignores: func(o shared.IgnoresOptions) (shared.SignedPatternMatch, error) {
+			return shared.SignedPatternIgnores(shared.SignedPatternIgnoresOptions{
 				PatternFinderOptions: shared.PatternFinderOptions{
-					FS:         fs,
-					Ctx:        ctx,
-					Cwd:        cwd,
-					Extractors: extractors,
+					FS:     o.FS,
+					Ctx:    o.Ctx,
+					Cwd:    o.Cwd,
+					Signal: o.Signal,
+					Root:   ".",
+					Target: o.Target,
 				},
-				Internal: internal,
-				Entry:    entry,
+				Internal: internalGit,
 			})
 		},
 	},
