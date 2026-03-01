@@ -20,4 +20,4 @@ type IgnoresOptions struct {
 // See https://github.com/Mopsgamer/view-ignored/tree/main/src/targets for usage examples.
 //
 // # Since 0.6.0
-type Ignores = func(options IgnoresOptions) SignedPatternMatch
+type Ignores = func(options IgnoresOptions) (SignedPatternMatch, error)

@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"path"
 	"slices"
+	"strings"
 )
 
 // See [ResolveSources].
@@ -31,7 +32,8 @@ func ResolveSources(options ResolveSourcesOptions) error {
 		return nil
 	}
 
-	var source SourceProvider
+	var sourcep SourceProvider
+	var err error
 	noSourceDirList := []string{dir}
 
 	if dir != "." {
@@ -55,7 +57,7 @@ func ResolveSources(options ResolveSourcesOptions) error {
 			}
 			noSourceDirList = append(noSourceDirList, dir)
 			parent := path.Dir(dir)
-			if dir == dir {
+			if dir == parent {
 				break
 			}
 			dir = parent
@@ -67,7 +69,7 @@ func ResolveSources(options ResolveSourcesOptions) error {
 	// find non-cwd source [root > cwd) and populate [cwd > ... > dir]
 
 	preCwdSegments := []string{}
-	{
+	if strings.HasPrefix(options.Root, "/") {
 		c := path.Dir(options.Cwd)
 		for {
 			select {
@@ -84,17 +86,20 @@ func ResolveSources(options ResolveSourcesOptions) error {
 			c = parent
 		}
 		slices.Reverse(preCwdSegments)
-	}
 
-	source = findSourceForAbsoluteDirs(preCwdSegments, options.Ctx, options.FS, options.Target, options.Signal)
-	if source != nil && !(*source).IsNone() {
-		for _, noSourceDir := range noSourceDirList {
-			select {
-			case <-options.Signal:
-				return fs.SkipAll
-			default:
+		sourcep, err = findSourceForAbsoluteDirs(preCwdSegments, options.Ctx, options.FS, options.Target, options.Signal)
+		if err != nil {
+			return err
+		}
+		if sourcep != nil && !sourcep.IsNone() {
+			for _, noSourceDir := range noSourceDirList {
+				select {
+				case <-options.Signal:
+					return fs.SkipAll
+				default:
+				}
+				options.Ctx.External[noSourceDir] = sourcep
 			}
-			options.Ctx.External[noSourceDir] = source
 		}
 	}
 
@@ -102,15 +107,18 @@ func ResolveSources(options ResolveSourcesOptions) error {
 	for _, rel := range noSourceDirList {
 		absPaths = append(absPaths, path.Join(options.Cwd, rel))
 	}
-	source = findSourceForAbsoluteDirs(absPaths, options.Ctx, options.FS, options.Target, options.Signal)
-	if source != nil {
+	sourcep, err = findSourceForAbsoluteDirs(absPaths, options.Ctx, options.FS, options.Target, options.Signal)
+	if err != nil {
+		return err
+	}
+	if sourcep != nil {
 		for _, noSourceDir := range noSourceDirList {
 			select {
 			case <-options.Signal:
 				return fs.SkipAll
 			default:
 			}
-			options.Ctx.External[noSourceDir] = source
+			options.Ctx.External[noSourceDir] = sourcep
 		}
 	}
 	return nil
@@ -118,7 +126,7 @@ func ResolveSources(options ResolveSourcesOptions) error {
 
 func findSourceForAbsoluteDirs(
 	paths []string,
-	ctx MatcherContext,
+	ctx *MatcherContext,
 	fs_ fs.FS,
 	target Target,
 	signal chan struct{},
@@ -130,16 +138,16 @@ func findSourceForAbsoluteDirs(
 				return nil, fs.SkipAll
 			default:
 			}
-			s := tryExtractor(parent, fs_, ctx, extractor)
-			if s.isNone() {
+			sourcep := tryExtractor(parent, fs_, ctx, extractor)
+			if sourcep == nil || sourcep.IsNone() {
 				continue
 			}
-			source, ok := s.(Source)
+			source, ok := sourcep.(Source)
 			if ok {
 				if source.Error != nil {
 					ctx.Failed = append(ctx.Failed, source)
 				}
-				return s
+				return source, nil
 			}
 		}
 	}
@@ -149,17 +157,17 @@ func findSourceForAbsoluteDirs(
 func tryExtractor(
 	cwd string,
 	fs_ fs.FS,
-	ctx MatcherContext,
+	ctx *MatcherContext,
 	extractor Extractor,
 ) SourceProvider {
-	abs := unixify(cwd)
-	if abs.endsWith("/") {
-		abs += extractor.path
+	abs := Unixify(cwd)
+	if strings.HasSuffix(abs, "/") {
+		abs += extractor.Path
 	} else {
-		abs += "/" + extractor.path
+		abs += "/" + extractor.Path
 	}
-	path := relative(cwd, abs)
-	name := path[path.lastIndexOf("/")+1:]
+	path := Relative(cwd, abs)
+	name := Base(path)
 
 	newSource := Source{
 		Name:     name,
@@ -169,7 +177,7 @@ func tryExtractor(
 		Error:    nil,
 	}
 
-	buff, err := fs_.ReadFile(abs)
+	buff, err := fs.ReadFile(fs_, abs)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return SourceNone{}
@@ -178,7 +186,7 @@ func tryExtractor(
 		return newSource
 	}
 
-	act := extractor.Extract(&newSource, buff, &ctx)
+	act := extractor.Extract(&newSource, buff, ctx)
 	if act == ExtractorContinue {
 		return SourceNone{}
 	}

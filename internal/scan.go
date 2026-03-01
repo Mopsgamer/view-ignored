@@ -5,8 +5,7 @@ import (
 	"math"
 	"os"
 
-	"github.com/Mopsgamer/view-ignored/internal/patterns"
-	"github.com/Mopsgamer/view-ignored/internal/targets"
+	"github.com/Mopsgamer/view-ignored/internal/shared"
 )
 
 type DepthMode int
@@ -18,7 +17,7 @@ const (
 
 type ScanOptions struct {
 	// Provides the matcher to use for scanning.
-	Target targets.Target
+	Target shared.Target
 
 	// Current working directory to start the scan from.
 	// Default:
@@ -80,7 +79,7 @@ type ScanOptions struct {
 }
 
 // Scan the directory for included files based on the provided targets.
-func Scan(options ScanOptions) patterns.MatcherContext {
+func Scan(options ScanOptions) shared.MatcherContext {
 	if options.Cwd == nil {
 		options.Cwd = new(".")
 	}
@@ -101,9 +100,9 @@ func Scan(options ScanOptions) patterns.MatcherContext {
 		options.FS = os.DirFS(".")
 	}
 
-	ctx := patterns.MatcherContext{
+	ctx := shared.MatcherContext{
 		Paths:      make(map[string]struct{}),
-		External:   make(map[string]*patterns.Source),
+		External:   make(map[string]shared.SourceProvider),
 		DepthPaths: make(map[string]int),
 	}
 

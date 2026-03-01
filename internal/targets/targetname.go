@@ -22,7 +22,7 @@ func (t TargetName) Target() shared.PrintableTarget {
 	case TargetGit:
 		matcher = Git
 	case TargetNpm:
-		matcher = Npm
+		matcher = NPM
 	case TargetVsce:
 		matcher = Vsce
 	case TargetYarn:

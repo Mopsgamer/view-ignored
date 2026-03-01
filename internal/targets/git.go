@@ -10,7 +10,7 @@ import (
 var Git = shared.PrintableTarget{
 	Name:       "Git",
 	TargetName: TargetGit.String(),
-	Check:      "git ls-tree -r <git-branch-name> --name-only",
+	Check:      "git ls-files --others --exclude-standard --cached",
 	Icon:       "",
 	Color:      color.Hex("#F44E28"),
 	Target: shared.Target{

@@ -247,44 +247,48 @@ func signedPatternCompiledMatchExternal(
 // Populates unknown sources using [ResolveSources].
 //
 // # Since 0.6.0
-func (ointernal SignedPattern) Ignores(
+func SignedPatternIgnores(
 	options SignedPatternIgnoresOptions,
-) SignedPatternMatch {
+) (SignedPatternMatch, error) {
 	parent := path.Dir(options.Entry)
-	source := options.Ctx.External[parent]
+	sourcep := options.Ctx.External[parent]
 
-	if source == nil {
+	if sourcep == nil {
 		o := options.PatternFinderOptions
 		o.Root = options.Root
-		ResolveSources(ResolveSourcesOptions{
+		err := ResolveSources(ResolveSourcesOptions{
 			PatternFinderOptions: o,
 			Dir:                  parent,
 		})
-		source = options.Ctx.External[parent]
+		if err != nil {
+			return nil, err
+		}
+		sourcep = options.Ctx.External[parent]
 	}
 
-	if source == nil || source == ExtractorContinue {
+	if sourcep == nil || sourcep.IsNone() {
 		return SignedPatternMatch_{
 			Kind:    MatchKindMissingSource,
 			Ignored: false,
-		}
+		}, nil
 	}
 
-	if source != nil && source.Error != nil {
+	source := sourcep.(Source)
+	if source.Error != nil {
 		return SignedPatternMatch_Source{
 			SignedPatternMatch_: SignedPatternMatch_{
 				Kind:    MatchKindBrokenSource,
 				Ignored: true,
 			},
-			Source: *source,
-		}
+			Source: source,
+		}, nil
 	}
 
 	internalMatch := signedPatternCompiledMatchInternal(options, options.Entry)
 	if internalMatch != nil {
-		return internalMatch
+		return internalMatch, nil
 	}
 
 	externalMatch := signedPatternCompiledMatchExternal(options, options.Entry, source)
-	return externalMatch
+	return externalMatch, nil
 }

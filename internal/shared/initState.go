@@ -15,9 +15,9 @@ type InitState struct {
 	// The context to populate.
 	//
 	// # Since 0.6.0
-	Ctx MatcherContext
+	Ctx *MatcherContext
 	// Return as soon as possible.
 	//
 	// # Since 0.7.1
-	Signal chan struct{}
+	Signal <-chan struct{}
 }

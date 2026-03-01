@@ -35,5 +35,5 @@ type PatternFinderOptions struct {
 	// Return as soon as possible.
 	//
 	// # Since 0.7.1
-	Signal chan struct{}
+	Signal <-chan struct{}
 }

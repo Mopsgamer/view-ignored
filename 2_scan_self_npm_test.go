@@ -23,8 +23,8 @@ func TestScanNPMSelfFlat(t *testing.T) {
 	if err != nil {
 		t.Fatalf("npmTotalFiles error: %v", err)
 	}
-	ctx := internal.Scan(internal.ScanOptions{Target: targets.Npm.Target, FastInternal: new(true)})
-	if !assert.False(ctx.Failed) {
+	ctx := internal.Scan(internal.ScanOptions{Target: targets.NPM.Target, FastInternal: new(true)})
+	if !assert.Empty(ctx.Failed) {
 		return
 	}
 	if !assert.NotEmpty(ctx.Paths) {

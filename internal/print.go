@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Mopsgamer/view-ignored/internal/patterns"
+	"github.com/Mopsgamer/view-ignored/internal/shared"
 	"github.com/Mopsgamer/view-ignored/internal/targets"
 	"github.com/gookit/color"
 )
@@ -30,7 +30,7 @@ func Print(targetName targets.TargetName, options *PrintOptions) bool {
 			for _, err := range errors {
 				fmt.Println(err)
 			}
-			if ctx.Failed {
+			if len(ctx.Failed) > 0 {
 				return false
 			}
 		}
@@ -63,7 +63,7 @@ func Print(targetName targets.TargetName, options *PrintOptions) bool {
 		for _, err := range errors {
 			fmt.Println(color.Red.Sprint(err))
 		}
-		if ctx.Failed {
+		if len(ctx.Failed) > 0 {
 			return false
 		}
 	}
@@ -143,8 +143,12 @@ func colorNumberStr(s string) string {
 	return out.String()
 }
 
-func uniqueValues(m map[string]*patterns.Source) (result []error) {
-	for _, source := range m {
+func uniqueValues(m map[string]shared.SourceProvider) (result []error) {
+	for _, sourcep := range m {
+		if sourcep == nil {
+			continue
+		}
+		source := sourcep.(shared.Source)
 		if source.Error == nil {
 			continue
 		}
