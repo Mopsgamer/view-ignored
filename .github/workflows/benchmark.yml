@@ -1,10 +1,10 @@
-name: Prerelease
+name: Benchmark
 
 on:
   workflow_dispatch:
 
 jobs:
-  prerelease:
+  benchmark:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -27,8 +27,18 @@ jobs:
       - name: Bun install
         run: bun install
 
-      - name: Run prerelease
+      - name: Build prod
         env:
           PATH: /usr/local/bin:/usr/bin:/bin
         run: |
-          bun run prerelease
+          bun run prod
+
+      - name: Benchmark Bun
+        env:
+          PATH: /usr/local/bin:/usr/bin:/bin
+        run: |
+          bun --expose-gc scripts/benchmark.js
+
+      - name: Benchmark Node
+        run: |
+          node --expose-gc scripts/benchmark.js
