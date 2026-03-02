@@ -6,7 +6,7 @@ import type { MatcherContext } from "./matcherContext.js"
 import type { Rule } from "./rule.js"
 
 import { ruleCompile } from "./resolveSources.js"
-import { sourcePushNegatable, type Source } from "./source.js"
+import { resolveNegatable, type Source } from "./source.js"
 
 const jsrManifest = type({
 	exclude: "string[]?",
@@ -76,7 +76,7 @@ function extract(source: Source, content: Buffer, ctx: MatcherContext): void {
 
 	for (const si of [include, exclude]) {
 		for (const pattern of si.pattern) {
-			sourcePushNegatable(pattern, true, include, exclude)
+			resolveNegatable(pattern, true, include, exclude)
 		}
 	}
 	source.pattern.push(include, exclude)

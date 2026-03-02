@@ -2,7 +2,7 @@ import type { ExtractorFn } from "./extractor.js"
 import type { Rule } from "./rule.js"
 
 import { ruleCompile } from "./resolveSources.js"
-import { sourcePushNegatable, type Source } from "./source.js"
+import { resolveNegatable, type Source } from "./source.js"
 
 /**
  * Extracts and compiles patterns from the file.
@@ -47,7 +47,7 @@ function extract(source: Source, content: Buffer) {
 			line = line.substring(-cdx)
 		}
 
-		sourcePushNegatable(line, false, include, exclude)
+		resolveNegatable(line, false, include, exclude)
 	}
 	source.pattern.push(include, exclude)
 }

@@ -52,13 +52,16 @@ export type Source = {
 }
 
 /**
- * Adds a negatable pattern to the source's pattern lists.
+ * Adds a negatable pattern to the source's rules.
  * Strips the leading '!' for include patterns,
  * and adds to exclude patterns otherwise.
  *
+ * Expecting the rules
+ * to be added into the source and then compiled.
+ *
  * @since 0.6.0
  */
-export function sourcePushNegatable(
+export function resolveNegatable(
 	pattern: string,
 	invert: boolean,
 	include: Rule,

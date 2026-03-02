@@ -5,7 +5,7 @@ import type { Rule } from "./rule.js"
 
 import { npmManifestParse } from "../targets/npmManifest.js"
 import { ruleCompile } from "./resolveSources.js"
-import { sourcePushNegatable, type Source } from "./source.js"
+import { resolveNegatable, type Source } from "./source.js"
 
 /**
  * Extracts and compiles patterns from the file.
@@ -58,7 +58,7 @@ function extract(source: Source, content: Buffer): void | "error" | "none" {
 	}
 
 	for (const pattern of dist.files) {
-		sourcePushNegatable(pattern, true, include, exclude)
+		resolveNegatable(pattern, true, include, exclude)
 	}
 	source.pattern.push(include, exclude)
 }

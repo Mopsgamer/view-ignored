@@ -23,6 +23,7 @@ and this project adheres to
 - Rename `Pattern` -> `PatternList`.
 - Rename `patternCompile` -> `patternListCompile`.
 - Rename `stringCompile` -> `patternCompile`.
+- Rename `sourcePushNegatable` -> `resolveNegatable`.
 
 ## [0.9.1] - 2026-02-28
 
