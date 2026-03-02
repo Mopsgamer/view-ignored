@@ -44,7 +44,7 @@ export interface Extractor {
  * Options for finding and extracting patterns from source files.
  *
  * @see {@link resolveSources}
- * @see {@link signedPatternIgnores}
+ * @see {@link ruleTest}
  *
  * @since 0.6.0
  */
@@ -73,13 +73,6 @@ export interface PatternFinderOptions {
 	 * @since 0.6.0
 	 */
 	target: Target
-	/**
-	 * Initial search directory.
-	 * Relative to the `cwd` path or absolute path.
-	 *
-	 * @since 0.6.0
-	 */
-	root: string
 	/**
 	 * Return as soon as possible.
 	 *

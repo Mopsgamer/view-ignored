@@ -4,9 +4,9 @@ import type { Target } from "./target.js"
 
 import {
 	type Extractor,
-	signedPatternIgnores,
-	type SignedPattern,
-	signedPatternCompile,
+	ruleTest,
+	type Rule,
+	ruleCompile,
 	extractJsrJson,
 	extractJsrJsonc,
 	extractPackageJson,
@@ -37,8 +37,8 @@ const extractors: Extractor[] = [
 	},
 ]
 
-const internal: SignedPattern[] = [
-	signedPatternCompile({
+const internal: Rule[] = [
+	ruleCompile({
 		excludes: true,
 		pattern: [".git", ".DS_Store"],
 		compiled: null,
@@ -49,6 +49,9 @@ const internal: SignedPattern[] = [
  * @since 0.8.1
  */
 export const Deno: Target = {
+	internalRules: internal,
+	extractors,
+	root: ".",
 	async init({ fs, cwd }) {
 		let content: Buffer
 		const normalCwd = unixify(cwd)
@@ -72,13 +75,5 @@ export const Deno: Target = {
 			throw new Error("Invalid '" + path! + "': " + dist.summary, { cause: dist })
 		}
 	},
-	extractors,
-	ignores(o) {
-		return signedPatternIgnores({
-			...o,
-			internal,
-			root: ".",
-			target: Deno,
-		})
-	},
+	ignores: ruleTest,
 }

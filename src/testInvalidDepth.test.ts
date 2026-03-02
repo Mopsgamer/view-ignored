@@ -4,7 +4,7 @@ import { scan } from "./scan.js"
 import { Git } from "./targets/git.js"
 
 describe("Git", () => {
-	const signal = AbortSignal.timeout(1)
+	const signal = AbortSignal.timeout(0)
 	test("depth -1 should throw", async () => {
 		expect(() => scan({ target: Git, depth: -1, signal })).toThrow({
 			name: "TypeError",

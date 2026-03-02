@@ -3,9 +3,9 @@ import stripJsonComments from "strip-json-comments"
 
 import type { ExtractorFn } from "./extractor.js"
 import type { MatcherContext } from "./matcherContext.js"
-import type { SignedPattern } from "./signedPattern.js"
+import type { Rule } from "./rule.js"
 
-import { signedPatternCompile } from "./resolveSources.js"
+import { ruleCompile } from "./resolveSources.js"
 import { sourcePushNegatable, type Source } from "./source.js"
 
 const jsrManifest = type({
@@ -29,7 +29,7 @@ const parse = type("string")
 export function extractJsrJson(source: Source, content: Buffer, ctx: MatcherContext): void {
 	extract(source, content, ctx)
 	for (const element of source.pattern) {
-		signedPatternCompile(element)
+		ruleCompile(element)
 	}
 }
 
@@ -38,7 +38,7 @@ extractJsrJson satisfies ExtractorFn
 /**
  * Extracts and compiles patterns from the file.
  *
- * @see {@link signedPatternCompile}
+ * @see {@link ruleCompile}
  *
  * @since 0.6.0
  */
@@ -50,8 +50,8 @@ extractJsrJsonc satisfies ExtractorFn
 
 function extract(source: Source, content: Buffer, ctx: MatcherContext): void {
 	const dist = parse(content.toString())
-	const include: SignedPattern = { compiled: null, excludes: false, pattern: [] }
-	const exclude: SignedPattern = { compiled: null, excludes: true, pattern: [] }
+	const include: Rule = { compiled: null, excludes: false, pattern: [] }
+	const exclude: Rule = { compiled: null, excludes: true, pattern: [] }
 	if (dist instanceof type.errors) {
 		source.error = new Error("Invalid '" + source.path + "': " + dist.summary, { cause: dist })
 		ctx.failed.push(source)

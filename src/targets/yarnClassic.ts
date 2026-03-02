@@ -4,9 +4,9 @@ import type { Target } from "./target.js"
 
 import {
 	type Extractor,
-	signedPatternIgnores,
-	type SignedPattern,
-	signedPatternCompile,
+	ruleTest,
+	type Rule,
+	ruleCompile,
 	extractPackageJsonNocase,
 	extractGitignoreNocase,
 } from "../patterns/index.js"
@@ -32,8 +32,8 @@ const extractors: Extractor[] = [
 	},
 ]
 
-const internal: SignedPattern[] = [
-	signedPatternCompile(
+const internal: Rule[] = [
+	ruleCompile(
 		{
 			excludes: true,
 			pattern: [
@@ -72,7 +72,7 @@ const internal: SignedPattern[] = [
 		},
 		{ nocase: true },
 	),
-	signedPatternCompile(
+	ruleCompile(
 		{
 			excludes: false,
 			pattern: [
@@ -95,6 +95,9 @@ const internal: SignedPattern[] = [
  * @since 0.8.0
  */
 export const YarnClassic: Target = {
+	internalRules: internal,
+	extractors,
+	root: ".",
 	async init({ fs, cwd }) {
 		let content: Buffer
 		const normalCwd = unixify(cwd)
@@ -109,13 +112,5 @@ export const YarnClassic: Target = {
 			throw new Error("Invalid 'package.json': " + dist.summary, { cause: dist })
 		}
 	},
-	extractors,
-	ignores(o) {
-		return signedPatternIgnores({
-			...o,
-			internal,
-			root: ".",
-			target: YarnClassic,
-		})
-	},
+	ignores: ruleTest,
 }

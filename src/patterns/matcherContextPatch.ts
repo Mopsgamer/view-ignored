@@ -32,7 +32,7 @@ export async function matcherContextAddPath(
 		if (direntPath === ".") {
 			return true
 		}
-		ctx.paths.set(entry, await target.ignores({ fs, cwd, entry: direntPath, ctx, signal }))
+		ctx.paths.set(entry, await target.ignores({ fs, cwd, entry: direntPath, ctx, signal, target }))
 		if (ctx.totalFiles >= 0) {
 			ctx.totalDirs++
 		}
@@ -56,7 +56,7 @@ export async function matcherContextAddPath(
 	// 1. recursively populate parents
 	await matcherContextAddPath(ctx, options, parent + "/")
 	// 2. if ignored, remove, otherwise add
-	const match = await target.ignores({ fs, cwd, entry, ctx, signal })
+	const match = await target.ignores({ fs, cwd, entry, ctx, signal, target })
 	if (match.ignored) {
 		// 2.1. remove
 		await matcherContextRemovePath(ctx, options, entry)

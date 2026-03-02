@@ -1,5 +1,5 @@
 import type { MatcherContext } from "./patterns/matcherContext.js"
-import type { SignedPatternMatch } from "./patterns/signedPattern.js"
+import type { RuleMatch } from "./patterns/rule.js"
 import type { Source } from "./patterns/source.js"
 import type { ScanOptions, FsAdapter } from "./types.js"
 
@@ -41,7 +41,7 @@ export function scan(
 	}
 
 	const ctx: MatcherContext = {
-		paths: new Map<string, SignedPatternMatch>(),
+		paths: new Map<string, RuleMatch>(),
 		external: new Map<string, Source>(),
 		failed: [],
 		depthPaths: new Map<string, number>(),
@@ -65,7 +65,7 @@ export function scan(
 	}
 
 	return (async (): Promise<MatcherContext> => {
-		await target.init?.({ ctx, cwd, fs, signal })
+		await target.init?.({ ctx, cwd, fs, signal, target })
 		let from = join(normalCwd, within)
 		await opendir(fs, from, (entry, from) => {
 			const path = from.substring(normalCwd.length + 1)

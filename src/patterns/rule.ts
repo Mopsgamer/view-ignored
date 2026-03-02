@@ -3,32 +3,32 @@ import { dirname } from "node:path/posix"
 import type { PatternFinderOptions } from "./extractor.js"
 import type { Source } from "./source.js"
 
-import { patternMinimatchTest, type Pattern, type PatternMinimatch } from "./pattern.js"
+import { patternCacheTest, type PatternList, type PatternCache } from "./patternList.js"
 import { resolveSources } from "./resolveSources.js"
 
 /**
  * Represents a set of include and exclude patterns.
  * These patterns are positive minimatch patterns.
  *
- * @see {@link signedPatternIgnores} provides the ignoring algorithm.
- * @see {@link signedPatternCompile} compiles the signed pattern.
+ * @see {@link ruleTest} provides the ignoring algorithm.
+ * @see {@link ruleCompile} compiles the signed pattern.
  * Use this or an extractor's method to compile.
  *
  * @since 0.6.0
  */
-export type SignedPattern = {
+export type Rule = {
 	/**
 	 * Provides ignored or included file and directory patterns.
 	 *
-	 * @see {@link signedPatternIgnores} provides the ignoring algorithm.
+	 * @see {@link ruleTest} provides the ignoring algorithm.
 	 *
 	 * @since 0.9.0
 	 */
-	pattern: Pattern
+	pattern: PatternList
 	/**
 	 * If `true`, pattern "test" will exclude file named "test".
 	 *
-	 * @see {@link signedPatternIgnores} provides the ignoring algorithm.
+	 * @see {@link ruleTest} provides the ignoring algorithm.
 	 *
 	 * @since 0.9.0
 	 */
@@ -36,11 +36,11 @@ export type SignedPattern = {
 	/**
 	 * Provides compiled ignored or included file and directory patterns.
 	 *
-	 * @see {@link signedPatternIgnores} provides the ignoring algorithm.
+	 * @see {@link ruleTest} provides the ignoring algorithm.
 	 *
 	 * @since 0.6.0
 	 */
-	compiled: null | PatternMinimatch[]
+	compiled: null | PatternCache[]
 }
 
 /**
@@ -48,71 +48,71 @@ export type SignedPattern = {
  *
  * @since 0.9.1
  */
-export type MatchKind = SignedPatternMatch["kind"]
+export type MatchKind = RuleMatch["kind"]
 
 /**
- * @see {@link SignedPatternMatch}
+ * @see {@link RuleMatch}
  *
  * @since 0.9.1
  */
-export interface MatchBase<K extends string> {
+export interface RuleMatchBase<K extends string> {
 	kind: K
 	ignored: boolean
 }
 
 /**
- * @see {@link SignedPatternMatch}
+ * @see {@link RuleMatch}
  *
  * @since 0.9.1
  */
-export interface MatchBaseSource<K extends string> extends MatchBase<K> {
+export interface RuleMatchBaseSource<K extends string> extends RuleMatchBase<K> {
 	source: Source
 }
 
 /**
- * @see {@link SignedPatternMatch}
+ * @see {@link RuleMatch}
  *
  * @since 0.9.1
  */
-export interface MatchBasePattern<K extends string> extends MatchBase<K> {
+export interface RuleMatchBasePattern<K extends string> extends RuleMatchBase<K> {
 	pattern: string
 }
 
 /**
- * @see {@link SignedPatternMatch}
+ * @see {@link RuleMatch}
  *
  * @since 0.9.1
  */
-export interface MatchBaseErrorPattern<K extends string> extends MatchBasePattern<K> {
+export interface RuleMatchBaseErrorPattern<K extends string> extends RuleMatchBasePattern<K> {
 	error: Error
 }
 
 /**
- * @see {@link SignedPatternMatch}
+ * @see {@link RuleMatch}
  *
  * @since 0.9.1
  */
-export interface MatchBaseSourcePattern<K extends string>
-	extends MatchBasePattern<K>, MatchBaseSource<K> {}
+export interface RuleMatchBaseSourcePattern<K extends string>
+	extends RuleMatchBasePattern<K>, RuleMatchBaseSource<K> {}
 
 /**
- * @see {@link signedPatternIgnores}
+ * @see {@link ruleTest}
  *
  * @since 0.6.0
  */
-export type SignedPatternMatch =
-	| MatchBase<"none" | "missing-source">
-	| MatchBaseSource<"no-match" | "broken-source" | "invalid-pattern">
-	| MatchBaseErrorPattern<"invalid-internal-pattern">
-	| MatchBasePattern<"internal">
-	| MatchBaseSourcePattern<"external">
+export type RuleMatch =
+	| RuleMatchBase<"none" | "missing-source">
+	| RuleMatchBaseSource<"no-match" | "broken-source" | "invalid-pattern">
+	| RuleMatchBaseErrorPattern<"invalid-internal-pattern">
+	| RuleMatchBasePattern<"internal">
+	| RuleMatchBaseSourcePattern<"external">
 
 /**
- * @see {@link signedPatternIgnores}
+ * @see {@link ruleTest}
  *
  * @since 0.6.0
  */
-export interface SignedPatternIgnoresOptions extends PatternFinderOptions {
+export interface RuleTestOptions extends PatternFinderOptions {
 	/**
 	 * Relative entry path.
 	 *
@@ -123,18 +123,12 @@ export interface SignedPatternIgnoresOptions extends PatternFinderOptions {
 	 * @since 0.6.0
 	 */
 	entry: string
-	/**
-	 * The internal pattern. Should be compiled.
-	 *
-	 * @since 0.6.0
-	 */
-	internal: SignedPattern[]
 }
 
-function patternRegExpTest(path: string, rs: PatternMinimatch[]): [string, Error | undefined] {
+function cacheTest(rs: PatternCache[], path: string): [string, Error | undefined] {
 	for (const r of rs) {
 		try {
-			if (patternMinimatchTest(r, path)) {
+			if (patternCacheTest(r, path)) {
 				return [r.pattern, undefined]
 			}
 		} catch (err) {
@@ -144,15 +138,12 @@ function patternRegExpTest(path: string, rs: PatternMinimatch[]): [string, Error
 	return ["", undefined]
 }
 
-function signedPatternCompiledMatchInternal(
-	options: SignedPatternIgnoresOptions,
-	path: string,
-): SignedPatternMatch | null {
-	for (const si of options.internal) {
+function testInternal(options: RuleTestOptions, path: string): RuleMatch | null {
+	for (const si of options.target.internalRules) {
 		const compiled = si.compiled
 		if (compiled === null) continue
 
-		let [patternMatch, error] = patternRegExpTest(path, compiled)
+		let [patternMatch, error] = cacheTest(compiled, path)
 		if (error)
 			return {
 				kind: "invalid-internal-pattern",
@@ -172,18 +163,14 @@ function signedPatternCompiledMatchInternal(
 	return null
 }
 
-function signedPatternCompiledMatchExternal(
-	options: SignedPatternIgnoresOptions,
-	path: string,
-	source: Source,
-): SignedPatternMatch {
+function testExternal(options: RuleTestOptions, path: string, source: Source): RuleMatch {
 	for (const si of source.pattern) {
 		const compiled = si.compiled
 		if (compiled === null) {
 			continue
 		}
 
-		let [patternMatch, err] = patternRegExpTest(path, compiled)
+		let [patternMatch, err] = cacheTest(compiled, path)
 		if (err) {
 			source.error = err
 			options.ctx?.failed.push(source)
@@ -215,18 +202,20 @@ function signedPatternCompiledMatchExternal(
  *
  * @since 0.6.0
  */
-export async function signedPatternIgnores(
-	options: SignedPatternIgnoresOptions,
-): Promise<SignedPatternMatch> {
+export async function ruleTest(options: RuleTestOptions): Promise<RuleMatch> {
 	const parent = dirname(options.entry)
 	let source = options.ctx?.external.get(parent)
 
 	if (source === undefined) {
-		await resolveSources({ ...options, dir: parent, root: options.root })
+		await resolveSources({ ...options, dir: parent })
 		source = options.ctx.external.get(parent)
 	}
 
-	if (source === undefined || source === "none") {
+	if (source === undefined) {
+		throw new Error("view-ignored has crashed: no source cached.")
+	}
+
+	if (source === "none") {
 		return { kind: "missing-source", ignored: false }
 	}
 
@@ -234,11 +223,11 @@ export async function signedPatternIgnores(
 		return { kind: "broken-source", ignored: true, source }
 	}
 
-	let internalMatch = signedPatternCompiledMatchInternal(options, options.entry)
+	let internalMatch = testInternal(options, options.entry)
 	if (internalMatch !== null) {
 		return internalMatch
 	}
 
-	const externalMatch = signedPatternCompiledMatchExternal(options, options.entry, source)
+	const externalMatch = testExternal(options, options.entry, source)
 	return externalMatch
 }

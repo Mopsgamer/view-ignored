@@ -1,3 +1,4 @@
+import type { Target } from "../targets/target.js"
 import type { FsAdapter } from "../types.js"
 import type { MatcherContext } from "./matcherContext.js"
 
@@ -23,6 +24,12 @@ export interface InitState {
 	 * @since 0.6.0
 	 */
 	ctx: MatcherContext
+	/**
+	 * The target implementation.
+	 *
+	 * @since 0.10.0
+	 */
+	target: Target
 	/**
 	 * Return as soon as possible.
 	 *

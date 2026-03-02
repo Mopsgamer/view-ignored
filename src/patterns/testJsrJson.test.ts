@@ -1,7 +1,7 @@
 import { describe, test, expect } from "bun:test"
 
 import type { MatcherContext } from "./matcherContext.js"
-import type { SignedPatternMatch } from "./signedPattern.js"
+import type { RuleMatch } from "./rule.js"
 import type { Source } from "./source.js"
 
 import { extractJsrJson } from "./jsrjson.js"
@@ -15,7 +15,7 @@ describe("jsr.json", () => {
 			pattern: [],
 		}
 		const ctx: MatcherContext = {
-			paths: new Map<string, SignedPatternMatch>(),
+			paths: new Map<string, RuleMatch>(),
 			external: new Map<string, Source>(),
 			failed: [],
 			depthPaths: new Map<string, number>(),
@@ -37,7 +37,7 @@ describe("jsr.json", () => {
 			pattern: [],
 		}
 		const ctx: MatcherContext = {
-			paths: new Map<string, SignedPatternMatch>(),
+			paths: new Map<string, RuleMatch>(),
 			external: new Map<string, Source>(),
 			failed: [],
 			depthPaths: new Map<string, number>(),
@@ -55,7 +55,7 @@ describe("jsr.json", () => {
 			pattern: [],
 		}
 		const ctx: MatcherContext = {
-			paths: new Map<string, SignedPatternMatch>(),
+			paths: new Map<string, RuleMatch>(),
 			external: new Map<string, Source>(),
 			failed: [],
 			depthPaths: new Map<string, number>(),

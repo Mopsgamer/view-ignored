@@ -2,8 +2,8 @@ import { describe, test, expect } from "bun:test"
 import { Volume, type NestedDirectoryJSON } from "memfs"
 
 import type { MatcherContext } from "./matcherContext.js"
-import type { PatternMinimatch, Pattern } from "./pattern.js"
-import type { SignedPatternMatch } from "./signedPattern.js"
+import type { PatternCache, PatternList } from "./patternList.js"
+import type { RuleMatch } from "./rule.js"
 import type { Source } from "./source.js"
 
 import { scan, type ScanOptions } from "../scan.js"
@@ -79,8 +79,8 @@ const adapter = createAdapter(vol)
 function makePatternMinimatch(
 	re: RegExp,
 	pattern: string,
-	patternContext: Pattern,
-): PatternMinimatch {
+	patternContext: PatternList,
+): PatternCache {
 	return {
 		re,
 		pattern,
@@ -183,7 +183,7 @@ describe("matcherContext{Add,Remove}Path prepare", () => {
 				["src/patterns", sourcePackageJson],
 				["src/targets", sourcePackageJson],
 			]),
-			paths: new Map<string, SignedPatternMatch>([
+			paths: new Map<string, RuleMatch>([
 				["LICENSE.txt", { kind: "internal", ignored: false, pattern: "LICENSE*" }],
 				["out/", { kind: "external", ignored: false, pattern: "/out", source: sourcePackageJson }],
 				[
@@ -266,7 +266,7 @@ describe("matcherContext{Add,Remove}Path prepare", () => {
 				["src/patterns", sourcePackageJson],
 				["src/targets", sourcePackageJson],
 			]),
-			paths: new Map<string, SignedPatternMatch>([
+			paths: new Map<string, RuleMatch>([
 				["LICENSE.txt", { kind: "internal", ignored: false, pattern: "LICENSE*" }],
 				["out/", { kind: "external", ignored: false, pattern: "/out", source: sourcePackageJson }],
 				[
@@ -333,7 +333,7 @@ describe("matcherContextAddPath", () => {
 					["src/patterns", sourceGitignore],
 					["src/targets", sourceGitignore],
 				]),
-				paths: new Map<string, SignedPatternMatch>([
+				paths: new Map<string, RuleMatch>([
 					["LICENSE.txt", { kind: "internal", ignored: false, pattern: "LICENSE*" }],
 					["src/", { kind: "no-match", ignored: false, source: sourceGitignore }],
 					["src/index.ts", { kind: "no-match", ignored: false, source: sourceGitignore }],
@@ -383,7 +383,7 @@ describe("matcherContextAddPath", () => {
 					["src/patterns", sourcePackageJson],
 					["src/targets", sourcePackageJson],
 				]),
-				paths: new Map<string, SignedPatternMatch>([
+				paths: new Map<string, RuleMatch>([
 					["LICENSE.txt", { kind: "internal", ignored: false, pattern: "LICENSE*" }],
 					[
 						"out/",
@@ -486,7 +486,7 @@ describe("matcherContextRemovePath", () => {
 					["src/patterns", sourcePackageJson],
 					["src/targets", sourcePackageJson],
 				]),
-				paths: new Map<string, SignedPatternMatch>([
+				paths: new Map<string, RuleMatch>([
 					["LICENSE.txt", { kind: "internal", ignored: false, pattern: "LICENSE*" }],
 					[
 						"out/",
@@ -548,7 +548,7 @@ describe("matcherContextRemovePath", () => {
 					["src/patterns", sourcePackageJson],
 					["src/targets", sourcePackageJson],
 				]),
-				paths: new Map<string, SignedPatternMatch>([
+				paths: new Map<string, RuleMatch>([
 					["LICENSE.txt", { kind: "internal", ignored: false, pattern: "LICENSE*" }],
 					["package.json", { kind: "internal", ignored: false, pattern: "package.json" }],
 				]),
@@ -582,7 +582,7 @@ describe("matcherContextRemovePath", () => {
 					["src/patterns", sourcePackageJson],
 					["src/targets", sourcePackageJson],
 				]),
-				paths: new Map<string, SignedPatternMatch>([
+				paths: new Map<string, RuleMatch>([
 					["LICENSE.txt", { kind: "internal", ignored: false, pattern: "LICENSE*" }],
 					[
 						"out/",
@@ -637,7 +637,7 @@ describe("matcherContextRemovePath", () => {
 					["src/patterns", sourceGitignore],
 					["src/targets", sourceGitignore],
 				]),
-				paths: new Map<string, SignedPatternMatch>([
+				paths: new Map<string, RuleMatch>([
 					["LICENSE.txt", { kind: "internal", ignored: false, pattern: "LICENSE*" }],
 					["src/", { kind: "no-match", ignored: false, source: sourceGitignore }],
 					["src/index.ts", { kind: "no-match", ignored: false, source: sourceGitignore }],

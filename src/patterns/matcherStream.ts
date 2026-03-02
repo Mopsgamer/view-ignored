@@ -4,7 +4,7 @@ import { EventEmitter } from "node:events"
 
 import type { MatcherContext } from "../patterns/matcherContext.js"
 import type { ScanOptions, FsAdapter } from "../types.js"
-import type { SignedPatternMatch } from "./signedPattern.js"
+import type { RuleMatch } from "./rule.js"
 import type { Source } from "./source.js"
 
 import { opendir } from "../opendir.js"
@@ -36,7 +36,7 @@ export type EntryInfo = {
 	 *
 	 * @since 0.6.0
 	 */
-	match: SignedPatternMatch
+	match: RuleMatch
 
 	/**
 	 * The matcher context.
@@ -116,7 +116,7 @@ export class MatcherStream extends EventEmitter<EventMap> {
 		} = this.#options
 
 		const ctx: MatcherContext = {
-			paths: new Map<string, SignedPatternMatch>(),
+			paths: new Map<string, RuleMatch>(),
 			external: new Map<string, Source>(),
 			failed: [],
 			depthPaths: new Map<string, number>(),
@@ -139,7 +139,7 @@ export class MatcherStream extends EventEmitter<EventMap> {
 			target,
 		}
 
-		await target.init?.({ ctx, cwd, fs, signal })
+		await target.init?.({ ctx, cwd, fs, signal, target })
 		let from = join(normalCwd, within)
 		await opendir(fs, from, (entry, from) => {
 			const path = from.substring(normalCwd.length + 1)

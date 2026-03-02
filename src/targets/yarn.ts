@@ -4,9 +4,9 @@ import type { Target } from "./target.js"
 
 import {
 	type Extractor,
-	signedPatternIgnores,
-	type SignedPattern,
-	signedPatternCompile,
+	ruleTest,
+	type Rule,
+	ruleCompile,
 	extractPackageJsonNocase,
 	extractGitignoreNocase,
 } from "../patterns/index.js"
@@ -28,15 +28,15 @@ const extractors: Extractor[] = [
 	},
 ]
 
-const internalInclude: SignedPattern = {
+const internalInclude: Rule = {
 	excludes: false,
 	pattern: [],
 	compiled: [],
 }
 
-const internal: SignedPattern[] = [
+const internal: Rule[] = [
 	internalInclude,
-	signedPatternCompile({
+	ruleCompile({
 		excludes: true,
 		pattern: [
 			// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L26
@@ -55,7 +55,7 @@ const internal: SignedPattern[] = [
 		],
 		compiled: null,
 	}),
-	signedPatternCompile(
+	ruleCompile(
 		{
 			excludes: false,
 			pattern: [
@@ -78,6 +78,9 @@ const internal: SignedPattern[] = [
  * @since 0.6.0
  */
 export const Yarn: Target = {
+	internalRules: internal,
+	extractors,
+	root: ".",
 	async init({ fs, cwd }) {
 		let content: Buffer
 		const normalCwd = unixify(cwd)
@@ -111,15 +114,7 @@ export const Yarn: Target = {
 		}
 
 		internalInclude.pattern = Array.from(set)
-		signedPatternCompile(internalInclude, { nocase: true })
+		ruleCompile(internalInclude, { nocase: true })
 	},
-	extractors,
-	ignores(o) {
-		return signedPatternIgnores({
-			...o,
-			internal,
-			root: ".",
-			target: Yarn,
-		})
-	},
+	ignores: ruleTest,
 }

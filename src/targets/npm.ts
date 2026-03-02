@@ -4,9 +4,9 @@ import type { Target } from "./target.js"
 
 import {
 	type Extractor,
-	signedPatternIgnores,
-	type SignedPattern,
-	signedPatternCompile,
+	ruleTest,
+	type Rule,
+	ruleCompile,
 	extractPackageJson,
 	extractGitignore,
 } from "../patterns/index.js"
@@ -28,15 +28,15 @@ const extractors: Extractor[] = [
 	},
 ]
 
-const internalInclude: SignedPattern = {
+const internalInclude: Rule = {
 	excludes: false,
 	pattern: [], // filled within init
 	compiled: [],
 }
 
-const internal: SignedPattern[] = [
+const internal: Rule[] = [
 	internalInclude,
-	signedPatternCompile({
+	ruleCompile({
 		excludes: true,
 		pattern: [
 			// https://github.com/npm/npm-packlist/blob/main/lib/index.js#L16
@@ -70,7 +70,7 @@ const internal: SignedPattern[] = [
 		],
 		compiled: null,
 	}),
-	signedPatternCompile({
+	ruleCompile({
 		excludes: false,
 		pattern: [
 			// https://github.com/npm/npm-packlist/blob/main/lib/index.js#L287
@@ -93,6 +93,9 @@ const internal: SignedPattern[] = [
  * @since 0.6.0
  */
 export const NPM: Target = {
+	internalRules: internal,
+	extractors,
+	root: ".",
 	async init({ fs, cwd }) {
 		let content: Buffer
 		const normalCwd = unixify(cwd)
@@ -112,15 +115,7 @@ export const NPM: Target = {
 		// TODO: NPM should include bundled deps
 
 		// internalInclude.pattern = Array.from(set)
-		// signedPatternCompile(internalInclude, { nocase: true })
+		// ruleCompile(internalInclude, { nocase: true })
 	},
-	extractors,
-	ignores(o) {
-		return signedPatternIgnores({
-			...o,
-			internal,
-			root: ".",
-			target: NPM,
-		})
-	},
+	ignores: ruleTest,
 }

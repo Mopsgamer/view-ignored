@@ -1,11 +1,11 @@
 import { makeRe } from "minimatch"
 
-import type { PatternMinimatch, Pattern } from "./pattern.js"
+import type { PatternCache, PatternList } from "./patternList.js"
 
 /**
  * @since 0.8.0
  */
-export type StringCompileOptions = {
+export type PatternCompileOptions = {
 	/**
 	 * Disables case sensitivity.
 	 *
@@ -17,17 +17,17 @@ export type StringCompileOptions = {
 }
 
 /**
- * Compiles a string of the {@link Pattern}.
+ * Compiles a string of the {@link PatternList}.
  *
  * @see {@link patternCompile}
  *
  * @since 0.8.0
  */
-export function stringCompile(
+export function patternCompile(
 	pattern: string,
-	context: Pattern = [],
-	options?: StringCompileOptions,
-): PatternMinimatch {
+	context: PatternList = [],
+	options?: PatternCompileOptions,
+): PatternCache {
 	const original = pattern
 	if (pattern.endsWith("/")) {
 		pattern = pattern.substring(0, pattern.length - 1)

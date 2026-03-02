@@ -3,9 +3,9 @@ import type { Target } from "./target.js"
 import {
 	type Extractor,
 	extractGitignore,
-	signedPatternIgnores,
-	signedPatternCompile,
-	type SignedPattern,
+	ruleTest,
+	ruleCompile,
+	type Rule,
 } from "../patterns/index.js"
 
 const extractors: Extractor[] = [
@@ -19,8 +19,8 @@ const extractors: Extractor[] = [
 	},
 ]
 
-const internal: SignedPattern[] = [
-	signedPatternCompile({
+const internal: Rule[] = [
+	ruleCompile({
 		excludes: true,
 		pattern: [".git", ".DS_Store"],
 		compiled: null,
@@ -31,14 +31,9 @@ const internal: SignedPattern[] = [
  * @since 0.6.0
  */
 export const Git: Target = {
-	// TODO: Git should read configs
+	internalRules: internal,
 	extractors,
-	ignores(o) {
-		return signedPatternIgnores({
-			...o,
-			internal,
-			root: "/",
-			target: Git,
-		})
-	},
+	root: "/",
+	// TODO: Git should read configs
+	ignores: ruleTest,
 }

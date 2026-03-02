@@ -1,5 +1,5 @@
-import type { SignedPatternMatch } from "../patterns/signedPattern.js"
 import type { InitState } from "./initState.js"
+import type { RuleMatch } from "./rule.js"
 
 /**
  * Used in {@link Ignores}.
@@ -19,9 +19,9 @@ export interface IgnoresOptions extends InitState {
  * Checks whether a given entry path should be ignored based on its patterns.
  *
  * @see {@link resolveSources}
- * @see {@link signedPatternIgnores}
+ * @see {@link ruleTest}
  * @see {@link https://github.com/Mopsgamer/view-ignored/tree/main/src/targets} for usage examples.
  *
  * @since 0.6.0
  */
-export type Ignores = (options: IgnoresOptions) => Promise<SignedPatternMatch>
+export type Ignores = (options: IgnoresOptions) => Promise<RuleMatch>

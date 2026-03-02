@@ -56,9 +56,9 @@ if (match.kind === "external") {
 import {
 	type Extractor,
 	extractGitignore,
-	signedPatternIgnores,
-	signedPatternCompile,
-	type SignedPattern,
+	ruleTest,
+	ruleCompile,
+	type Rule,
 } from "view-ignored/patterns"
 
 import type { Target } from "view-ignored/targets"
@@ -74,24 +74,21 @@ const extractors: Extractor[] = [
 	},
 ]
 
-const internal: SignedPattern = {
-	exclude: [".git", ".DS_Store"],
-	include: [],
-	compiled: null,
-}
-
-signedPatternCompile(internal)
+const internal: Rule[] = [
+	ruleCompile({
+		excludes: true,
+		pattern: [".git", ".DS_Store"],
+		compiled: null,
+	}),
+]
 
 export const Git: Target = {
+	internalRules: internal,
 	extractors,
-	ignores(o) {
-		return signedPatternIgnores({
-			...o,
-			internal,
-			root: "/",
-			target: Git,
-		})
-	},
+	root: "/",
+	// TODO: Git should read configs
+	init() {},
+	ignores: ruleTest,
 }
 
 const ctx = await vign.scan({ target })

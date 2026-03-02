@@ -9,6 +9,20 @@ and this project adheres to
 ## [Unreleased]
 
 - Implemented concurrent directory traversal.
+- Move `PatternFinderOptions.root` to `Target.root`.
+- Add `InitState.target`.
+- Move `SignedPatternIgnoresOptions.internal` to `Target.internalRules`.
+- Rename `SignedPatternIgnoresOptions` -> `RuleTestOptions`.
+- Rename `SignedPatternMatch` -> `RuleMatch`.
+- Rename `MatchBase*` -> `RuleMatchBase*`.
+- Rename `SignedPattern` -> `Rule`.
+- Rename `signedPatternIgnores` -> `ruleTest`.
+- Rename `signedPatternCompile` -> `ruleCompile`.
+- Rename `PatternMinimatch` -> `PatternCache`.
+- Rename `patternMinimatchTest` -> `patternCacheTest`.
+- Rename `Pattern` -> `PatternList`.
+- Rename `patternCompile` -> `patternListCompile`.
+- Rename `stringCompile` -> `patternCompile`.
 
 ## [0.9.1] - 2026-02-28
 

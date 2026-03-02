@@ -1,4 +1,4 @@
-import type { SignedPatternMatch } from "./signedPattern.js"
+import type { RuleMatch } from "./rule.js"
 import type { Source } from "./source.js"
 
 /**
@@ -13,7 +13,7 @@ export interface MatcherContext {
 	 *
 	 * @since 0.6.0
 	 */
-	paths: Map<string, SignedPatternMatch>
+	paths: Map<string, RuleMatch>
 
 	/**
 	 * Maps directory paths to their corresponding sources.

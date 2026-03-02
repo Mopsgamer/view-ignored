@@ -4,27 +4,24 @@ import type { Target } from "../targets/target.js"
 import type { FsAdapter } from "../types.js"
 import type { PatternFinderOptions, Extractor } from "./extractor.js"
 import type { MatcherContext } from "./matcherContext.js"
-import type { SignedPattern } from "./signedPattern.js"
+import type { PatternCompileOptions } from "./patternCompile.js"
+import type { Rule } from "./rule.js"
 import type { Source } from "./source.js"
-import type { StringCompileOptions } from "./stringCompile.js"
 
 import { join, base } from "../unixify.js"
-import { patternCompile } from "./pattern.js"
+import { patternListCompile } from "./patternList.js"
 
 /**
- * Compiles the {@link SignedPattern} (forced).
+ * Compiles the {@link Rule} (forced).
  * Can be compiled at any time.
  * Extractors are compiling it.
  *
- * @see {@link patternCompile}
+ * @see {@link patternListCompile}
  *
  * @since 0.6.0
  */
-export function signedPatternCompile(
-	signedPattern: SignedPattern,
-	options?: StringCompileOptions,
-): SignedPattern {
-	signedPattern.compiled = patternCompile(signedPattern.pattern, options)
+export function ruleCompile(signedPattern: Rule, options?: PatternCompileOptions): Rule {
+	signedPattern.compiled = patternListCompile(signedPattern.pattern, options)
 	return signedPattern
 }
 
@@ -51,7 +48,7 @@ export interface ResolveSourcesOptions extends PatternFinderOptions {
  * @since 0.6.0
  */
 export async function resolveSources(options: ResolveSourcesOptions): Promise<void> {
-	const { fs, ctx, cwd, target, root, signal } = options
+	const { fs, ctx, cwd, signal, target } = options
 	let dir = options.dir
 
 	if (ctx.external.has(dir)) {
@@ -87,12 +84,12 @@ export async function resolveSources(options: ResolveSourcesOptions): Promise<vo
 	// find non-cwd source [root > cwd) and populate [cwd > ... > dir]
 
 	const preCwdSegments: string[] = []
-	if (root.startsWith("/")) {
+	if (target.root.startsWith("/")) {
 		let c = dirname(cwd)
 		while (true) {
 			signal?.throwIfAborted()
 			preCwdSegments.push(c)
-			if (c === root) break
+			if (c === target.root) break
 			const parent = dirname(c)
 			c = parent
 		}

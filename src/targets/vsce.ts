@@ -4,9 +4,9 @@ import type { Target } from "./target.js"
 
 import {
 	type Extractor,
-	signedPatternIgnores,
-	type SignedPattern,
-	signedPatternCompile,
+	ruleTest,
+	type Rule,
+	ruleCompile,
 	extractPackageJson,
 	extractGitignore,
 } from "../patterns/index.js"
@@ -28,8 +28,8 @@ const extractors: Extractor[] = [
 	},
 ]
 
-const internal: SignedPattern[] = [
-	signedPatternCompile({
+const internal: Rule[] = [
+	ruleCompile({
 		excludes: true,
 		pattern: [
 			// https://github.com/microsoft/vscode-vsce/blob/main/src/package.ts#L1633
@@ -84,6 +84,9 @@ const vsceManifestParse = type("string")
  * @since 0.6.0
  */
 export const VSCE: Target = {
+	internalRules: internal,
+	extractors,
+	root: ".",
 	async init({ fs, cwd }) {
 		let content: Buffer
 		const normalCwd = unixify(cwd)
@@ -98,13 +101,5 @@ export const VSCE: Target = {
 			throw new Error("Invalid 'package.json': " + dist.summary, { cause: dist })
 		}
 	},
-	extractors,
-	ignores(o) {
-		return signedPatternIgnores({
-			...o,
-			internal,
-			root: ".",
-			target: VSCE,
-		})
-	},
+	ignores: ruleTest,
 }

@@ -1,4 +1,4 @@
-import type { SignedPattern } from "./signedPattern.js"
+import type { Rule } from "./rule.js"
 
 /**
  * Represents a source of external patterns.
@@ -10,11 +10,11 @@ export type Source = {
 	 * Patterns defined within the source file.
 	 * Those patterns are for ignoring files.
 	 *
-	 * @see {@link signedPatternIgnores}
+	 * @see {@link ruleTest}
 	 *
 	 * @since 0.6.0
 	 */
-	pattern: SignedPattern[]
+	pattern: Rule[]
 
 	/**
 	 * Name of the source file.
@@ -35,7 +35,7 @@ export type Source = {
 	 * For example, `package.json` `files` field inverts the matching logic,
 	 * because it specifies files to include rather than exclude.
 	 *
-	 * @see {@link signedPatternIgnores}
+	 * @see {@link ruleTest}
 	 *
 	 * @since 0.6.0
 	 */
@@ -61,8 +61,8 @@ export type Source = {
 export function sourcePushNegatable(
 	pattern: string,
 	invert: boolean,
-	include: SignedPattern,
-	exclude: SignedPattern,
+	include: Rule,
+	exclude: Rule,
 ): void {
 	if (invert) {
 		;[exclude, include] = [include, exclude]
