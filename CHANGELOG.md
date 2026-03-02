@@ -8,9 +8,10 @@ and this project adheres to
 
 ## [Unreleased]
 
-- Implemented concurrent directory traversal.
-- Move `PatternFinderOptions.root` to `Target.root`.
+- Implemented concurrent directory traversal to improve performance during file discovery.
+- Removed closures from the API to improve memory efficiency.
 - Add `InitState.target`.
+- Move `PatternFinderOptions.root` to `Target.root`.
 - Move `SignedPatternIgnoresOptions.internal` to `Target.internalRules`.
 - Rename `SignedPatternIgnoresOptions` -> `RuleTestOptions`.
 - Rename `SignedPatternMatch` -> `RuleMatch`.
