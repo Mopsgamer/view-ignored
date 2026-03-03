@@ -2,7 +2,6 @@ import type { PatternFinderOptions } from "./extractor.js"
 import type { Source } from "./source.js"
 
 import { patternCacheTest, type PatternList, type PatternCache } from "./patternList.js"
-import { resolveSources } from "./resolveSources.js"
 
 /**
  * Represents a set of include and exclude patterns.
@@ -210,10 +209,10 @@ export async function ruleTest(options: RuleTestOptions): Promise<RuleMatch> {
 	const parent = options.parentPath
 	let source = options.ctx?.external.get(parent)
 
-	if (source === undefined) {
-		await resolveSources({ ...options, dir: parent })
-		source = options.ctx.external.get(parent)
-	}
+	// if (source === undefined) {
+	// 	await resolveSources({ ...options, dir: parent })
+	// 	source = options.ctx.external.get(parent)
+	// }
 
 	if (source === undefined) {
 		throw new Error("view-ignored has crashed: no source cached.")

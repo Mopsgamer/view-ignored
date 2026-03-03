@@ -7,6 +7,7 @@ import { getDepth } from "../getDepth.js"
 import { opendir } from "../opendir.js"
 import { unixify, join } from "../unixify.js"
 import { walkIncludes } from "../walk.js"
+import { resolveSources } from "./resolveSources.js"
 
 /**
  * Provides patching abilities for the given {@link MatcherContext}.
@@ -33,6 +34,7 @@ export async function matcherContextAddPath(
 			return true
 		}
 		const parentPath = dirname(direntPath)
+		await resolveSources({ ctx, cwd, dir: direntPath, fs, signal, target })
 		ctx.paths.set(
 			entry,
 			await target.ignores({ fs, cwd, entry: direntPath, ctx, signal, target, parentPath }),
@@ -163,9 +165,11 @@ export async function matcherContextRemovePath(
 }
 
 async function rescan(ctx: MatcherContext, options: Required<ScanOptions>): Promise<void> {
-	const normalCwd = unixify(options.cwd)
-	let from = join(normalCwd, options.within)
-	await opendir(options.fs, normalCwd, from, (entry, parentPath, path) => {
+	const { cwd, within, fs, signal, target } = options
+
+	const normalCwd = unixify(cwd)
+	let from = join(normalCwd, within)
+	await opendir({ ctx, cwd: normalCwd, fs, signal, target }, from, (entry, parentPath, path) => {
 		return walkIncludes({
 			path,
 			parentPath,
