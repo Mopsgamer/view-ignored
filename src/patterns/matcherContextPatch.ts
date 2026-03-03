@@ -32,31 +32,34 @@ export async function matcherContextAddPath(
 		if (direntPath === ".") {
 			return true
 		}
-		ctx.paths.set(entry, await target.ignores({ fs, cwd, entry: direntPath, ctx, signal, target }))
+		const parentPath = dirname(direntPath)
+		ctx.paths.set(
+			entry,
+			await target.ignores({ fs, cwd, entry: direntPath, ctx, signal, target, parentPath }),
+		)
 		if (ctx.totalFiles >= 0) {
 			ctx.totalDirs++
 		}
-		const parent = dirname(direntPath)
-		if (parent !== ".") {
-			void (await matcherContextAddPath(ctx, options, parent + "/"))
+		if (parentPath !== ".") {
+			void (await matcherContextAddPath(ctx, options, parentPath + "/"))
 		}
 		return true
 	}
 
-	const parent = dirname(entry)
+	const parentPath = dirname(entry)
 
 	const isSource = target.extractors.some((e) => e.path === entry)
 	if (isSource) {
 		// add pattern sources
-		await matcherContextRemovePath(ctx, options, parent + "/")
-		await rescan(ctx, { ...options, within: parent })
+		await matcherContextRemovePath(ctx, options, parentPath + "/")
+		await rescan(ctx, { ...options, within: parentPath })
 	}
 
 	// add paths
 	// 1. recursively populate parents
-	await matcherContextAddPath(ctx, options, parent + "/")
+	await matcherContextAddPath(ctx, options, parentPath + "/")
 	// 2. if ignored, remove, otherwise add
-	const match = await target.ignores({ fs, cwd, entry, ctx, signal, target })
+	const match = await target.ignores({ fs, cwd, entry, ctx, signal, target, parentPath })
 	if (match.ignored) {
 		// 2.1. remove
 		await matcherContextRemovePath(ctx, options, entry)
@@ -162,10 +165,10 @@ export async function matcherContextRemovePath(
 async function rescan(ctx: MatcherContext, options: Required<ScanOptions>): Promise<void> {
 	const normalCwd = unixify(options.cwd)
 	let from = join(normalCwd, options.within)
-	await opendir(options.fs, from, (entry, from) => {
-		const path = from.substring(normalCwd.length + 1)
+	await opendir(options.fs, normalCwd, from, (entry, parentPath, path) => {
 		return walkIncludes({
 			path,
+			parentPath,
 			entry,
 			ctx,
 			stream: undefined,

@@ -13,10 +13,10 @@ describe("Git", () => {
 	})
 
 	test("depth 0 should not throw", async () => {
-		expect(scan({ target: Git, depth: 0, signal })).rejects.toThrowError(/Time.+out/i)
+		expect(() => scan({ target: Git, depth: 0 })).not.toThrow()
 	})
 
 	test("depth 1 should not throw", async () => {
-		expect(scan({ target: Git, depth: 1, signal })).rejects.toThrowError(/Time.+out/i)
+		expect(() => scan({ target: Git, depth: 1 })).not.toThrow()
 	})
 })

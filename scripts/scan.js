@@ -1,6 +1,6 @@
 import * as fs from "node:fs"
 
-import { scan } from "../out/index.js"
+import { scan } from "../out/scan.js"
 import { Git as target } from "../out/targets/index.js"
 
 await scan({

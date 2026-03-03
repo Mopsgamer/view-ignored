@@ -13,6 +13,12 @@ export interface IgnoresOptions extends InitState {
 	 * @since 0.6.0
 	 */
 	entry: string
+	/**
+	 * Result of the `dirname(entry)` call.
+	 *
+	 * @since 0.10.1
+	 */
+	parentPath: string
 }
 
 /**

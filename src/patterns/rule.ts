@@ -1,5 +1,3 @@
-import { dirname } from "node:path/posix"
-
 import type { PatternFinderOptions } from "./extractor.js"
 import type { Source } from "./source.js"
 
@@ -123,6 +121,12 @@ export interface RuleTestOptions extends PatternFinderOptions {
 	 * @since 0.6.0
 	 */
 	entry: string
+	/**
+	 * Result of the `dirname(entry)` call.
+	 *
+	 * @since 0.10.1
+	 */
+	parentPath: string
 }
 
 function cacheTest(rs: PatternCache[], path: string): [string, Error | undefined] {
@@ -203,7 +207,7 @@ function testExternal(options: RuleTestOptions, path: string, source: Source): R
  * @since 0.6.0
  */
 export async function ruleTest(options: RuleTestOptions): Promise<RuleMatch> {
-	const parent = dirname(options.entry)
+	const parent = options.parentPath
 	let source = options.ctx?.external.get(parent)
 
 	if (source === undefined) {

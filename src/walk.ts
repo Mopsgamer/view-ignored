@@ -8,6 +8,7 @@ import { getDepth } from "./getDepth.js"
 
 export type WalkOptions = {
 	path: string
+	parentPath: string
 	entry: Dirent
 	ctx: MatcherContext
 	stream: MatcherStream | undefined
@@ -15,7 +16,7 @@ export type WalkOptions = {
 }
 
 export async function walkIncludes(options: WalkOptions): Promise<0 | 1 | 2> {
-	const { entry, ctx, stream, scanOptions, path } = options
+	const { entry, ctx, stream, scanOptions, path, parentPath } = options
 
 	const { fs, target, cwd, depth: maxDepth, invert, signal, fastDepth, fastInternal } = scanOptions
 
@@ -35,7 +36,7 @@ export async function walkIncludes(options: WalkOptions): Promise<0 | 1 | 2> {
 		const { depth, depthSlash } = getDepth(path, maxDepth)
 		if (depth > maxDepth) {
 			const failedPrev = ctx.failed.length
-			let match = await target.ignores({ fs, cwd, entry: path, ctx, signal, target })
+			let match = await target.ignores({ fs, cwd, entry: path, ctx, signal, target, parentPath })
 			if (invert) {
 				match.ignored = !match.ignored
 			}
@@ -68,7 +69,15 @@ export async function walkIncludes(options: WalkOptions): Promise<0 | 1 | 2> {
 	}
 
 	const failedPrev = ctx.failed.length
-	let match = await target.ignores({ fs, cwd, entry: path, ctx, signal, target })
+	let match = await target.ignores({
+		fs,
+		cwd,
+		entry: path,
+		ctx,
+		signal,
+		target,
+		parentPath: parentPath,
+	})
 	if (invert) {
 		match.ignored = !match.ignored
 	}

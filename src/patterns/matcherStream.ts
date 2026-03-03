@@ -141,10 +141,10 @@ export class MatcherStream extends EventEmitter<EventMap> {
 
 		await target.init?.({ ctx, cwd, fs, signal, target })
 		let from = join(normalCwd, within)
-		await opendir(fs, from, (entry, from) => {
-			const path = from.substring(normalCwd.length + 1)
+		await opendir(fs, normalCwd, from, (entry, parentPath, path) => {
 			return walkIncludes({
 				path,
+				parentPath,
 				entry,
 				ctx,
 				stream: this,
