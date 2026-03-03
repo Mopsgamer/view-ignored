@@ -7,9 +7,9 @@ export async function opendir(
 	normalCwd: string,
 	place: string,
 	cb: (dirent: Dirent, parentPath: string, path: string) => Promise<0 | 1 | 2>,
-): Promise<void | 2> {
+): Promise<boolean> {
 	const dir = await fs.promises.opendir(place)
-	const tasks: Promise<void | 2>[] = []
+	const tasks: Promise<void>[] = []
 
 	const normalParentPath = place
 	const substr = normalParentPath.substring(normalCwd.length + 1)
@@ -19,6 +19,8 @@ export async function opendir(
 	} else {
 		parentPath = substr
 	}
+
+	let stop = false
 	for await (const entry of dir) {
 		const from = place + "/" + entry.name
 
@@ -30,22 +32,19 @@ export async function opendir(
 			path = substr + "/" + entry.name
 		}
 
-		const task = (async (): Promise<void | 2> => {
+		const task = (async (): Promise<void> => {
 			const r = await cb(entry, parentPath, path)
-			if (r === 2) return 2
 			if (r === 1) return
 
-			if (entry.isDirectory()) {
-				return await opendir(fs, normalCwd, from, cb)
+			if (r === 2 || (entry.isDirectory() && (await opendir(fs, normalCwd, from, cb)))) {
+				stop = true
+				return
 			}
 		})()
 
 		tasks.push(task)
 	}
 
-	const results = await Promise.all(tasks)
-
-	if (results.includes(2)) {
-		return 2
-	}
+	await Promise.all(tasks)
+	return stop
 }
