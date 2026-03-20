@@ -10,11 +10,11 @@ import { patternCompile, type PatternCompileOptions } from "./patternCompile.js"
  */
 export type PatternCache = {
 	/**
-	 * The regular expression instance.
+	 * The regular expression interface.
 	 *
 	 * @since 0.6.0
 	 */
-	re: RegExp
+	re: { test(string: string): boolean }
 	/**
 	 * The original pattern string this minimatch was compiled from.
 	 *
@@ -35,7 +35,6 @@ export type PatternCache = {
  * @since 0.6.0
  */
 export function patternCacheTest(cache: PatternCache, path: string): boolean {
-	cache.re.lastIndex = 0
 	return cache.re.test(path)
 }
 

@@ -1,4 +1,4 @@
-import { makeRe } from "minimatch"
+import { minimatch } from "minimatch"
 
 import type { PatternCache, PatternList } from "./patternList.js"
 
@@ -29,26 +29,61 @@ export function patternCompile(
 	options?: PatternCompileOptions,
 ): PatternCache {
 	const original = pattern
-	if (pattern.endsWith("/")) {
-		pattern = pattern.substring(0, pattern.length - 1)
-	}
-	if (pattern.startsWith("/")) {
-		pattern = pattern.substring(1)
-	} else if (!pattern.startsWith("**/")) {
-		pattern = "**/" + pattern
-	}
+	const isRoot = pattern.startsWith("/")
+	const nocase = !!options?.nocase
 
-	if (!pattern.endsWith("/**")) {
-		pattern += "/**"
-	}
+	let cleaned = pattern
+	if (cleaned.endsWith("/")) cleaned = cleaned.slice(0, -1)
+	if (isRoot) cleaned = cleaned.slice(1)
 
-	const re = makeRe(pattern, {
+	const lowerCleaned = nocase ? cleaned.toLowerCase() : cleaned
+	const prefix = lowerCleaned + "/"
+	const hasGlob = cleaned.includes("*")
+
+	const matchBase = !isRoot && !cleaned.includes("/")
+
+	const minimatchOptions = {
 		dot: true,
 		nonegate: true,
 		nocomment: true,
 		nobrace: true,
-		nocase: options?.nocase ?? false,
-	}) as RegExp
+		nocase,
+		matchBase,
+		optimizationLevel: 2,
+	}
+
+	const re = {
+		test(str: string): boolean {
+			const lowerStr = nocase ? str.toLowerCase() : str
+
+			if (lowerStr === lowerCleaned || lowerStr.startsWith(prefix)) {
+				return true
+			}
+
+			if (matchBase) {
+				if (str.includes(cleaned)) {
+					const segments = str.split("/")
+					for (const seg of segments) {
+						if (seg === lowerCleaned) return true
+					}
+				}
+			}
+
+			if (hasGlob) {
+				if (minimatch(str, cleaned, minimatchOptions)) return true
+
+				// Check parents only if there's a glob
+				let lastSlash = str.lastIndexOf("/")
+				while (lastSlash !== -1) {
+					const parent = str.substring(0, lastSlash)
+					if (minimatch(parent, cleaned, minimatchOptions)) return true
+					lastSlash = str.lastIndexOf("/", lastSlash - 1)
+				}
+			}
+
+			return false
+		},
+	}
 
 	return { re, pattern: original, patternContext: context }
 }

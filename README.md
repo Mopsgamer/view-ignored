@@ -18,7 +18,11 @@ Node.js 18 or later
   readers, not command-line wrappers.
 - **Plugins.** Built-in [targets](#targets) for popular tools. Use custom
   targets by implementing/extending the `Target` interface.
-- **TypeScript.** Written in TypeScript with type definitions included.
+- **Performance.** Optimized for speed; benchmarked to be
+  significantly faster than `ignore-walk` by avoiding redundant glob evaluations.
+- **Streaming.** Native `scanStream` support for processing massive file trees with minimal memory overhead.
+- **Execution Control.** Use `fastDepth` and `fastInternal` options to fine-tune traversal depth and skip unnecessary directory checks.
+- **Abortable.** Full support for `AbortSignal` to cancel long-running scans instantly.
 - **Lightweight.** Minimal dependencies for fast performance and small bundle size.
 - **Easy-to-modify.** Well-written and MIT-licensed.
 - **Browser.** Can be bundled for browser use. See `ScanOptions.fs` and `import ... "view-ignored/browser"`.
