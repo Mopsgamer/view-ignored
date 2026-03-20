@@ -5,7 +5,7 @@ import { patternCacheTest, type PatternList, type PatternCache } from "./pattern
 
 /**
  * Represents a set of include and exclude patterns.
- * These patterns are positive minimatch patterns.
+ * These patterns are positive glob patterns.
  *
  * @see {@link ruleTest} provides the ignoring algorithm.
  * @see {@link ruleCompile} compiles the signed pattern.

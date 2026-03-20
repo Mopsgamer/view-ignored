@@ -76,11 +76,7 @@ const vol = Volume.fromNestedJSON(fsJson, cwd)
 
 const adapter = createAdapter(vol)
 
-function makePatternMinimatch(
-	re: RegExp,
-	pattern: string,
-	patternContext: PatternList,
-): PatternCache {
+function makePatternFrom(re: RegExp, pattern: string, patternContext: PatternList): PatternCache {
 	return {
 		re,
 		pattern,
@@ -98,7 +94,7 @@ const sourcePackageJson: Source = {
 			excludes: false,
 			pattern: sourcePackageJsonExclude,
 			compiled: [
-				makePatternMinimatch(
+				makePatternFrom(
 					/^out(?:\/|\/(?:(?!(?:\/|^)(?:\.{1,2})($|\/)).)*?)?$/,
 					"/out",
 					sourcePackageJsonExclude,
@@ -123,27 +119,27 @@ const sourceGitignore: Source = {
 			excludes: true,
 			pattern: sourceGitignoreExclude,
 			compiled: [
-				makePatternMinimatch(
+				makePatternFrom(
 					/^(?:\/|(?:(?!(?:\/|^)(?:\.{1,2})($|\/)).)*?\/)?node_modules(?:\/|\/(?:(?!(?:\/|^)(?:\.{1,2})($|\/)).)*?)?$/,
 					"node_modules",
 					sourceGitignoreExclude,
 				),
-				makePatternMinimatch(
+				makePatternFrom(
 					/^(?:\/|(?:(?!(?:\/|^)(?:\.{1,2})($|\/)).)*?\/)?out(?:\/|\/(?:(?!(?:\/|^)(?:\.{1,2})($|\/)).)*?)?$/,
 					"out",
 					sourceGitignoreExclude,
 				),
-				makePatternMinimatch(
+				makePatternFrom(
 					/^(?:\/|(?:(?!(?:\/|^)(?:\.{1,2})($|\/)).)*?\/)?dist(?:\/|\/(?:(?!(?:\/|^)(?:\.{1,2})($|\/)).)*?)?$/,
 					"dist",
 					sourceGitignoreExclude,
 				),
-				makePatternMinimatch(
+				makePatternFrom(
 					/^(?:\/|(?:(?!(?:\/|^)(?:\.{1,2})($|\/)).)*?\/)?(?!(?:^|\/)\.\.?(?:$|\/))[^/]*?\.tgz(?:\/|\/(?:(?!(?:\/|^)(?:\.{1,2})($|\/)).)*?)?$/,
 					"*.tgz",
 					sourceGitignoreExclude,
 				),
-				makePatternMinimatch(
+				makePatternFrom(
 					/^(?:\/|(?:(?!(?:\/|^)(?:\.{1,2})($|\/)).)*?\/)?(?!(?:^|\/)\.\.?(?:$|\/))[^/]*?\.cpuprofile(?:\/|\/(?:(?!(?:\/|^)(?:\.{1,2})($|\/)).)*?)?$/,
 					"*.cpuprofile",
 					sourceGitignoreExclude,

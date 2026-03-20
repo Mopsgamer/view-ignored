@@ -16,13 +16,13 @@ export type PatternCache = {
 	 */
 	re: { test(string: string): boolean }
 	/**
-	 * The original pattern string this minimatch was compiled from.
+	 * The original pattern string this cache was compiled from.
 	 *
 	 * @since 0.6.0
 	 */
 	pattern: string
 	/**
-	 * The original pattern list this pattern was compiled from.
+	 * The original pattern list this cache was compiled from.
 	 *
 	 * @since 0.6.0
 	 */
@@ -39,7 +39,7 @@ export function patternCacheTest(cache: PatternCache, path: string): boolean {
 }
 
 /**
- * Represents a list of positive minimatch patterns.
+ * Represents a list of positive glob patterns.
  *
  * @since 0.6.0
  */

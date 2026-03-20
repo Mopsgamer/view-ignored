@@ -1,4 +1,4 @@
-import { minimatch } from "minimatch"
+import { isMatch } from "micromatch"
 
 import type { PatternCache, PatternList } from "./patternList.js"
 
@@ -42,7 +42,7 @@ export function patternCompile(
 
 	const matchBase = !isRoot && !cleaned.includes("/")
 
-	const minimatchOptions = {
+	const matcherOpts = {
 		dot: true,
 		nonegate: true,
 		nocomment: true,
@@ -70,13 +70,13 @@ export function patternCompile(
 			}
 
 			if (hasGlob) {
-				if (minimatch(str, cleaned, minimatchOptions)) return true
+				if (isMatch(str, cleaned, matcherOpts)) return true
 
 				// Check parents only if there's a glob
 				let lastSlash = str.lastIndexOf("/")
 				while (lastSlash !== -1) {
 					const parent = str.substring(0, lastSlash)
-					if (minimatch(parent, cleaned, minimatchOptions)) return true
+					if (isMatch(parent, cleaned, matcherOpts)) return true
 					lastSlash = str.lastIndexOf("/", lastSlash - 1)
 				}
 			}
