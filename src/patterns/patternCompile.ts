@@ -1,4 +1,4 @@
-import { isMatch } from "micromatch"
+import glob from "micromatch"
 
 import type { PatternCache, PatternList } from "./patternList.js"
 
@@ -70,13 +70,13 @@ export function patternCompile(
 			}
 
 			if (hasGlob) {
-				if (isMatch(str, cleaned, matcherOpts)) return true
+				if (glob.isMatch(str, cleaned, matcherOpts)) return true
 
 				// Check parents only if there's a glob
 				let lastSlash = str.lastIndexOf("/")
 				while (lastSlash !== -1) {
 					const parent = str.substring(0, lastSlash)
-					if (isMatch(parent, cleaned, matcherOpts)) return true
+					if (glob.isMatch(parent, cleaned, matcherOpts)) return true
 					lastSlash = str.lastIndexOf("/", lastSlash - 1)
 				}
 			}
