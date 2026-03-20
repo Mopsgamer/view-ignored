@@ -16,26 +16,15 @@ export async function opendir(
 
 	const normalParentPath = place
 	const substr = normalParentPath.substring(cwd.length + 1)
-	let parentPath: string
-	if (normalParentPath.length === cwd.length) {
-		parentPath = "."
-	} else {
-		parentPath = substr
-	}
+	const isRootDir = normalParentPath.length === cwd.length
+	const parentPath = isRootDir ? "." : substr
 
 	await resolveSources({ ctx, cwd, fs, signal, target, dir: parentPath })
 
 	let stop = false
 	for await (const entry of dir) {
 		const from = place + "/" + entry.name
-
-		let path: string
-
-		if (normalParentPath.length === cwd.length) {
-			path = entry.name
-		} else {
-			path = substr + "/" + entry.name
-		}
+		const path = isRootDir ? entry.name : substr + "/" + entry.name
 
 		const task = (async (): Promise<void> => {
 			const r = await cb(entry, parentPath, path)
