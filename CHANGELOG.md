@@ -8,7 +8,10 @@ and this project adheres to
 
 ## [Unreleased]
 
-- Improve performace.
+- Optimized matching logic by using short-circuit string checks.
+- Migrated from `minimatch` to `micromatch` for faster glob evaluation.
+- Changed `re` property from `RegExp` to `{ test(str: string): boolean }`
+  to support optimized non-regex matching.
 
 ## [0.10.0] - 2026-03-02
 
