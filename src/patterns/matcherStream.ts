@@ -2,10 +2,9 @@ import type { Dirent } from "node:fs"
 
 import { EventEmitter } from "node:events"
 
-import type { MatcherContext } from "../patterns/matcherContext.js"
+import type { MatcherContext, Resource } from "../patterns/matcherContext.js"
 import type { ScanOptions, FsAdapter } from "../types.js"
 import type { RuleMatch } from "./rule.js"
-import type { Source } from "./source.js"
 
 import { opendir } from "../opendir.js"
 import { join, unixify } from "../unixify.js"
@@ -37,13 +36,6 @@ export type EntryInfo = {
 	 * @since 0.6.0
 	 */
 	match: RuleMatch
-
-	/**
-	 * The matcher context.
-	 *
-	 * @since 0.6.0
-	 */
-	ctx: MatcherContext
 }
 
 /**
@@ -117,7 +109,7 @@ export class MatcherStream extends EventEmitter<EventMap> {
 
 		const ctx: MatcherContext = {
 			paths: new Map<string, RuleMatch>(),
-			external: new Map<string, Source>(),
+			external: new Map<string, Resource>(),
 			failed: [],
 			depthPaths: new Map<string, number>(),
 			totalFiles: 0,
@@ -139,18 +131,22 @@ export class MatcherStream extends EventEmitter<EventMap> {
 			target,
 		}
 
-		await target.init?.({ ctx, cwd, fs, signal, target })
+		await target.init?.({ cwd, fs, signal, target })
 		let from = join(normalCwd, within)
-		await opendir({ ctx, cwd: normalCwd, fs, signal, target }, from, (entry, parentPath, path) => {
-			return walkIncludes({
-				path,
-				parentPath,
-				entry,
-				ctx,
-				stream: this,
-				scanOptions,
-			})
-		})
+		await opendir(
+			{ cwd: normalCwd, fs, signal, target, external: ctx.external },
+			from,
+			(entry, parentPath, path) => {
+				return walkIncludes({
+					path,
+					parentPath,
+					entry,
+					external: ctx.external,
+					stream: this,
+					scanOptions,
+				})
+			},
+		)
 		this.emit("end", ctx)
 	}
 }

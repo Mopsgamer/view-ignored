@@ -13,7 +13,7 @@ import { resolveNegatable, type Source } from "./source.js"
  */
 export function extractGitignore(source: Source, content: Buffer): void {
 	extract(source, content)
-	for (const element of source.pattern) {
+	for (const element of source.rules) {
 		ruleCompile(element)
 	}
 }
@@ -27,7 +27,7 @@ export function extractGitignore(source: Source, content: Buffer): void {
  */
 export function extractGitignoreNocase(source: Source, content: Buffer): void {
 	extract(source, content)
-	for (const element of source.pattern) {
+	for (const element of source.rules) {
 		ruleCompile(element, { nocase: true })
 	}
 }
@@ -49,5 +49,5 @@ function extract(source: Source, content: Buffer) {
 
 		resolveNegatable(line, false, include, exclude)
 	}
-	source.pattern.push(include, exclude)
+	source.rules.push(include, exclude)
 }

@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- Rename `Source.pattern` to `Source.rules`.
+- Remove ctx option from some walker methods to allow complete concurrency.
+
 ## [0.10.1] - 2026-03-20
 
 - Optimized matching logic by using short-circuit string checks.

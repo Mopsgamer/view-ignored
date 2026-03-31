@@ -3,7 +3,7 @@ import { dirname } from "node:path"
 import type { Target } from "../targets/target.js"
 import type { FsAdapter } from "../types.js"
 import type { PatternFinderOptions, Extractor } from "./extractor.js"
-import type { MatcherContext } from "./matcherContext.js"
+import type { MatcherContext, Resource } from "./matcherContext.js"
 import type { PatternCompileOptions } from "./patternCompile.js"
 import type { Rule } from "./rule.js"
 import type { Source } from "./source.js"
@@ -48,14 +48,14 @@ export interface ResolveSourcesOptions extends PatternFinderOptions {
  * @since 0.6.0
  */
 export async function resolveSources(options: ResolveSourcesOptions): Promise<void> {
-	const { fs, ctx, cwd, signal, target } = options
+	const { fs, external, cwd, signal, target } = options
 	let dir = options.dir
 
-	if (ctx.external.has(dir)) {
+	if (external.has(dir)) {
 		return
 	}
 
-	let source: Source | "none" | undefined
+	let source: Resource | undefined
 	const noSourceDirList: string[] = [dir]
 
 	if (dir !== ".") {
@@ -64,11 +64,11 @@ export async function resolveSources(options: ResolveSourcesOptions): Promise<vo
 		// find source from an ancestor [dir < ... < cwd]
 		while (true) {
 			signal?.throwIfAborted()
-			source = ctx.external.get(dir)
+			source = external.get(dir)
 			if (source !== undefined) {
 				// if cache is found populate descendants [cwd > ... > dir]
 				for (const noSourceDir of noSourceDirList) {
-					ctx.external.set(noSourceDir, source)
+					external.set(noSourceDir, source)
 				}
 				return
 			}
@@ -95,39 +95,37 @@ export async function resolveSources(options: ResolveSourcesOptions): Promise<vo
 		}
 		preCwdSegments.reverse()
 
-		source = await findSourceForAbsoluteDirs(preCwdSegments, ctx, fs, target, signal)
+		source = await findSourceForAbsoluteDirs(preCwdSegments, fs, target, signal)
 		if (typeof source === "object") {
 			for (const noSourceDir of noSourceDirList) {
 				signal?.throwIfAborted()
-				ctx.external.set(noSourceDir, source)
+				external.set(noSourceDir, source)
 			}
 			return
 		}
 	}
 
 	const absPaths = noSourceDirList.map((rel) => join(cwd, rel))
-	source = await findSourceForAbsoluteDirs(absPaths, ctx, fs, target, signal)
+	source = await findSourceForAbsoluteDirs(absPaths, fs, target, signal)
 	if (source !== undefined) {
 		for (const noSourceDir of noSourceDirList) {
 			signal?.throwIfAborted()
-			ctx.external.set(noSourceDir, source)
+			external.set(noSourceDir, source)
 		}
 	}
 }
 
 async function findSourceForAbsoluteDirs(
 	paths: string[],
-	ctx: MatcherContext,
 	fs: FsAdapter,
 	target: Target,
 	signal: AbortSignal | null,
-): Promise<Source | "none"> {
+): Promise<Resource> {
 	for (const parent of paths) {
 		for (const extractor of target.extractors) {
 			signal?.throwIfAborted()
-			const s = await tryExtractor(parent, fs, ctx, extractor)
-			if (typeof s === "object" && s.error) {
-				ctx.failed.push(s)
+			const s = await tryExtractor(parent, fs, extractor)
+			if (typeof s === "object" && "error" in s) {
 				return s
 			}
 			if (typeof s === "object") {
@@ -141,9 +139,8 @@ async function findSourceForAbsoluteDirs(
 async function tryExtractor(
 	cwd: string,
 	fs: FsAdapter,
-	ctx: MatcherContext,
 	extractor: Extractor,
-): Promise<Source | "none"> {
+): Promise<Resource> {
 	let abs = join(cwd, extractor.path)
 	const name = base(extractor.path)
 
@@ -151,7 +148,7 @@ async function tryExtractor(
 		name,
 		path: extractor.path,
 		inverted: false,
-		pattern: [],
+		rules: [],
 	}
 
 	let buff: Buffer | undefined
@@ -162,12 +159,11 @@ async function tryExtractor(
 		if (error.code === "ENOENT") {
 			return "none"
 		}
-		newSource.error = error
-		return newSource
+		return {source: newSource, error}
 	}
 
 	try {
-		const act = extractor.extract(newSource, buff, ctx)
+		const act = extractor.extract(newSource, buff)
 		if (act === "none") {
 			return act
 		}
@@ -175,11 +171,11 @@ async function tryExtractor(
 		if (err === "none") {
 			return err
 		}
-		newSource.error =
+		const error =
 			err instanceof Error
 				? err
 				: new Error("Unknown error during source extraction", { cause: err })
-		return newSource
+		return {source: newSource, error}
 	}
 	return newSource
 }

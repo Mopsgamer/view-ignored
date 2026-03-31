@@ -2,8 +2,6 @@ import type { NestedDirectoryJSON } from "memfs"
 
 import { describe, test, expect } from "bun:test"
 
-import type { Source } from "../patterns/source.js"
-
 import { testScan, type PathHandlerOptions } from "../testScan.test.js"
 import { Yarn as target } from "./yarn.js"
 
@@ -178,10 +176,9 @@ describe("Yarn", () => {
 				expect(ctx.paths.has("index.js")).toBeFalse()
 				expect(ctx.paths.has("packages/a/index.js")).toBeFalse()
 
-				let source = ctx.external.get("packages/a")
-				expect(source).toBeObject()
-				source = source as Source
-				expect(source.path).toBe("package.json")
+				let src = ctx.external.get("packages/a") as { source: { path: string } } | undefined
+				expect(src).toBeObject()
+				expect(src?.source?.path).toBe("package.json")
 			},
 			{ target, cwd: process.cwd() + "/test" },
 		)
@@ -218,7 +215,9 @@ describe("Yarn", () => {
 				expect(ctx.paths.get("packages/a/")).toBeUndefined()
 
 				expect(ctx.external.get("packages/a")).toBeUndefined()
-				expect((ctx.external.get(".") as Source)?.path).toBe("package.json")
+				const src = ctx.external.get(".") as { source: { path: string } } | undefined
+				expect(src).toBeObject()
+				expect(src?.source?.path).toBe("package.json")
 			},
 			{ target, cwd: process.cwd() + "/test/packages/a" },
 		)

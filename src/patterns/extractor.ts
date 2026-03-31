@@ -1,6 +1,6 @@
 import type { Target } from "../targets/target.js"
 import type { FsAdapter } from "../types.js"
-import type { MatcherContext } from "./matcherContext.js"
+import type { Resource } from "./matcherContext.js"
 import type { Source } from "./source.js"
 
 /**
@@ -8,12 +8,12 @@ import type { Source } from "./source.js"
  * Results are available in `ctx.external`.
  * If `"none"` returned or throwed, will skip the extractor.
  *
- * @see {@link Source.pattern} for more details.
+ * @see {@link Source.rules} for more details.
  * @throws Error if extraction fails. Processing stops.
  *
  * @since 0.6.0
  */
-export type ExtractorFn = (source: Source, content: Buffer, ctx: MatcherContext) => void | "none"
+export type ExtractorFn = (source: Source, content: Buffer) => void | "none"
 
 /**
  * Defines a method for extracting patterns from a specific source file.
@@ -56,11 +56,15 @@ export interface PatternFinderOptions {
 	 */
 	fs: FsAdapter
 	/**
-	 * The context to modify.
+	 * Maps directory paths to their corresponding sources.
 	 *
-	 * @since 0.6.0
+	 * @example
+	 * "dir" => Source
+	 * "dir/subdir" => Source
+	 *
+	 * @since 0.11.0
 	 */
-	ctx: MatcherContext
+	external: Map<string, Resource>
 	/**
 	 * The current working directory.
 	 *

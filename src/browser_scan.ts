@@ -1,6 +1,5 @@
-import type { MatcherContext } from "./patterns/matcherContext.js"
+import type { MatcherContext, Resource } from "./patterns/matcherContext.js"
 import type { RuleMatch } from "./patterns/rule.js"
-import type { Source } from "./patterns/source.js"
 import type { ScanOptions, FsAdapter } from "./types.js"
 
 import { opendir } from "./opendir.js"
@@ -42,7 +41,7 @@ export function scan(
 
 	const ctx: MatcherContext = {
 		paths: new Map<string, RuleMatch>(),
-		external: new Map<string, Source>(),
+		external: new Map<string, Resource>(),
 		failed: [],
 		depthPaths: new Map<string, number>(),
 		totalFiles: 0,
@@ -65,14 +64,14 @@ export function scan(
 	}
 
 	return (async (): Promise<MatcherContext> => {
-		await target.init?.({ ctx, cwd, fs, signal, target })
+		await target.init?.({ cwd, fs, signal, target })
 		let from = join(normalCwd, within)
-		await opendir({ ctx, cwd: normalCwd, fs, signal, target }, from, (entry, parentPath, path) => {
+		await opendir({ cwd: normalCwd, fs, signal, target, external: ctx.external }, from, (entry, parentPath, path) => {
 			return walkIncludes({
 				path,
 				entry,
 				parentPath,
-				ctx,
+				external: ctx.external,
 				stream: undefined,
 				scanOptions,
 			})

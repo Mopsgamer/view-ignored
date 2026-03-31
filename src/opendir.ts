@@ -9,7 +9,7 @@ export async function opendir(
 	place: string,
 	cb: (dirent: Dirent, parentPath: string, path: string) => Promise<0 | 1 | 2>,
 ): Promise<boolean> {
-	const { ctx, cwd, fs, signal, target } = options
+	const { external, cwd, fs, signal, target } = options
 
 	const dir = await fs.promises.opendir(place)
 	const tasks: Promise<void>[] = []
@@ -19,7 +19,7 @@ export async function opendir(
 	const isRootDir = normalParentPath.length === cwd.length
 	const parentPath = isRootDir ? "." : substr
 
-	await resolveSources({ ctx, cwd, fs, signal, target, dir: parentPath })
+	await resolveSources({ external, cwd, fs, signal, target, dir: parentPath })
 
 	let stop = false
 	for await (const entry of dir) {

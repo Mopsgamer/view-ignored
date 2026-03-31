@@ -1,7 +1,7 @@
 import { describe, test, expect } from "bun:test"
 import { Volume, type NestedDirectoryJSON } from "memfs"
 
-import type { MatcherContext } from "./matcherContext.js"
+import type { MatcherContext, Resource } from "./matcherContext.js"
 import type { PatternCache, PatternList } from "./patternList.js"
 import type { RuleMatch } from "./rule.js"
 import type { Source } from "./source.js"
@@ -89,7 +89,7 @@ const sourcePackageJson: Source = {
 	inverted: true,
 	name: "package.json",
 	path: "package.json",
-	pattern: [
+	rules: [
 		{
 			excludes: false,
 			pattern: sourcePackageJsonExclude,
@@ -114,7 +114,7 @@ const sourceGitignore: Source = {
 	inverted: false,
 	name: ".gitignore",
 	path: ".gitignore",
-	pattern: [
+	rules: [
 		{
 			excludes: true,
 			pattern: sourceGitignoreExclude,
@@ -165,7 +165,7 @@ describe("matcherContext{Add,Remove}Path prepare", () => {
 	test("ctx", () => {
 		expect(ctx).toMatchObject(<MatcherContext>{
 			depthPaths: new Map<string, number>([]),
-			external: new Map<string, Source>([
+			external: new Map<string, Resource>([
 				[".", sourcePackageJson],
 				["node_modules", sourcePackageJson],
 				["node_modules/.bin", sourcePackageJson],
@@ -248,7 +248,7 @@ describe("matcherContext{Add,Remove}Path prepare", () => {
 				["out/patterns", 3],
 				["out/targets", 3],
 			]),
-			external: new Map<string, Source>([
+			external: new Map<string, Resource>([
 				[".", sourcePackageJson],
 				["node_modules", sourcePackageJson],
 				["node_modules/.bin", sourcePackageJson],
@@ -315,7 +315,7 @@ describe("matcherContextAddPath", () => {
 			// NPM will use gitignore
 			const newc = <MatcherContext>{
 				depthPaths: new Map<string, number>([]),
-				external: new Map<string, Source>([
+				external: new Map<string, Resource>([
 					[".", sourceGitignore],
 					["node_modules", sourceGitignore],
 					["node_modules/.bin", sourceGitignore],
@@ -363,7 +363,7 @@ describe("matcherContextAddPath", () => {
 			expect(await matcherContextAddPath(c, opt, "out/testdir/testsubdir/test")).toBeTrue()
 			expect(c).toMatchObject({
 				depthPaths: new Map<string, number>([]),
-				external: new Map<string, Source>([
+				external: new Map<string, Resource>([
 					[".", sourcePackageJson],
 					["node_modules", sourcePackageJson],
 					["node_modules/.bin", sourcePackageJson],
@@ -468,7 +468,7 @@ describe("matcherContextRemovePath", () => {
 			expect(await matcherContextRemovePath(c, opt, "out/index.js")).toBeTrue()
 			expect(c).toMatchObject({
 				depthPaths: new Map<string, number>([]),
-				external: new Map<string, Source>([
+				external: new Map<string, Resource>([
 					[".", sourcePackageJson],
 					["node_modules", sourcePackageJson],
 					["node_modules/.bin", sourcePackageJson],
@@ -533,7 +533,7 @@ describe("matcherContextRemovePath", () => {
 			expect(await matcherContextRemovePath(c, opt, "out/")).toBeTrue()
 			expect(c).toMatchObject({
 				depthPaths: new Map<string, number>([]),
-				external: new Map<string, Source>([
+				external: new Map<string, Resource>([
 					[".", sourcePackageJson],
 					["node_modules", sourcePackageJson],
 					["node_modules/.bin", sourcePackageJson],
@@ -564,7 +564,7 @@ describe("matcherContextRemovePath", () => {
 					["out/patterns", 3],
 					["out/targets", 2],
 				]),
-				external: new Map<string, Source>([
+				external: new Map<string, Resource>([
 					[".", sourcePackageJson],
 					["node_modules", sourcePackageJson],
 					["node_modules/.bin", sourcePackageJson],
@@ -619,7 +619,7 @@ describe("matcherContextRemovePath", () => {
 					["src/patterns", 3],
 					["src/targets", 3],
 				]),
-				external: new Map<string, Source>([
+				external: new Map<string, Resource>([
 					[".", sourceGitignore],
 					["node_modules", sourceGitignore],
 					["node_modules/.bin", sourceGitignore],

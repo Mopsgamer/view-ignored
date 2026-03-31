@@ -2,6 +2,23 @@ import type { RuleMatch } from "./rule.js"
 import type { Source } from "./source.js"
 
 /**
+ * Represents missing source, existing source or invalid source.
+ *
+ * @since 0.11.0
+ */
+export type Resource = Source | InvalidSource | "none"
+
+/**
+ * Represents a source with an associated error.
+ *
+ * @since 0.11.0
+ */
+export type InvalidSource = {
+	source: Source
+	error: Error
+}
+
+/**
  * Post-scan results.
  *
  * @since 0.6.0
@@ -24,7 +41,7 @@ export interface MatcherContext {
 	 *
 	 * @since 0.6.0
 	 */
-	external: Map<string, Source | "none">
+	external: Map<string, Resource>
 
 	/**
 	 * If any fatal errors were encountered during source extractions,
@@ -32,7 +49,7 @@ export interface MatcherContext {
 	 *
 	 * @since 0.6.0
 	 */
-	failed: Source[]
+	failed: InvalidSource[]
 
 	/**
 	 * Maps directory paths to the quantity of files they contain.

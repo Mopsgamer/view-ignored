@@ -14,7 +14,7 @@ export type Source = {
 	 *
 	 * @since 0.6.0
 	 */
-	pattern: Rule[]
+	rules: Rule[]
 
 	/**
 	 * Name of the source file.
@@ -40,15 +40,6 @@ export type Source = {
 	 * @since 0.6.0
 	 */
 	inverted: boolean
-
-	/**
-	 * Error encountered during extraction, if any.
-	 *
-	 * @see {@link ExtractorFn}
-	 *
-	 * @since 0.6.0
-	 */
-	error?: Error
 }
 
 /**
