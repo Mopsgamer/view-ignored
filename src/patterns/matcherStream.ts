@@ -136,8 +136,8 @@ export class MatcherStream extends EventEmitter<EventMap> {
 		await opendir(
 			{ cwd: normalCwd, fs, signal, target, external: ctx.external },
 			from,
-			(entry, parentPath, path) => {
-				return walkIncludes({
+			async (entry, parentPath, path) => {
+				const result = await walkIncludes({
 					path,
 					parentPath,
 					entry,
@@ -145,6 +145,7 @@ export class MatcherStream extends EventEmitter<EventMap> {
 					stream: this,
 					scanOptions,
 				})
+				return result.next
 			},
 		)
 		this.emit("end", ctx)

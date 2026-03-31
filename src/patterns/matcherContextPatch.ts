@@ -169,8 +169,8 @@ async function rescan(ctx: MatcherContext, options: Required<ScanOptions>): Prom
 
 	const normalCwd = unixify(cwd)
 	let from = join(normalCwd, within)
-	await opendir({ cwd: normalCwd, fs, signal, target, external: ctx.external }, from, (entry, parentPath, path) => {
-		return walkIncludes({
+	await opendir({ cwd: normalCwd, fs, signal, target, external: ctx.external }, from, async (entry, parentPath, path) => {
+		const result = await walkIncludes({
 			path,
 			parentPath,
 			entry,
@@ -178,6 +178,7 @@ async function rescan(ctx: MatcherContext, options: Required<ScanOptions>): Prom
 			stream: undefined,
 			scanOptions: { ...options, cwd: normalCwd },
 		})
+		return result.next
 	})
 	ctx.totalDirs = ctx.totalFiles = ctx.totalMatchedFiles = -1
 }

@@ -66,8 +66,8 @@ export function scan(
 	return (async (): Promise<MatcherContext> => {
 		await target.init?.({ cwd, fs, signal, target })
 		let from = join(normalCwd, within)
-		await opendir({ cwd: normalCwd, fs, signal, target, external: ctx.external }, from, (entry, parentPath, path) => {
-			return walkIncludes({
+		await opendir({ cwd: normalCwd, fs, signal, target, external: ctx.external }, from, async (entry, parentPath, path) => {
+			const result = await walkIncludes({
 				path,
 				entry,
 				parentPath,
@@ -75,6 +75,7 @@ export function scan(
 				stream: undefined,
 				scanOptions,
 			})
+			return result.next
 		})
 		return ctx
 	})()
