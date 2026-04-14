@@ -19,6 +19,6 @@
 		"skipChecks": true
 	},
 	"git": {
-		"requireBranch": "main"
+		"requireBranch": false
 	}
 }
