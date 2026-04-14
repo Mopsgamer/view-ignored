@@ -1,5 +1,5 @@
 import type { InitState } from "./initState.js"
-import type { Resource } from "./matcherContext.js"
+import type { Resource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"
 
 /**

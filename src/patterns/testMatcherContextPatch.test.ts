@@ -1,8 +1,9 @@
 import { describe, test, expect } from "bun:test"
 import { Volume, type NestedDirectoryJSON } from "memfs"
 
-import type { MatcherContext, Resource } from "./matcherContext.js"
+import type { MatcherContext } from "./matcherContext.js"
 import type { PatternCache, PatternList } from "./patternList.js"
+import type { Resource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"
 import type { Source } from "./source.js"
 

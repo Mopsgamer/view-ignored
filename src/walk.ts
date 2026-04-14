@@ -1,7 +1,8 @@
 import type { Dirent } from "node:fs"
 
-import type { Resource } from "./patterns/matcherContext.js"
+import type { MatcherContext } from "./patterns/matcherContext.js"
 import type { MatcherStream } from "./patterns/matcherStream.js"
+import type { Resource } from "./patterns/resource.js"
 import type { ScanOptions } from "./types.js"
 
 import { getDepth } from "./getDepth.js"
@@ -17,13 +18,13 @@ export type WalkOptions = {
 }
 
 export type WalkResult = {
-	addFail: Error | undefined
 	addToPaths: [string, RuleMatch] | undefined
-	addToMatchedFiles: boolean
-	addToMatchedDirs: boolean
+	incrementTotalDirs: boolean
+	incrementTotalFiles: boolean
+	incrementTotalMatchedFiles: boolean
 	addDepthPathDir: string | undefined
-	parentMustBeIncluded: boolean
-	next: 0 | 1 | 2
+	addParentToPaths: [string, RuleMatch] | undefined
+	next: 0 | 1
 }
 
 export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
@@ -32,12 +33,12 @@ export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
 	const { fs, target, cwd, depth: maxDepth, invert, signal, fastDepth, fastInternal } = scanOptions
 
 	const result: WalkResult = {
-		addFail: undefined,
 		addToPaths: undefined,
-		addToMatchedFiles: false,
-		addToMatchedDirs: false,
+		incrementTotalDirs: false,
+		incrementTotalFiles: false,
+		incrementTotalMatchedFiles: false,
 		addDepthPathDir: undefined,
-		parentMustBeIncluded: false,
+		addParentToPaths: undefined,
 		next: 0,
 	}
 
@@ -47,10 +48,10 @@ export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
 	let direntPath: string
 	if (isDir) {
 		direntPath = path + "/"
-		result.addToMatchedFiles = true
+		result.incrementTotalDirs = true
 	} else {
 		direntPath = path
-		result.addToMatchedDirs = true
+		result.incrementTotalFiles = true
 	}
 
 	if (fastDepth) {
@@ -73,8 +74,7 @@ export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
 				if (stream) {
 					stream.emit("dirent", { dirent: entry, match, path: direntPath })
 				}
-				result.next = 2
-				return result
+				throw match.error
 			}
 
 			if (match.ignored) {
@@ -93,7 +93,7 @@ export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
 				return result
 			}
 
-			result.addToMatchedFiles = true
+			result.incrementTotalMatchedFiles = true
 			const dir = path.substring(0, depthSlash)
 			result.addDepthPathDir = dir
 			result.next = 1
@@ -118,8 +118,7 @@ export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
 		if (stream) {
 			stream.emit("dirent", { dirent: entry, match, path: direntPath })
 		}
-		result.next = 2
-		return result
+		throw match.error
 	}
 
 	if (match.ignored) {
@@ -148,7 +147,7 @@ export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
 		return result
 	}
 
-	result.addToMatchedFiles = true
+	result.incrementTotalMatchedFiles = true
 	const { depth, depthSlash } = getDepth(path, maxDepth)
 	if (depth > maxDepth) {
 		const dir = path.substring(0, depthSlash)
@@ -161,7 +160,7 @@ export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
 		const lastSlash = path.lastIndexOf("/")
 		if (lastSlash >= 0) {
 			const dir = path.substring(0, lastSlash) + "/"
-			result.parentMustBeIncluded = true
+			result.addParentToPaths = [dir, match]
 			if (stream) {
 				stream.emit("dirent", { dirent: entry, match, path: dir })
 			}
@@ -174,4 +173,21 @@ export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
 
 	result.next = 0
 	return result
+}
+
+/**
+ * Patches the {@link MatcherContext} with the given results.
+ *
+ * @since 0.11.0
+ */
+export function walkPatch(ctx: MatcherContext, results: WalkResult[]): void {
+	for (const r of results) {
+		if (r.addParentToPaths) ctx.paths.set(r.addParentToPaths[0], r.addParentToPaths[1])
+		if (r.addToPaths) ctx.paths.set(r.addToPaths[0], r.addToPaths[1])
+		if (r.incrementTotalFiles) ctx.totalFiles++
+		if (r.incrementTotalDirs) ctx.totalDirs++
+		if (r.incrementTotalMatchedFiles) ctx.totalMatchedFiles++
+		if (r.addDepthPathDir)
+			ctx.depthPaths.set(r.addDepthPathDir, (ctx.depthPaths.get(r.addDepthPathDir) ?? 0) + 1)
+	}
 }

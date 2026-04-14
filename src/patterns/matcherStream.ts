@@ -2,13 +2,14 @@ import type { Dirent } from "node:fs"
 
 import { EventEmitter } from "node:events"
 
-import type { MatcherContext, Resource } from "../patterns/matcherContext.js"
+import type { MatcherContext } from "../patterns/matcherContext.js"
 import type { ScanOptions, FsAdapter } from "../types.js"
+import type { Resource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"
 
-import { opendir } from "../opendir.js"
-import { join, unixify } from "../unixify.js"
-import { walkIncludes } from "../walk.js"
+import { scanParallel } from "../scanParallel.js"
+import { unixify } from "../unixify.js"
+import { walkPatch, type WalkResult } from "../walk.js"
 
 /**
  * Post-scan entry information.
@@ -132,22 +133,17 @@ export class MatcherStream extends EventEmitter<EventMap> {
 		}
 
 		await target.init?.({ cwd, fs, signal, target })
-		let from = join(normalCwd, within)
-		await opendir(
-			{ cwd: normalCwd, fs, signal, target, external: ctx.external },
-			from,
-			async (entry, parentPath, path) => {
-				const result = await walkIncludes({
-					path,
-					parentPath,
-					entry,
-					external: ctx.external,
-					stream: this,
-					scanOptions,
-				})
-				return result.next
-			},
-		)
+		const results: WalkResult[] = []
+		await scanParallel({
+			ctx,
+			scanOptions,
+			normalCwd,
+			within,
+			results,
+			stream: this,
+		})
+
+		walkPatch(ctx, results)
 		this.emit("end", ctx)
 	}
 }

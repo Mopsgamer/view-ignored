@@ -3,8 +3,9 @@ import { dirname } from "node:path"
 import type { Target } from "../targets/target.js"
 import type { FsAdapter } from "../types.js"
 import type { PatternFinderOptions, Extractor } from "./extractor.js"
-import type { MatcherContext, Resource } from "./matcherContext.js"
+import type { MatcherContext } from "./matcherContext.js" // oxlint-disable-line no-unused-vars used by tsdoc
 import type { PatternCompileOptions } from "./patternCompile.js"
+import type { Resource } from "./resource.js"
 import type { Rule } from "./rule.js"
 import type { Source } from "./source.js"
 
@@ -136,11 +137,7 @@ async function findSourceForAbsoluteDirs(
 	return "none"
 }
 
-async function tryExtractor(
-	cwd: string,
-	fs: FsAdapter,
-	extractor: Extractor,
-): Promise<Resource> {
+async function tryExtractor(cwd: string, fs: FsAdapter, extractor: Extractor): Promise<Resource> {
 	let abs = join(cwd, extractor.path)
 	const name = base(extractor.path)
 
@@ -159,7 +156,7 @@ async function tryExtractor(
 		if (error.code === "ENOENT") {
 			return "none"
 		}
-		return {source: newSource, error}
+		return { source: newSource, error }
 	}
 
 	try {
@@ -175,7 +172,7 @@ async function tryExtractor(
 			err instanceof Error
 				? err
 				: new Error("Unknown error during source extraction", { cause: err })
-		return {source: newSource, error}
+		return { source: newSource, error }
 	}
 	return newSource
 }

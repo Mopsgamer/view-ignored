@@ -176,9 +176,9 @@ describe("Yarn", () => {
 				expect(ctx.paths.has("index.js")).toBeFalse()
 				expect(ctx.paths.has("packages/a/index.js")).toBeFalse()
 
-				let src = ctx.external.get("packages/a") as { source: { path: string } } | undefined
+				const src = ctx.external.get("packages/a") as any
 				expect(src).toBeObject()
-				expect(src?.source?.path).toBe("package.json")
+				expect(src?.path).toBe("package.json")
 			},
 			{ target, cwd: process.cwd() + "/test" },
 		)
@@ -215,9 +215,9 @@ describe("Yarn", () => {
 				expect(ctx.paths.get("packages/a/")).toBeUndefined()
 
 				expect(ctx.external.get("packages/a")).toBeUndefined()
-				const src = ctx.external.get(".") as { source: { path: string } } | undefined
+				const src = ctx.external.get(".") as any
 				expect(src).toBeObject()
-				expect(src?.source?.path).toBe("package.json")
+				expect(src?.path).toBe("package.json")
 			},
 			{ target, cwd: process.cwd() + "/test/packages/a" },
 		)

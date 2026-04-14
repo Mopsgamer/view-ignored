@@ -37,7 +37,15 @@ export async function matcherContextAddPath(
 		await resolveSources({ external: ctx.external, cwd, dir: direntPath, fs, signal, target })
 		ctx.paths.set(
 			entry,
-			await target.ignores({ fs, cwd, entry: direntPath, external: ctx.external, signal, target, parentPath }),
+			await target.ignores({
+				fs,
+				cwd,
+				entry: direntPath,
+				external: ctx.external,
+				signal,
+				target,
+				parentPath,
+			}),
 		)
 		if (ctx.totalFiles >= 0) {
 			ctx.totalDirs++
@@ -61,7 +69,15 @@ export async function matcherContextAddPath(
 	// 1. recursively populate parents
 	await matcherContextAddPath(ctx, options, parentPath + "/")
 	// 2. if ignored, remove, otherwise add
-	const match = await target.ignores({ fs, cwd, entry, external: ctx.external, signal, target, parentPath })
+	const match = await target.ignores({
+		fs,
+		cwd,
+		entry,
+		external: ctx.external,
+		signal,
+		target,
+		parentPath,
+	})
 	if (match.ignored) {
 		// 2.1. remove
 		await matcherContextRemovePath(ctx, options, entry)
@@ -118,7 +134,9 @@ export async function matcherContextRemovePath(
 			}
 			if (ctx.external.delete(element) && ctx.failed.length) {
 				// 3.1. remove failed sources
-				const failedEntryIndex = ctx.failed.findIndex((fail) => dirname(fail.source.path) === element)
+				const failedEntryIndex = ctx.failed.findIndex(
+					(fail) => dirname(fail.source.path) === element,
+				)
 				if (failedEntryIndex >= 0) {
 					ctx.failed.splice(failedEntryIndex, 1)
 				}
@@ -169,16 +187,20 @@ async function rescan(ctx: MatcherContext, options: Required<ScanOptions>): Prom
 
 	const normalCwd = unixify(cwd)
 	let from = join(normalCwd, within)
-	await opendir({ cwd: normalCwd, fs, signal, target, external: ctx.external }, from, async (entry, parentPath, path) => {
-		const result = await walkIncludes({
-			path,
-			parentPath,
-			entry,
-			external: ctx.external,
-			stream: undefined,
-			scanOptions: { ...options, cwd: normalCwd },
-		})
-		return result.next
-	})
+	await opendir(
+		{ cwd: normalCwd, fs, signal, target, external: ctx.external },
+		from,
+		async (entry, parentPath, path) => {
+			const result = await walkIncludes({
+				path,
+				parentPath,
+				entry,
+				external: ctx.external,
+				stream: undefined,
+				scanOptions: { ...options, cwd: normalCwd },
+			})
+			return result.next
+		},
+	)
 	ctx.totalDirs = ctx.totalFiles = ctx.totalMatchedFiles = -1
 }
