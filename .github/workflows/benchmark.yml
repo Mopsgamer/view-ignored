@@ -36,8 +36,8 @@ jobs:
 
       - name: Benchmark Bun
         run: |
-          bun --expose-gc scripts/benchmark.js
+          bun bench
 
       - name: Benchmark Node
         run: |
-          node --expose-gc scripts/benchmark.js
+          bun bench:node
