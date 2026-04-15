@@ -37,9 +37,9 @@ export async function scanParallel(options: ScanParallelOptions): Promise<WalkRe
 	}
 	const rsOptions: ResolveSourcesOptions = Object.assign(
 		{
-			external,
 			cwd: scanOptions.cwd,
 			dir: paths.parentPath,
+			external,
 		},
 		scanOptions,
 	)
@@ -49,8 +49,8 @@ export async function scanParallel(options: ScanParallelOptions): Promise<WalkRe
 	const dirPath = join(scanOptions.cwd, within)
 	const dir = await scanOptions.fs.promises.opendir(dirPath)
 	const scan1Options = {
-		stream,
 		scanOptions,
+		stream,
 	} as const
 	let isRoot = true
 	const next: { dir: Dir; paths: { parentPath: string; path: string } }[] = Array.from({
@@ -115,25 +115,6 @@ function makeQ(): Q {
 	let reportedId = -1
 	let ids: number[] = []
 	return <Q>{
-		promise: proc.promise,
-		async push(id, o) {
-			if (want.length !== 0) {
-				want.push(o)
-				return
-			}
-			try {
-				results.push(await walkIncludes(o))
-				ids.push(id)
-				while (want.length > 0) {
-					if (reportedId >= 0 && id > reportedId) break
-					results.push(await walkIncludes(want.shift()!))
-				}
-				if (isReady) proc.resolve({ results, reportedId: -1 })
-			} catch {
-				reportedId = id
-				proc.resolve({ results, reportedId: id })
-			}
-		},
 		async cut(failedId) {
 			if (failedId === -1) return results
 			reportedId = failedId
@@ -148,7 +129,26 @@ function makeQ(): Q {
 		},
 		done() {
 			isReady = true
-			if (want.length === 0) proc.resolve({ results, reportedId: -1 })
+			if (want.length === 0) proc.resolve({ reportedId: -1, results })
+		},
+		promise: proc.promise,
+		async push(id, o) {
+			if (want.length !== 0) {
+				want.push(o)
+				return
+			}
+			try {
+				results.push(await walkIncludes(o))
+				ids.push(id)
+				while (want.length > 0) {
+					if (reportedId >= 0 && id > reportedId) break
+					results.push(await walkIncludes(want.shift()!))
+				}
+				if (isReady) proc.resolve({ reportedId: -1, results })
+			} catch {
+				reportedId = id
+				proc.resolve({ reportedId: id, results })
+			}
 		},
 	}
 }

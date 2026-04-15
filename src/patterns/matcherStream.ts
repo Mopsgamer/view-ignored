@@ -108,18 +108,17 @@ export class MatcherStream extends EventEmitter<EventMap> {
 		} = this.#options
 
 		const ctx: MatcherContext = {
-			paths: new Map<string, RuleMatch>(),
+			depthPaths: new Map<string, number>(),
 			external: new Map<string, Resource>(),
 			failed: [],
-			depthPaths: new Map<string, number>(),
+			paths: new Map<string, RuleMatch>(),
+			totalDirs: 0,
 			totalFiles: 0,
 			totalMatchedFiles: 0,
-			totalDirs: 0,
 		}
 
 		const scanOptions: Required<ScanOptions> = {
 			cwd,
-			within,
 			depth: maxDepth,
 			fastDepth,
 			fastInternal,
@@ -127,16 +126,17 @@ export class MatcherStream extends EventEmitter<EventMap> {
 			invert,
 			signal,
 			target,
+			within,
 		}
 
 		await target.init?.({ cwd, fs, signal, target })
 		const results: WalkResult[] = []
 		await scanParallel({
 			external: ctx.external,
-			scanOptions,
-			within,
 			results,
+			scanOptions,
 			stream: this,
+			within,
 		})
 
 		walkPatch(ctx, results)

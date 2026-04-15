@@ -10,7 +10,7 @@ describe.skipIf(!!process.env.TEST_NO_SELF)("Git", () => {
 		"scans self",
 		async () => {
 			const files = gitFiles()
-			const r = await scan({ target, fastInternal: true })
+			const r = await scan({ fastInternal: true, target })
 			// this test uses sortFirstFolders implementation
 			// provided by https://jsr.io/@m234/path/0.1.4/sort-cmp.ts
 			// you can install this jsr package in your project

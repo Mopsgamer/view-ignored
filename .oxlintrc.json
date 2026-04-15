@@ -1,7 +1,32 @@
 {
 	"$schema": "./node_modules/oxlint/configuration_schema.json",
-	"plugins": ["import", "oxc"],
+	"plugins": ["import", "oxc", "unicorn", "jsdoc", "eslint"],
 	"rules": {
-		"import/no-cycle": "error"
+		"import/no-cycle": "error",
+		"sort-keys": ["error", "asc", { "natural": true }],
+		"oxc/no-map-spread": "error",
+		"oxc/no-accumulating-spread": "error",
+		"unicorn/prefer-array-index-of": "error",
+        "unicorn/no-useless-iterator-to-array": "error",
+        "eslint/func-names": ["error", "always"],
+
+		"check-access": "warn",
+		"check-property-names": "warn",
+		"check-tag-names": "warn",
+		"empty-tags": "warn",
+		"implements-on-classes": "warn",
+		"no-defaults": "warn",
+		"require-param": "warn",
+		"require-param-description": "warn",
+		"require-param-name": "warn",
+		"require-param-type": "warn",
+		"require-property": "warn",
+		"require-property-description": "warn",
+		"require-property-name": "warn",
+		"require-property-type": "warn",
+		"require-returns": "warn",
+		"require-returns-description": "warn",
+		"require-returns-type": "warn",
+		"require-yields": "warn"
 	}
 }

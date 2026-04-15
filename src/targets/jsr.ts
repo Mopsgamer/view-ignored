@@ -26,9 +26,9 @@ const extractors: Extractor[] = [
 
 const internal: Rule[] = [
 	ruleCompile({
+		compiled: null,
 		excludes: true,
 		pattern: [".git", ".DS_Store"],
-		compiled: null,
 	}),
 ]
 
@@ -36,9 +36,8 @@ const internal: Rule[] = [
  * @since 0.6.0
  */
 export const JSR: Target = {
-	internalRules: internal,
 	extractors,
-	root: ".",
+	ignores: ruleTest,
 	async init({ fs, cwd }) {
 		let content: Buffer
 		const normalCwd = unixify(cwd)
@@ -62,5 +61,6 @@ export const JSR: Target = {
 			throw new Error("Invalid '" + path! + "': " + dist.summary, { cause: dist })
 		}
 	},
-	ignores: ruleTest,
+	internalRules: internal,
+	root: ".",
 }

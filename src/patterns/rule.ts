@@ -193,17 +193,17 @@ function testInternal(internalRules: Rule[], path: string): RuleMatch | null {
 		let [patternMatch, error] = cacheTest(compiled, path)
 		if (error)
 			return {
-				kind: "invalid-internal",
-				pattern: patternMatch,
 				error,
 				ignored: false,
+				kind: "invalid-internal",
+				pattern: patternMatch,
 			}
 
 		if (patternMatch)
 			return {
+				ignored: si.excludes,
 				kind: "internal",
 				pattern: patternMatch,
-				ignored: si.excludes,
 			}
 	}
 
@@ -220,26 +220,26 @@ function testExternal(path: string, source: Source): RuleMatch {
 		let [patternMatch, err] = cacheTest(compiled, path)
 		if (err) {
 			return {
-				kind: "invalid-external",
 				error: err,
-				pattern: patternMatch,
 				ignored: false,
+				kind: "invalid-external",
+				pattern: patternMatch,
 				source,
 			}
 		}
 
 		if (patternMatch)
 			return {
+				ignored: si.excludes,
 				kind: "external",
 				pattern: patternMatch,
-				ignored: si.excludes,
 				source,
 			}
 	}
 
 	return {
-		kind: "no-match",
 		ignored: source.inverted,
+		kind: "no-match",
 		source,
 	}
 }
@@ -264,12 +264,12 @@ export async function ruleTest(options: RuleTestOptions): Promise<RuleMatch> {
 	}
 
 	if (src === "none") {
-		return { kind: "missing-source", ignored: false }
+		return { ignored: false, kind: "missing-source" }
 	}
 
 	if (typeof src === "object" && "error" in src) {
 		const { source, error } = src
-		return { kind: "invalid-source", ignored: true, source, error }
+		return { error, ignored: true, kind: "invalid-source", source }
 	}
 
 	let internalMatch = testInternal(options.target.internalRules, options.entry)

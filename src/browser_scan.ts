@@ -21,7 +21,7 @@ export type * from "./types.js"
  *
  * @since 0.6.0
  */
-export function scan(
+export async function scan(
 	options: ScanOptions & { fs: FsAdapter; cwd: string },
 ): Promise<MatcherContext> {
 	const {
@@ -41,20 +41,19 @@ export function scan(
 	}
 
 	const ctx: MatcherContext = {
-		paths: new Map<string, RuleMatch>(),
+		depthPaths: new Map<string, number>(),
 		external: new Map<string, Resource>(),
 		failed: [],
-		depthPaths: new Map<string, number>(),
+		paths: new Map<string, RuleMatch>(),
+		totalDirs: 0,
 		totalFiles: 0,
 		totalMatchedFiles: 0,
-		totalDirs: 0,
 	}
 
 	const normalCwd = unixify(cwd)
 
 	const scanOptions: Required<ScanOptions> = {
 		cwd: normalCwd,
-		within,
 		depth: maxDepth,
 		fastDepth,
 		fastInternal,
@@ -62,19 +61,18 @@ export function scan(
 		invert,
 		signal,
 		target,
+		within,
 	}
 
-	return (async (): Promise<MatcherContext> => {
-		await target.init?.({ cwd, fs, signal, target })
-		const results: WalkResult[] = []
-		await scanParallel({
-			external: ctx.external,
-			scanOptions,
-			within,
-			results,
-		})
+	await target.init?.({ cwd, fs, signal, target })
+    const results: WalkResult[] = []
+    await scanParallel({
+        external: ctx.external,
+        results,
+        scanOptions,
+        within,
+    })
 
-		walkPatch(ctx, results)
-		return ctx
-	})()
+    walkPatch(ctx, results)
+    return ctx
 }

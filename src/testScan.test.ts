@@ -48,18 +48,18 @@ export async function testScan(
 	if (typeof test === "function") {
 		const ctx = await scan(o)
 		await test({
-			vol,
-			fs: adapter,
 			ctx,
+			fs: adapter,
 			options: o,
+			vol,
 		})
 		const stream = scanStream(o)
 		stream.addListener("end", async (sctx) => {
 			await test({
-				vol,
-				fs: adapter,
 				ctx: sctx,
+				fs: adapter,
 				options: o,
+				vol,
 			})
 			done()
 		})
@@ -102,10 +102,10 @@ export async function testStream(
 		const stream = scanStream(o)
 		await stream.start()
 		await test({
-			vol,
 			fs: adapter,
-			stream,
 			options: o,
+			stream,
+			vol,
 		})
 		return
 	}

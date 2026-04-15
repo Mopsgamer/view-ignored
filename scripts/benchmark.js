@@ -14,19 +14,19 @@ barplot(() => {
 		const gc = "inner"
 		if (!igw)
 			bench("scan (fast)", async () => {
-				return scan({ target, fs, cwd: process.cwd(), fastInternal: true, fastDepth: true })
+				return scan({ cwd: process.cwd(), fastDepth: true, fastInternal: true, fs, target })
 			}).gc(gc)
 		if (!igw)
 			bench("browserScan (fast)", async () => {
-				return browserScan({ target, fs, cwd: process.cwd(), fastInternal: true, fastDepth: true })
+				return browserScan({ cwd: process.cwd(), fastDepth: true, fastInternal: true, fs, target })
 			}).gc(gc)
 		if (!igw)
 			bench("scan", async () => {
-				return scan({ target, fs, cwd: process.cwd() })
+				return scan({ cwd: process.cwd(), fs, target })
 			}).gc(gc)
 		if (!igw)
 			bench("browserScan", async () => {
-				return browserScan({ target, fs, cwd: process.cwd() })
+				return browserScan({ cwd: process.cwd(), fs, target })
 			}).gc(gc)
 		if (!vign)
 			bench("ignoreWalk", async () => {

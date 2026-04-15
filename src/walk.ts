@@ -33,12 +33,12 @@ export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
 	const { fs, target, cwd, depth: maxDepth, invert, signal, fastDepth, fastInternal } = scanOptions
 
 	const result: WalkResult = {
+		addDepthPathDir: undefined,
+		addParentToPaths: undefined,
 		addToPaths: undefined,
 		incrementTotalDirs: false,
 		incrementTotalFiles: false,
 		incrementTotalMatchedFiles: false,
-		addDepthPathDir: undefined,
-		addParentToPaths: undefined,
 		next: 0,
 	}
 
@@ -58,13 +58,13 @@ export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
 		const { depth, depthSlash } = getDepth(path, maxDepth)
 		if (depth > maxDepth) {
 			let match = await target.ignores({
-				fs,
 				cwd,
 				entry: path,
+				external,
+				fs,
+				parentPath,
 				signal,
 				target,
-				parentPath,
-				external,
 			})
 			if (invert) {
 				match.ignored = !match.ignored
@@ -102,13 +102,13 @@ export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
 	}
 
 	let match = await target.ignores({
-		fs,
 		cwd,
 		entry: path,
 		external,
+		fs,
+		parentPath: parentPath,
 		signal,
 		target,
-		parentPath: parentPath,
 	})
 	if (invert) {
 		match.ignored = !match.ignored

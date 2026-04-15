@@ -34,17 +34,17 @@ export async function matcherContextAddPath(
 			return true
 		}
 		const parentPath = dirname(direntPath)
-		await resolveSources({ external: ctx.external, cwd, dir: direntPath, fs, signal, target })
+		await resolveSources({ cwd, dir: direntPath, external: ctx.external, fs, signal, target })
 		ctx.paths.set(
 			entry,
 			await target.ignores({
-				fs,
 				cwd,
 				entry: direntPath,
 				external: ctx.external,
+				fs,
+				parentPath,
 				signal,
 				target,
-				parentPath,
 			}),
 		)
 		if (ctx.totalFiles >= 0) {
@@ -70,13 +70,13 @@ export async function matcherContextAddPath(
 	await matcherContextAddPath(ctx, options, parentPath + "/")
 	// 2. if ignored, remove, otherwise add
 	const match = await target.ignores({
-		fs,
 		cwd,
 		entry,
 		external: ctx.external,
+		fs,
+		parentPath,
 		signal,
 		target,
-		parentPath,
 	})
 	if (match.ignored) {
 		// 2.1. remove
@@ -188,16 +188,16 @@ async function rescan(ctx: MatcherContext, options: Required<ScanOptions>): Prom
 	const normalCwd = unixify(cwd)
 	let from = join(normalCwd, within)
 	await opendir(
-		{ cwd: normalCwd, fs, signal, target, external: ctx.external },
+		{ cwd: normalCwd, external: ctx.external, fs, signal, target },
 		from,
 		async (entry, parentPath, path) => {
 			const result = await walkIncludes({
-				path,
-				parentPath,
 				entry,
 				external: ctx.external,
-				stream: undefined,
+				parentPath,
+				path,
 				scanOptions: { ...options, cwd: normalCwd },
+				stream: undefined,
 			})
 			return result.next
 		},

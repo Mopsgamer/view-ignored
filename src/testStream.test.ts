@@ -30,7 +30,7 @@ describe("Git", () => {
 	})
 	test("scanStream .gitignore", async (done) => {
 		await testStream(
-			{ file: "1", src: { file: "2" }, ".gitignore": "file", ".git": { HEAD: "" } },
+			{ ".git": { HEAD: "" }, ".gitignore": "file", file: "1", src: { file: "2" } },
 			({ stream }) => {
 				const paths: string[] = []
 				stream.addListener("dirent", (d) => {

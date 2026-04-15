@@ -22,10 +22,10 @@ if (!target) {
 console.log(`Scanning "${process.cwd()}" with target: ${targetName}`)
 const start = performance.now()
 const ctx = await scan({
-	target,
-	fs,
 	cwd: process.cwd(),
 	fastInternal,
+	fs,
+	target,
 })
 const end = performance.now()
 

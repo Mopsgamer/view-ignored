@@ -31,8 +31,8 @@ describe("Yarn", () => {
 		await testYarn(
 			done,
 			{
-				filekeep: "",
 				".npmignore": "",
+				filekeep: "",
 				"package.json": packageJsonNoFiles,
 			},
 			["filekeep", "package.json"],
@@ -43,8 +43,8 @@ describe("Yarn", () => {
 		await testYarn(
 			done,
 			{
-				file: "",
 				".npmignore": "file",
+				file: "",
 				"package.json": packageJsonNoFiles,
 			},
 			["package.json"],
@@ -55,8 +55,8 @@ describe("Yarn", () => {
 		await testYarn(
 			done,
 			{
-				file: "",
 				".npmignore": "File",
+				file: "",
 				"package.json": packageJsonNoFiles,
 			},
 			["package.json"],
@@ -67,9 +67,9 @@ describe("Yarn", () => {
 		await testYarn(
 			done,
 			{
+				".npmignore": "file1.txt\nfile2.txt",
 				"file1.txt": "",
 				"file2.txt": "",
-				".npmignore": "file1.txt\nfile2.txt",
 				"package.json": packageJsonNoFiles,
 			},
 			["package.json"],
@@ -80,9 +80,9 @@ describe("Yarn", () => {
 		await testYarn(
 			done,
 			{
-				"foo.js": "",
-				"bar.js": "",
 				".npmignore": "*.js",
+				"bar.js": "",
+				"foo.js": "",
 				"package.json": packageJsonNoFiles,
 			},
 			["package.json"],
@@ -93,12 +93,12 @@ describe("Yarn", () => {
 		await testYarn(
 			done,
 			{
-				src: {
-					"main.js": "",
-					"helper.js": "",
-				},
 				".npmignore": "src/",
 				"package.json": packageJsonNoFiles,
+				src: {
+					"helper.js": "",
+					"main.js": "",
+				},
 			},
 			["package.json"],
 		)
@@ -108,9 +108,9 @@ describe("Yarn", () => {
 		await testYarn(
 			done,
 			{
-				"foo.txt": "",
-				"bar.js": "",
 				".npmignore": "*.js",
+				"bar.js": "",
+				"foo.txt": "",
 				"package.json": packageJsonNoFiles,
 			},
 			["foo.txt", "package.json"],
@@ -121,9 +121,9 @@ describe("Yarn", () => {
 		await testYarn(
 			done,
 			{
-				"foo.js": "",
-				"bar.js": "",
 				".npmignore": "*.js\n!bar.js",
+				"bar.js": "",
+				"foo.js": "",
 				"package.json": packageJsonNoFiles,
 			},
 			["bar.js", "package.json"],
@@ -147,31 +147,31 @@ describe("Yarn", () => {
 		await testScan(
 			done,
 			{
-				packages: {
-					a: {
-						"index.js": "('a')",
-						"package.json": JSON.stringify({
-							name: "a",
-							version: "0.0.1",
-							files: ["index.js"],
-						}),
-					},
-				},
 				file: "1",
 				"index.js": "('src')",
 				"index.ts": "('src')",
 				"package.json": JSON.stringify({
+					files: ["index.ts"],
 					name: "root",
 					version: "0.0.1",
-					files: ["index.ts"],
 				}),
+				packages: {
+					a: {
+						"index.js": "('a')",
+						"package.json": JSON.stringify({
+							files: ["index.js"],
+							name: "a",
+							version: "0.0.1",
+						}),
+					},
+				},
 			},
 			({ ctx }) => {
 				expect(ctx.paths.has("file")).toBeFalse()
 				expect(ctx.paths.get("index.ts")).toMatchObject({
 					ignored: false,
-					pattern: "index.ts",
 					kind: "external",
+					pattern: "index.ts",
 				})
 				expect(ctx.paths.has("index.js")).toBeFalse()
 				expect(ctx.paths.has("packages/a/index.js")).toBeFalse()
@@ -180,31 +180,31 @@ describe("Yarn", () => {
 				expect(src).toBeObject()
 				expect(src?.path).toBe("package.json")
 			},
-			{ target, cwd: process.cwd() + "/test" },
+			{ cwd: process.cwd() + "/test", target },
 		)
 	})
 	test("monorepo should use packages/a/package.json if cwd is packages/a", async (done) => {
 		await testScan(
 			done,
 			{
-				packages: {
-					a: {
-						"index.js": "('a')",
-						"package.json": JSON.stringify({
-							name: "a",
-							version: "0.0.1",
-							files: ["index.js"],
-						}),
-					},
-				},
 				file: "1",
 				"index.js": "('src')",
 				"index.ts": "('src')",
 				"package.json": JSON.stringify({
+					files: ["index.ts"],
 					name: "root",
 					version: "0.0.1",
-					files: ["index.ts"],
 				}),
+				packages: {
+					a: {
+						"index.js": "('a')",
+						"package.json": JSON.stringify({
+							files: ["index.js"],
+							name: "a",
+							version: "0.0.1",
+						}),
+					},
+				},
 			},
 			({ ctx }) => {
 				expect(ctx.paths.has("file")).toBeFalse()
@@ -219,7 +219,7 @@ describe("Yarn", () => {
 				expect(src).toBeObject()
 				expect(src?.path).toBe("package.json")
 			},
-			{ target, cwd: process.cwd() + "/test/packages/a" },
+			{ cwd: process.cwd() + "/test/packages/a", target },
 		)
 	})
 

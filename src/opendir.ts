@@ -19,14 +19,14 @@ export async function opendir(
 	const isRootDir = normalParentPath.length === cwd.length
 	const parentPath = isRootDir ? "." : substr
 
-	await resolveSources({ external, cwd, fs, signal, target, dir: parentPath })
+	await resolveSources({ cwd, dir: parentPath, external, fs, signal, target })
 
 	let stop = false
 	for await (const entry of dir) {
 		const from = place + "/" + entry.name
 		const path = isRootDir ? entry.name : substr + "/" + entry.name
 
-		const task = (async (): Promise<void> => {
+		const task = (async function opendirTask(): Promise<void> {
 			const r = await cb(entry, parentPath, path)
 			if (r === 1) return
 

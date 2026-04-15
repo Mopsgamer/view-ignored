@@ -142,9 +142,9 @@ async function tryExtractor(cwd: string, fs: FsAdapter, extractor: Extractor): P
 	const name = base(extractor.path)
 
 	const newSource: Source = {
+		inverted: false,
 		name,
 		path: extractor.path,
-		inverted: false,
 		rules: [],
 	}
 
@@ -156,7 +156,7 @@ async function tryExtractor(cwd: string, fs: FsAdapter, extractor: Extractor): P
 		if (error.code === "ENOENT") {
 			return "none"
 		}
-		return { source: newSource, error }
+		return { error, source: newSource }
 	}
 
 	try {
@@ -172,7 +172,7 @@ async function tryExtractor(cwd: string, fs: FsAdapter, extractor: Extractor): P
 			err instanceof Error
 				? err
 				: new Error("Unknown error during source extraction", { cause: err })
-		return { source: newSource, error }
+		return { error, source: newSource }
 	}
 	return newSource
 }
