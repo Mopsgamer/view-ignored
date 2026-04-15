@@ -19,7 +19,7 @@ export interface ScanParallelOptions {
 /**
  * Executes a parallel directory scan with a concurrency limit.
  *
- * @since 0.12.0
+ * @since 0.11.0
  */
 export async function scanParallel(options: ScanParallelOptions): Promise<WalkResult[]> {
 	let { scanOptions, within, results, stream, external } = options
