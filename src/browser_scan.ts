@@ -68,9 +68,8 @@ export function scan(
 		await target.init?.({ cwd, fs, signal, target })
 		const results: WalkResult[] = []
 		await scanParallel({
-			ctx,
+			external: ctx.external,
 			scanOptions,
-			normalCwd,
 			within,
 			results,
 		})

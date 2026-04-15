@@ -1,18 +1,19 @@
-import type { MatcherContext } from "./patterns/matcherContext.js"
+import type { Dir } from "node:fs"
+
 import type { MatcherStream } from "./patterns/matcherStream.js"
+import type { Resource } from "./patterns/resource.js"
 import type { ScanOptions } from "./types.js"
 
-import { resolveSources } from "./patterns/resolveSources.js"
-import { join } from "./unixify.js"
-import { walkIncludes, type WalkResult } from "./walk.js"
+import { resolveSources, type ResolveSourcesOptions } from "./patterns/resolveSources.js"
+import { join, unixify } from "./unixify.js"
+import { walkIncludes, type WalkOptions, type WalkResult } from "./walk.js"
 
 export interface ScanParallelOptions {
-	ctx: MatcherContext
 	scanOptions: Required<ScanOptions>
-	normalCwd: string
 	within: string
 	results: WalkResult[]
 	stream?: MatcherStream
+	external: Map<string, Resource>
 }
 
 /**
@@ -20,74 +21,134 @@ export interface ScanParallelOptions {
  *
  * @since 0.12.0
  */
-export async function scanParallel(options: ScanParallelOptions): Promise<void> {
-	let { ctx, scanOptions, normalCwd, within, results, stream } = options
-	const { fs, signal, target } = scanOptions
+export async function scanParallel(options: ScanParallelOptions): Promise<WalkResult[]> {
+	let { scanOptions, within, results, stream, external } = options
+	{
+		const cwd = scanOptions.cwd
+		scanOptions.cwd = unixify(cwd)
+	}
 
-	within = within.replace(/^\.\//, "") || "."
+	const queue = Array.from({ length: 2 }, () => makeQ())
+	let current = 0
 
-	const {
-		resolve: resolveScan,
-		reject: rejectScan,
-		promise: scanFinished,
-	} = Promise.withResolvers<void>()
+	const paths = {
+		parentPath: within,
+		path: within,
+	}
+	const rsOptions: ResolveSourcesOptions = Object.assign(
+		{
+			external,
+			cwd: scanOptions.cwd,
+			dir: paths.parentPath,
+		},
+		scanOptions,
+	)
 
-	const queue: (() => void)[] = []
-	let runningCount = 0
-	let activeTasks = 0
-	const limit = 256
+	await resolveSources(rsOptions)
 
-	const enqueue = async (place: string, parentPath: string) => {
-		if (runningCount >= limit) {
-			await new Promise<void>((r) => queue.push(r))
-		}
-		runningCount++
-		try {
-			signal?.throwIfAborted()
-			await resolveSources({
-				external: ctx.external,
-				cwd: normalCwd,
-				fs,
-				signal,
-				target,
-				dir: parentPath,
-			})
-			const dir = await fs.promises.opendir(place)
-			for await (const entry of dir) {
-				signal?.throwIfAborted()
-				const fromPath = place + "/" + entry.name
-				const path = parentPath === "." ? entry.name : parentPath + "/" + entry.name
+	const dirPath = join(scanOptions.cwd, within)
+	const dir = await scanOptions.fs.promises.opendir(dirPath)
+	const scan1Options = {
+		stream,
+		scanOptions,
+	} as const
+	let isRoot = true
+	const next: { dir: Dir; paths: { parentPath: string; path: string } }[] = Array.from({
+		length: 1000,
+	})
+	next.push({ dir, paths })
+	let id = 0
+	for (let e = next.pop(); e !== undefined; isRoot = false, e = next.pop()) {
+		for await (const entry of e.dir) {
+			paths.path = join(within, isRoot ? entry.name : e.paths.path + "/" + entry.name)
+			paths.parentPath = isRoot ? "." : e.paths.path
+			const queueItem = queue[current]!
+			id++
+			if (current === queue.length - 1) current = 0
+			else current++
 
-				const r = await walkIncludes({
-					path,
-					entry,
-					parentPath,
-					external: ctx.external,
-					stream,
-					scanOptions,
-				})
+			const walkOptions = Object.assign({}, scan1Options, paths, {
+				entry,
+				external,
+			} as const) satisfies WalkOptions as WalkOptions
+			queueItem.push(id, walkOptions)
+			// console.log(paths.path)
 
-				results.push(r)
-
-				if (r.next === 0 && entry.isDirectory()) {
-					activeTasks++
-					void enqueue(fromPath, path).catch(rejectScan)
-				}
-			}
-		} catch (e) {
-			rejectScan(e)
-		} finally {
-			runningCount--
-			activeTasks--
-			if (queue.length > 0) {
-				queue.shift()?.()
-			} else if (activeTasks === 0) {
-				resolveScan()
+			if (entry.isDirectory()) {
+				rsOptions.dir = paths.path
+				const dirPath2 = join(scanOptions.cwd, paths.path)
+				const dir = await scanOptions.fs.promises.opendir(dirPath2)
+				await resolveSources(rsOptions)
+				const n = { dir, paths: Object.assign({}, paths) }
+				next.push(n)
 			}
 		}
 	}
+	for (const q of queue) {
+		q.done()
+	}
+	let failedId = -1
+	for (const q of queue) {
+		const result = await q.promise
+		if (result.reportedId < 0) {
+			continue
+		}
+		failedId = Math.min(result.reportedId)
+	}
+	for (const q of queue) {
+		results.push(...(await q.cut(failedId)))
+	}
+	return results
+}
 
-	activeTasks++
-	void enqueue(join(normalCwd, within), within).catch(rejectScan)
-	await scanFinished
+interface Q {
+	promise: Promise<{ results: WalkResult[]; reportedId: number }>
+	push(id: number, o: WalkOptions): Promise<void>
+	cut(failedId: number): Promise<WalkResult[]>
+	done(): void
+}
+function makeQ(): Q {
+	const proc = Promise.withResolvers<{ results: WalkResult[]; reportedId: number }>()
+	const want: WalkOptions[] = []
+	const results: WalkResult[] = []
+	let isReady = false
+	let reportedId = -1
+	let ids: number[] = []
+	return <Q>{
+		promise: proc.promise,
+		async push(id, o) {
+			if (want.length !== 0) {
+				want.push(o)
+				return
+			}
+			try {
+				results.push(await walkIncludes(o))
+				ids.push(id)
+				while (want.length > 0) {
+					if (reportedId >= 0 && id > reportedId) break
+					results.push(await walkIncludes(want.shift()!))
+				}
+				if (isReady) proc.resolve({ results, reportedId: -1 })
+			} catch {
+				reportedId = id
+				proc.resolve({ results, reportedId: id })
+			}
+		},
+		async cut(failedId) {
+			if (failedId === -1) return results
+			reportedId = failedId
+			await proc.promise
+			for (let i = 0; i < ids.length; i++) {
+				// TODO: it can be faster
+				const id = ids[i]!
+				if (id <= reportedId) continue
+				return results.slice(0, i)
+			}
+			return results
+		},
+		done() {
+			isReady = true
+			if (want.length === 0) proc.resolve({ results, reportedId: -1 })
+		},
+	}
 }

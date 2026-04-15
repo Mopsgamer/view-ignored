@@ -8,7 +8,6 @@ import type { Resource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"
 
 import { scanParallel } from "../scanParallel.js"
-import { unixify } from "../unixify.js"
 import { walkPatch, type WalkResult } from "../walk.js"
 
 /**
@@ -118,10 +117,8 @@ export class MatcherStream extends EventEmitter<EventMap> {
 			totalDirs: 0,
 		}
 
-		const normalCwd = unixify(cwd)
-
 		const scanOptions: Required<ScanOptions> = {
-			cwd: normalCwd,
+			cwd,
 			within,
 			depth: maxDepth,
 			fastDepth,
@@ -135,9 +132,8 @@ export class MatcherStream extends EventEmitter<EventMap> {
 		await target.init?.({ cwd, fs, signal, target })
 		const results: WalkResult[] = []
 		await scanParallel({
-			ctx,
+			external: ctx.external,
 			scanOptions,
-			normalCwd,
 			within,
 			results,
 			stream: this,
