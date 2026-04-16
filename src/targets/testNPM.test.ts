@@ -165,7 +165,6 @@ describe("NPM", () => {
 				expect(ctx.paths.has("packages/a/index.js")).toBeFalse()
 
 				const src = ctx.external.get("packages/a") as any
-				console.log(src)
 				expect(src).toBeObject()
 				expect(src?.path).toBe("package.json")
 			},

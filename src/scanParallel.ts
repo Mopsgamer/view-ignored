@@ -28,7 +28,7 @@ export async function scanParallel(options: ScanParallelOptions): Promise<WalkRe
 		scanOptions.cwd = unixify(cwd)
 	}
 
-	const queue = Array.from({ length: 2 }, () => makeQ())
+	const queue = Array.from({ length: navigator.hardwareConcurrency - 1 }, () => makeQ())
 	let current = 0
 
 	const paths = {

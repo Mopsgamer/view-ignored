@@ -65,7 +65,7 @@ export type EventMap = {
 
 /**
  * Event emitter.
- * @extends EventEmitter
+ * @augments EventEmitter
  *
  * @since 0.6.0
  */
