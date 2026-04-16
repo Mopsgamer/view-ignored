@@ -9,6 +9,16 @@ import { Git as target } from "../out/targets/index.js"
 const igw = process.argv.includes("--igw")
 const vign = process.argv.includes("--vign")
 
+if (!igw) {
+	await scan({ cwd: process.cwd(), fastDepth: true, fastInternal: true, fs, target })
+	await browserScan({ cwd: process.cwd(), fastDepth: true, fastInternal: true, fs, target })
+	await scan({ cwd: process.cwd(), fs, target })
+	await browserScan({ cwd: process.cwd(), fs, target })
+}
+if (!vign) {
+	await walk({ ignoreFiles: [".gitignore"] })
+}
+
 barplot(() => {
 	summary(async () => {
 		const gc = "inner"

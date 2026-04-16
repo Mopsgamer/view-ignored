@@ -1,4 +1,4 @@
-import { dirname } from "node:path"
+import { dirname } from "node:path/posix"
 
 import type { Target } from "../targets/target.js"
 import type { FsAdapter } from "../types.js"
@@ -41,6 +41,12 @@ export interface ResolveSourcesOptions extends PatternFinderOptions {
 	 * @since 0.6.0
 	 */
 	dir: string
+	/**
+	 * Equals to `dirname(dir)`.
+	 *
+	 * @since 0.11.0
+	 */
+	parentPath?: string
 }
 
 /**
@@ -49,18 +55,17 @@ export interface ResolveSourcesOptions extends PatternFinderOptions {
  * @since 0.6.0
  */
 export async function resolveSources(options: ResolveSourcesOptions): Promise<void> {
-	const { fs, external, cwd, signal, target } = options
-	let dir = options.dir
-
-	if (external.has(dir)) {
+	if (options.external.has(options.dir)) {
 		return
 	}
+	const { fs, external, cwd, signal, target, parentPath } = options
+	let dir = options.dir
 
 	let source: Resource | undefined
 	const noSourceDirList: string[] = [dir]
 
 	if (dir !== ".") {
-		dir = dirname(dir)
+		dir = parentPath ?? dirname(dir)
 
 		// find source from an ancestor [dir < ... < cwd]
 		while (true) {

@@ -27,44 +27,49 @@ export async function scanParallel(options: ScanParallelOptions): Promise<WalkRe
 	}
 
 	const queue = Array.from({ length: 4 }, () => makeQ())
-	const scan1Options = {
-		scanOptions,
-		stream,
-	} as const
 
 	const stack: { relPath: string; parentPath: string }[] = [{ parentPath: ".", relPath: within }]
 	let id = 0
 
+	const pushing: Promise<void>[] = []
 	while (stack.length > 0) {
-		const { relPath } = stack.pop()!
+		const { relPath, parentPath } = stack.pop()!
 
+		const resolution = resolveSources({ ...scanOptions, dir: relPath, external, parentPath })
 		const fullPath = join(scanOptions.cwd, relPath)
-		const [_, entries] = await Promise.all([
-			resolveSources({ ...scanOptions, dir: relPath, external }),
-			scanOptions.fs.promises.readdir(fullPath, { withFileTypes: true }),
-		])
+		const read = scanOptions.fs.promises.readdir(fullPath, { withFileTypes: true })
 
-		for (const entry of entries) {
-			const currentRelPath = join(relPath, entry.name)
-			const queueItem = queue[id % queue.length]!
-			id++
+		const { resolve: resolveId, promise: promiseId } = Promise.withResolvers<number>()
+		pushing.push(
+			(async function pushingPush(id, queueItem) {
+				const entries = await read
+				await resolution
+				resolveId(id + entries.length)
+				for (let i = 0; i < entries.length; i++) {
+					const entry = entries[i]!
+					const currentRelPath = join(relPath, entry.name)
 
-			queueItem.push(id, <WalkOptions>{
-				...scan1Options,
-				entry,
-				external,
-				parentPath: relPath,
-				relPath: currentRelPath,
-			})
+					if (entry.isDirectory()) {
+						stack.push({ parentPath: relPath, relPath: currentRelPath })
+					}
 
-			if (entry.isDirectory()) {
-				stack.push({ parentPath: relPath, relPath: currentRelPath })
-			}
-		}
+					queueItem.push(id++, <WalkOptions>{
+						entry,
+						external,
+						parentPath: relPath,
+						relPath: currentRelPath,
+						scanOptions,
+						stream,
+					})
+				}
+			})(id, queue[id % queue.length]!),
+		)
+		id = await promiseId
 	}
 	for (const q of queue) {
 		q.done()
 	}
+	await Promise.all(pushing)
 	let failedId = -1
 	for (const q of queue) {
 		const result = await q.promise
@@ -90,20 +95,26 @@ function makeQ(): Q {
 	const results: WalkResult[] = []
 	let pendingCount = 0
 	let isReady = false
-	let reportedId = -1
 	let ids: number[] = []
 	return <Q>{
 		async cut(failedId) {
 			if (failedId === -1) return results
-			reportedId = failedId
+
 			await proc.promise
-			for (let i = 0; i < ids.length; i++) {
-				// TODO: it can be faster
-				const id = ids[i]!
-				if (id <= reportedId) continue
-				return results.slice(0, i)
+
+			let low = 0
+			let high = ids.length
+
+			while (low < high) {
+				const mid = (low + high) >>> 1
+				if (ids[mid]! <= failedId) {
+					low = mid + 1
+				} else {
+					high = mid
+				}
 			}
-			return results
+
+			return results.slice(0, low)
 		},
 		done() {
 			isReady = true
@@ -113,20 +124,19 @@ function makeQ(): Q {
 		async push(id, o) {
 			pendingCount++
 
-			walkIncludes(o)
-				.then((res) => {
-					results.push(res)
-					ids.push(id)
-					pendingCount--
+			try {
+				const res = await walkIncludes(o)
+				results.push(res)
+			} catch {
+				proc.resolve({ reportedId: id, results })
+				return
+			}
+			ids.push(id)
+			pendingCount--
 
-					if (isReady && pendingCount === 0) {
-						proc.resolve({ reportedId: -1, results })
-					}
-				})
-				.catch(() => {
-					reportedId = id
-					proc.resolve({ reportedId: id, results })
-				})
+			if (isReady && pendingCount === 0) {
+				proc.resolve({ reportedId: -1, results })
+			}
 		},
 	}
 }

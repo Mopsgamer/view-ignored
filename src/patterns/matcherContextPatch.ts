@@ -1,4 +1,4 @@
-import { dirname } from "node:path"
+import { dirname } from "node:path/posix"
 
 import type { ScanOptions } from "../types.js"
 import type { MatcherContext } from "./matcherContext.js"

@@ -187,10 +187,7 @@ function cacheTest(rs: PatternCache[], path: string): [string, Error | undefined
 
 function testInternal(internalRules: Rule[], path: string): RuleMatch | null {
 	for (const si of internalRules) {
-		const compiled = si.compiled
-		if (compiled === null) continue
-
-		let [patternMatch, error] = cacheTest(compiled, path)
+		let [patternMatch, error] = cacheTest(si.compiled!, path)
 		if (error)
 			return {
 				error,
@@ -212,12 +209,7 @@ function testInternal(internalRules: Rule[], path: string): RuleMatch | null {
 
 function testExternal(path: string, source: Source): RuleMatch {
 	for (const si of source.rules) {
-		const compiled = si.compiled
-		if (compiled === null) {
-			continue
-		}
-
-		let [patternMatch, err] = cacheTest(compiled, path)
+		let [patternMatch, err] = cacheTest(si.compiled!, path)
 		if (err) {
 			return {
 				error: err,
