@@ -12,8 +12,8 @@ import { sortFirstFolders } from "./testSort.test.js"
 
 export function createAdapter(vol: Volume): FsAdapter {
 	const fs = createFsFromVolume(vol)
-	const { opendir, readFile } = fs.promises
-	const adapter = { promises: { opendir, readFile } } as FsAdapter
+	const { opendir, readdir, readFile } = fs.promises
+	const adapter = { promises: { opendir, readFile, readdir } } as unknown as FsAdapter
 	return adapter
 }
 

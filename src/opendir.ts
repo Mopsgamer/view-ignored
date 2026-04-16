@@ -11,7 +11,7 @@ export async function opendir(
 ): Promise<boolean> {
 	const { external, cwd, fs, signal, target } = options
 
-	const dir = await fs.promises.opendir(place)
+	const dir = await fs.promises.readdir(place, { withFileTypes: true })
 	const tasks: Promise<void>[] = []
 
 	const normalParentPath = place

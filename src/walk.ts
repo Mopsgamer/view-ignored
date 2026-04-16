@@ -9,7 +9,7 @@ import { getDepth } from "./getDepth.js"
 import { isRuleMatchInvalid, type RuleMatch } from "./patterns/rule.js"
 
 export type WalkOptions = {
-	path: string
+	relPath: string
 	parentPath: string
 	entry: Dirent
 	external: Map<string, Resource>
@@ -28,7 +28,7 @@ export type WalkResult = {
 }
 
 export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
-	const { entry, stream, scanOptions, path, parentPath, external } = options
+	const { entry, stream, scanOptions, relPath: path, parentPath, external } = options
 
 	const { fs, target, cwd, depth: maxDepth, invert, signal, fastDepth, fastInternal } = scanOptions
 

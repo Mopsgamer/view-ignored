@@ -1,10 +1,8 @@
-import type { Dir } from "node:fs"
-
 import type { MatcherStream } from "./patterns/matcherStream.js"
 import type { Resource } from "./patterns/resource.js"
 import type { ScanOptions } from "./types.js"
 
-import { resolveSources, type ResolveSourcesOptions } from "./patterns/resolveSources.js"
+import { resolveSources } from "./patterns/resolveSources.js"
 import { join, unixify } from "./unixify.js"
 import { walkIncludes, type WalkOptions, type WalkResult } from "./walk.js"
 
@@ -28,59 +26,39 @@ export async function scanParallel(options: ScanParallelOptions): Promise<WalkRe
 		scanOptions.cwd = unixify(cwd)
 	}
 
-	const queue = Array.from({ length: navigator.hardwareConcurrency - 1 }, () => makeQ())
-	let current = 0
-
-	const paths = {
-		parentPath: within,
-		path: within,
-	}
-	const rsOptions: ResolveSourcesOptions = Object.assign(
-		{
-			cwd: scanOptions.cwd,
-			dir: paths.parentPath,
-			external,
-		},
-		scanOptions,
-	)
-
-	await resolveSources(rsOptions)
-
-	const dirPath = join(scanOptions.cwd, within)
-	const dir = await scanOptions.fs.promises.opendir(dirPath)
+	const queue = Array.from({ length: 4 }, () => makeQ())
 	const scan1Options = {
 		scanOptions,
 		stream,
 	} as const
-	let isRoot = true
-	const next: { dir: Dir; paths: { parentPath: string; path: string } }[] = Array.from({
-		length: 1000,
-	})
-	next.push({ dir, paths })
-	let id = 0
-	for (let e = next.pop(); e !== undefined; isRoot = false, e = next.pop()) {
-		for await (const entry of e.dir) {
-			paths.path = join(within, isRoot ? entry.name : e.paths.path + "/" + entry.name)
-			paths.parentPath = isRoot ? "." : e.paths.path
-			const queueItem = queue[current]!
-			id++
-			if (current === queue.length - 1) current = 0
-			else current++
 
-			const walkOptions = Object.assign({}, scan1Options, paths, {
+	const stack: { relPath: string; parentPath: string }[] = [{ parentPath: ".", relPath: within }]
+	let id = 0
+
+	while (stack.length > 0) {
+		const { relPath } = stack.pop()!
+
+		const fullPath = join(scanOptions.cwd, relPath)
+		const [_, entries] = await Promise.all([
+			resolveSources({ ...scanOptions, dir: relPath, external }),
+			scanOptions.fs.promises.readdir(fullPath, { withFileTypes: true }),
+		])
+
+		for (const entry of entries) {
+			const currentRelPath = join(relPath, entry.name)
+			const queueItem = queue[id % queue.length]!
+			id++
+
+			queueItem.push(id, <WalkOptions>{
+				...scan1Options,
 				entry,
 				external,
-			} as const) satisfies WalkOptions as WalkOptions
-			queueItem.push(id, walkOptions)
-			// console.log(paths.path)
+				parentPath: relPath,
+				relPath: currentRelPath,
+			})
 
 			if (entry.isDirectory()) {
-				rsOptions.dir = paths.path
-				const dirPath2 = join(scanOptions.cwd, paths.path)
-				const dir = await scanOptions.fs.promises.opendir(dirPath2)
-				await resolveSources(rsOptions)
-				const n = { dir, paths: Object.assign({}, paths) }
-				next.push(n)
+				stack.push({ parentPath: relPath, relPath: currentRelPath })
 			}
 		}
 	}
@@ -109,8 +87,8 @@ interface Q {
 }
 function makeQ(): Q {
 	const proc = Promise.withResolvers<{ results: WalkResult[]; reportedId: number }>()
-	const want: WalkOptions[] = []
 	const results: WalkResult[] = []
+	let pendingCount = 0
 	let isReady = false
 	let reportedId = -1
 	let ids: number[] = []
@@ -129,26 +107,26 @@ function makeQ(): Q {
 		},
 		done() {
 			isReady = true
-			if (want.length === 0) proc.resolve({ reportedId: -1, results })
+			if (pendingCount === 0) proc.resolve({ reportedId: -1, results })
 		},
 		promise: proc.promise,
 		async push(id, o) {
-			if (want.length !== 0) {
-				want.push(o)
-				return
-			}
-			try {
-				results.push(await walkIncludes(o))
-				ids.push(id)
-				while (want.length > 0) {
-					if (reportedId >= 0 && id > reportedId) break
-					results.push(await walkIncludes(want.shift()!))
-				}
-				if (isReady) proc.resolve({ reportedId: -1, results })
-			} catch {
-				reportedId = id
-				proc.resolve({ reportedId: id, results })
-			}
+			pendingCount++
+
+			walkIncludes(o)
+				.then((res) => {
+					results.push(res)
+					ids.push(id)
+					pendingCount--
+
+					if (isReady && pendingCount === 0) {
+						proc.resolve({ reportedId: -1, results })
+					}
+				})
+				.catch(() => {
+					reportedId = id
+					proc.resolve({ reportedId: id, results })
+				})
 		},
 	}
 }

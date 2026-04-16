@@ -195,7 +195,7 @@ async function rescan(ctx: MatcherContext, options: Required<ScanOptions>): Prom
 				entry,
 				external: ctx.external,
 				parentPath,
-				path,
+				relPath: path,
 				scanOptions: { ...options, cwd: normalCwd },
 				stream: undefined,
 			})
