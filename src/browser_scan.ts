@@ -1,11 +1,11 @@
 import type { MatcherContext } from "./patterns/matcherContext.js"
+import type { Resource } from "./patterns/resource.js"
 import type { RuleMatch } from "./patterns/rule.js"
-import type { Source } from "./patterns/source.js"
 import type { ScanOptions, FsAdapter } from "./types.js"
 
-import { opendir } from "./opendir.js"
-import { unixify, join } from "./unixify.js"
-import { walkIncludes } from "./walk.js"
+import { scanParallel } from "./scanParallel.js"
+import { unixify } from "./unixify.js"
+import { walkPatch, type WalkResult } from "./walk.js"
 export type * from "./types.js"
 
 /**
@@ -21,7 +21,7 @@ export type * from "./types.js"
  *
  * @since 0.6.0
  */
-export function scan(
+export async function scan(
 	options: ScanOptions & { fs: FsAdapter; cwd: string },
 ): Promise<MatcherContext> {
 	const {
@@ -41,20 +41,19 @@ export function scan(
 	}
 
 	const ctx: MatcherContext = {
-		paths: new Map<string, RuleMatch>(),
-		external: new Map<string, Source>(),
-		failed: [],
 		depthPaths: new Map<string, number>(),
+		external: new Map<string, Resource>(),
+		failed: [],
+		paths: new Map<string, RuleMatch>(),
+		totalDirs: 0,
 		totalFiles: 0,
 		totalMatchedFiles: 0,
-		totalDirs: 0,
 	}
 
 	const normalCwd = unixify(cwd)
 
 	const scanOptions: Required<ScanOptions> = {
 		cwd: normalCwd,
-		within,
 		depth: maxDepth,
 		fastDepth,
 		fastInternal,
@@ -62,21 +61,18 @@ export function scan(
 		invert,
 		signal,
 		target,
+		within,
 	}
 
-	return (async (): Promise<MatcherContext> => {
-		await target.init?.({ ctx, cwd, fs, signal, target })
-		let from = join(normalCwd, within)
-		await opendir({ ctx, cwd: normalCwd, fs, signal, target }, from, (entry, parentPath, path) => {
-			return walkIncludes({
-				path,
-				entry,
-				parentPath,
-				ctx,
-				stream: undefined,
-				scanOptions,
-			})
-		})
-		return ctx
-	})()
+	await target.init?.({ cwd, fs, signal, target })
+	const results: WalkResult[] = []
+	await scanParallel({
+		external: ctx.external,
+		results,
+		scanOptions,
+		within,
+	})
+
+	walkPatch(ctx, results)
+	return ctx
 }

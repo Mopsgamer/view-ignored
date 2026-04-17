@@ -17,11 +17,10 @@ import { resolveNegatable, type Source } from "./source.js"
 export function extractPackageJson(source: Source, content: Buffer): void | "none" {
 	const result = extract(source, content)
 	if (result === undefined) {
-		for (const element of source.pattern) {
+		for (const element of source.rules) {
 			ruleCompile(element)
 		}
 	}
-	if (result === "error") return
 	return result
 }
 
@@ -35,22 +34,20 @@ export function extractPackageJson(source: Source, content: Buffer): void | "non
 export function extractPackageJsonNocase(source: Source, content: Buffer): void | "none" {
 	const result = extract(source, content)
 	if (result === undefined) {
-		for (const element of source.pattern) {
+		for (const element of source.rules) {
 			ruleCompile(element, { nocase: true })
 		}
 	}
-	if (result === "error") return
 	return result
 }
 
-function extract(source: Source, content: Buffer): void | "error" | "none" {
+function extract(source: Source, content: Buffer): void | "none" {
 	source.inverted = true
 	const include: Rule = { compiled: null, excludes: false, pattern: [] }
 	const exclude: Rule = { compiled: null, excludes: true, pattern: [] }
 	const dist = npmManifestParse(content.toString())
 	if (dist instanceof type.errors) {
-		source.error = new Error("Invalid '" + source.path + "': " + dist.summary, { cause: dist })
-		return "error"
+		throw new Error("Invalid '" + source.path + "': " + dist.summary, { cause: dist })
 	}
 
 	if (!dist.files) {
@@ -60,7 +57,7 @@ function extract(source: Source, content: Buffer): void | "error" | "none" {
 	for (const pattern of dist.files) {
 		resolveNegatable(pattern, true, include, exclude)
 	}
-	source.pattern.push(include, exclude)
+	source.rules.push(include, exclude)
 }
 
 extractPackageJson satisfies ExtractorFn

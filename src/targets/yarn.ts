@@ -29,14 +29,15 @@ const extractors: Extractor[] = [
 ]
 
 const internalInclude: Rule = {
+	compiled: [],
 	excludes: false,
 	pattern: [],
-	compiled: [],
 }
 
 const internal: Rule[] = [
 	internalInclude,
 	ruleCompile({
+		compiled: null,
 		excludes: true,
 		pattern: [
 			// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L26
@@ -53,10 +54,10 @@ const internal: Rule[] = [
 			".#*",
 			".DS_Store",
 		],
-		compiled: null,
 	}),
 	ruleCompile(
 		{
+			compiled: null,
 			excludes: false,
 			pattern: [
 				// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L10
@@ -68,7 +69,6 @@ const internal: Rule[] = [
 				"/LICENCE",
 				"/LICENCE.*",
 			],
-			compiled: null,
 		},
 		{ nocase: true },
 	),
@@ -78,9 +78,8 @@ const internal: Rule[] = [
  * @since 0.6.0
  */
 export const Yarn: Target = {
-	internalRules: internal,
 	extractors,
-	root: ".",
+	ignores: ruleTest,
 	async init({ fs, cwd }) {
 		let content: Buffer
 		const normalCwd = unixify(cwd)
@@ -116,5 +115,6 @@ export const Yarn: Target = {
 		internalInclude.pattern = Array.from(set)
 		ruleCompile(internalInclude, { nocase: true })
 	},
-	ignores: ruleTest,
+	internalRules: internal,
+	root: ".",
 }

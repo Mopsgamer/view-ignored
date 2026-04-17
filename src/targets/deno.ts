@@ -39,9 +39,9 @@ const extractors: Extractor[] = [
 
 const internal: Rule[] = [
 	ruleCompile({
+		compiled: null,
 		excludes: true,
 		pattern: [".git", ".DS_Store"],
-		compiled: null,
 	}),
 ]
 
@@ -49,9 +49,8 @@ const internal: Rule[] = [
  * @since 0.8.1
  */
 export const Deno: Target = {
-	internalRules: internal,
 	extractors,
-	root: ".",
+	ignores: ruleTest,
 	async init({ fs, cwd }) {
 		let content: Buffer
 		const normalCwd = unixify(cwd)
@@ -75,5 +74,6 @@ export const Deno: Target = {
 			throw new Error("Invalid '" + path! + "': " + dist.summary, { cause: dist })
 		}
 	},
-	ignores: ruleTest,
+	internalRules: internal,
+	root: ".",
 }

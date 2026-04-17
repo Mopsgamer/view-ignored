@@ -21,6 +21,9 @@ export function join(from: string, p2: string): string {
 	if (!from.endsWith("/")) {
 		from += "/"
 	}
+	if (from.startsWith("./")) {
+		from = from.substring(2)
+	}
 	from += p2.substring(start)
 
 	return from

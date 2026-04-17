@@ -1,5 +1,5 @@
+import type { Resource, InvalidSource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"
-import type { Source } from "./source.js"
 
 /**
  * Post-scan results.
@@ -24,7 +24,7 @@ export interface MatcherContext {
 	 *
 	 * @since 0.6.0
 	 */
-	external: Map<string, Source | "none">
+	external: Map<string, Resource>
 
 	/**
 	 * If any fatal errors were encountered during source extractions,
@@ -32,7 +32,7 @@ export interface MatcherContext {
 	 *
 	 * @since 0.6.0
 	 */
-	failed: Source[]
+	failed: InvalidSource[]
 
 	/**
 	 * Maps directory paths to the quantity of files they contain.

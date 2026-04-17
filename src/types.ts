@@ -10,6 +10,7 @@ import type { Target } from "./targets/target.js"
 export interface FsAdapter {
 	promises: {
 		opendir: typeof fs.promises.opendir
+		readdir: typeof fs.promises.readdir
 		readFile: typeof fs.promises.readFile
 	}
 }

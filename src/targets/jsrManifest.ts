@@ -1,9 +1,9 @@
 import { type } from "arktype"
 
 export const jsrManifest = type({
+	exports: "string | Record<string, string>",
 	name: "string",
 	version: "string",
-	exports: "string | Record<string, string>",
 })
 
 export const jsrManifestParse = type("string")

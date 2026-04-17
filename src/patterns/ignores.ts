@@ -1,4 +1,5 @@
 import type { InitState } from "./initState.js"
+import type { Resource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"
 
 /**
@@ -13,6 +14,16 @@ export interface IgnoresOptions extends InitState {
 	 * @since 0.6.0
 	 */
 	entry: string
+	/**
+	 * Maps directory paths to their corresponding sources.
+	 *
+	 * @example
+	 * "dir" => Source
+	 * "dir/subdir" => Source
+	 *
+	 * @since 0.11.0
+	 */
+	external: Map<string, Resource>
 	/**
 	 * Result of the `dirname(entry)` call.
 	 *

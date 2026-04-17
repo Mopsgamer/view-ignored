@@ -4,41 +4,41 @@ import { Git as target } from "./targets/git.js"
 import { testScan } from "./testScan.test.js"
 
 const dir = {
+	".gitignore": "out\nnode_modules",
 	node_modules: {
 		a: { "package.json": "{}" },
 		b: { "package.json": "{}" },
 	},
 	out: {
-		submodule: { "index.js": "" },
 		"index.js": "",
+		submodule: { "index.js": "" },
 	},
-	src: {
-		submodule: { "index.ts": "" },
-		"index.ts": "",
-	},
-	".gitignore": "out\nnode_modules",
 	"package.json": "{}",
+	src: {
+		"index.ts": "",
+		submodule: { "index.ts": "" },
+	},
 }
 
 const fastDepth = true
 
 describe("Git", () => {
 	test("depth 0 should include *", async (done) => {
-		await testScan(done, dir, ["src/", ".gitignore", "package.json"], { target, depth: 0 })
+		await testScan(done, dir, ["src/", ".gitignore", "package.json"], { depth: 0, target })
 		await testScan(done, dir, ["src/", ".gitignore", "package.json"], {
-			target,
 			depth: 0,
 			fastDepth,
+			target,
 		})
 	})
 
 	test("depth 0 should include * for inverted", async (done) => {
-		await testScan(done, dir, ["out/", "node_modules/"], { target, invert: true, depth: 0 })
+		await testScan(done, dir, ["out/", "node_modules/"], { depth: 0, invert: true, target })
 		await testScan(done, dir, ["out/", "node_modules/"], {
-			target,
-			invert: true,
 			depth: 0,
 			fastDepth,
+			invert: true,
+			target,
 		})
 	})
 
@@ -47,13 +47,13 @@ describe("Git", () => {
 			done,
 			dir,
 			["src/", "src/index.ts", "src/submodule/", ".gitignore", "package.json"],
-			{ target, depth: 1 },
+			{ depth: 1, target },
 		)
 		await testScan(
 			done,
 			dir,
 			["src/", "src/index.ts", "src/submodule/", ".gitignore", "package.json"],
-			{ target, depth: 1, fastDepth },
+			{ depth: 1, fastDepth, target },
 		)
 	})
 
@@ -69,7 +69,7 @@ describe("Git", () => {
 				"node_modules/a/",
 				"node_modules/b/",
 			],
-			{ target, invert: true, depth: 1 },
+			{ depth: 1, invert: true, target },
 		)
 		await testScan(
 			done,
@@ -82,7 +82,7 @@ describe("Git", () => {
 				"node_modules/a/",
 				"node_modules/b/",
 			],
-			{ target, invert: true, depth: 1, fastDepth },
+			{ depth: 1, fastDepth, invert: true, target },
 		)
 	})
 })

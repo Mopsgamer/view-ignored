@@ -26,8 +26,8 @@ describe("Git", () => {
 		await testGit(
 			done,
 			{
-				file: "",
 				".gitignore": "",
+				file: "",
 			},
 			["file", ".gitignore"],
 		)
@@ -38,8 +38,8 @@ describe("Git", () => {
 			done,
 			{
 				".git/HEAD": "",
-				file: "",
 				".gitignore": "",
+				file: "",
 			},
 			["file", ".gitignore"],
 		)
@@ -49,9 +49,9 @@ describe("Git", () => {
 		await testGit(
 			done,
 			{
-				filei: "",
-				file: "",
 				".git/info/exclude": "filei",
+				file: "",
+				filei: "",
 			},
 			["file"],
 		)
@@ -61,8 +61,8 @@ describe("Git", () => {
 		await testGit(
 			done,
 			{
-				filei: "",
 				".gitignore": "filei",
+				filei: "",
 			},
 			[".gitignore"],
 		)
@@ -72,8 +72,8 @@ describe("Git", () => {
 		await testGit(
 			done,
 			{
-				file: "",
 				".gitignore": "File",
+				file: "",
 			},
 			[".gitignore", "file"],
 		)
@@ -83,9 +83,9 @@ describe("Git", () => {
 		await testGit(
 			done,
 			{
+				".gitignore": "file1.txt\nfile2.txt",
 				"file1.txt": "",
 				"file2.txt": "",
-				".gitignore": "file1.txt\nfile2.txt",
 			},
 			[".gitignore"],
 		)
@@ -95,9 +95,9 @@ describe("Git", () => {
 		await testGit(
 			done,
 			{
-				"foo.js": "",
-				"bar.js": "",
 				".gitignore": "*.js",
+				"bar.js": "",
+				"foo.js": "",
 			},
 			[".gitignore"],
 		)
@@ -107,15 +107,15 @@ describe("Git", () => {
 		await testGit(
 			done,
 			{
-				src: {
-					"main.js": "",
-					"helper.js": "",
-				},
-				out: {
-					"main.js": "",
-					"helper.js": "",
-				},
 				".gitignore": "src/",
+				out: {
+					"helper.js": "",
+					"main.js": "",
+				},
+				src: {
+					"helper.js": "",
+					"main.js": "",
+				},
 			},
 			[".gitignore", "out/", "out/main.js", "out/helper.js"],
 		)
@@ -125,9 +125,9 @@ describe("Git", () => {
 		await testGit(
 			done,
 			{
-				"foo.txt": "",
-				"bar.js": "",
 				".gitignore": "*.js",
+				"bar.js": "",
+				"foo.txt": "",
 			},
 			["foo.txt", ".gitignore"],
 		)
@@ -137,9 +137,9 @@ describe("Git", () => {
 		await testGit(
 			done,
 			{
+				".gitignore": "*.js\n!negkeep.js",
 				"foo.js": "",
 				"negkeep.js": "",
-				".gitignore": "*.js\n!negkeep.js",
 			},
 			["negkeep.js", ".gitignore"],
 		)

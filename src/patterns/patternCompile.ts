@@ -44,11 +44,11 @@ export function patternCompile(
 
 	const matcherOpts = {
 		dot: true,
-		nonegate: true,
-		nocomment: true,
+		matchBase,
 		nobrace: true,
 		nocase,
-		matchBase,
+		nocomment: true,
+		nonegate: true,
 		optimizationLevel: 2,
 	}
 
@@ -85,5 +85,5 @@ export function patternCompile(
 		},
 	}
 
-	return { re, pattern: original, patternContext: context }
+	return { pattern: original, patternContext: context, re }
 }

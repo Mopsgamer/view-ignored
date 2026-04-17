@@ -29,14 +29,15 @@ const extractors: Extractor[] = [
 ]
 
 const internalInclude: Rule = {
+	compiled: [],
 	excludes: false,
 	pattern: [], // filled within init
-	compiled: [],
 }
 
 const internal: Rule[] = [
 	internalInclude,
 	ruleCompile({
+		compiled: null,
 		excludes: true,
 		pattern: [
 			// https://github.com/npm/npm-packlist/blob/main/lib/index.js#L16
@@ -68,9 +69,9 @@ const internal: Rule[] = [
 			"/pnpm-lock.yaml",
 			"/bun.lockb",
 		],
-		compiled: null,
 	}),
 	ruleCompile({
+		compiled: null,
 		excludes: false,
 		pattern: [
 			// https://github.com/npm/npm-packlist/blob/main/lib/index.js#L287
@@ -85,7 +86,6 @@ const internal: Rule[] = [
 			"LICENSE.*",
 			"LICENCE.*",
 		],
-		compiled: null,
 	}),
 ]
 
@@ -93,9 +93,8 @@ const internal: Rule[] = [
  * @since 0.6.0
  */
 export const NPM: Target = {
-	internalRules: internal,
 	extractors,
-	root: ".",
+	ignores: ruleTest,
 	async init({ fs, cwd }) {
 		let content: Buffer
 		const normalCwd = unixify(cwd)
@@ -117,5 +116,6 @@ export const NPM: Target = {
 		// internalInclude.pattern = Array.from(set)
 		// ruleCompile(internalInclude, { nocase: true })
 	},
-	ignores: ruleTest,
+	internalRules: internal,
+	root: ".",
 }

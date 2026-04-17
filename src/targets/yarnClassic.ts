@@ -35,6 +35,7 @@ const extractors: Extractor[] = [
 const internal: Rule[] = [
 	ruleCompile(
 		{
+			compiled: null,
 			excludes: true,
 			pattern: [
 				// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L26
@@ -68,12 +69,12 @@ const internal: Rule[] = [
 				".gitignore",
 				".DS_Store",
 			],
-			compiled: null,
 		},
 		{ nocase: true },
 	),
 	ruleCompile(
 		{
+			compiled: null,
 			excludes: false,
 			pattern: [
 				// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L10
@@ -85,7 +86,6 @@ const internal: Rule[] = [
 				"/changelog*",
 				"/history*",
 			],
-			compiled: null,
 		},
 		{ nocase: true },
 	),
@@ -95,9 +95,8 @@ const internal: Rule[] = [
  * @since 0.8.0
  */
 export const YarnClassic: Target = {
-	internalRules: internal,
 	extractors,
-	root: ".",
+	ignores: ruleTest,
 	async init({ fs, cwd }) {
 		let content: Buffer
 		const normalCwd = unixify(cwd)
@@ -112,5 +111,6 @@ export const YarnClassic: Target = {
 			throw new Error("Invalid 'package.json': " + dist.summary, { cause: dist })
 		}
 	},
-	ignores: ruleTest,
+	internalRules: internal,
+	root: ".",
 }

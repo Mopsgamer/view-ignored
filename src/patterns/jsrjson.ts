@@ -2,7 +2,6 @@ import { type } from "arktype"
 import stripJsonComments from "strip-json-comments"
 
 import type { ExtractorFn } from "./extractor.js"
-import type { MatcherContext } from "./matcherContext.js"
 import type { Rule } from "./rule.js"
 
 import { ruleCompile } from "./resolveSources.js"
@@ -26,9 +25,9 @@ const parse = type("string")
  *
  * @since 0.6.0
  */
-export function extractJsrJson(source: Source, content: Buffer, ctx: MatcherContext): void {
-	extract(source, content, ctx)
-	for (const element of source.pattern) {
+export function extractJsrJson(source: Source, content: Buffer): void {
+	extract(source, content)
+	for (const element of source.rules) {
 		ruleCompile(element)
 	}
 }
@@ -42,20 +41,18 @@ extractJsrJson satisfies ExtractorFn
  *
  * @since 0.6.0
  */
-export function extractJsrJsonc(source: Source, content: Buffer, ctx: MatcherContext): void {
-	extractJsrJson(source, Buffer.from(stripJsonComments(content.toString())), ctx)
+export function extractJsrJsonc(source: Source, content: Buffer): void {
+	extractJsrJson(source, Buffer.from(stripJsonComments(content.toString())))
 }
 
 extractJsrJsonc satisfies ExtractorFn
 
-function extract(source: Source, content: Buffer, ctx: MatcherContext): void {
+function extract(source: Source, content: Buffer): void {
 	const dist = parse(content.toString())
 	const include: Rule = { compiled: null, excludes: false, pattern: [] }
 	const exclude: Rule = { compiled: null, excludes: true, pattern: [] }
 	if (dist instanceof type.errors) {
-		source.error = new Error("Invalid '" + source.path + "': " + dist.summary, { cause: dist })
-		ctx.failed.push(source)
-		return
+		throw new Error("Invalid '" + source.path + "': " + dist.summary, { cause: dist })
 	}
 
 	if (!dist.publish) {
@@ -79,5 +76,5 @@ function extract(source: Source, content: Buffer, ctx: MatcherContext): void {
 			resolveNegatable(pattern, true, include, exclude)
 		}
 	}
-	source.pattern.push(include, exclude)
+	source.rules.push(include, exclude)
 }

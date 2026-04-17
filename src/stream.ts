@@ -15,5 +15,5 @@ export type * from "./types.js"
 export function scanStream(options: ScanOptions): MatcherStream {
 	const { cwd = process.cwd(), fs = nodefs } = options
 
-	return browserStream({ fs, cwd, ...options })
+	return browserStream({ cwd, fs, ...options })
 }

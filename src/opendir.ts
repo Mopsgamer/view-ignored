@@ -9,9 +9,9 @@ export async function opendir(
 	place: string,
 	cb: (dirent: Dirent, parentPath: string, path: string) => Promise<0 | 1 | 2>,
 ): Promise<boolean> {
-	const { ctx, cwd, fs, signal, target } = options
+	const { external, cwd, fs, signal, target } = options
 
-	const dir = await fs.promises.opendir(place)
+	const dir = await fs.promises.readdir(place, { withFileTypes: true })
 	const tasks: Promise<void>[] = []
 
 	const normalParentPath = place
@@ -19,14 +19,14 @@ export async function opendir(
 	const isRootDir = normalParentPath.length === cwd.length
 	const parentPath = isRootDir ? "." : substr
 
-	await resolveSources({ ctx, cwd, fs, signal, target, dir: parentPath })
+	await resolveSources({ cwd, dir: parentPath, external, fs, signal, target })
 
 	let stop = false
 	for await (const entry of dir) {
 		const from = place + "/" + entry.name
 		const path = isRootDir ? entry.name : substr + "/" + entry.name
 
-		const task = (async (): Promise<void> => {
+		const task = (async function opendirTask(): Promise<void> {
 			const r = await cb(entry, parentPath, path)
 			if (r === 1) return
 

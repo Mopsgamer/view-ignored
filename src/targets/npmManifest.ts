@@ -1,14 +1,14 @@
 import { type } from "arktype"
 
 const baseManifest = type({
+	"bin?": "string | Record<string, string>",
+	"browser?": "string",
+	"dependencies?": "Record<string, string>",
+	"devDependencies?": "Record<string, string>",
+	"files?": "string[]",
 	"main?": "string",
 	"module?": "string",
-	"browser?": "string",
-	"files?": "string[]",
-	"bin?": "string | Record<string, string>",
 	"optionalDependencies?": "Record<string, string>",
-	"devDependencies?": "Record<string, string>",
-	"dependencies?": "Record<string, string>",
 })
 
 const withBundle = baseManifest.and({
@@ -17,8 +17,8 @@ const withBundle = baseManifest.and({
 })
 
 const withBundled = baseManifest.and({
-	"bundledDependencies?": "string[]",
 	"bundleDependencies?": "never",
+	"bundledDependencies?": "string[]",
 })
 
 export const npmManifest = withBundle.or(withBundled)

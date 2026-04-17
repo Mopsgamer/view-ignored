@@ -4,12 +4,11 @@ import { EventEmitter } from "node:events"
 
 import type { MatcherContext } from "../patterns/matcherContext.js"
 import type { ScanOptions, FsAdapter } from "../types.js"
+import type { Resource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"
-import type { Source } from "./source.js"
 
-import { opendir } from "../opendir.js"
-import { join, unixify } from "../unixify.js"
-import { walkIncludes } from "../walk.js"
+import { scanParallel } from "../scanParallel.js"
+import { walkPatch, type WalkResult } from "../walk.js"
 
 /**
  * Post-scan entry information.
@@ -37,13 +36,6 @@ export type EntryInfo = {
 	 * @since 0.6.0
 	 */
 	match: RuleMatch
-
-	/**
-	 * The matcher context.
-	 *
-	 * @since 0.6.0
-	 */
-	ctx: MatcherContext
 }
 
 /**
@@ -73,7 +65,7 @@ export type EventMap = {
 
 /**
  * Event emitter.
- * @extends EventEmitter
+ * @augments EventEmitter
  *
  * @since 0.6.0
  */
@@ -116,20 +108,17 @@ export class MatcherStream extends EventEmitter<EventMap> {
 		} = this.#options
 
 		const ctx: MatcherContext = {
-			paths: new Map<string, RuleMatch>(),
-			external: new Map<string, Source>(),
-			failed: [],
 			depthPaths: new Map<string, number>(),
+			external: new Map<string, Resource>(),
+			failed: [],
+			paths: new Map<string, RuleMatch>(),
+			totalDirs: 0,
 			totalFiles: 0,
 			totalMatchedFiles: 0,
-			totalDirs: 0,
 		}
 
-		const normalCwd = unixify(cwd)
-
 		const scanOptions: Required<ScanOptions> = {
-			cwd: normalCwd,
-			within,
+			cwd,
 			depth: maxDepth,
 			fastDepth,
 			fastInternal,
@@ -137,20 +126,20 @@ export class MatcherStream extends EventEmitter<EventMap> {
 			invert,
 			signal,
 			target,
+			within,
 		}
 
-		await target.init?.({ ctx, cwd, fs, signal, target })
-		let from = join(normalCwd, within)
-		await opendir({ ctx, cwd: normalCwd, fs, signal, target }, from, (entry, parentPath, path) => {
-			return walkIncludes({
-				path,
-				parentPath,
-				entry,
-				ctx,
-				stream: this,
-				scanOptions,
-			})
+		await target.init?.({ cwd, fs, signal, target })
+		const results: WalkResult[] = []
+		await scanParallel({
+			external: ctx.external,
+			results,
+			scanOptions,
+			stream: this,
+			within,
 		})
+
+		walkPatch(ctx, results)
 		this.emit("end", ctx)
 	}
 }

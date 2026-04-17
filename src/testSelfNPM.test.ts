@@ -10,7 +10,7 @@ describe.skipIf(!!process.env.TEST_NO_SELF)("NPM", () => {
 		"scans self",
 		async () => {
 			const npm = npmTotalFiles()
-			const r = await scan({ target, fastInternal: true })
+			const r = await scan({ fastInternal: true, target })
 			// this test uses sortFirstFolders implementation
 			// provided by https://jsr.io/@m234/path/0.1.4/sort-cmp.ts
 			// you can install this jsr package in your project
@@ -65,8 +65,8 @@ function npmTotalFiles(): Promise<{ total: number; files: string[] }> {
 			}
 			if (match && match[1]) {
 				resolve({
-					total: parseInt(match[1], 10),
 					files,
+					total: parseInt(match[1], 10),
 				})
 				return
 			}

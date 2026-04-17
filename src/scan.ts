@@ -23,5 +23,5 @@ export type * from "./types.js"
 export function scan(options: ScanOptions): Promise<MatcherContext> {
 	const { cwd = process.cwd(), fs = nodefs } = options
 
-	return browserScan({ fs, cwd, ...options })
+	return browserScan({ cwd, fs, ...options })
 }
