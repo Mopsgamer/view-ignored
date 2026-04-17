@@ -26,25 +26,41 @@ export async function scanParallel(options: ScanParallelOptions): Promise<WalkRe
 		scanOptions.cwd = unixify(cwd)
 	}
 
-	const queue = Array.from({ length: 4 }, () => makeQ())
+	const queue = makeQ(256)
 
 	const stack: { relPath: string; parentPath: string }[] = [{ parentPath: ".", relPath: within }]
-	let id = 0
+	let nextId = 0
+	let pendingDiscovery = 0
+	const discoveryConcurrency = 4
 
-	const pushing: Promise<void>[] = []
-	while (stack.length > 0) {
-		const { relPath, parentPath } = stack.pop()!
+	const discoveryWorkers: Promise<void>[] = []
+	const { promise: discoveryDone, resolve: resolveDiscoveryDone } = Promise.withResolvers<void>()
 
-		const resolution = resolveSources({ ...scanOptions, dir: relPath, external, parentPath })
-		const fullPath = join(scanOptions.cwd, relPath)
-		const read = scanOptions.fs.promises.readdir(fullPath, { withFileTypes: true })
+	const runDiscovery = async () => {
+		while (true) {
+			const task = stack.pop()
+			if (!task) {
+				if (pendingDiscovery === 0) {
+					break
+				}
+				// Wait for other workers to potentially add more to the stack
+				await new Promise((resolve) => setTimeout(resolve, 1))
+				continue
+			}
 
-		const { resolve: resolveId, promise: promiseId } = Promise.withResolvers<number>()
-		pushing.push(
-			(async function pushingPush(id, queueItem) {
-				const entries = await read
+			pendingDiscovery++
+			try {
+				const { relPath, parentPath } = task
+
+				const resolution = resolveSources({ ...scanOptions, dir: relPath, external, parentPath })
+				const fullPath = join(scanOptions.cwd, relPath)
+				const entries = await scanOptions.fs.promises.readdir(fullPath, { withFileTypes: true })
 				await resolution
-				resolveId(id + entries.length)
+
+				// Assign a block of IDs for this directory's entries
+				let id = nextId
+				nextId += entries.length
+
 				for (let i = 0; i < entries.length; i++) {
 					const entry = entries[i]!
 					const currentRelPath = join(relPath, entry.name)
@@ -53,7 +69,7 @@ export async function scanParallel(options: ScanParallelOptions): Promise<WalkRe
 						stack.push({ parentPath: relPath, relPath: currentRelPath })
 					}
 
-					queueItem.push(id++, <WalkOptions>{
+					queue.push(id++, <WalkOptions>{
 						entry,
 						external,
 						parentPath: relPath,
@@ -62,40 +78,81 @@ export async function scanParallel(options: ScanParallelOptions): Promise<WalkRe
 						stream,
 					})
 				}
-			})(id, queue[id % queue.length]!),
-		)
-		id = await promiseId
-	}
-	for (const q of queue) {
-		q.done()
-	}
-	await Promise.all(pushing)
-	let failedId = -1
-	for (const q of queue) {
-		const result = await q.promise
-		if (result.reportedId < 0) {
-			continue
+			} finally {
+				pendingDiscovery--
+				if (pendingDiscovery === 0 && stack.length === 0) {
+					resolveDiscoveryDone()
+				}
+			}
 		}
-		failedId = Math.min(result.reportedId)
 	}
-	for (const q of queue) {
-		results.push(...(await q.cut(failedId)))
+
+	for (let i = 0; i < discoveryConcurrency; i++) {
+		discoveryWorkers.push(runDiscovery())
 	}
+
+	await Promise.race([discoveryDone, Promise.all(discoveryWorkers)])
+	queue.done()
+
+	const qResult = await queue.promise
+	let failedId = qResult.reportedId
+
+	if (failedId === -1) {
+		results.push(...qResult.results)
+	} else {
+		results.push(...(await queue.cut(failedId)))
+	}
+
 	return results
 }
 
 interface Q {
 	promise: Promise<{ results: WalkResult[]; reportedId: number }>
-	push(id: number, o: WalkOptions): Promise<void>
+	push(id: number, o: WalkOptions): void
 	cut(failedId: number): Promise<WalkResult[]>
 	done(): void
 }
-function makeQ(): Q {
+
+function makeQ(concurrency: number): Q {
 	const proc = Promise.withResolvers<{ results: WalkResult[]; reportedId: number }>()
 	const results: WalkResult[] = []
 	let pendingCount = 0
 	let isReady = false
 	let ids: number[] = []
+
+	let active = 0
+	const taskQueue: { id: number; o: WalkOptions }[] = []
+
+	const run = async () => {
+		if (active >= concurrency || taskQueue.length === 0) {
+			return
+		}
+
+		active++
+		const { id, o } = taskQueue.shift()!
+
+		try {
+			const res = await walkIncludes(o)
+			results.push(res)
+			ids.push(id)
+		} catch {
+			proc.resolve({ reportedId: id, results })
+			return
+		} finally {
+			active--
+			pendingCount--
+			if (isReady && pendingCount === 0) {
+				proc.resolve({ reportedId: -1, results })
+			}
+			run()
+		}
+
+		// Try to start more tasks if we have capacity
+		if (active < concurrency && taskQueue.length > 0) {
+			run()
+		}
+	}
+
 	return <Q>{
 		async cut(failedId) {
 			if (failedId === -1) return results
@@ -121,22 +178,10 @@ function makeQ(): Q {
 			if (pendingCount === 0) proc.resolve({ reportedId: -1, results })
 		},
 		promise: proc.promise,
-		async push(id, o) {
+		push(id, o) {
 			pendingCount++
-
-			try {
-				const res = await walkIncludes(o)
-				results.push(res)
-			} catch {
-				proc.resolve({ reportedId: id, results })
-				return
-			}
-			ids.push(id)
-			pendingCount--
-
-			if (isReady && pendingCount === 0) {
-				proc.resolve({ reportedId: -1, results })
-			}
+			taskQueue.push({ id, o })
+			run()
 		},
 	}
 }
