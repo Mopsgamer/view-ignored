@@ -130,10 +130,8 @@ export class MatcherStream extends EventEmitter<EventMap> {
 		}
 
 		await target.init?.({ cwd, fs, signal, target })
-		const results: WalkResult[] = []
-		await scanParallel({
+		const results: WalkResult[] = await scanParallel({
 			external: ctx.external,
-			results,
 			scanOptions,
 			stream: this,
 			within,
