@@ -52,26 +52,27 @@ export const Deno: Target = {
 	extractors,
 	ignores: ruleTest,
 	async init({ fs, cwd }) {
-		let content: Buffer
 		const normalCwd = unixify(cwd)
-		let path: string
-		for (const [i, { path: p }] of extractors.entries()) {
-			path = p
-			try {
-				content = await fs.promises.readFile(normalCwd + "/" + path)
-			} catch (error) {
-				if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-					if (i < extractors.length - 1) {
-						continue
-					}
-				}
-				throw new Error("Error while initializing Deno", { cause: error })
-			}
+
+		const results = await Promise.allSettled(
+			extractors.map(async ({ path: p }) => {
+				const data = await fs.promises.readFile(normalCwd + "/" + p)
+				return { data, p }
+			}),
+		)
+
+		const successful = results.find((r) => r.status === "fulfilled")
+
+		if (!successful) {
+			const firstError = (results[0] as PromiseRejectedResult).reason
+			throw new Error("Error while initializing Deno", { cause: firstError })
 		}
 
-		const dist = jsrManifestParse(content!.toString())
+		const { data: content, p: path } = successful.value
+		const dist = jsrManifestParse(content.toString())
+
 		if (dist instanceof type.errors) {
-			throw new Error("Invalid '" + path! + "': " + dist.summary, { cause: dist })
+			throw new Error("Invalid '" + path + "': " + dist.summary, { cause: dist })
 		}
 	},
 	internalRules: internal,

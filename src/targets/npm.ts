@@ -99,7 +99,7 @@ export const NPM: Target = {
 		let content: Buffer
 		const normalCwd = unixify(cwd)
 		try {
-			content = await fs.promises.readFile(normalCwd + "/" + "package.json")
+			content = await fs.promises.readFile(normalCwd + "/package.json")
 		} catch (error) {
 			throw new Error("Error while initializing NPM", { cause: error })
 		}

@@ -40,24 +40,23 @@ export async function scanParallel(options: ScanParallelOptions): Promise<WalkRe
 		while (true) {
 			const task = stack.pop()
 			if (!task) {
-				if (pendingDiscovery === 0) {
-					break
-				}
-				// Wait for other workers to potentially add more to the stack
-				await new Promise((resolve) => setTimeout(resolve, 1))
+				if (pendingDiscovery === 0) break
+				// oxlint-disable-next-line no-await-in-loop
+				await new Promise((resolve) => setImmediate(resolve))
 				continue
 			}
 
 			pendingDiscovery++
 			try {
 				const { relPath, parentPath } = task
-
-				const resolution = resolveSources({ ...scanOptions, dir: relPath, external, parentPath })
 				const fullPath = join(scanOptions.cwd, relPath)
-				const entries = await scanOptions.fs.promises.readdir(fullPath, { withFileTypes: true })
-				await resolution
 
-				// Assign a block of IDs for this directory's entries
+				// oxlint-disable-next-line no-await-in-loop
+				const [entries] = await Promise.all([
+					scanOptions.fs.promises.readdir(fullPath, { withFileTypes: true }),
+					resolveSources({ ...scanOptions, dir: relPath, external, parentPath }),
+				])
+
 				let id = nextId
 				nextId += entries.length
 
@@ -69,7 +68,7 @@ export async function scanParallel(options: ScanParallelOptions): Promise<WalkRe
 						stack.push({ parentPath: relPath, relPath: currentRelPath })
 					}
 
-					queue.push(id++, <WalkOptions>{
+					queue.push(id++, {
 						entry,
 						external,
 						parentPath: relPath,
@@ -171,7 +170,8 @@ function makeQ(concurrency: number): Q {
 				}
 			}
 
-			return results.slice(0, low)
+			results.length = low
+			return results
 		},
 		done() {
 			isReady = true

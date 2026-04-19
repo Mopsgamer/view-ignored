@@ -92,9 +92,9 @@
 		"test:self:npm": "bun test src/testSelfNPM.test.ts",
 		"lint": "bun run oxlint --type-aware",
 		"fmt": "bun run oxfmt",
-		"check": "bun tsgo -p . --noEmit",
-		"dev": "bun tsgo -p .",
-		"prod": "rm -rf out && bun tsgo -p tsconfig.prod.json",
+		"check": "bun tsgo -p src --noEmit",
+		"dev": "bun tsgo -p src",
+		"prod": "rm -rf out && bun tsgo -p src/tsconfig.prod.json",
 		"release:major": "bun run release-it --increment=major",
 		"release:minor": "bun run release-it --increment=minor",
 		"release:patch": "bun run release-it --increment=patch"
@@ -110,15 +110,15 @@
 		"@types/ignore-walk": "^4.0.3",
 		"@types/micromatch": "^4.0.10",
 		"@types/node": "^18.19.130",
-		"@typescript/native-preview": "^7.0.0-dev.20260416.2",
+		"@typescript/native-preview": "^7.0.0-dev.20260419.1",
 		"ignore-walk": "^8.0.0",
-		"memfs": "^4.57.1",
+		"memfs": "^4.57.2",
 		"mitata": "^1.0.34",
-		"oxfmt": "^0.35.0",
+		"oxfmt": "^0.45.0",
 		"oxlint": "^1.60.0",
-		"oxlint-tsgolint": "^0.14.2",
+		"oxlint-tsgolint": "^0.21.1",
 		"publint": "^0.3.18",
-		"release-it": "^19.2.4"
+		"release-it": "^20.0.0"
 	},
 	"engines": {
 		"node": ">=18"

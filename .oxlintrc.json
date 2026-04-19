@@ -11,5 +11,8 @@
 		"eslint/func-names": ["error", "always"],
 
 		"check-access": "warn"
+	},
+	"categories": {
+		"perf": "error"
 	}
 }

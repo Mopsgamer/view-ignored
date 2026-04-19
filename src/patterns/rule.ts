@@ -172,7 +172,7 @@ export interface RuleTestOptions extends PatternFinderOptions {
 	parentPath: string
 }
 
-function cacheTest(rs: PatternCache[], path: string): [string, Error | undefined] {
+function cacheTest(rs: PatternCache[], path: string): [string, Error | undefined] | undefined {
 	for (const r of rs) {
 		try {
 			if (patternCacheTest(r, path)) {
@@ -182,51 +182,53 @@ function cacheTest(rs: PatternCache[], path: string): [string, Error | undefined
 			return [r.pattern, err as Error]
 		}
 	}
-	return ["", undefined]
+	return undefined
 }
 
 function testInternal(internalRules: Rule[], path: string): RuleMatch | null {
-	for (const si of internalRules) {
-		let [patternMatch, error] = cacheTest(si.compiled!, path)
-		if (error)
+	for (const { compiled, excludes } of internalRules) {
+		const test = cacheTest(compiled!, path)
+		if (typeof test === "undefined") continue
+		const [pattern, error] = test
+		if (typeof error !== "undefined")
 			return {
 				error,
 				ignored: false,
 				kind: "invalid-internal",
-				pattern: patternMatch,
+				pattern,
 			}
 
-		if (patternMatch)
-			return {
-				ignored: si.excludes,
-				kind: "internal",
-				pattern: patternMatch,
-			}
+		return {
+			ignored: excludes,
+			kind: "internal",
+			pattern,
+		}
 	}
 
 	return null
 }
 
 function testExternal(path: string, source: Source): RuleMatch {
-	for (const si of source.rules) {
-		let [patternMatch, err] = cacheTest(si.compiled!, path)
-		if (err) {
+	for (const { compiled, excludes } of source.rules) {
+		const test = cacheTest(compiled!, path)
+		if (typeof test === "undefined") continue
+		const [pattern, error] = test
+		if (typeof error !== "undefined") {
 			return {
-				error: err,
+				error,
 				ignored: false,
 				kind: "invalid-external",
-				pattern: patternMatch,
+				pattern,
 				source,
 			}
 		}
 
-		if (patternMatch)
-			return {
-				ignored: si.excludes,
-				kind: "external",
-				pattern: patternMatch,
-				source,
-			}
+		return {
+			ignored: excludes,
+			kind: "external",
+			pattern,
+			source,
+		}
 	}
 
 	return {
@@ -251,11 +253,11 @@ export async function ruleTest(options: RuleTestOptions): Promise<RuleMatch> {
 	// 	source = options.ctx.external.get(parent)
 	// }
 
-	if (src === undefined) {
+	if (typeof src === "undefined") {
 		throw new Error("view-ignored has crashed: no source cached.")
 	}
 
-	if (src === "none") {
+	if (typeof src === "string") {
 		return { ignored: false, kind: "missing-source" }
 	}
 

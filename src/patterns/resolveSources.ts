@@ -127,18 +127,21 @@ async function findSourceForAbsoluteDirs(
 	target: Target,
 	signal: AbortSignal | null,
 ): Promise<Resource> {
-	for (const parent of paths) {
-		for (const extractor of target.extractors) {
-			signal?.throwIfAborted()
-			const s = await tryExtractor(parent, fs, extractor)
-			if (typeof s === "object" && "error" in s) {
-				return s
-			}
-			if (typeof s === "object") {
-				return s
-			}
+	const results = await Promise.all(
+		paths.flatMap((parent) =>
+			target.extractors.map(async (extractor) => {
+				signal?.throwIfAborted()
+				return await tryExtractor(parent, fs, extractor)
+			}),
+		),
+	)
+
+	for (const s of results) {
+		if (typeof s === "object") {
+			return s
 		}
 	}
+
 	return "none"
 }
 
@@ -166,12 +169,12 @@ async function tryExtractor(cwd: string, fs: FsAdapter, extractor: Extractor): P
 
 	try {
 		const act = extractor.extract(newSource, buff)
-		if (act === "none") {
+		if (typeof act === "string") {
 			return act
 		}
 	} catch (err) {
-		if (err === "none") {
-			return err
+		if (typeof err === "string") {
+			return err as "none"
 		}
 		const error =
 			err instanceof Error
