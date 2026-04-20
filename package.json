@@ -77,8 +77,8 @@
 	},
 	"scripts": {
 		"prerelease": "bun run test && bun run prod && bun run lint && bun run fmt --check && bun publint --pack bun --strict",
-        "heap": "bun scripts/scanHeap.js --snapshot",
-        "heap:node": "node scripts/scanHeap.js --snapshot",
+		"heap": "bun scripts/scanHeap.js --snapshot",
+		"heap:node": "node scripts/scanHeap.js --snapshot",
 		"cpu": "bun run --expose-gc --cpu-prof --cpu-prof-md --cpu-prof-name CPU.me scripts/scan.js --fastInternal",
 		"cpu:node": "node --expose-gc --cpu-prof --cpu-prof-name CPU.me.node.cpuprofile scripts/scan.js --fastInternal",
 		"bench": "bun run --expose-gc scripts/benchmark.js",

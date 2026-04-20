@@ -182,13 +182,13 @@ export function walkPatch(ctx: MatcherContext, maxDepth: number, results: WalkRe
 			if (!match.ignored) {
 				if (!r.tooDeep) ctx.paths.set(path, match)
 			}
-			fillTotal(maxDepth, ctx.total, path.slice(0, -1), 0, 0, 1)
+			fillTotal(maxDepth, ctx.total, path.slice(0, -1), match, 0, 0, 1)
 		} else {
 			if (!match.ignored) {
 				if (!r.tooDeep) ctx.paths.set(path, match)
-				fillTotal(maxDepth, ctx.total, parentPath, 1, 1, 0)
+				fillTotal(maxDepth, ctx.total, parentPath, match, 1, 1, 0)
 			} else {
-				fillTotal(maxDepth, ctx.total, path, 1, 0, 0)
+				fillTotal(maxDepth, ctx.total, path, match, 1, 0, 0)
 			}
 		}
 		if (r.includeParent) {
@@ -201,34 +201,41 @@ export function fillTotal(
 	maxDepth: number,
 	total: Map<string, Total>,
 	dir: string,
+	match: RuleMatch,
 	addFiles: number,
 	addMatchedFiles: number,
 	addDirs: number,
 ): void {
-	const dirTotal =
-		total.get(dir) || total.set(dir, { totalDirs: 0, totalFiles: 0, totalMatchedFiles: 0 }).get(dir)
+	const dirTotal = total.get(dir)
+	let { depth, depthSlash } = getDepth(dir, maxDepth)
 	if (dirTotal) {
 		dirTotal.totalFiles += addFiles
 		dirTotal.totalDirs += addDirs
 		dirTotal.totalMatchedFiles += addMatchedFiles
+	} else if (depth <= maxDepth && !match.ignored) {
+		total.set(dir, { totalDirs: addDirs, totalFiles: addFiles, totalMatchedFiles: addMatchedFiles })
 	}
 	if (dir === ".") return
-	let { depthSlash } = getDepth(dir, maxDepth)
+	depth--
 	for (
 		let parent = depthSlash <= 0 ? dirname(dir) : dir.slice(0, depthSlash);
 		;
-		parent = dirname(parent)
+		depth--, parent = dirname(parent)
 	) {
-		if (depthSlash > 0 && parent !== ".") {
+		if (depth > maxDepth && parent !== ".") {
 			continue
 		}
-		const parentTotal =
-			total.get(parent) ||
-			total.set(parent, { totalDirs: 0, totalFiles: 0, totalMatchedFiles: 0 }).get(parent)
+		const parentTotal = total.get(parent)
 		if (parentTotal) {
 			parentTotal.totalFiles += addFiles
 			parentTotal.totalDirs += addDirs
 			parentTotal.totalMatchedFiles += addMatchedFiles
+		} else if (depth <= maxDepth && !match.ignored) {
+			total.set(parent, {
+				totalDirs: addDirs,
+				totalFiles: addFiles,
+				totalMatchedFiles: addMatchedFiles,
+			})
 		}
 		if (parent === ".") break
 	}
