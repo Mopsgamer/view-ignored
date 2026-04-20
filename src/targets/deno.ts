@@ -1,5 +1,3 @@
-import { type } from "arktype"
-
 import type { Target } from "./target.js"
 
 import {
@@ -54,25 +52,20 @@ export const Deno: Target = {
 	async init({ fs, cwd }) {
 		const normalCwd = unixify(cwd)
 
-		const results = await Promise.allSettled(
-			extractors.map(async ({ path: p }) => {
-				const data = await fs.promises.readFile(normalCwd + "/" + p)
-				return { data, p }
-			}),
-		)
+		const tasks = extractors.map(async ({ path }) => {
+			const data = await fs.promises.readFile(normalCwd + "/" + path)
+			return { data, path }
+		})
 
-		const successful = results.find((r) => r.status === "fulfilled")
+		try {
+			const { data } = await Promise.any(tasks)
+			const dist = jsrManifestParse(data.toString())
 
-		if (!successful) {
-			const firstError = (results[0] as PromiseRejectedResult).reason
-			throw new Error("Error while initializing Deno", { cause: firstError })
-		}
-
-		const { data: content, p: path } = successful.value
-		const dist = jsrManifestParse(content.toString())
-
-		if (dist instanceof type.errors) {
-			throw new Error("Invalid '" + path + "': " + dist.summary, { cause: dist })
+			if (!dist || typeof dist !== "object") {
+				throw new Error("Manifest is empty or not an object")
+			}
+		} catch (error) {
+			throw new Error("Error while initializing Deno: No valid manifest found", { cause: error })
 		}
 	},
 	internalRules: internal,

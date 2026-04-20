@@ -1,5 +1,3 @@
-import { type } from "arktype"
-
 import type { Target } from "./target.js"
 
 import {
@@ -11,7 +9,7 @@ import {
 	extractGitignore,
 } from "../patterns/index.js"
 import { unixify } from "../unixify.js"
-import { npmManifest } from "./npmManifest.js"
+import { vsceManifestParse } from "./vsceManifest.js"
 
 const extractors: Extractor[] = [
 	{
@@ -69,17 +67,6 @@ const internal: Rule[] = [
 	}),
 ]
 
-const vsceManifest = npmManifest.and({
-	engines: {
-		// https://github.com/microsoft/vscode-vsce/blob/main/src/validation.ts#L52
-		vscode: "/^\\*$|^(\\^|>=)?((\\d+)|x)\\.((\\d+)|x)\\.((\\d+)|x)(\\-.*)?$/",
-	},
-})
-
-const vsceManifestParse = type("string")
-	.pipe((s) => JSON.parse(s))
-	.pipe(vsceManifest)
-
 /**
  * @since 0.6.0
  */
@@ -95,9 +82,10 @@ export const VSCE: Target = {
 			throw new Error("Error while initializing VSCE", { cause: error })
 		}
 
-		const dist = vsceManifestParse(content.toString())
-		if (dist instanceof type.errors) {
-			throw new Error("Invalid 'package.json': " + dist.summary, { cause: dist })
+		try {
+			vsceManifestParse(content.toString())
+		} catch (error) {
+			throw new Error("Invalid 'package.json'", { cause: error })
 		}
 	},
 	internalRules: internal,

@@ -1,5 +1,3 @@
-import { type } from "arktype"
-
 import type { Target } from "./target.js"
 
 import {
@@ -115,8 +113,9 @@ export const Bun: Target = {
 		}
 
 		const dist = npmManifestParse(content.toString())
-		if (dist instanceof type.errors) {
-			throw new Error("Invalid 'package.json': " + dist.summary, { cause: dist })
+
+		if (!dist || typeof dist !== "object") {
+			throw new Error("Invalid 'package.json': Manifest is empty or not an object")
 		}
 
 		const set = new Set<string>()
@@ -129,8 +128,8 @@ export const Bun: Target = {
 		// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L1440
 		if (typeof dist.bin === "string") {
 			set.add(normal(dist.bin))
-		} else if (typeof dist.bin === "object" && dist.bin !== null) {
-			Object.values(dist.bin).forEach((binPath) => set.add(normal(binPath)))
+		} else if (typeof dist.bin === "object") {
+			Object.values<string>(dist.bin).forEach((binPath) => set.add(normal(binPath)))
 		}
 
 		// TODO: Bun should include bundled deps

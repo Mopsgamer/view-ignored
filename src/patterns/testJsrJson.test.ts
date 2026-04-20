@@ -13,9 +13,7 @@ describe("jsr.json", () => {
 			rules: [],
 		}
 		// @ts-expect-error for 0
-		expect(() => extractJsrJson(source, 0)).toThrowError(
-			"Invalid 'jsr.json': must be an object (was a number)",
-		)
+		expect(() => extractJsrJson(source, 0)).toThrowError("Invalid")
 	})
 	test("does not parse '{'", () => {
 		const source: Source = {
@@ -24,7 +22,7 @@ describe("jsr.json", () => {
 			path: "jsr.json",
 			rules: [],
 		}
-		expect(() => extractJsrJson(source, new Buffer("{", "utf-8"))).toThrowError("Expected")
+		expect(() => extractJsrJson(source, new Buffer("{", "utf-8"))).toThrowError("Invalid")
 	})
 	test("parses '{}'", () => {
 		const source: Source = {

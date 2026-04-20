@@ -100,7 +100,6 @@
 		"release:patch": "bun run release-it --increment=patch"
 	},
 	"dependencies": {
-		"arktype": "^2.2.0",
 		"micromatch": "^4.0.8",
 		"strip-json-comments": "^5.0.3"
 	},

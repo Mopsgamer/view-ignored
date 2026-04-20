@@ -1,5 +1,3 @@
-import { type } from "arktype"
-
 import type { Target } from "./target.js"
 
 import {
@@ -104,9 +102,10 @@ export const NPM: Target = {
 			throw new Error("Error while initializing NPM", { cause: error })
 		}
 
-		const dist = npmManifestParse(content.toString())
-		if (dist instanceof type.errors) {
-			throw new Error("Invalid 'package.json': " + dist.summary, { cause: dist })
+		try {
+			npmManifestParse(content.toString())
+		} catch (error) {
+			throw new Error("Invalid 'package.json'", { cause: error })
 		}
 
 		// const set = new Set<string>()

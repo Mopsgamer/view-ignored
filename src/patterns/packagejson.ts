@@ -1,5 +1,3 @@
-import { type } from "arktype"
-
 import type { ExtractorFn } from "./extractor.js"
 import type { Rule } from "./rule.js"
 
@@ -45,18 +43,23 @@ function extract(source: Source, content: Buffer): void | "none" {
 	source.inverted = true
 	const include: Rule = { compiled: null, excludes: false, pattern: [] }
 	const exclude: Rule = { compiled: null, excludes: true, pattern: [] }
-	const dist = npmManifestParse(content.toString())
-	if (dist instanceof type.errors) {
-		throw new Error("Invalid '" + source.path + "': " + dist.summary, { cause: dist })
+
+	let dist: { files?: string[] }
+
+	try {
+		dist = npmManifestParse(content.toString())
+	} catch (err) {
+		throw new Error("Invalid '" + source.path + "'", { cause: err })
 	}
 
-	if (!dist.files) {
+	if (!dist?.files || !Array.isArray(dist.files)) {
 		return "none"
 	}
 
 	for (const pattern of dist.files) {
 		resolveNegatable(pattern, true, include, exclude)
 	}
+
 	source.rules.push(include, exclude)
 }
 

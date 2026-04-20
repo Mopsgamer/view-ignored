@@ -1,4 +1,3 @@
-import { type } from "arktype"
 import stripJsonComments from "strip-json-comments"
 
 import type { ExtractorFn } from "./extractor.js"
@@ -7,18 +6,14 @@ import type { Rule } from "./rule.js"
 import { ruleCompile } from "./resolveSources.js"
 import { resolveNegatable, type Source } from "./source.js"
 
-const jsrManifest = type({
-	exclude: "string[]?",
-	include: "string[]?",
-	"publish?": {
-		exclude: "string[]?",
-		include: "string[]?",
-	},
-})
-
-const parse = type("string")
-	.pipe((s) => JSON.parse(s))
-	.pipe(jsrManifest)
+interface JsrManifest {
+	exclude?: string[]
+	include?: string[]
+	publish?: {
+		exclude?: string[]
+		include?: string[]
+	}
+}
 
 /**
  * Extracts and compiles patterns from the file.
@@ -48,27 +43,31 @@ export function extractJsrJsonc(source: Source, content: Buffer): void {
 extractJsrJsonc satisfies ExtractorFn
 
 function extract(source: Source, content: Buffer): void {
-	const dist = parse(content.toString())
+	let dist: JsrManifest
+
+	try {
+		dist = JSON.parse(content.toString())
+	} catch (e) {
+		throw new Error("Invalid JSON in " + source.path, { cause: e })
+	}
+
+	// Basic runtime check to ensure dist is an object
+	if (!dist || typeof dist !== "object" || Array.isArray(dist)) {
+		throw new Error("Invalid " + source.path + ": Root must be an object")
+	}
+
 	const include: Rule = { compiled: null, excludes: false, pattern: [] }
 	const exclude: Rule = { compiled: null, excludes: true, pattern: [] }
-	if (dist instanceof type.errors) {
-		throw new Error("Invalid '" + source.path + "': " + dist.summary, { cause: dist })
+
+	// Resolve patterns based on the manifest hierarchy
+	const target = dist.publish ?? dist
+
+	if (target.exclude && Array.isArray(target.exclude)) {
+		exclude.pattern.push(...target.exclude)
 	}
 
-	if (!dist.publish) {
-		if (dist.exclude) {
-			exclude.pattern.push(...dist.exclude)
-		}
-	} else if (dist.publish.exclude) {
-		exclude.pattern.push(...dist.publish.exclude)
-	}
-
-	if (!dist.publish) {
-		if (dist.include) {
-			include.pattern.push(...dist.include)
-		}
-	} else if (dist.publish.include) {
-		include.pattern.push(...dist.publish.include)
+	if (target.include && Array.isArray(target.include)) {
+		include.pattern.push(...target.include)
 	}
 
 	for (const si of [include, exclude]) {

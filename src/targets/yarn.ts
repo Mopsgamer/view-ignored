@@ -1,5 +1,3 @@
-import { type } from "arktype"
-
 import type { Target } from "./target.js"
 
 import {
@@ -90,22 +88,21 @@ export const Yarn: Target = {
 		}
 
 		const dist = npmManifestParse(content.toString())
-		if (dist instanceof type.errors) {
-			throw new Error("Invalid 'package.json': " + dist.summary, { cause: dist })
-		}
 
-		// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L215-L231
+		if (!dist || typeof dist !== "object") {
+			throw new Error("Invalid 'package.json': Manifest is empty or not an object")
+		}
 
 		const set = new Set<string>()
 
 		function normal(path: string): string {
-			const result = unixify(join(normalCwd, path)).substring(normalCwd.length)
-			return result
+			return unixify(join(normalCwd, path)).substring(normalCwd.length)
 		}
 
 		if (dist.main) set.add(normal(dist.main))
 		if (dist.module) set.add(normal(dist.module))
 		if (dist.browser) set.add(normal(dist.browser))
+
 		if (typeof dist.bin === "string") {
 			set.add(normal(dist.bin))
 		} else if (typeof dist.bin === "object" && dist.bin !== null) {

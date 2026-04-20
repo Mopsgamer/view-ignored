@@ -129,7 +129,7 @@ describe("NPM", () => {
 				},
 				[],
 			),
-		).rejects.toThrowError("Expected")
+		).rejects.toThrowError("Invalid")
 	})
 	test("monorepo should use package.json if cwd is .", async (done) => {
 		await testScan(

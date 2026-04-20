@@ -1,5 +1,3 @@
-import { type } from "arktype"
-
 import type { Target } from "./target.js"
 
 import {
@@ -107,8 +105,9 @@ export const YarnClassic: Target = {
 		}
 
 		const dist = npmManifestParse(content.toString())
-		if (dist instanceof type.errors) {
-			throw new Error("Invalid 'package.json': " + dist.summary, { cause: dist })
+
+		if (!dist || typeof dist !== "object") {
+			throw new Error("Invalid 'package.json': Manifest is empty or not an object")
 		}
 	},
 	internalRules: internal,

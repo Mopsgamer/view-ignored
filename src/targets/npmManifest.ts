@@ -1,28 +1,32 @@
-import { type } from "arktype"
+export interface NpmManifest {
+	bin?: string | Record<string, string>
+	browser?: string
+	dependencies?: Record<string, string>
+	devDependencies?: Record<string, string>
+	files?: string[]
+	main?: string
+	module?: string
+	optionalDependencies?: Record<string, string>
+	bundleDependencies?: string[]
+	bundledDependencies?: string[]
+}
 
-const baseManifest = type({
-	"bin?": "string | Record<string, string>",
-	"browser?": "string",
-	"dependencies?": "Record<string, string>",
-	"devDependencies?": "Record<string, string>",
-	"files?": "string[]",
-	"main?": "string",
-	"module?": "string",
-	"optionalDependencies?": "Record<string, string>",
-})
+export function npmManifestParse(s: string): NpmManifest {
+	const parsed = JSON.parse(s)
 
-const withBundle = baseManifest.and({
-	"bundleDependencies?": "string[]",
-	"bundledDependencies?": "never",
-})
+	if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+		throw new Error("npm manifest must be a JSON object")
+	}
 
-const withBundled = baseManifest.and({
-	"bundleDependencies?": "never",
-	"bundledDependencies?": "string[]",
-})
+	const dist = parsed as NpmManifest
 
-export const npmManifest = withBundle.or(withBundled)
+	if (dist.bundleDependencies && dist.bundledDependencies) {
+		throw new Error("Manifest cannot contain both 'bundleDependencies' and 'bundledDependencies'")
+	}
 
-export const npmManifestParse = type("string")
-	.pipe((s) => JSON.parse(s))
-	.pipe(npmManifest)
+	if (dist.files && !Array.isArray(dist.files)) {
+		throw new Error("'files' field must be an array of strings")
+	}
+
+	return dist
+}
