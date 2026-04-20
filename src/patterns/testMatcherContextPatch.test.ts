@@ -3,7 +3,6 @@ import { Volume, type NestedDirectoryJSON } from "memfs"
 
 import type { MatcherContext, Total } from "./matcherContext.js"
 import type { Resource } from "./resource.js"
-import type { RuleMatch } from "./rule.js"
 import type { Source } from "./source.js"
 
 import { scan, type ScanOptions } from "../scan.js"
@@ -12,6 +11,7 @@ import { createAdapter } from "../testScan.test.js"
 import { unixify } from "../unixify.js"
 import { matcherContextAddPath, matcherContextRemovePath } from "./matcherContextPatch.js"
 import { patternCompile } from "./patternCompile.js"
+import { RuleMatchKind, type RuleMatch } from "./rule.js"
 
 const fsJson = {
 	".gitignore": "node_modules\nout\ndist\n*.tgz\n*.cpuprofile",
@@ -80,7 +80,6 @@ const adapter = createAdapter(vol)
 const sourcePackageJsonExclude = ["/out"]
 const sourcePackageJson: Source = {
 	inverted: true,
-	name: "package.json",
 	path: "package.json",
 	rules: [
 		{
@@ -99,7 +98,6 @@ const sourcePackageJson: Source = {
 const sourceGitignoreExclude = ["node_modules", "out", "dist", "*.tgz", "*.cpuprofile"]
 const sourceGitignore: Source = {
 	inverted: false,
-	name: ".gitignore",
 	path: ".gitignore",
 	rules: [
 		{
@@ -152,45 +150,98 @@ describe("matcherContext{Add,Remove}Path prepare", () => {
 			]),
 			failed: [],
 			paths: new Map<string, RuleMatch>([
-				["LICENSE.txt", { ignored: false, kind: "internal", pattern: "LICENSE*" }],
-				["out/", { ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson }],
+				["LICENSE.txt", { ignored: false, kind: RuleMatchKind.internal, pattern: "LICENSE*" }],
+				[
+					"out/",
+					{
+						ignored: false,
+						kind: RuleMatchKind.external,
+						pattern: "/out",
+						source: sourcePackageJson,
+					},
+				],
 				[
 					"out/index.js",
-					{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+					{
+						ignored: false,
+						kind: RuleMatchKind.external,
+						pattern: "/out",
+						source: sourcePackageJson,
+					},
 				],
 				[
 					"out/patterns/",
-					{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+					{
+						ignored: false,
+						kind: RuleMatchKind.external,
+						pattern: "/out",
+						source: sourcePackageJson,
+					},
 				],
 				[
 					"out/patterns/gitignore.js",
-					{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+					{
+						ignored: false,
+						kind: RuleMatchKind.external,
+						pattern: "/out",
+						source: sourcePackageJson,
+					},
 				],
 				[
 					"out/patterns/index.js",
-					{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+					{
+						ignored: false,
+						kind: RuleMatchKind.external,
+						pattern: "/out",
+						source: sourcePackageJson,
+					},
 				],
 				[
 					"out/patterns/jsrjson.js",
-					{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+					{
+						ignored: false,
+						kind: RuleMatchKind.external,
+						pattern: "/out",
+						source: sourcePackageJson,
+					},
 				],
 				[
 					"out/targets/",
-					{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+					{
+						ignored: false,
+						kind: RuleMatchKind.external,
+						pattern: "/out",
+						source: sourcePackageJson,
+					},
 				],
 				[
 					"out/targets/git.js",
-					{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+					{
+						ignored: false,
+						kind: RuleMatchKind.external,
+						pattern: "/out",
+						source: sourcePackageJson,
+					},
 				],
 				[
 					"out/targets/index.js",
-					{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+					{
+						ignored: false,
+						kind: RuleMatchKind.external,
+						pattern: "/out",
+						source: sourcePackageJson,
+					},
 				],
 				[
 					"out/targets/npm.js",
-					{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+					{
+						ignored: false,
+						kind: RuleMatchKind.external,
+						pattern: "/out",
+						source: sourcePackageJson,
+					},
 				],
-				["package.json", { ignored: false, kind: "internal", pattern: "package.json" }],
+				["package.json", { ignored: false, kind: RuleMatchKind.internal, pattern: "package.json" }],
 			]),
 			total: new Map<string, Total>([
 				[
@@ -238,21 +289,44 @@ describe("matcherContext{Add,Remove}Path prepare", () => {
 			]),
 			failed: [],
 			paths: new Map<string, RuleMatch>([
-				["LICENSE.txt", { ignored: false, kind: "internal", pattern: "LICENSE*" }],
-				["out/", { ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson }],
+				["LICENSE.txt", { ignored: false, kind: RuleMatchKind.internal, pattern: "LICENSE*" }],
+				[
+					"out/",
+					{
+						ignored: false,
+						kind: RuleMatchKind.external,
+						pattern: "/out",
+						source: sourcePackageJson,
+					},
+				],
 				[
 					"out/index.js",
-					{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+					{
+						ignored: false,
+						kind: RuleMatchKind.external,
+						pattern: "/out",
+						source: sourcePackageJson,
+					},
 				],
 				[
 					"out/patterns/",
-					{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+					{
+						ignored: false,
+						kind: RuleMatchKind.external,
+						pattern: "/out",
+						source: sourcePackageJson,
+					},
 				],
 				[
 					"out/targets/",
-					{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+					{
+						ignored: false,
+						kind: RuleMatchKind.external,
+						pattern: "/out",
+						source: sourcePackageJson,
+					},
 				],
-				["package.json", { ignored: false, kind: "internal", pattern: "package.json" }],
+				["package.json", { ignored: false, kind: RuleMatchKind.internal, pattern: "package.json" }],
 			]),
 			total: new Map<string, Total>([
 				[
@@ -319,25 +393,52 @@ describe("matcherContextAddPath", () => {
 				]),
 				failed: [],
 				paths: new Map<string, RuleMatch>([
-					["LICENSE.txt", { ignored: false, kind: "internal", pattern: "LICENSE*" }],
-					["src/", { ignored: false, kind: "no-match", source: sourceGitignore }],
-					["src/index.ts", { ignored: false, kind: "no-match", source: sourceGitignore }],
-					["src/patterns/", { ignored: false, kind: "no-match", source: sourceGitignore }],
+					["LICENSE.txt", { ignored: false, kind: RuleMatchKind.internal, pattern: "LICENSE*" }],
+					["src/", { ignored: false, kind: RuleMatchKind.noMatch, source: sourceGitignore }],
+					[
+						"src/index.ts",
+						{ ignored: false, kind: RuleMatchKind.noMatch, source: sourceGitignore },
+					],
+					[
+						"src/patterns/",
+						{ ignored: false, kind: RuleMatchKind.noMatch, source: sourceGitignore },
+					],
 					[
 						"src/patterns/gitignore.ts",
-						{ ignored: false, kind: "no-match", source: sourceGitignore },
+						{ ignored: false, kind: RuleMatchKind.noMatch, source: sourceGitignore },
 					],
-					["src/patterns/index.ts", { ignored: false, kind: "no-match", source: sourceGitignore }],
+					[
+						"src/patterns/index.ts",
+						{ ignored: false, kind: RuleMatchKind.noMatch, source: sourceGitignore },
+					],
 					[
 						"src/patterns/jsrjson.ts",
-						{ ignored: false, kind: "no-match", source: sourceGitignore },
+						{ ignored: false, kind: RuleMatchKind.noMatch, source: sourceGitignore },
 					],
-					["src/targets/", { ignored: false, kind: "no-match", source: sourceGitignore }],
-					["src/targets/git.ts", { ignored: false, kind: "no-match", source: sourceGitignore }],
-					["src/targets/index.ts", { ignored: false, kind: "no-match", source: sourceGitignore }],
-					["src/targets/npm.ts", { ignored: false, kind: "no-match", source: sourceGitignore }],
-					["package.json", { ignored: false, kind: "internal", pattern: "package.json" }],
-					["tsconfig.prod.json", { ignored: false, kind: "no-match", source: sourceGitignore }],
+					[
+						"src/targets/",
+						{ ignored: false, kind: RuleMatchKind.noMatch, source: sourceGitignore },
+					],
+					[
+						"src/targets/git.ts",
+						{ ignored: false, kind: RuleMatchKind.noMatch, source: sourceGitignore },
+					],
+					[
+						"src/targets/index.ts",
+						{ ignored: false, kind: RuleMatchKind.noMatch, source: sourceGitignore },
+					],
+					[
+						"src/targets/npm.ts",
+						{ ignored: false, kind: RuleMatchKind.noMatch, source: sourceGitignore },
+					],
+					[
+						"package.json",
+						{ ignored: false, kind: RuleMatchKind.internal, pattern: "package.json" },
+					],
+					[
+						"tsconfig.prod.json",
+						{ ignored: false, kind: RuleMatchKind.noMatch, source: sourceGitignore },
+					],
 				]),
 				total: new Map<string, Total>([
 					[
@@ -375,64 +476,137 @@ describe("matcherContextAddPath", () => {
 				]),
 				failed: [],
 				paths: new Map<string, RuleMatch>([
-					["LICENSE.txt", { ignored: false, kind: "internal", pattern: "LICENSE*" }],
+					["LICENSE.txt", { ignored: false, kind: RuleMatchKind.internal, pattern: "LICENSE*" }],
 					[
 						"out/",
-						{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+						{
+							ignored: false,
+							kind: RuleMatchKind.external,
+							pattern: "/out",
+							source: sourcePackageJson,
+						},
 					],
 					[
 						"out/test",
-						{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+						{
+							ignored: false,
+							kind: RuleMatchKind.external,
+							pattern: "/out",
+							source: sourcePackageJson,
+						},
 					],
 					[
 						"out/testdir/",
-						{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+						{
+							ignored: false,
+							kind: RuleMatchKind.external,
+							pattern: "/out",
+							source: sourcePackageJson,
+						},
 					],
 					[
 						"out/testdir/testsubdir/",
-						{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+						{
+							ignored: false,
+							kind: RuleMatchKind.external,
+							pattern: "/out",
+							source: sourcePackageJson,
+						},
 					],
 					[
 						"out/testdir/testsubdir/test",
-						{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+						{
+							ignored: false,
+							kind: RuleMatchKind.external,
+							pattern: "/out",
+							source: sourcePackageJson,
+						},
 					],
 					[
 						"out/index.js",
-						{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+						{
+							ignored: false,
+							kind: RuleMatchKind.external,
+							pattern: "/out",
+							source: sourcePackageJson,
+						},
 					],
 					[
 						"out/patterns/",
-						{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+						{
+							ignored: false,
+							kind: RuleMatchKind.external,
+							pattern: "/out",
+							source: sourcePackageJson,
+						},
 					],
 					[
 						"out/patterns/gitignore.js",
-						{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+						{
+							ignored: false,
+							kind: RuleMatchKind.external,
+							pattern: "/out",
+							source: sourcePackageJson,
+						},
 					],
 					[
 						"out/patterns/index.js",
-						{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+						{
+							ignored: false,
+							kind: RuleMatchKind.external,
+							pattern: "/out",
+							source: sourcePackageJson,
+						},
 					],
 					[
 						"out/patterns/jsrjson.js",
-						{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+						{
+							ignored: false,
+							kind: RuleMatchKind.external,
+							pattern: "/out",
+							source: sourcePackageJson,
+						},
 					],
 					[
 						"out/targets/",
-						{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+						{
+							ignored: false,
+							kind: RuleMatchKind.external,
+							pattern: "/out",
+							source: sourcePackageJson,
+						},
 					],
 					[
 						"out/targets/git.js",
-						{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+						{
+							ignored: false,
+							kind: RuleMatchKind.external,
+							pattern: "/out",
+							source: sourcePackageJson,
+						},
 					],
 					[
 						"out/targets/index.js",
-						{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+						{
+							ignored: false,
+							kind: RuleMatchKind.external,
+							pattern: "/out",
+							source: sourcePackageJson,
+						},
 					],
 					[
 						"out/targets/npm.js",
-						{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+						{
+							ignored: false,
+							kind: RuleMatchKind.external,
+							pattern: "/out",
+							source: sourcePackageJson,
+						},
 					],
-					["package.json", { ignored: false, kind: "internal", pattern: "package.json" }],
+					[
+						"package.json",
+						{ ignored: false, kind: RuleMatchKind.internal, pattern: "package.json" },
+					],
 				]),
 				total: new Map<string, Total>([
 					[".", { totalDirs: 13, totalFiles: 24, totalMatchedFiles: 11 }],
@@ -477,44 +651,92 @@ describe("matcherContextRemovePath", () => {
 				]),
 				failed: [],
 				paths: new Map<string, RuleMatch>([
-					["LICENSE.txt", { ignored: false, kind: "internal", pattern: "LICENSE*" }],
+					["LICENSE.txt", { ignored: false, kind: RuleMatchKind.internal, pattern: "LICENSE*" }],
 					[
 						"out/",
-						{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+						{
+							ignored: false,
+							kind: RuleMatchKind.external,
+							pattern: "/out",
+							source: sourcePackageJson,
+						},
 					],
 					[
 						"out/patterns/",
-						{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+						{
+							ignored: false,
+							kind: RuleMatchKind.external,
+							pattern: "/out",
+							source: sourcePackageJson,
+						},
 					],
 					[
 						"out/patterns/gitignore.js",
-						{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+						{
+							ignored: false,
+							kind: RuleMatchKind.external,
+							pattern: "/out",
+							source: sourcePackageJson,
+						},
 					],
 					[
 						"out/patterns/index.js",
-						{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+						{
+							ignored: false,
+							kind: RuleMatchKind.external,
+							pattern: "/out",
+							source: sourcePackageJson,
+						},
 					],
 					[
 						"out/patterns/jsrjson.js",
-						{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+						{
+							ignored: false,
+							kind: RuleMatchKind.external,
+							pattern: "/out",
+							source: sourcePackageJson,
+						},
 					],
 					[
 						"out/targets/",
-						{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+						{
+							ignored: false,
+							kind: RuleMatchKind.external,
+							pattern: "/out",
+							source: sourcePackageJson,
+						},
 					],
 					[
 						"out/targets/git.js",
-						{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+						{
+							ignored: false,
+							kind: RuleMatchKind.external,
+							pattern: "/out",
+							source: sourcePackageJson,
+						},
 					],
 					[
 						"out/targets/index.js",
-						{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+						{
+							ignored: false,
+							kind: RuleMatchKind.external,
+							pattern: "/out",
+							source: sourcePackageJson,
+						},
 					],
 					[
 						"out/targets/npm.js",
-						{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+						{
+							ignored: false,
+							kind: RuleMatchKind.external,
+							pattern: "/out",
+							source: sourcePackageJson,
+						},
 					],
-					["package.json", { ignored: false, kind: "internal", pattern: "package.json" }],
+					[
+						"package.json",
+						{ ignored: false, kind: RuleMatchKind.internal, pattern: "package.json" },
+					],
 				]),
 				total: new Map<string, Total>([
 					[".", { totalDirs: 11, totalFiles: 21, totalMatchedFiles: 8 }],
@@ -538,8 +760,11 @@ describe("matcherContextRemovePath", () => {
 				]),
 				failed: [],
 				paths: new Map<string, RuleMatch>([
-					["LICENSE.txt", { ignored: false, kind: "internal", pattern: "LICENSE.*" }],
-					["package.json", { ignored: false, kind: "internal", pattern: "package.json" }],
+					["LICENSE.txt", { ignored: false, kind: RuleMatchKind.internal, pattern: "LICENSE.*" }],
+					[
+						"package.json",
+						{ ignored: false, kind: RuleMatchKind.internal, pattern: "package.json" },
+					],
 				]),
 				total: new Map<string, Total>([
 					[".", { totalDirs: 8, totalFiles: 15, totalMatchedFiles: 2 }],
@@ -568,24 +793,47 @@ describe("matcherContextRemovePath", () => {
 				]),
 				failed: [],
 				paths: new Map<string, RuleMatch>([
-					["LICENSE.txt", { ignored: false, kind: "internal", pattern: "LICENSE*" }],
+					["LICENSE.txt", { ignored: false, kind: RuleMatchKind.internal, pattern: "LICENSE*" }],
 					[
 						"out/",
-						{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+						{
+							ignored: false,
+							kind: RuleMatchKind.external,
+							pattern: "/out",
+							source: sourcePackageJson,
+						},
 					],
 					[
 						"out/index.js",
-						{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+						{
+							ignored: false,
+							kind: RuleMatchKind.external,
+							pattern: "/out",
+							source: sourcePackageJson,
+						},
 					],
 					[
 						"out/patterns/",
-						{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+						{
+							ignored: false,
+							kind: RuleMatchKind.external,
+							pattern: "/out",
+							source: sourcePackageJson,
+						},
 					],
 					[
 						"out/targets/",
-						{ ignored: false, kind: "external", pattern: "/out", source: sourcePackageJson },
+						{
+							ignored: false,
+							kind: RuleMatchKind.external,
+							pattern: "/out",
+							source: sourcePackageJson,
+						},
 					],
-					["package.json", { ignored: false, kind: "internal", pattern: "package.json" }],
+					[
+						"package.json",
+						{ ignored: false, kind: RuleMatchKind.internal, pattern: "package.json" },
+					],
 				]),
 				total: new Map<string, Total>([
 					[
@@ -626,12 +874,24 @@ describe("matcherContextRemovePath", () => {
 				]),
 				failed: [],
 				paths: new Map<string, RuleMatch>([
-					["LICENSE.txt", { ignored: false, kind: "internal", pattern: "LICENSE.*" }],
-					["src/", { ignored: false, kind: "no-match", source: sourceGitignore }],
-					["src/index.ts", { ignored: false, kind: "no-match", source: sourceGitignore }],
-					["src/patterns/", { ignored: false, kind: "no-match", source: sourceGitignore }],
-					["src/targets/", { ignored: false, kind: "no-match", source: sourceGitignore }],
-					["tsconfig.prod.json", { ignored: false, kind: "no-match", source: sourceGitignore }],
+					["LICENSE.txt", { ignored: false, kind: RuleMatchKind.internal, pattern: "LICENSE.*" }],
+					["src/", { ignored: false, kind: RuleMatchKind.noMatch, source: sourceGitignore }],
+					[
+						"src/index.ts",
+						{ ignored: false, kind: RuleMatchKind.noMatch, source: sourceGitignore },
+					],
+					[
+						"src/patterns/",
+						{ ignored: false, kind: RuleMatchKind.noMatch, source: sourceGitignore },
+					],
+					[
+						"src/targets/",
+						{ ignored: false, kind: RuleMatchKind.noMatch, source: sourceGitignore },
+					],
+					[
+						"tsconfig.prod.json",
+						{ ignored: false, kind: RuleMatchKind.noMatch, source: sourceGitignore },
+					],
 				]),
 				total: new Map<string, Total>([
 					[

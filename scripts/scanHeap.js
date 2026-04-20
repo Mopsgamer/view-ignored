@@ -41,7 +41,6 @@ const memBefore = getMemoryReport()
 const start = performance.now()
 
 const ctx = await scan({
-	cwd: process.cwd(),
 	fastInternal,
 	fs,
 	target,

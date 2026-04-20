@@ -210,7 +210,6 @@ export async function matcherContextRemovePath(
 }
 
 function deleteTotals(ctx: MatcherContext, entry: string, deletedDirs = 0, deletedFiles = 0) {
-	// FIXME: recalculate "total" for ancestors
 	if (entry.endsWith("/")) ctx.total.delete(entry)
 	for (let parent = dirname(entry); parent !== "./"; parent = dirname(parent) + "/") {
 		const total = ctx.total.get(parent)

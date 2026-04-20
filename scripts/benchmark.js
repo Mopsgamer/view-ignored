@@ -8,40 +8,30 @@ import { Git as target } from "../out/targets/index.js"
 
 const igw = process.argv.includes("--igw")
 const vign = process.argv.includes("--vign")
-
-if (!igw) {
-	await scan({ cwd: process.cwd(), fastDepth: true, fastInternal: true, fs, target })
-	await browserScan({ cwd: process.cwd(), fastDepth: true, fastInternal: true, fs, target })
-	await scan({ cwd: process.cwd(), fs, target })
-	await browserScan({ cwd: process.cwd(), fs, target })
-}
-if (!vign) {
-	await walk({ ignoreFiles: [".gitignore"] })
-}
+const cwd = process.cwd()
 
 barplot(() => {
 	summary(async () => {
-		const gc = "inner"
 		if (!igw)
 			bench("scan (fast)", async () => {
-				return scan({ cwd: process.cwd(), fastDepth: true, fastInternal: true, fs, target })
-			}).gc(gc)
+				return scan({ cwd, fastDepth: true, fastInternal: true, fs, target })
+			})
 		if (!igw)
 			bench("browserScan (fast)", async () => {
-				return browserScan({ cwd: process.cwd(), fastDepth: true, fastInternal: true, fs, target })
-			}).gc(gc)
+				return browserScan({ cwd, fastDepth: true, fastInternal: true, fs, target })
+			})
 		if (!igw)
 			bench("scan", async () => {
-				return scan({ cwd: process.cwd(), fs, target })
-			}).gc(gc)
+				return scan({ cwd, fs, target })
+			})
 		if (!igw)
 			bench("browserScan", async () => {
-				return browserScan({ cwd: process.cwd(), fs, target })
-			}).gc(gc)
+				return browserScan({ cwd, fs, target })
+			})
 		if (!vign)
 			bench("ignoreWalk", async () => {
 				return walk({ ignoreFiles: [".gitignore"] })
-			}).gc(gc)
+			})
 	})
 })
 

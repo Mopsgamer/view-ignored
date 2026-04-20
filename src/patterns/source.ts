@@ -17,13 +17,6 @@ export type Source = {
 	rules: Rule[]
 
 	/**
-	 * Name of the source file.
-	 *
-	 * @since 0.6.0
-	 */
-	name: string
-
-	/**
 	 * Relative path to the source file.
 	 *
 	 * @since 0.6.0

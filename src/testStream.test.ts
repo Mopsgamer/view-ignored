@@ -1,5 +1,6 @@
 import { describe, test, expect } from "bun:test"
 
+import { RuleMatchKind } from "./patterns/rule.js"
 import { Git as target } from "./targets/git.js"
 import { testStream } from "./testScan.test.js"
 
@@ -8,18 +9,18 @@ describe("Git", () => {
 		await testStream(
 			{ file: "1", src: { file: "2" } },
 			({ stream }) => {
-				const paths: string[] = []
+				const paths: (string | number)[] = []
 				stream.addListener("dirent", (d) => {
 					paths.push(d.match.kind)
 					paths.push(d.path)
 				})
 				stream.once("end", () => {
 					expect(paths).toMatchObject([
-						"missing-source",
+						RuleMatchKind.missingSource,
 						"file",
-						"missing-source",
+						RuleMatchKind.missingSource,
 						"src/",
-						"missing-source",
+						RuleMatchKind.missingSource,
 						"src/file",
 					])
 					done()
@@ -32,24 +33,24 @@ describe("Git", () => {
 		await testStream(
 			{ ".git": { HEAD: "" }, ".gitignore": "file", file: "1", src: { file: "2" } },
 			({ stream }) => {
-				const paths: string[] = []
+				const paths: (string | number)[] = []
 				stream.addListener("dirent", (d) => {
 					paths.push(d.match.kind)
 					paths.push(d.path)
 				})
 				stream.once("end", () => {
 					expect(paths).toMatchObject([
-						"external", // ignored
+						RuleMatchKind.external, // ignored
 						"file",
-						"no-match", // included
+						RuleMatchKind.noMatch, // included
 						"src/",
-						"external", // ignored
+						RuleMatchKind.external, // ignored
 						"src/file",
-						"no-match", // included
+						RuleMatchKind.noMatch, // included
 						".gitignore",
-						"internal", // ignored internal
+						RuleMatchKind.internal, // ignored internal
 						".git/",
-						"internal", // ignored internal
+						RuleMatchKind.internal, // ignored internal
 						".git/HEAD",
 					])
 					done()

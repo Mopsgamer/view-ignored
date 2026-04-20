@@ -6,14 +6,14 @@ import type { Source } from "./source.js"
 /**
  * Populates the source object from the content of a source file.
  * Results are available in `ctx.external`.
- * If `"none"` returned or throwed, will skip the extractor.
+ * If `null` returned or throwed, will skip the extractor.
  *
  * @see {@link Source.rules} for more details.
  * @throws Error if extraction fails. Processing stops.
  *
  * @since 0.6.0
  */
-export type ExtractorFn = (source: Source, content: Buffer) => void | "none"
+export type ExtractorFn = (source: Source, content: Buffer) => void | null
 
 /**
  * Defines a method for extracting patterns from a specific source file.

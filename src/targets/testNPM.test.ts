@@ -2,6 +2,7 @@ import type { NestedDirectoryJSON } from "memfs"
 
 import { describe, test, expect } from "bun:test"
 
+import { RuleMatchKind } from "../patterns/rule.js"
 import { testScan, type PathHandlerOptions } from "../testScan.test.js"
 import { NPM as target } from "./npm.js"
 
@@ -158,7 +159,7 @@ describe("NPM", () => {
 				expect(ctx.paths.has("file")).toBeFalse()
 				expect(ctx.paths.get("index.ts")).toMatchObject({
 					ignored: false,
-					kind: "external",
+					kind: RuleMatchKind.external,
 					pattern: "index.ts",
 				})
 				expect(ctx.paths.has("index.js")).toBeFalse()

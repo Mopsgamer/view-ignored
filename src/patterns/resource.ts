@@ -6,7 +6,7 @@ import type { Source } from "./source.js"
  * @since 0.11.0
  */
 
-export type Resource = Source | InvalidSource | "none"
+export type Resource = Source | InvalidSource | null
 /**
  * Represents a source with an associated error.
  *

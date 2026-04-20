@@ -12,7 +12,7 @@ import { resolveNegatable, type Source } from "./source.js"
  *
  * @since 0.6.0
  */
-export function extractPackageJson(source: Source, content: Buffer): void | "none" {
+export function extractPackageJson(source: Source, content: Buffer): void | null {
 	const result = extract(source, content)
 	if (result === undefined) {
 		for (const element of source.rules) {
@@ -29,7 +29,7 @@ export function extractPackageJson(source: Source, content: Buffer): void | "non
  *
  * @since 0.8.0
  */
-export function extractPackageJsonNocase(source: Source, content: Buffer): void | "none" {
+export function extractPackageJsonNocase(source: Source, content: Buffer): void | null {
 	const result = extract(source, content)
 	if (result === undefined) {
 		for (const element of source.rules) {
@@ -39,7 +39,7 @@ export function extractPackageJsonNocase(source: Source, content: Buffer): void 
 	return result
 }
 
-function extract(source: Source, content: Buffer): void | "none" {
+function extract(source: Source, content: Buffer): void | null {
 	source.inverted = true
 	const include: Rule = { compiled: null, excludes: false, pattern: [] }
 	const exclude: Rule = { compiled: null, excludes: true, pattern: [] }
@@ -53,7 +53,7 @@ function extract(source: Source, content: Buffer): void | "none" {
 	}
 
 	if (!dist?.files || !Array.isArray(dist.files)) {
-		return "none"
+		return null
 	}
 
 	for (const pattern of dist.files) {

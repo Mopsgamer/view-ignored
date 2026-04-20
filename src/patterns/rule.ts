@@ -52,7 +52,7 @@ export type MatchKind = RuleMatch["kind"]
  *
  * @since 0.9.1
  */
-export interface RuleMatchBase<K extends string> {
+export interface RuleMatchBase<K extends string | number | symbol> {
 	kind: K
 	ignored: boolean
 }
@@ -62,7 +62,7 @@ export interface RuleMatchBase<K extends string> {
  *
  * @since 0.9.1
  */
-export interface RuleMatchBaseSource<K extends string> extends RuleMatchBase<K> {
+export interface RuleMatchBaseSource<K extends string | number | symbol> extends RuleMatchBase<K> {
 	source: Source
 }
 
@@ -71,7 +71,7 @@ export interface RuleMatchBaseSource<K extends string> extends RuleMatchBase<K> 
  *
  * @since 0.9.1
  */
-export interface RuleMatchBasePattern<K extends string> extends RuleMatchBase<K> {
+export interface RuleMatchBasePattern<K extends string | number | symbol> extends RuleMatchBase<K> {
 	pattern: string
 }
 
@@ -80,7 +80,7 @@ export interface RuleMatchBasePattern<K extends string> extends RuleMatchBase<K>
  *
  * @since 0.11.0
  */
-export interface RuleMatchBaseError<K extends string> extends RuleMatchBase<K> {
+export interface RuleMatchBaseError<K extends string | number | symbol> extends RuleMatchBase<K> {
 	error: Error
 }
 
@@ -89,7 +89,7 @@ export interface RuleMatchBaseError<K extends string> extends RuleMatchBase<K> {
  *
  * @since 0.11.0
  */
-export interface RuleMatchBaseInvalidSource<K extends string>
+export interface RuleMatchBaseInvalidSource<K extends string | number | symbol>
 	extends RuleMatchBaseError<K>, RuleMatchBaseSource<K> {}
 
 /**
@@ -97,7 +97,7 @@ export interface RuleMatchBaseInvalidSource<K extends string>
  *
  * @since 0.11.0
  */
-export interface RuleMatchBaseInvalidPattern<K extends string>
+export interface RuleMatchBaseInvalidPattern<K extends string | number | symbol>
 	extends RuleMatchBasePattern<K>, RuleMatchBaseError<K> {}
 
 /**
@@ -105,7 +105,7 @@ export interface RuleMatchBaseInvalidPattern<K extends string>
  *
  * @since 0.11.0
  */
-export interface RuleMatchBaseInvalidExternal<K extends string>
+export interface RuleMatchBaseInvalidExternal<K extends string | number | symbol>
 	extends RuleMatchBaseInvalidPattern<K>, RuleMatchBaseSource<K> {}
 
 /**
@@ -113,8 +113,22 @@ export interface RuleMatchBaseInvalidExternal<K extends string>
  *
  * @since 0.9.1
  */
-export interface RuleMatchBaseExternal<K extends string>
+export interface RuleMatchBaseExternal<K extends string | number | symbol>
 	extends RuleMatchBasePattern<K>, RuleMatchBaseSource<K> {}
+
+/**
+ * @since 0.11.0
+ */
+export const enum RuleMatchKind {
+	"none",
+	"missingSource",
+	"noMatch",
+	"invalidSource",
+	"invalidExternal",
+	"invalidInternal",
+	"external",
+	"internal",
+}
 
 /**
  * @see {@link ruleTest}
@@ -122,13 +136,14 @@ export interface RuleMatchBaseExternal<K extends string>
  * @since 0.6.0
  */
 export type RuleMatch =
-	| RuleMatchBase<"none" | "missing-source">
-	| RuleMatchBaseSource<"no-match">
-	| RuleMatchBaseInvalidSource<"invalid-source">
-	| RuleMatchBaseInvalidExternal<"invalid-external">
-	| RuleMatchBaseInvalidPattern<"invalid-internal">
-	| RuleMatchBaseExternal<"external">
-	| RuleMatchBasePattern<"internal">
+	| RuleMatchBase<RuleMatchKind.none>
+	| RuleMatchBase<RuleMatchKind.missingSource>
+	| RuleMatchBaseSource<RuleMatchKind.noMatch>
+	| RuleMatchBaseInvalidSource<RuleMatchKind.invalidSource>
+	| RuleMatchBaseInvalidExternal<RuleMatchKind.invalidExternal>
+	| RuleMatchBaseInvalidPattern<RuleMatchKind.invalidInternal>
+	| RuleMatchBaseExternal<RuleMatchKind.external>
+	| RuleMatchBasePattern<RuleMatchKind.internal>
 
 /**
  * Check if a rule match is invalid.
@@ -138,13 +153,13 @@ export type RuleMatch =
 export function isRuleMatchInvalid(
 	match: RuleMatch,
 ): match is
-	| RuleMatchBaseInvalidSource<"invalid-source">
-	| RuleMatchBaseInvalidExternal<"invalid-external">
-	| RuleMatchBaseInvalidPattern<"invalid-internal"> {
+	| RuleMatchBaseInvalidSource<RuleMatchKind.invalidSource>
+	| RuleMatchBaseInvalidExternal<RuleMatchKind.invalidExternal>
+	| RuleMatchBaseInvalidPattern<RuleMatchKind.invalidInternal> {
 	return (
-		match.kind === "invalid-source" ||
-		match.kind === "invalid-external" ||
-		match.kind === "invalid-internal"
+		match.kind === RuleMatchKind.invalidSource ||
+		match.kind === RuleMatchKind.invalidExternal ||
+		match.kind === RuleMatchKind.invalidInternal
 	)
 }
 
@@ -190,21 +205,26 @@ function cacheTest(rs: PatternCache[], path: string, out: TestResult): boolean {
 	return false
 }
 
-function testInternal(options: RuleTestOptions): RuleMatch | null {
+function testInternal(
+	options: RuleTestOptions,
+):
+	| RuleMatchBaseInvalidPattern<RuleMatchKind.invalidInternal>
+	| RuleMatchBasePattern<RuleMatchKind.internal>
+	| null {
 	const test: TestResult = { error: undefined, pattern: "" }
 	for (const { compiled, excludes } of options.target.internalRules) {
 		if (!cacheTest(compiled!, options.entry, test)) continue
-		if (typeof test.error !== "undefined")
-			return {
+		if (test.error !== undefined)
+			return <RuleMatchBaseInvalidPattern<RuleMatchKind.invalidInternal>>{
 				error: test.error,
 				ignored: false,
-				kind: "invalid-internal",
+				kind: RuleMatchKind.invalidInternal,
 				pattern: test.pattern,
 			}
 
-		return {
+		return <RuleMatchBasePattern<RuleMatchKind.internal>>{
 			ignored: excludes,
-			kind: "internal",
+			kind: RuleMatchKind.internal,
 			pattern: test.pattern,
 		}
 	}
@@ -212,31 +232,37 @@ function testInternal(options: RuleTestOptions): RuleMatch | null {
 	return null
 }
 
-function testExternal(path: string, source: Source): RuleMatch {
+function testExternal(
+	path: string,
+	source: Source,
+):
+	| RuleMatchBaseInvalidExternal<RuleMatchKind.invalidExternal>
+	| RuleMatchBaseExternal<RuleMatchKind.external>
+	| RuleMatchBaseSource<RuleMatchKind.noMatch> {
 	const test: TestResult = { error: undefined, pattern: "" }
 	for (const { compiled, excludes } of source.rules) {
 		if (!cacheTest(compiled!, path, test)) continue
-		if (typeof test.error !== "undefined") {
-			return {
+		if (test.error !== undefined) {
+			return <RuleMatchBaseInvalidExternal<RuleMatchKind.invalidExternal>>{
 				error: test.error,
 				ignored: false,
-				kind: "invalid-external",
+				kind: RuleMatchKind.invalidExternal,
 				pattern: test.pattern,
 				source,
 			}
 		}
 
-		return {
+		return <RuleMatchBaseExternal<RuleMatchKind.external>>{
 			ignored: excludes,
-			kind: "external",
+			kind: RuleMatchKind.external,
 			pattern: test.pattern,
 			source,
 		}
 	}
 
-	return {
+	return <RuleMatchBaseSource<RuleMatchKind.noMatch>>{
 		ignored: source.inverted,
-		kind: "no-match",
+		kind: RuleMatchKind.noMatch,
 		source,
 	}
 }
@@ -250,21 +276,16 @@ function testExternal(path: string, source: Source): RuleMatch {
 export async function ruleTest(options: RuleTestOptions): Promise<RuleMatch> {
 	const src = options.resource
 
-	// if (source === undefined) {
-	// 	await resolveSources({ ...options, dir: parent })
-	// 	source = options.ctx.external.get(parent)
-	// }
-
-	if (typeof src === "undefined") {
+	if (src === undefined) {
 		throw new Error("view-ignored has crashed: no source cached.")
 	}
 
-	if (typeof src === "string") {
-		return { ignored: false, kind: "missing-source" }
+	if (src === null) {
+		return { ignored: false, kind: RuleMatchKind.missingSource }
 	}
 
-	if (typeof src === "object" && "error" in src) {
-		return { ...src, ignored: true, kind: "invalid-source" }
+	if ("error" in src) {
+		return { ...src, ignored: true, kind: RuleMatchKind.invalidSource }
 	}
 
 	let internalMatch = testInternal(options)

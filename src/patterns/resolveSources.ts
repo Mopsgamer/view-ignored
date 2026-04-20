@@ -9,7 +9,7 @@ import type { Resource } from "./resource.js"
 import type { Rule } from "./rule.js"
 import type { Source } from "./source.js"
 
-import { join, base } from "../unixify.js"
+import { join } from "../unixify.js"
 import { patternListCompile } from "./patternList.js"
 
 /**
@@ -21,9 +21,9 @@ import { patternListCompile } from "./patternList.js"
  *
  * @since 0.6.0
  */
-export function ruleCompile(signedPattern: Rule, options?: PatternCompileOptions): Rule {
-	signedPattern.compiled = patternListCompile(signedPattern.pattern, options)
-	return signedPattern
+export function ruleCompile(rule: Rule, options?: PatternCompileOptions): Rule {
+	rule.compiled = patternListCompile(rule.pattern, options)
+	return rule
 }
 
 /**
@@ -66,7 +66,7 @@ export interface ResolveSourcesOptions extends PatternFinderOptions {
  */
 export async function resolveSources(options: ResolveSourcesOptions): Promise<Resource> {
 	const resource = options.resource
-	if (typeof resource !== "undefined") {
+	if (resource !== undefined) {
 		return resource
 	}
 	const { fs, external, cwd, signal, target, parentPath } = options
@@ -113,7 +113,7 @@ export async function resolveSources(options: ResolveSourcesOptions): Promise<Re
 		preCwdSegments.reverse()
 
 		source = await findSourceForAbsoluteDirs(preCwdSegments, fs, target, signal)
-		if (typeof source === "object") {
+		if (source !== null) {
 			for (const noSourceDir of noSourceDirList) {
 				signal?.throwIfAborted()
 				external.set(noSourceDir, source)
@@ -149,21 +149,19 @@ async function findSourceForAbsoluteDirs(
 	)
 
 	for (const s of results) {
-		if (typeof s === "object") {
+		if (s !== null) {
 			return s
 		}
 	}
 
-	return "none"
+	return null
 }
 
 async function tryExtractor(cwd: string, fs: FsAdapter, extractor: Extractor): Promise<Resource> {
 	let abs = join(cwd, extractor.path)
-	const name = base(extractor.path)
 
 	const newSource: Source = {
 		inverted: false,
-		name,
 		path: extractor.path,
 		rules: [],
 	}
@@ -174,19 +172,19 @@ async function tryExtractor(cwd: string, fs: FsAdapter, extractor: Extractor): P
 	} catch (err) {
 		const error = err as NodeJS.ErrnoException
 		if (error.code === "ENOENT") {
-			return "none"
+			return null
 		}
 		return { error, source: newSource }
 	}
 
 	try {
 		const act = extractor.extract(newSource, buff)
-		if (typeof act === "string") {
+		if (act === null) {
 			return act
 		}
 	} catch (err) {
-		if (typeof err === "string") {
-			return err as "none"
+		if (err === null) {
+			return err
 		}
 		const error =
 			err instanceof Error

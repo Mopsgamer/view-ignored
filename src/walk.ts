@@ -8,7 +8,7 @@ import type { Resource } from "./patterns/resource.js"
 import type { ScanOptions } from "./types.js"
 
 import { getDepth } from "./getDepth.js"
-import { isRuleMatchInvalid, type RuleMatch } from "./patterns/rule.js"
+import { isRuleMatchInvalid, RuleMatchKind, type RuleMatch } from "./patterns/rule.js"
 
 export type WalkOptions = {
 	relPath: string
@@ -41,7 +41,7 @@ export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
 		direntPath = path
 	}
 
-	const match = <RuleMatch>{ ignored: false, kind: "none" }
+	const match = <RuleMatch>{ ignored: false, kind: RuleMatchKind.none }
 	const result: WalkResult = {
 		includeParent: false,
 		match: [direntPath, parentPath, match],
@@ -77,7 +77,7 @@ export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
 			}
 
 			if (match.ignored) {
-				if (isDir && fastInternal && match.kind === "internal") {
+				if (isDir && fastInternal && match.kind === RuleMatchKind.internal) {
 					result.next = 1
 					return result
 				}
@@ -124,7 +124,7 @@ export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
 		if (stream) {
 			stream.emit("dirent", { dirent: entry, match, path: direntPath })
 		}
-		if (isDir && fastInternal && match.kind === "internal") {
+		if (isDir && fastInternal && match.kind === RuleMatchKind.internal) {
 			result.next = 1
 			return result
 		}

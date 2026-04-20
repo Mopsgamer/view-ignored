@@ -8,7 +8,6 @@ describe("jsr.json", () => {
 	test("does not parse 0", () => {
 		const source: Source = {
 			inverted: false,
-			name: "jsr.json",
 			path: "jsr.json",
 			rules: [],
 		}
@@ -18,7 +17,6 @@ describe("jsr.json", () => {
 	test("does not parse '{'", () => {
 		const source: Source = {
 			inverted: false,
-			name: "jsr.json",
 			path: "jsr.json",
 			rules: [],
 		}
@@ -27,7 +25,6 @@ describe("jsr.json", () => {
 	test("parses '{}'", () => {
 		const source: Source = {
 			inverted: false,
-			name: "jsr.json",
 			path: "jsr.json",
 			rules: [],
 		}
