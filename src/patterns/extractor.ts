@@ -56,15 +56,11 @@ export interface PatternFinderOptions {
 	 */
 	fs: FsAdapter
 	/**
-	 * Maps directory paths to their corresponding sources.
-	 *
-	 * @example
-	 * "dir" => Source
-	 * "dir/subdir" => Source
+	 * The associated resource.
 	 *
 	 * @since 0.11.0
 	 */
-	external: Map<string, Resource>
+	resource?: Resource
 	/**
 	 * The current working directory.
 	 *

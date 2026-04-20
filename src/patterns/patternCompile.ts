@@ -61,23 +61,29 @@ export function patternCompile(
 			}
 
 			if (matchBase) {
-				if (str.includes(cleaned)) {
-					const segments = str.split("/")
-					for (const seg of segments) {
-						if (seg === lowerCleaned) return true
+				const len = cleaned.length
+				let pos = str.indexOf(cleaned)
+				while (pos !== -1) {
+					if (
+						(pos === 0 || str[pos - 1] === "/") &&
+						(pos + len === str.length || str[pos + len] === "/")
+					) {
+						return true
 					}
+					pos = str.indexOf(cleaned, pos + 1)
 				}
 			}
 
 			if (hasGlob) {
 				if (glob.isMatch(str, cleaned, matcherOpts)) return true
 
-				// Check parents only if there's a glob
-				let lastSlash = str.lastIndexOf("/")
-				while (lastSlash !== -1) {
-					const parent = str.substring(0, lastSlash)
-					if (glob.isMatch(parent, cleaned, matcherOpts)) return true
-					lastSlash = str.lastIndexOf("/", lastSlash - 1)
+				if (!isRoot) {
+					let lastSlash = str.lastIndexOf("/")
+					while (lastSlash !== -1) {
+						const parent = str.slice(0, lastSlash)
+						if (glob.isMatch(parent, cleaned, matcherOpts)) return true
+						lastSlash = str.lastIndexOf("/", lastSlash - 1)
+					}
 				}
 			}
 

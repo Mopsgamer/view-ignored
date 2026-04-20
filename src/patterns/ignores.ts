@@ -15,15 +15,11 @@ export interface IgnoresOptions extends InitState {
 	 */
 	entry: string
 	/**
-	 * Maps directory paths to their corresponding sources.
-	 *
-	 * @example
-	 * "dir" => Source
-	 * "dir/subdir" => Source
+	 * The associated resource.
 	 *
 	 * @since 0.11.0
 	 */
-	external: Map<string, Resource>
+	resource: Resource
 	/**
 	 * Result of the `dirname(entry)` call.
 	 *

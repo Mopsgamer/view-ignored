@@ -37,17 +37,28 @@ extractGitignore satisfies ExtractorFn
 function extract(source: Source, content: Buffer) {
 	const include: Rule = { compiled: null, excludes: false, pattern: [] }
 	const exclude: Rule = { compiled: null, excludes: true, pattern: [] }
-	for (let line of content.toString().split("\n")) {
-		line = line.trim()
+
+	let start = 0
+	while (start < content.length) {
+		let end = content.indexOf(0x0a, start)
+		if (end === -1) end = content.length
+
+		// Convert only the current line to a string
+		let line = content.toString("utf8", start, end).trim()
+		start = end + 1
+
 		if (line === "" || line.startsWith("#")) {
 			continue
 		}
+
 		const cdx = line.indexOf("#")
 		if (cdx >= 0) {
-			line = line.substring(-cdx)
+			line = line.slice(0, cdx).trim()
+			if (line === "") continue
 		}
 
 		resolveNegatable(line, false, include, exclude)
 	}
+
 	source.rules.push(include, exclude)
 }

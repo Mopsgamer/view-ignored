@@ -4,9 +4,8 @@ import type { ScanOptions } from "../types.js"
 import type { MatcherContext } from "./matcherContext.js"
 
 import { getDepth } from "../getDepth.js"
-import { opendir } from "../opendir.js"
-import { unixify, join } from "../unixify.js"
-import { walkIncludes } from "../walk.js"
+import { scanParallel } from "../scanParallel.js"
+import { walkPatch } from "../walk.js"
 import { resolveSources } from "./resolveSources.js"
 
 /**
@@ -34,21 +33,31 @@ export async function matcherContextAddPath(
 			return true
 		}
 		const parentPath = dirname(direntPath)
-		await resolveSources({ cwd, dir: direntPath, external: ctx.external, fs, signal, target })
+		const resource = await resolveSources({
+			cwd,
+			dir: direntPath,
+			external: ctx.external,
+			fs,
+			signal,
+			target,
+		})
 		ctx.paths.set(
 			entry,
 			await target.ignores({
 				cwd,
 				entry: direntPath,
-				external: ctx.external,
 				fs,
 				parentPath,
+				resource,
 				signal,
 				target,
 			}),
 		)
-		if (ctx.totalFiles >= 0) {
-			ctx.totalDirs++
+		const total = ctx.total.get(parentPath)
+		if (!total) {
+			ctx.total.set(parentPath, { totalDirs: 1, totalFiles: 0, totalMatchedFiles: 0 })
+		} else if (total.totalFiles >= 0) {
+			total.totalDirs++
 		}
 		if (parentPath !== ".") {
 			void (await matcherContextAddPath(ctx, options, parentPath + "/"))
@@ -61,8 +70,14 @@ export async function matcherContextAddPath(
 	const isSource = target.extractors.some((e) => e.path === entry)
 	if (isSource) {
 		// add pattern sources
+		const result = scanParallel({
+			external: ctx.external,
+			scanOptions: options,
+			stream: undefined,
+			within: parentPath,
+		})
 		await matcherContextRemovePath(ctx, options, parentPath + "/")
-		await rescan(ctx, { ...options, within: parentPath })
+		walkPatch(ctx, options.depth, await result)
 	}
 
 	// add paths
@@ -72,9 +87,9 @@ export async function matcherContextAddPath(
 	const match = await target.ignores({
 		cwd,
 		entry,
-		external: ctx.external,
 		fs,
 		parentPath,
+		resource: ctx.external.get(parentPath)!,
 		signal,
 		target,
 	})
@@ -84,9 +99,12 @@ export async function matcherContextAddPath(
 		return false
 	}
 	// 2.2. add
-	if (ctx.totalFiles >= 0) {
-		ctx.totalFiles++
-		ctx.totalMatchedFiles++
+	const total = ctx.total.get(parentPath)
+	if (!total) {
+		ctx.total.set(parentPath, { totalDirs: 0, totalFiles: 1, totalMatchedFiles: 1 })
+	} else {
+		total.totalFiles++
+		total.totalMatchedFiles++
 	}
 	ctx.paths.set(entry, match)
 	return true
@@ -106,30 +124,37 @@ export async function matcherContextRemovePath(
 	const isDir = entry.endsWith("/")
 	if (isDir) {
 		// remove directories
-		const direntPath = entry.replace(/\/$/, "")
+		const direntPath = entry.slice(0, -1)
+		if (direntPath === ".") {
+			ctx.paths.clear()
+			ctx.external.clear()
+			ctx.failed.length = 0
+			ctx.total.set(direntPath, { totalDirs: 0, totalFiles: 0, totalMatchedFiles: 0 })
+			return true
+		}
+
+		let deletedDirs = 0,
+			deletedFiles = 0
+		const total = ctx.total.get(direntPath)!
 		for (const [element] of ctx.paths) {
-			if (entry !== "./" && !element.startsWith(entry)) {
+			if (!element.startsWith(entry)) {
 				continue
 			}
-			if (ctx.totalFiles >= 0) {
+			if (total.totalFiles >= 0) {
 				const isDir = element.endsWith("/")
 				if (isDir) {
-					ctx.totalDirs--
+					deletedDirs++
 				} else {
-					ctx.totalFiles--
-					ctx.totalMatchedFiles--
+					deletedFiles++
 				}
 			}
 			ctx.paths.delete(element)
 		}
-		for (const [element] of ctx.depthPaths) {
-			if (entry !== "./" && !element.startsWith(direntPath)) {
-				continue
-			}
-			ctx.depthPaths.delete(element)
-		}
+
+		deleteTotals(ctx, entry, deletedDirs, deletedFiles)
+
 		for (const [element] of ctx.external) {
-			if (entry !== "./" && !element.startsWith(direntPath)) {
+			if (!element.startsWith(direntPath)) {
 				continue
 			}
 			if (ctx.external.delete(element) && ctx.failed.length) {
@@ -145,36 +170,38 @@ export async function matcherContextRemovePath(
 		return true
 	}
 
-	const parent = dirname(entry)
+	const parentPath = dirname(entry)
+	const parentPathDir = parentPath + "/"
 
 	const isSource = options.target.extractors.some((e) => e.path === entry)
 	if (isSource) {
 		// remove pattern sources
 		// rescan directory and repopulate stats
-		await matcherContextRemovePath(ctx, options, parent + "/")
-		await rescan(ctx, { ...options, within: parent })
+		const results = scanParallel({
+			external: ctx.external,
+			scanOptions: options,
+			stream: undefined,
+			within: parentPath,
+		})
+		await matcherContextRemovePath(ctx, options, parentPathDir)
+		walkPatch(ctx, options.depth, await results)
 		return true
 	}
 	// remove path
 	// 1. change stats
 	{
-		if (ctx.totalFiles >= 0) {
-			ctx.totalFiles--
-			ctx.totalMatchedFiles--
+		const total = ctx.total.get(parentPath)
+		if (!total) {
+			ctx.total.set(parentPath, { totalDirs: 0, totalFiles: 0, totalMatchedFiles: 0 })
+		} else if (total.totalFiles >= 0) {
+			total.totalFiles--
+			total.totalMatchedFiles--
 		}
 		// 1.1 remove depthPaths
 		const { depthSlash } = getDepth(entry, options.depth)
 		if (depthSlash >= 0) {
-			const dir = entry.substring(0, depthSlash)
-			let num = ctx.depthPaths.get(dir)
-			if (num) {
-				num--
-				if (num <= 0) {
-					ctx.depthPaths.delete(dir)
-				} else {
-					ctx.depthPaths.set(dir, num)
-				}
-			}
+			const dir = entry.slice(0, depthSlash + 1)
+			deleteTotals(ctx, dir, 0, 1)
 		}
 	}
 	// 2. remove from paths
@@ -182,25 +209,15 @@ export async function matcherContextRemovePath(
 	return true
 }
 
-async function rescan(ctx: MatcherContext, options: Required<ScanOptions>): Promise<void> {
-	const { cwd, within, fs, signal, target } = options
-
-	const normalCwd = unixify(cwd)
-	let from = join(normalCwd, within)
-	await opendir(
-		{ cwd: normalCwd, external: ctx.external, fs, signal, target },
-		from,
-		async (entry, parentPath, path) => {
-			const result = await walkIncludes({
-				entry,
-				external: ctx.external,
-				parentPath,
-				relPath: path,
-				scanOptions: { ...options, cwd: normalCwd },
-				stream: undefined,
-			})
-			return result.next
-		},
-	)
-	ctx.totalDirs = ctx.totalFiles = ctx.totalMatchedFiles = -1
+function deleteTotals(ctx: MatcherContext, entry: string, deletedDirs = 0, deletedFiles = 0) {
+	// FIXME: recalculate "total" for ancestors
+	if (entry.endsWith("/")) ctx.total.delete(entry)
+	for (let parent = dirname(entry); parent !== "./"; parent = dirname(parent) + "/") {
+		const total = ctx.total.get(parent)
+		if (total) {
+			total.totalDirs -= deletedDirs
+			total.totalFiles -= deletedFiles
+			total.totalMatchedFiles -= deletedFiles
+		}
+	}
 }

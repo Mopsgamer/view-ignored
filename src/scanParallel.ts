@@ -4,7 +4,7 @@ import type { ScanOptions } from "./types.js"
 
 import { resolveSources } from "./patterns/resolveSources.js"
 import { join, unixify } from "./unixify.js"
-import { walkIncludes, type WalkResult } from "./walk.js"
+import { walkIncludes, type WalkOptions, type WalkResult } from "./walk.js"
 
 export interface ScanParallelOptions {
 	scanOptions: Required<ScanOptions>
@@ -18,42 +18,58 @@ export interface ScanParallelOptions {
  *
  * @since 0.11.0
  */
-export function scanParallel(options: ScanParallelOptions): Promise<WalkResult[]> {
-	const { scanOptions, within, stream, external } = options
+export async function scanParallel(options: ScanParallelOptions): Promise<WalkResult[]> {
+	const { scanOptions, stream, external } = options
 	scanOptions.cwd = unixify(scanOptions.cwd)
+	let { within } = options
+	if (within.startsWith("./")) within = within.slice(2)
 
-	const walk = async (relPath: string, parentPath: string): Promise<WalkResult[]> => {
-		const [entries, _] = await Promise.all([
-			scanOptions.fs.promises.readdir(join(scanOptions.cwd, relPath), { withFileTypes: true }),
-			resolveSources({ ...scanOptions, dir: relPath, external, parentPath }),
+	const readdirOptions = { withFileTypes: true } as const
+	const prealloc: WalkOptions = {
+		entry: undefined as any,
+		parentPath: "",
+		relPath: "",
+		resource: null as any,
+		scanOptions,
+		stream,
+	}
+	const prealloc1 = { ...scanOptions, dir: within, external, parentPath: "." }
+	async function walk(relPath: string): Promise<WalkResult[]> {
+		const [entries, resource] = await Promise.all([
+			scanOptions.fs.promises.readdir(join(scanOptions.cwd, relPath), readdirOptions),
+			resolveSources(prealloc1),
 		])
 
-		const tasks = entries.map(async (entry): Promise<WalkResult[]> => {
+		prealloc.parentPath = relPath
+		prealloc.resource = resource
+		const tasks: Promise<WalkResult[]>[] = entries.map(async function walkTask(entry): Promise<
+			WalkResult[]
+		> {
 			const currentRelPath = join(relPath, entry.name)
 
-			const result = [
-				await walkIncludes({
-					entry,
-					external,
-					parentPath: relPath,
-					relPath: currentRelPath,
-					scanOptions,
-					stream,
-				}),
-			]
+			prealloc.entry = entry
+			prealloc.relPath = currentRelPath
+			const self = walkIncludes(prealloc)
 
-			if (entry.isDirectory()) {
-				const children = await walk(currentRelPath, relPath)
-				result.push(...children)
-				return result
+			if (!entry.isDirectory()) {
+				return [await self]
 			}
 
+			prealloc1.dir = currentRelPath
+			prealloc1.parentPath = relPath
+			const children = walk(currentRelPath)
+			const result = [await self]
+			result.push(...(await children))
 			return result
 		})
 
-		const subResults = await Promise.all(tasks)
-		return subResults.flat()
+		const result = []
+		for (const task of tasks) {
+			// oxlint-disable-next-line no-await-in-loop
+			result.push(...(await task))
+		}
+		return result
 	}
 
-	return walk(within, ".")
+	return await walk(within)
 }

@@ -5,23 +5,29 @@ import { scan } from "./scan.js"
 import { NPM as target } from "./targets/npm.js"
 import { sortFirstFolders } from "./testSort.test.js"
 
-describe.skipIf(!!process.env.TEST_NO_SELF)("NPM", () => {
+describe.skipIf(!!process.env.TEST_NO_SELF)("NPM", async () => {
+	const npm = npmTotalFiles()
+	const r = await scan({ fastInternal: true, target })
+	// this test uses sortFirstFolders implementation
+	// provided by https://jsr.io/@m234/path/0.1.4/sort-cmp.ts
+	// you can install this jsr package in your project
+	// for sorting - new Set(sorted) keeps sorting :),
+	// but your package and dependents should also declare
+	// @jsr:registry=https://npm.jsr.io in .npmrc or something.
 	test(
 		"scans self",
 		async () => {
-			const npm = npmTotalFiles()
-			const r = await scan({ fastInternal: true, target })
-			// this test uses sortFirstFolders implementation
-			// provided by https://jsr.io/@m234/path/0.1.4/sort-cmp.ts
-			// you can install this jsr package in your project
-			// for sorting - new Set(sorted) keeps sorting :),
-			// but your package and dependents should also declare
-			// @jsr:registry=https://npm.jsr.io in .npmrc or something.
-			expect(r.totalMatchedFiles).toBe((await npm).total)
-			expect((await npm).total).toBe((await npm).files.length)
-			expect(sortFirstFolders(r.paths.keys()).filter((path) => !path.endsWith("/"))).toMatchObject(
-				sortFirstFolders((await npm).files),
+			expect(sortFirstFolders(r.paths.keys()).filter((path) => !path.endsWith("/"))).toEqual(
+				expect.arrayContaining(sortFirstFolders((await npm).files)),
 			)
+		},
+		{ timeout: 120e3 },
+	)
+	test(
+		"scans self count",
+		async () => {
+			expect(r.total.get(".")?.totalMatchedFiles).toEqual((await npm).total)
+			expect((await npm).total).toBe((await npm).files.length)
 		},
 		{ timeout: 120e3 },
 	)

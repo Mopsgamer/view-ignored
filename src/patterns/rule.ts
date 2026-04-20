@@ -164,44 +164,48 @@ export interface RuleTestOptions extends PatternFinderOptions {
 	 * @since 0.6.0
 	 */
 	entry: string
-	/**
-	 * Result of the `dirname(entry)` call.
-	 *
-	 * @since 0.10.1
-	 */
-	parentPath: string
 }
 
-function cacheTest(rs: PatternCache[], path: string): [string, Error | undefined] | undefined {
-	for (const r of rs) {
+type TestResult = {
+	pattern: string
+	error: Error | undefined
+}
+
+function cacheTest(rs: PatternCache[], path: string, out: TestResult): boolean {
+	const len = rs.length
+	for (let i = 0; i < len; i++) {
+		const r = rs[i]!
 		try {
 			if (patternCacheTest(r, path)) {
-				return [r.pattern, undefined]
+				out.pattern = r.pattern
+				out.error = undefined
+				return true
 			}
 		} catch (err) {
-			return [r.pattern, err as Error]
+			out.pattern = r.pattern
+			out.error = err as Error
+			return true
 		}
 	}
-	return undefined
+	return false
 }
 
-function testInternal(internalRules: Rule[], path: string): RuleMatch | null {
-	for (const { compiled, excludes } of internalRules) {
-		const test = cacheTest(compiled!, path)
-		if (typeof test === "undefined") continue
-		const [pattern, error] = test
-		if (typeof error !== "undefined")
+function testInternal(options: RuleTestOptions): RuleMatch | null {
+	const test: TestResult = { error: undefined, pattern: "" }
+	for (const { compiled, excludes } of options.target.internalRules) {
+		if (!cacheTest(compiled!, options.entry, test)) continue
+		if (typeof test.error !== "undefined")
 			return {
-				error,
+				error: test.error,
 				ignored: false,
 				kind: "invalid-internal",
-				pattern,
+				pattern: test.pattern,
 			}
 
 		return {
 			ignored: excludes,
 			kind: "internal",
-			pattern,
+			pattern: test.pattern,
 		}
 	}
 
@@ -209,16 +213,15 @@ function testInternal(internalRules: Rule[], path: string): RuleMatch | null {
 }
 
 function testExternal(path: string, source: Source): RuleMatch {
+	const test: TestResult = { error: undefined, pattern: "" }
 	for (const { compiled, excludes } of source.rules) {
-		const test = cacheTest(compiled!, path)
-		if (typeof test === "undefined") continue
-		const [pattern, error] = test
-		if (typeof error !== "undefined") {
+		if (!cacheTest(compiled!, path, test)) continue
+		if (typeof test.error !== "undefined") {
 			return {
-				error,
+				error: test.error,
 				ignored: false,
 				kind: "invalid-external",
-				pattern,
+				pattern: test.pattern,
 				source,
 			}
 		}
@@ -226,7 +229,7 @@ function testExternal(path: string, source: Source): RuleMatch {
 		return {
 			ignored: excludes,
 			kind: "external",
-			pattern,
+			pattern: test.pattern,
 			source,
 		}
 	}
@@ -245,8 +248,7 @@ function testExternal(path: string, source: Source): RuleMatch {
  * @since 0.6.0
  */
 export async function ruleTest(options: RuleTestOptions): Promise<RuleMatch> {
-	const parent = options.parentPath
-	const src = options.external.get(parent)
+	const src = options.resource
 
 	// if (source === undefined) {
 	// 	await resolveSources({ ...options, dir: parent })
@@ -262,11 +264,10 @@ export async function ruleTest(options: RuleTestOptions): Promise<RuleMatch> {
 	}
 
 	if (typeof src === "object" && "error" in src) {
-		const { source, error } = src
-		return { error, ignored: true, kind: "invalid-source", source }
+		return { ...src, ignored: true, kind: "invalid-source" }
 	}
 
-	let internalMatch = testInternal(options.target.internalRules, options.entry)
+	let internalMatch = testInternal(options)
 	if (internalMatch !== null) {
 		return internalMatch
 	}

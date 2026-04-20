@@ -42,6 +42,16 @@ export interface ResolveSourcesOptions extends PatternFinderOptions {
 	 */
 	dir: string
 	/**
+	 * Maps directory paths to their corresponding sources.
+	 *
+	 * @example
+	 * "dir" => Source
+	 * "dir/subdir" => Source
+	 *
+	 * @since 0.11.0
+	 */
+	external: Map<string, Resource>
+	/**
 	 * Equals to `dirname(dir)`.
 	 *
 	 * @since 0.11.0
@@ -54,9 +64,10 @@ export interface ResolveSourcesOptions extends PatternFinderOptions {
  *
  * @since 0.6.0
  */
-export async function resolveSources(options: ResolveSourcesOptions): Promise<void> {
-	if (options.external.has(options.dir)) {
-		return
+export async function resolveSources(options: ResolveSourcesOptions): Promise<Resource> {
+	const resource = options.resource
+	if (typeof resource !== "undefined") {
+		return resource
 	}
 	const { fs, external, cwd, signal, target, parentPath } = options
 	let dir = options.dir
@@ -76,7 +87,7 @@ export async function resolveSources(options: ResolveSourcesOptions): Promise<vo
 				for (const noSourceDir of noSourceDirList) {
 					external.set(noSourceDir, source)
 				}
-				return
+				return source
 			}
 			noSourceDirList.push(dir)
 			const parent = dirname(dir)
@@ -107,7 +118,7 @@ export async function resolveSources(options: ResolveSourcesOptions): Promise<vo
 				signal?.throwIfAborted()
 				external.set(noSourceDir, source)
 			}
-			return
+			return source
 		}
 	}
 
@@ -119,6 +130,7 @@ export async function resolveSources(options: ResolveSourcesOptions): Promise<vo
 			external.set(noSourceDir, source)
 		}
 	}
+	return source
 }
 
 async function findSourceForAbsoluteDirs(

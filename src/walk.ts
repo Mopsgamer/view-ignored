@@ -1,6 +1,8 @@
 import type { Dirent } from "node:fs"
 
-import type { MatcherContext } from "./patterns/matcherContext.js"
+import { dirname } from "node:path/posix"
+
+import type { MatcherContext, Total } from "./patterns/matcherContext.js"
 import type { MatcherStream } from "./patterns/matcherStream.js"
 import type { Resource } from "./patterns/resource.js"
 import type { ScanOptions } from "./types.js"
@@ -12,35 +14,22 @@ export type WalkOptions = {
 	relPath: string
 	parentPath: string
 	entry: Dirent
-	external: Map<string, Resource>
+	resource: Resource
 	stream: MatcherStream | undefined
 	scanOptions: Required<ScanOptions>
 }
 
 export type WalkResult = {
-	addToPaths: [string, RuleMatch] | undefined
-	incrementTotalDirs: boolean
-	incrementTotalFiles: boolean
-	incrementTotalMatchedFiles: boolean
-	addDepthPathDir: string | undefined
-	addParentToPaths: [string, RuleMatch] | undefined
+	match: [path: string, parentPath: string, RuleMatch]
+	includeParent: boolean
+	tooDeep: boolean
 	next: 0 | 1
 }
 
 export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
-	const { entry, stream, scanOptions, relPath: path, parentPath, external } = options
+	const { entry, stream, scanOptions, relPath: path, parentPath, resource } = options
 
 	const { fs, target, cwd, depth: maxDepth, invert, signal, fastDepth, fastInternal } = scanOptions
-
-	const result: WalkResult = {
-		addDepthPathDir: undefined,
-		addParentToPaths: undefined,
-		addToPaths: undefined,
-		incrementTotalDirs: false,
-		incrementTotalFiles: false,
-		incrementTotalMatchedFiles: false,
-		next: 0,
-	}
 
 	signal?.throwIfAborted()
 
@@ -48,24 +37,34 @@ export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
 	let direntPath: string
 	if (isDir) {
 		direntPath = path + "/"
-		result.incrementTotalDirs = true
 	} else {
 		direntPath = path
-		result.incrementTotalFiles = true
+	}
+
+	const match = <RuleMatch>{ ignored: false, kind: "none" }
+	const result: WalkResult = {
+		includeParent: false,
+		match: [direntPath, parentPath, match],
+		next: 0,
+		tooDeep: false,
 	}
 
 	if (fastDepth) {
-		const { depth, depthSlash } = getDepth(path, maxDepth)
+		const { depth } = getDepth(path, maxDepth)
 		if (depth > maxDepth) {
-			let match = await target.ignores({
-				cwd,
-				entry: path,
-				external,
-				fs,
-				parentPath,
-				signal,
-				target,
-			})
+			result.tooDeep = true
+			Object.assign(
+				match,
+				await target.ignores({
+					cwd,
+					entry: path,
+					fs,
+					parentPath,
+					resource,
+					signal,
+					target,
+				}),
+			)
 			if (invert) {
 				match.ignored = !match.ignored
 			}
@@ -93,23 +92,23 @@ export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
 				return result
 			}
 
-			result.incrementTotalMatchedFiles = true
-			const dir = path.substring(0, depthSlash)
-			result.addDepthPathDir = dir
 			result.next = 1
 			return result
 		}
 	}
 
-	let match = await target.ignores({
-		cwd,
-		entry: path,
-		external,
-		fs,
-		parentPath: parentPath,
-		signal,
-		target,
-	})
+	Object.assign(
+		match,
+		await target.ignores({
+			cwd,
+			entry: path,
+			fs,
+			parentPath,
+			resource,
+			signal,
+			target,
+		}),
+	)
 	if (invert) {
 		match.ignored = !match.ignored
 	}
@@ -138,37 +137,33 @@ export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
 		// ctx.depthPaths.set(path, (ctx.depthPaths.get(path) ?? 0) + 1);
 		const { depth } = getDepth(path, maxDepth)
 		if (depth <= maxDepth) {
-			result.addToPaths = [direntPath, match]
 			if (stream) {
 				stream.emit("dirent", { dirent: entry, match, path: direntPath })
 			}
+		} else {
+			result.tooDeep = true
 		}
 		result.next = 0
 		return result
 	}
 
-	result.incrementTotalMatchedFiles = true
-	const { depth, depthSlash } = getDepth(path, maxDepth)
+	const { depth } = getDepth(path, maxDepth)
 	if (depth > maxDepth) {
-		const dir = path.substring(0, depthSlash)
-		result.addDepthPathDir = dir
+		result.tooDeep = true
 		result.next = 0
 		return result
 	}
 
-	if (depth <= maxDepth) {
-		const lastSlash = path.lastIndexOf("/")
-		if (lastSlash >= 0) {
-			const dir = path.substring(0, lastSlash) + "/"
-			result.addParentToPaths = [dir, match]
-			if (stream) {
-				stream.emit("dirent", { dirent: entry, match, path: dir })
-			}
-		}
-		result.addToPaths = [direntPath, match]
+	const lastSlash = path.lastIndexOf("/")
+	if (lastSlash >= 0) {
+		const dir = path.substring(0, lastSlash + 1)
+		result.includeParent = true
 		if (stream) {
-			stream.emit("dirent", { dirent: entry, match, path: direntPath })
+			stream.emit("dirent", { dirent: entry, match, path: dir })
 		}
+	}
+	if (stream) {
+		stream.emit("dirent", { dirent: entry, match, path: direntPath })
 	}
 
 	result.next = 0
@@ -177,17 +172,64 @@ export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
 
 /**
  * Patches the {@link MatcherContext} with the given results.
- *
- * @since 0.11.0
  */
-export function walkPatch(ctx: MatcherContext, results: WalkResult[]): void {
+export function walkPatch(ctx: MatcherContext, maxDepth: number, results: WalkResult[]): void {
 	for (const r of results) {
-		if (r.addParentToPaths) ctx.paths.set(r.addParentToPaths[0], r.addParentToPaths[1])
-		if (r.addToPaths) ctx.paths.set(r.addToPaths[0], r.addToPaths[1])
-		if (r.incrementTotalFiles) ctx.totalFiles++
-		if (r.incrementTotalDirs) ctx.totalDirs++
-		if (r.incrementTotalMatchedFiles) ctx.totalMatchedFiles++
-		if (r.addDepthPathDir)
-			ctx.depthPaths.set(r.addDepthPathDir, (ctx.depthPaths.get(r.addDepthPathDir) ?? 0) + 1)
+		const [path, parentPath, match] = r.match
+		const isDir = path.endsWith("/")
+
+		if (isDir) {
+			if (!match.ignored) {
+				if (!r.tooDeep) ctx.paths.set(path, match)
+			}
+			fillTotal(maxDepth, ctx.total, path.slice(0, -1), 0, 0, 1)
+		} else {
+			if (!match.ignored) {
+				if (!r.tooDeep) ctx.paths.set(path, match)
+				fillTotal(maxDepth, ctx.total, parentPath, 1, 1, 0)
+			} else {
+				fillTotal(maxDepth, ctx.total, path, 1, 0, 0)
+			}
+		}
+		if (r.includeParent) {
+			ctx.paths.set(parentPath + "/", match)
+		}
+	}
+}
+
+export function fillTotal(
+	maxDepth: number,
+	total: Map<string, Total>,
+	dir: string,
+	addFiles: number,
+	addMatchedFiles: number,
+	addDirs: number,
+): void {
+	const dirTotal =
+		total.get(dir) || total.set(dir, { totalDirs: 0, totalFiles: 0, totalMatchedFiles: 0 }).get(dir)
+	if (dirTotal) {
+		dirTotal.totalFiles += addFiles
+		dirTotal.totalDirs += addDirs
+		dirTotal.totalMatchedFiles += addMatchedFiles
+	}
+	if (dir === ".") return
+	let { depthSlash } = getDepth(dir, maxDepth)
+	for (
+		let parent = depthSlash <= 0 ? dirname(dir) : dir.slice(0, depthSlash);
+		;
+		parent = dirname(parent)
+	) {
+		if (depthSlash > 0 && parent !== ".") {
+			continue
+		}
+		const parentTotal =
+			total.get(parent) ||
+			total.set(parent, { totalDirs: 0, totalFiles: 0, totalMatchedFiles: 0 }).get(parent)
+		if (parentTotal) {
+			parentTotal.totalFiles += addFiles
+			parentTotal.totalDirs += addDirs
+			parentTotal.totalMatchedFiles += addMatchedFiles
+		}
+		if (parent === ".") break
 	}
 }

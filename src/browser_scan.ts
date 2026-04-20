@@ -1,4 +1,4 @@
-import type { MatcherContext } from "./patterns/matcherContext.js"
+import type { MatcherContext, Total } from "./patterns/matcherContext.js"
 import type { Resource } from "./patterns/resource.js"
 import type { RuleMatch } from "./patterns/rule.js"
 import type { ScanOptions, FsAdapter } from "./types.js"
@@ -41,13 +41,10 @@ export async function scan(
 	}
 
 	const ctx: MatcherContext = {
-		depthPaths: new Map<string, number>(),
 		external: new Map<string, Resource>(),
 		failed: [],
 		paths: new Map<string, RuleMatch>(),
-		totalDirs: 0,
-		totalFiles: 0,
-		totalMatchedFiles: 0,
+		total: new Map<string, Total>([[".", { totalDirs: 0, totalFiles: 0, totalMatchedFiles: 0 }]]),
 	}
 
 	const normalCwd = unixify(cwd)
@@ -71,6 +68,6 @@ export async function scan(
 		within,
 	})
 
-	walkPatch(ctx, results)
+	walkPatch(ctx, scanOptions.depth, results)
 	return ctx
 }

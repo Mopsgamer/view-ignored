@@ -2,7 +2,7 @@ import type { Dirent } from "node:fs"
 
 import { EventEmitter } from "node:events"
 
-import type { MatcherContext } from "../patterns/matcherContext.js"
+import type { MatcherContext, Total } from "../patterns/matcherContext.js"
 import type { ScanOptions, FsAdapter } from "../types.js"
 import type { Resource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"
@@ -108,13 +108,10 @@ export class MatcherStream extends EventEmitter<EventMap> {
 		} = this.#options
 
 		const ctx: MatcherContext = {
-			depthPaths: new Map<string, number>(),
 			external: new Map<string, Resource>(),
 			failed: [],
 			paths: new Map<string, RuleMatch>(),
-			totalDirs: 0,
-			totalFiles: 0,
-			totalMatchedFiles: 0,
+			total: new Map<string, Total>([[".", { totalDirs: 0, totalFiles: 0, totalMatchedFiles: 0 }]]),
 		}
 
 		const scanOptions: Required<ScanOptions> = {
@@ -137,7 +134,7 @@ export class MatcherStream extends EventEmitter<EventMap> {
 			within,
 		})
 
-		walkPatch(ctx, results)
+		walkPatch(ctx, scanOptions.depth, results)
 		this.emit("end", ctx)
 	}
 }
