@@ -22,9 +22,9 @@ export function join(from: string, p2: string): string {
 		from += "/"
 	}
 	if (from.startsWith("./")) {
-		from = from.substring(2)
+		from = from.slice(2)
 	}
-	from += p2.substring(start)
+	from += p2.slice(start)
 
 	return from
 }
@@ -39,4 +39,15 @@ export function relative(base: string, to: string): string {
 
 function strip(path: string): string {
 	return path.replaceAll("\\", "/").replace(/^[a-zA-Z]:/, "")
+}
+
+export function dirname(path: string): string {
+	if (path === "/" || path === ".") return path
+	const lastSlash = path.endsWith("/") ? path.lastIndexOf("/", -1) : path.lastIndexOf("/")
+	if (lastSlash === -1) {
+		return "."
+	}
+	path = path.slice(0, lastSlash)
+	if (path.length === 0) return "/"
+	return path
 }

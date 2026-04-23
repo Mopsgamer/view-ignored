@@ -1,2 +1,4 @@
 [test]
+pathIgnorePatterns = ["out/**"]
 coveragePathIgnorePatterns = ["src/testSelf*.test.ts"]
+onlyFailures = true

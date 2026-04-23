@@ -42,6 +42,7 @@ if (printPaths) {
 }
 
 console.log(`- Time: ${(end - start).toFixed(2)}ms`)
-console.log(`- Total Files: ${ctx.totalFiles}`)
-console.log(`- Total Dirs: ${ctx.totalDirs}`)
-console.log(`- Total Matched: ${ctx.totalMatchedFiles}`)
+const total = ctx.total.get(".")
+console.log(`- Total Files: ${total.totalFiles}`)
+console.log(`- Total Dirs: ${total.totalDirs}`)
+console.log(`- Total Matched: ${total.totalMatchedFiles}`)

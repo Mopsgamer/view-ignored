@@ -1,5 +1,3 @@
-import { dirname } from "node:path/posix"
-
 import type { Target } from "../targets/target.js"
 import type { FsAdapter } from "../types.js"
 import type { PatternFinderOptions, Extractor } from "./extractor.js"
@@ -9,7 +7,7 @@ import type { Resource } from "./resource.js"
 import type { Rule } from "./rule.js"
 import type { Source } from "./source.js"
 
-import { join } from "../unixify.js"
+import { dirname, join } from "../unixify.js"
 import { patternListCompile } from "./patternList.js"
 
 /**
@@ -51,12 +49,6 @@ export interface ResolveSourcesOptions extends PatternFinderOptions {
 	 * @since 0.11.0
 	 */
 	external: Map<string, Resource>
-	/**
-	 * Equals to `dirname(dir)`.
-	 *
-	 * @since 0.11.0
-	 */
-	parentPath?: string
 }
 
 /**
@@ -69,14 +61,14 @@ export async function resolveSources(options: ResolveSourcesOptions): Promise<Re
 	if (resource !== undefined) {
 		return resource
 	}
-	const { fs, external, cwd, signal, target, parentPath } = options
+	const { fs, external, cwd, signal, target } = options
 	let dir = options.dir
 
 	let source: Resource | undefined
 	const noSourceDirList: string[] = [dir]
 
 	if (dir !== ".") {
-		dir = parentPath ?? dirname(dir)
+		dir = dirname(dir)
 
 		// find source from an ancestor [dir < ... < cwd]
 		while (true) {
@@ -139,11 +131,11 @@ async function findSourceForAbsoluteDirs(
 	target: Target,
 	signal: AbortSignal | null,
 ): Promise<Resource> {
+	signal?.throwIfAborted()
 	const results = await Promise.all(
 		paths.flatMap((parent) =>
-			target.extractors.map(async (extractor) => {
-				signal?.throwIfAborted()
-				return await tryExtractor(parent, fs, extractor)
+			target.extractors.map((extractor) => {
+				return tryExtractor(parent, fs, extractor)
 			}),
 		),
 	)
@@ -160,12 +152,6 @@ async function findSourceForAbsoluteDirs(
 async function tryExtractor(cwd: string, fs: FsAdapter, extractor: Extractor): Promise<Resource> {
 	let abs = join(cwd, extractor.path)
 
-	const newSource: Source = {
-		inverted: false,
-		path: extractor.path,
-		rules: [],
-	}
-
 	let buff: Buffer | undefined
 	try {
 		buff = await fs.promises.readFile(abs)
@@ -174,7 +160,20 @@ async function tryExtractor(cwd: string, fs: FsAdapter, extractor: Extractor): P
 		if (error.code === "ENOENT") {
 			return null
 		}
-		return { error, source: newSource }
+		return {
+			error,
+			source: {
+				inverted: false,
+				path: extractor.path,
+				rules: [],
+			},
+		}
+	}
+
+	const newSource = <Source>{
+		inverted: false,
+		path: extractor.path,
+		rules: [],
 	}
 
 	try {

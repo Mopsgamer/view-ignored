@@ -1,10 +1,9 @@
-import { dirname } from "node:path/posix"
-
 import type { ScanOptions } from "../types.js"
 import type { MatcherContext } from "./matcherContext.js"
 
 import { getDepth } from "../getDepth.js"
 import { scanParallel } from "../scanParallel.js"
+import { dirname } from "../unixify.js"
 import { walkPatch } from "../walk.js"
 import { resolveSources } from "./resolveSources.js"
 
@@ -89,7 +88,14 @@ export async function matcherContextAddPath(
 		entry,
 		fs,
 		parentPath,
-		resource: ctx.external.get(parentPath)!,
+		resource: await resolveSources({
+			cwd,
+			dir: parentPath,
+			external: ctx.external,
+			fs,
+			signal,
+			target,
+		})!,
 		signal,
 		target,
 	})

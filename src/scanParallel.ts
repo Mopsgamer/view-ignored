@@ -1,3 +1,5 @@
+import type { Dirent } from "node:fs"
+
 import type { MatcherStream } from "./patterns/matcherStream.js"
 import type { Resource } from "./patterns/resource.js"
 import type { ScanOptions } from "./types.js"
@@ -35,10 +37,12 @@ export async function scanParallel(options: ScanParallelOptions): Promise<WalkRe
 	}
 	const prealloc1 = { ...scanOptions, dir: within, external, parentPath: "." }
 	async function walk(relPath: string): Promise<WalkResult[]> {
-		const [entries, resource] = await Promise.all([
+		let entries: Dirent[], resource: Resource
+		;[entries, resource] = await Promise.all([
 			scanOptions.fs.promises.readdir(join(scanOptions.cwd, relPath), readdirOptions),
 			resolveSources(prealloc1),
 		])
+		external.set(prealloc1.parentPath, resource)
 
 		prealloc.parentPath = relPath
 		prealloc.resource = resource

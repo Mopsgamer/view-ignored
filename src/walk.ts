@@ -1,7 +1,5 @@
 import type { Dirent } from "node:fs"
 
-import { dirname } from "node:path/posix"
-
 import type { MatcherContext, Total } from "./patterns/matcherContext.js"
 import type { MatcherStream } from "./patterns/matcherStream.js"
 import type { Resource } from "./patterns/resource.js"
@@ -9,6 +7,7 @@ import type { ScanOptions } from "./types.js"
 
 import { getDepth } from "./getDepth.js"
 import { isRuleMatchInvalid, RuleMatchKind, type RuleMatch } from "./patterns/rule.js"
+import { dirname } from "./unixify.js"
 
 export type WalkOptions = {
 	relPath: string
