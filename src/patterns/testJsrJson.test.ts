@@ -12,7 +12,7 @@ describe("jsr.json", () => {
 			rules: [],
 		}
 		// @ts-expect-error for 0
-		expect(() => extractJsrJson(source, 0)).toThrowError("Invalid")
+		expect(extractJsrJson(source, 0)).toBeInstanceOf(Error)
 	})
 	test("does not parse '{'", () => {
 		const source: Source = {
@@ -20,7 +20,7 @@ describe("jsr.json", () => {
 			path: "jsr.json",
 			rules: [],
 		}
-		expect(() => extractJsrJson(source, new Buffer("{", "utf-8"))).toThrowError("Invalid")
+		expect(extractJsrJson(source, Buffer.from("{", "utf-8"))).toBeInstanceOf(Error)
 	})
 	test("parses '{}'", () => {
 		const source: Source = {
@@ -28,6 +28,6 @@ describe("jsr.json", () => {
 			path: "jsr.json",
 			rules: [],
 		}
-		expect(() => extractJsrJson(source, new Buffer("{}", "utf-8"))).not.toThrowError()
+		expect(extractJsrJson(source, Buffer.from("{}", "utf-8"))).not.toBeInstanceOf(Error)
 	})
 })

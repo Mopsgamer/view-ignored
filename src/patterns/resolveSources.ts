@@ -134,7 +134,7 @@ async function findSourceForAbsoluteDirs(
 	signal?.throwIfAborted()
 	const results = await Promise.all(
 		paths.flatMap((parent) =>
-			target.extractors.map((extractor) => {
+			(target as any).extractors.map((extractor: any) => {
 				return tryExtractor(parent, fs, extractor)
 			}),
 		),
@@ -176,20 +176,12 @@ async function tryExtractor(cwd: string, fs: FsAdapter, extractor: Extractor): P
 		rules: [],
 	}
 
-	try {
-		const act = extractor.extract(newSource, buff)
-		if (act === null) {
-			return act
-		}
-	} catch (err) {
-		if (err === null) {
-			return err
-		}
-		const error =
-			err instanceof Error
-				? err
-				: new Error("Unknown error during source extraction", { cause: err })
-		return { error, source: newSource }
+	const act = extractor.extract(newSource, buff)
+	if (act === null) {
+		return null
+	}
+	if (act instanceof Error) {
+		return { error: act, source: newSource }
 	}
 	return newSource
 }

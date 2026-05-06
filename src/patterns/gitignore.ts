@@ -11,7 +11,7 @@ import { resolveNegatable, type Source } from "./source.js"
  *
  * @since 0.6.0
  */
-export function extractGitignore(source: Source, content: Buffer): void {
+export function extractGitignore(source: Source, content: Buffer): void | Error {
 	extract(source, content)
 	for (const element of source.rules) {
 		ruleCompile(element)
@@ -25,7 +25,7 @@ export function extractGitignore(source: Source, content: Buffer): void {
  *
  * @since 0.8.0
  */
-export function extractGitignoreNocase(source: Source, content: Buffer): void {
+export function extractGitignoreNocase(source: Source, content: Buffer): void | Error {
 	extract(source, content)
 	for (const element of source.rules) {
 		ruleCompile(element, { nocase: true })

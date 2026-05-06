@@ -30,10 +30,11 @@ const internal: Rule[] = [
 /**
  * @since 0.6.0
  */
-export const Git: Target = {
+export const Git: Target = <Target>{
 	extractors,
 	// TODO: Git should read configs
 	ignores: ruleTest,
 	internalRules: internal,
 	root: "/",
+	isIgnoreFile: (path) => extractors.some((e) => e.path === path),
 }

@@ -92,7 +92,7 @@ const internal: Rule[] = [
 /**
  * @since 0.8.0
  */
-export const YarnClassic: Target = {
+export const YarnClassic: Target = <Target>{
 	extractors,
 	ignores: ruleTest,
 	async init({ fs, cwd }) {
@@ -112,4 +112,5 @@ export const YarnClassic: Target = {
 	},
 	internalRules: internal,
 	root: ".",
+	isIgnoreFile: (path) => extractors.some((e) => e.path === path),
 }

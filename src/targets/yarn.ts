@@ -75,7 +75,7 @@ const internal: Rule[] = [
 /**
  * @since 0.6.0
  */
-export const Yarn: Target = {
+export const Yarn: Target = <Target>{
 	extractors,
 	ignores: ruleTest,
 	async init({ fs, cwd }) {
@@ -83,14 +83,23 @@ export const Yarn: Target = {
 		const normalCwd = unixify(cwd)
 		try {
 			content = await fs.promises.readFile(normalCwd + "/" + "package.json")
-		} catch (error) {
+		} catch (err) {
+			const error = err as NodeJS.ErrnoException
+			if (error.code === "ENOENT") {
+				return
+			}
 			throw new Error("Error while initializing Yarn", { cause: error })
 		}
 
-		const dist = npmManifestParse(content.toString())
+		let dist: any
+		try {
+			dist = npmManifestParse(content.toString())
+		} catch (error) {
+			// handled by extractor
+		}
 
 		if (!dist || typeof dist !== "object") {
-			throw new Error("Invalid 'package.json': Manifest is empty or not an object")
+			return
 		}
 
 		const set = new Set<string>()
@@ -99,14 +108,16 @@ export const Yarn: Target = {
 			return unixify(join(normalCwd, path)).substring(normalCwd.length)
 		}
 
-		if (dist.main) set.add(normal(dist.main))
-		if (dist.module) set.add(normal(dist.module))
-		if (dist.browser) set.add(normal(dist.browser))
+		if (typeof dist.main === "string") set.add(normal(dist.main))
+		if (typeof dist.module === "string") set.add(normal(dist.module))
+		if (typeof dist.browser === "string") set.add(normal(dist.browser))
 
 		if (typeof dist.bin === "string") {
 			set.add(normal(dist.bin))
 		} else if (typeof dist.bin === "object" && dist.bin !== null) {
-			Object.values(dist.bin).forEach((binPath) => set.add(normal(binPath)))
+			Object.values(dist.bin).forEach((binPath) => {
+				if (typeof binPath === "string") set.add(normal(binPath))
+			})
 		}
 
 		internalInclude.pattern = Array.from(set)
@@ -114,4 +125,5 @@ export const Yarn: Target = {
 	},
 	internalRules: internal,
 	root: ".",
+	isIgnoreFile: (path) => extractors.some((e) => e.path === path),
 }

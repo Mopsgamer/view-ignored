@@ -4,7 +4,7 @@ import type { MatcherContext } from "./matcherContext.js"
 import { getDepth } from "../getDepth.js"
 import { scanParallel } from "../scanParallel.js"
 import { dirname } from "../unixify.js"
-import { walkPatch } from "../walk.js"
+import { walkPatchResult } from "../walk.js"
 import { resolveSources } from "./resolveSources.js"
 
 /**
@@ -66,17 +66,19 @@ export async function matcherContextAddPath(
 
 	const parentPath = dirname(entry)
 
-	const isSource = target.extractors.some((e) => e.path === entry)
+	const isSource = target.isIgnoreFile(entry)
 	if (isSource) {
 		// add pattern sources
-		const result = scanParallel({
+		const resultPromise = scanParallel({
 			external: ctx.external,
+			failed: ctx.failed,
+			onResult: (r) => walkPatchResult(ctx, options.depth, r),
 			scanOptions: options,
 			stream: undefined,
 			within: parentPath,
 		})
 		await matcherContextRemovePath(ctx, options, parentPath + "/")
-		walkPatch(ctx, options.depth, await result)
+		await resultPromise
 	}
 
 	// add paths
@@ -88,14 +90,14 @@ export async function matcherContextAddPath(
 		entry,
 		fs,
 		parentPath,
-		resource: await resolveSources({
+		resource: (await resolveSources({
 			cwd,
 			dir: parentPath,
 			external: ctx.external,
 			fs,
 			signal,
 			target,
-		})!,
+		}))!,
 		signal,
 		target,
 	})
@@ -179,18 +181,20 @@ export async function matcherContextRemovePath(
 	const parentPath = dirname(entry)
 	const parentPathDir = parentPath + "/"
 
-	const isSource = options.target.extractors.some((e) => e.path === entry)
+	const isSource = options.target.isIgnoreFile(entry)
 	if (isSource) {
 		// remove pattern sources
 		// rescan directory and repopulate stats
-		const results = scanParallel({
+		const resultPromise = scanParallel({
 			external: ctx.external,
+			failed: ctx.failed,
+			onResult: (r) => walkPatchResult(ctx, options.depth, r),
 			scanOptions: options,
 			stream: undefined,
 			within: parentPath,
 		})
 		await matcherContextRemovePath(ctx, options, parentPathDir)
-		walkPatch(ctx, options.depth, await results)
+		await resultPromise
 		return true
 	}
 	// remove path

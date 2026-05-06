@@ -46,7 +46,7 @@ const internal: Rule[] = [
 /**
  * @since 0.8.1
  */
-export const Deno: Target = {
+export const Deno: Target = <Target>{
 	extractors,
 	ignores: ruleTest,
 	async init({ fs, cwd }) {
@@ -70,4 +70,5 @@ export const Deno: Target = {
 	},
 	internalRules: internal,
 	root: ".",
+	isIgnoreFile: (path) => extractors.some((e) => e.path === path),
 }
