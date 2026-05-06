@@ -90,7 +90,7 @@ const internal: Rule[] = [
 /**
  * @since 0.6.0
  */
-export const NPM: Target = {
+export const NPM: Target = <Target>{
 	extractors,
 	ignores: ruleTest,
 	async init({ fs, cwd }) {
@@ -98,14 +98,18 @@ export const NPM: Target = {
 		const normalCwd = unixify(cwd)
 		try {
 			content = await fs.promises.readFile(normalCwd + "/package.json")
-		} catch (error) {
+		} catch (err) {
+			const error = err as NodeJS.ErrnoException
+			if (error.code === "ENOENT") {
+				return
+			}
 			throw new Error("Error while initializing NPM", { cause: error })
 		}
 
 		try {
 			npmManifestParse(content.toString())
 		} catch (error) {
-			throw new Error("Invalid 'package.json'", { cause: error })
+			// handled by extractor
 		}
 
 		// const set = new Set<string>()
@@ -117,4 +121,5 @@ export const NPM: Target = {
 	},
 	internalRules: internal,
 	root: ".",
+	isIgnoreFile: (path) => extractors.some((e) => e.path === path),
 }

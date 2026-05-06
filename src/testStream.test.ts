@@ -9,20 +9,19 @@ describe("Git", () => {
 		await testStream(
 			{ file: "1", src: { file: "2" } },
 			({ stream }) => {
-				const paths: (string | number)[] = []
+				const paths: { kind: number; path: string }[] = []
 				stream.addListener("dirent", (d) => {
-					paths.push(d.match.kind)
-					paths.push(d.path)
+					paths.push({ kind: d.match.kind, path: d.path })
 				})
 				stream.once("end", () => {
-					expect(paths).toMatchObject([
-						RuleMatchKind.missingSource,
-						"file",
-						RuleMatchKind.missingSource,
-						"src/",
-						RuleMatchKind.missingSource,
-						"src/file",
-					])
+					expect(paths.sort((a, b) => a.path.localeCompare(b.path))).toMatchObject(
+						[
+							{ kind: RuleMatchKind.missingSource, path: "file" },
+							{ kind: RuleMatchKind.missingSource, path: "src/" },
+							{ kind: RuleMatchKind.missingSource, path: "src/" },
+							{ kind: RuleMatchKind.missingSource, path: "src/file" },
+						].sort((a, b) => a.path.localeCompare(b.path)),
+					)
 					done()
 				})
 			},
@@ -33,26 +32,21 @@ describe("Git", () => {
 		await testStream(
 			{ ".git": { HEAD: "" }, ".gitignore": "file", file: "1", src: { file: "2" } },
 			({ stream }) => {
-				const paths: (string | number)[] = []
+				const paths: { kind: number; path: string }[] = []
 				stream.addListener("dirent", (d) => {
-					paths.push(d.match.kind)
-					paths.push(d.path)
+					paths.push({ kind: d.match.kind, path: d.path })
 				})
 				stream.once("end", () => {
-					expect(paths).toMatchObject([
-						RuleMatchKind.external, // ignored
-						"file",
-						RuleMatchKind.noMatch, // included
-						"src/",
-						RuleMatchKind.external, // ignored
-						"src/file",
-						RuleMatchKind.noMatch, // included
-						".gitignore",
-						RuleMatchKind.internal, // ignored internal
-						".git/",
-						RuleMatchKind.internal, // ignored internal
-						".git/HEAD",
-					])
+					expect(paths.sort((a, b) => a.path.localeCompare(b.path))).toMatchObject(
+						[
+							{ kind: RuleMatchKind.external, path: "file" },
+							{ kind: RuleMatchKind.noMatch, path: "src/" },
+							{ kind: RuleMatchKind.external, path: "src/file" },
+							{ kind: RuleMatchKind.noMatch, path: ".gitignore" },
+							{ kind: RuleMatchKind.internal, path: ".git/" },
+							{ kind: RuleMatchKind.internal, path: ".git/HEAD" },
+						].sort((a, b) => a.path.localeCompare(b.path)),
+					)
 					done()
 				})
 			},

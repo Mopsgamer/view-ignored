@@ -100,7 +100,7 @@ const internal: Rule[] = [
 /**
  * @since 0.8.1
  */
-export const Bun: Target = {
+export const Bun: Target = <Target>{
 	extractors,
 	ignores: ruleTest,
 	async init({ fs, cwd }) {
@@ -141,4 +141,5 @@ export const Bun: Target = {
 	},
 	internalRules: internal,
 	root: ".",
+	isIgnoreFile: (path) => extractors.some((e) => e.path === path),
 }

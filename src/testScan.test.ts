@@ -46,7 +46,13 @@ export async function testScan(
 	const o = { cwd: cwd, fs: adapter, ...options } as ScanOptions & { fs: FsAdapter; cwd: string }
 
 	if (typeof test === "function") {
-		const ctx = await scan(o)
+		let ctx: MatcherContext
+		try {
+			ctx = await scan(o)
+		} catch (e) {
+			done()
+			throw e
+		}
 		await test({
 			ctx,
 			fs: adapter,
@@ -55,19 +61,33 @@ export async function testScan(
 		})
 		const stream = scanStream(o)
 		stream.addListener("end", async (sctx) => {
-			await test({
-				ctx: sctx,
-				fs: adapter,
-				options: o,
-				vol,
-			})
-			done()
+			try {
+				await test({
+					ctx: sctx,
+					fs: adapter,
+					options: o,
+					vol,
+				})
+			} finally {
+				done()
+			}
 		})
-		await stream.start()
+		try {
+			await stream.start()
+		} catch (e) {
+			done()
+			throw e
+		}
 		return
 	}
 
-	const ctx = await scan(o)
+	let ctx: MatcherContext
+	try {
+		ctx = await scan(o)
+	} catch (e) {
+		done()
+		throw e
+	}
 	const { paths } = ctx
 	expect(sortFirstFolders(paths.keys())).toStrictEqual(sortFirstFolders(test))
 
@@ -79,10 +99,18 @@ export async function testScan(
 		results.add(dirent.path)
 	})
 	stream.addListener("end", () => {
-		expect(sortFirstFolders(results)).toStrictEqual(sortFirstFolders(test))
-		done()
+		try {
+			expect(sortFirstFolders(results)).toStrictEqual(sortFirstFolders(test))
+		} finally {
+			done()
+		}
 	})
-	await stream.start()
+	try {
+		await stream.start()
+	} catch (e) {
+		done()
+		throw e
+	}
 }
 
 /**
@@ -100,13 +128,14 @@ export async function testStream(
 
 	if (typeof test === "function") {
 		const stream = scanStream(o)
-		await stream.start()
-		await test({
+		const promise = test({
 			fs: adapter,
 			options: o,
 			stream,
 			vol,
 		})
+		await stream.start()
+		await promise
 		return
 	}
 }

@@ -8,7 +8,7 @@ import type { Resource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"
 
 import { scanParallel } from "../scanParallel.js"
-import { walkPatch, type WalkResult } from "../walk.js"
+import { walkPatchResult } from "../walk.js"
 
 /**
  * Post-scan entry information.
@@ -127,14 +127,14 @@ export class MatcherStream extends EventEmitter<EventMap> {
 		}
 
 		await target.init?.({ cwd, fs, signal, target })
-		const results: WalkResult[] = await scanParallel({
+		await scanParallel({
 			external: ctx.external,
+			failed: ctx.failed,
+			onResult: (r) => walkPatchResult(ctx, scanOptions.depth, r),
 			scanOptions,
 			stream: this,
 			within,
 		})
-
-		walkPatch(ctx, scanOptions.depth, results)
 		this.emit("end", ctx)
 	}
 }

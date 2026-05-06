@@ -273,7 +273,7 @@ function testExternal(
  *
  * @since 0.6.0
  */
-export async function ruleTest(options: RuleTestOptions): Promise<RuleMatch> {
+export function ruleTest(options: RuleTestOptions): RuleMatch {
 	const src = options.resource
 
 	if (src === undefined) {

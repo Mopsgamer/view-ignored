@@ -33,7 +33,7 @@ const internal: Rule[] = [
 /**
  * @since 0.6.0
  */
-export const JSR: Target = {
+export const JSR: Target = <Target>{
 	extractors,
 	ignores: ruleTest,
 	async init({ fs, cwd }) {
@@ -57,4 +57,5 @@ export const JSR: Target = {
 	},
 	internalRules: internal,
 	root: ".",
+	isIgnoreFile: (path) => extractors.some((e) => e.path === path),
 }

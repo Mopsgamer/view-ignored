@@ -70,7 +70,7 @@ const internal: Rule[] = [
 /**
  * @since 0.6.0
  */
-export const VSCE: Target = {
+export const VSCE: Target = <Target>{
 	extractors,
 	ignores: ruleTest,
 	async init({ fs, cwd }) {
@@ -90,4 +90,5 @@ export const VSCE: Target = {
 	},
 	internalRules: internal,
 	root: ".",
+	isIgnoreFile: (path) => extractors.some((e) => e.path === path),
 }

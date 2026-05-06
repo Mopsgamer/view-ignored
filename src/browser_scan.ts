@@ -5,7 +5,7 @@ import type { ScanOptions, FsAdapter } from "./types.js"
 
 import { scanParallel } from "./scanParallel.js"
 import { unixify } from "./unixify.js"
-import { walkPatch, type WalkResult } from "./walk.js"
+import { walkPatchResult } from "./walk.js"
 export type * from "./types.js"
 
 /**
@@ -62,12 +62,12 @@ export async function scan(
 	}
 
 	await target.init?.({ cwd, fs, signal, target })
-	const results: WalkResult[] = await scanParallel({
+	await scanParallel({
 		external: ctx.external,
+		failed: ctx.failed,
+		onResult: (r) => walkPatchResult(ctx, scanOptions.depth, r),
 		scanOptions,
 		within,
 	})
-
-	walkPatch(ctx, scanOptions.depth, results)
 	return ctx
 }

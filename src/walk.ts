@@ -54,7 +54,7 @@ export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
 			result.tooDeep = true
 			Object.assign(
 				match,
-				await target.ignores({
+				target.ignores({
 					cwd,
 					entry: path,
 					fs,
@@ -72,7 +72,8 @@ export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
 				if (stream) {
 					stream.emit("dirent", { dirent: entry, match, path: direntPath })
 				}
-				throw match.error
+				result.next = 0
+				return result
 			}
 
 			if (match.ignored) {
@@ -98,7 +99,7 @@ export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
 
 	Object.assign(
 		match,
-		await target.ignores({
+		target.ignores({
 			cwd,
 			entry: path,
 			fs,
@@ -116,7 +117,8 @@ export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
 		if (stream) {
 			stream.emit("dirent", { dirent: entry, match, path: direntPath })
 		}
-		throw match.error
+		result.next = 0
+		return result
 	}
 
 	if (match.ignored) {
@@ -155,13 +157,13 @@ export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
 
 	const lastSlash = path.lastIndexOf("/")
 	if (lastSlash >= 0) {
-		const dir = path.substring(0, lastSlash + 1)
 		result.includeParent = true
-		if (stream) {
-			stream.emit("dirent", { dirent: entry, match, path: dir })
-		}
 	}
+
 	if (stream) {
+		if (result.includeParent) {
+			stream.emit("dirent", { dirent: entry, match, path: parentPath + "/" })
+		}
 		stream.emit("dirent", { dirent: entry, match, path: direntPath })
 	}
 
@@ -170,29 +172,38 @@ export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
 }
 
 /**
+ * Patches the {@link MatcherContext} with the given result.
+ */
+export function walkPatchResult(ctx: MatcherContext, maxDepth: number, r: WalkResult): void {
+	const [path, parentPath, match] = r.match
+	const isDir = path.endsWith("/")
+
+	if (isDir) {
+		if (!match.ignored) {
+			if (!r.tooDeep) ctx.paths.set(path, match)
+		}
+		fillTotal(maxDepth, ctx.total, path.slice(0, -1), match, 0, 0, 1)
+	} else {
+		if (!match.ignored) {
+			if (!r.tooDeep) ctx.paths.set(path, match)
+			fillTotal(maxDepth, ctx.total, parentPath, match, 1, 1, 0)
+		} else {
+			fillTotal(maxDepth, ctx.total, path, match, 1, 0, 0)
+		}
+	}
+	if (r.includeParent) {
+		if (!match.ignored) {
+			ctx.paths.set(parentPath + "/", match)
+		}
+	}
+}
+
+/**
  * Patches the {@link MatcherContext} with the given results.
  */
 export function walkPatch(ctx: MatcherContext, maxDepth: number, results: WalkResult[]): void {
 	for (const r of results) {
-		const [path, parentPath, match] = r.match
-		const isDir = path.endsWith("/")
-
-		if (isDir) {
-			if (!match.ignored) {
-				if (!r.tooDeep) ctx.paths.set(path, match)
-			}
-			fillTotal(maxDepth, ctx.total, path.slice(0, -1), match, 0, 0, 1)
-		} else {
-			if (!match.ignored) {
-				if (!r.tooDeep) ctx.paths.set(path, match)
-				fillTotal(maxDepth, ctx.total, parentPath, match, 1, 1, 0)
-			} else {
-				fillTotal(maxDepth, ctx.total, path, match, 1, 0, 0)
-			}
-		}
-		if (r.includeParent) {
-			ctx.paths.set(parentPath + "/", match)
-		}
+		walkPatchResult(ctx, maxDepth, r)
 	}
 }
 

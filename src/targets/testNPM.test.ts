@@ -120,17 +120,18 @@ describe("NPM", () => {
 	})
 
 	test("collects errors", async (done) => {
-		expect(
-			testNpm(
-				done,
-				{
-					"foo.js": "",
-					"negkeep.js": "",
-					"package.json": "{",
-				},
-				[],
-			),
-		).rejects.toThrowError("Invalid")
+		await testNpm(
+			done,
+			{
+				"foo.js": "",
+				"negkeep.js": "",
+				"package.json": "{",
+			},
+			({ ctx }: any) => {
+				expect(ctx.failed.length).toBeGreaterThan(0)
+				expect(ctx.failed[0].error.message).toInclude("Expected")
+			},
+		)
 	})
 	test("monorepo should use package.json if cwd is .", async (done) => {
 		await testScan(
@@ -155,7 +156,7 @@ describe("NPM", () => {
 					},
 				},
 			},
-			({ ctx }) => {
+			({ ctx }: any) => {
 				expect(ctx.paths.has("file")).toBeFalse()
 				expect(ctx.paths.get("index.ts")).toMatchObject({
 					ignored: false,
@@ -195,7 +196,7 @@ describe("NPM", () => {
 					},
 				},
 			},
-			({ ctx }) => {
+			({ ctx }: any) => {
 				expect(ctx.paths.has("file")).toBeFalse()
 				expect(ctx.paths.has("index.ts")).toBeFalse()
 				expect(ctx.paths.has("index.js")).toBeTrue()

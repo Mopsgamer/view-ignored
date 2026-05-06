@@ -1,18 +1,18 @@
-import type { Dirent } from "node:fs"
-
 import type { MatcherStream } from "./patterns/matcherStream.js"
-import type { Resource } from "./patterns/resource.js"
+import type { Resource, InvalidSource } from "./patterns/resource.js"
 import type { ScanOptions } from "./types.js"
 
 import { resolveSources } from "./patterns/resolveSources.js"
 import { join, unixify } from "./unixify.js"
-import { walkIncludes, type WalkOptions, type WalkResult } from "./walk.js"
+import { walkIncludes, type WalkResult } from "./walk.js"
 
 export interface ScanParallelOptions {
 	scanOptions: Required<ScanOptions>
 	within: string
 	stream?: MatcherStream
 	external: Map<string, Resource>
+	failed?: InvalidSource[]
+	onResult?: (result: WalkResult) => void
 }
 
 /**
@@ -21,59 +21,64 @@ export interface ScanParallelOptions {
  * @since 0.11.0
  */
 export async function scanParallel(options: ScanParallelOptions): Promise<WalkResult[]> {
-	const { scanOptions, stream, external } = options
+	const { scanOptions, stream, external, failed, onResult } = options
 	scanOptions.cwd = unixify(scanOptions.cwd)
 	let { within } = options
 	if (within.startsWith("./")) within = within.slice(2)
 
 	const readdirOptions = { withFileTypes: true } as const
-	const prealloc: WalkOptions = {
-		entry: undefined as any,
-		parentPath: "",
-		relPath: "",
-		resource: null as any,
-		scanOptions,
-		stream,
-	}
-	const prealloc1 = { ...scanOptions, dir: within, external, parentPath: "." }
-	async function walk(relPath: string): Promise<WalkResult[]> {
-		let entries: Dirent[], resource: Resource
-		;[entries, resource] = await Promise.all([
-			scanOptions.fs.promises.readdir(join(scanOptions.cwd, relPath), readdirOptions),
-			resolveSources(prealloc1),
-		])
-		external.set(prealloc1.parentPath, resource)
 
-		prealloc.parentPath = relPath
-		prealloc.resource = resource
-		const tasks: Promise<WalkResult[]>[] = entries.map(async function walkTask(entry): Promise<
-			WalkResult[]
-		> {
+	const results: WalkResult[] = []
+
+	async function walk(relPath: string): Promise<void> {
+		const [entries, resource] = await Promise.all([
+			scanOptions.fs.promises.readdir(join(scanOptions.cwd, relPath), readdirOptions),
+			resolveSources({ ...scanOptions, dir: relPath, external }),
+		])
+		external.set(relPath, resource)
+		if (resource && "error" in resource && resource.error) {
+			if (failed) {
+				failed.push(resource)
+			} else {
+				throw resource.error
+			}
+		}
+
+		const tasks: Promise<void>[] = entries.map(async (entry): Promise<void> => {
 			const currentRelPath = join(relPath, entry.name)
 
-			prealloc.entry = entry
-			prealloc.relPath = currentRelPath
-			const self = walkIncludes(prealloc)
+			const selfPromise = walkIncludes({
+				entry,
+				parentPath: relPath,
+				relPath: currentRelPath,
+				resource,
+				scanOptions,
+				stream,
+			})
 
 			if (!entry.isDirectory()) {
-				return [await self]
+				const self = await selfPromise
+				if (onResult) {
+					onResult(self)
+				} else {
+					results.push(self)
+				}
+				return
 			}
 
-			prealloc1.dir = currentRelPath
-			prealloc1.parentPath = relPath
-			const children = walk(currentRelPath)
-			const result = [await self]
-			result.push(...(await children))
-			return result
+			const childrenPromise = walk(currentRelPath)
+			const self = await selfPromise
+			if (onResult) {
+				onResult(self)
+			} else {
+				results.push(self)
+			}
+			await childrenPromise
 		})
 
-		const result = []
-		for (const task of tasks) {
-			// oxlint-disable-next-line no-await-in-loop
-			result.push(...(await task))
-		}
-		return result
+		await Promise.all(tasks)
 	}
 
-	return await walk(within)
+	await walk(within)
+	return results
 }

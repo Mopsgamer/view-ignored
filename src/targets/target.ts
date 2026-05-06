@@ -1,4 +1,3 @@
-import type { Extractor } from "../patterns/extractor.js"
 import type { Ignores } from "../patterns/ignores.js"
 import type { Init } from "../patterns/init.js"
 import type { Rule } from "../patterns/rule.js"
@@ -23,12 +22,11 @@ export interface Target {
 	 */
 	root: string
 	/**
-	 * The set of extractors.
-	 * Required for context-patching APIs (ctx add/remove path).
+	 * Returns `true` if the given file path is an ignore file for this target.
 	 *
-	 * @since 0.6.0
+	 * @since 0.11.0
 	 */
-	extractors: Extractor[]
+	isIgnoreFile: (path: string) => boolean
 	/**
 	 * Glob-pattern parser.
 	 *
