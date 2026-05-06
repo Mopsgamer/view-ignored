@@ -139,9 +139,9 @@ describe("Yarn", () => {
 				"negkeep.js": "",
 				"package.json": "{",
 			},
-			({ ctx }: any) => {
+			({ ctx }) => {
 				expect(ctx.failed.length).toBeGreaterThan(0)
-				expect(ctx.failed[0].error.message).toInclude("Expected")
+				expect(ctx.failed[0]!.error.message).toInclude("Expected")
 			},
 		)
 	})
@@ -168,7 +168,7 @@ describe("Yarn", () => {
 					},
 				},
 			},
-			({ ctx }: any) => {
+			({ ctx }) => {
 				expect(ctx.paths.has("file")).toBeFalse()
 				expect(ctx.paths.get("index.ts")).toMatchObject({
 					ignored: false,
@@ -208,7 +208,7 @@ describe("Yarn", () => {
 					},
 				},
 			},
-			({ ctx }: any) => {
+			({ ctx }) => {
 				expect(ctx.paths.has("file")).toBeFalse()
 				expect(ctx.paths.has("index.ts")).toBeFalse()
 				expect(ctx.paths.has("index.js")).toBeTrue()

@@ -89,6 +89,6 @@ export const VSCE: Target = <Target>{
 		}
 	},
 	internalRules: internal,
-	root: ".",
 	isIgnoreFile: (path) => extractors.some((e) => e.path === path),
+	root: ".",
 }

@@ -134,7 +134,7 @@ async function findSourceForAbsoluteDirs(
 	signal?.throwIfAborted()
 	const results = await Promise.all(
 		paths.flatMap((parent) =>
-			(target as any).extractors.map((extractor: any) => {
+			target.extractors.map((extractor) => {
 				return tryExtractor(parent, fs, extractor)
 			}),
 		),

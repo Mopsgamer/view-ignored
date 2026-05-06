@@ -94,7 +94,7 @@ export const Yarn: Target = <Target>{
 		let dist: any
 		try {
 			dist = npmManifestParse(content.toString())
-		} catch (error) {
+		} catch {
 			// handled by extractor
 		}
 
@@ -124,6 +124,6 @@ export const Yarn: Target = <Target>{
 		ruleCompile(internalInclude, { nocase: true })
 	},
 	internalRules: internal,
-	root: ".",
 	isIgnoreFile: (path) => extractors.some((e) => e.path === path),
+	root: ".",
 }

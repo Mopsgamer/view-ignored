@@ -1,5 +1,7 @@
 import type { NestedDirectoryJSON } from "memfs"
+
 import { describe, test } from "bun:test"
+
 import { testScan, type PathHandlerOptions } from "../testScan.test.js"
 import { VSCE as target } from "./vsce.js"
 
@@ -12,17 +14,24 @@ function testVsce(
 }
 
 const packageJson = JSON.stringify({
+	engines: { vscode: "^1.0.0" },
 	name: "vsce-test",
 	version: "1.0.0",
-	engines: { vscode: "^1.0.0" }
 })
 
 describe("VSCE", () => {
 	test("includes package.json", async (done) => {
-		await testVsce(done, { "package.json": packageJson, "extension.js": "" }, ["package.json", "extension.js"])
+		await testVsce(done, { "extension.js": "", "package.json": packageJson }, [
+			"package.json",
+			"extension.js",
+		])
 	})
 
 	test("ignores .vscode-test", async (done) => {
-		await testVsce(done, { "package.json": packageJson, ".vscode-test": { "a": "" } }, ["package.json", ".vscode-test/", ".vscode-test/a"])
+		await testVsce(done, { ".vscode-test": { a: "" }, "package.json": packageJson }, [
+			"package.json",
+			".vscode-test/",
+			".vscode-test/a",
+		])
 	})
 })

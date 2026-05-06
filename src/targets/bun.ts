@@ -140,6 +140,6 @@ export const Bun: Target = <Target>{
 		ruleCompile(internalInclude, { nocase: true })
 	},
 	internalRules: internal,
-	root: ".",
 	isIgnoreFile: (path) => extractors.some((e) => e.path === path),
+	root: ".",
 }

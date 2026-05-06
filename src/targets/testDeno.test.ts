@@ -1,5 +1,7 @@
 import type { NestedDirectoryJSON } from "memfs"
+
 import { describe, test } from "bun:test"
+
 import { testScan, type PathHandlerOptions } from "../testScan.test.js"
 import { Deno as target } from "./deno.js"
 
@@ -12,9 +14,9 @@ function testDeno(
 }
 
 const denoJson = JSON.stringify({
+	exports: ".",
 	name: "deno-test",
 	version: "1.0.0",
-	exports: "."
 })
 
 describe("Deno", () => {

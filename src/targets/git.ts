@@ -35,6 +35,6 @@ export const Git: Target = <Target>{
 	// TODO: Git should read configs
 	ignores: ruleTest,
 	internalRules: internal,
-	root: "/",
 	isIgnoreFile: (path) => extractors.some((e) => e.path === path),
+	root: "/",
 }
