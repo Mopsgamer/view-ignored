@@ -43,7 +43,7 @@ export async function matcherContextAddPath(
 			ctx.totalDirs++
 		}
 		if (parentPath !== ".") {
-			void (await matcherContextAddPath(ctx, options, parentPath + "/"))
+			await matcherContextAddPath(ctx, options, parentPath + "/")
 		}
 		return true
 	}
@@ -164,20 +164,33 @@ export async function matcherContextRemovePath(
 	return true
 }
 
-async function rescan(ctx: MatcherContext, options: Required<ScanOptions>): Promise<void> {
+function rescan(ctx: MatcherContext, options: Required<ScanOptions>): Promise<void> {
 	const { cwd, within, fs, signal, target } = options
 
 	const normalCwd = unixify(cwd)
 	let from = join(normalCwd, within)
-	await opendir({ ctx, cwd: normalCwd, fs, signal, target }, from, (entry, parentPath, path) => {
-		return walkIncludes({
-			path,
-			parentPath,
-			entry,
-			ctx,
-			stream: undefined,
-			scanOptions: { ...options, cwd: normalCwd },
-		})
+
+	return new Promise<void>((resolve) => {
+		opendir(
+			{ ctx, cwd: normalCwd, fs, signal, target },
+			from,
+			(entry, parentPath, path, next) => {
+				walkIncludes(
+					{
+						path,
+						parentPath,
+						entry,
+						ctx,
+						stream: undefined,
+						scanOptions: { ...options, cwd: normalCwd },
+					},
+					next,
+				)
+			},
+			() => {
+				ctx.totalDirs = ctx.totalFiles = ctx.totalMatchedFiles = -1
+				resolve()
+			},
+		)
 	})
-	ctx.totalDirs = ctx.totalFiles = ctx.totalMatchedFiles = -1
 }

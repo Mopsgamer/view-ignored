@@ -15,12 +15,14 @@ export type WalkOptions = {
 	scanOptions: Required<ScanOptions>
 }
 
-export async function walkIncludes(options: WalkOptions): Promise<0 | 1 | 2> {
+export function walkIncludes(options: WalkOptions, next: (r: 0 | 1 | 2) => void): void {
 	const { entry, ctx, stream, scanOptions, path, parentPath } = options
 
 	const { fs, target, cwd, depth: maxDepth, invert, signal, fastDepth, fastInternal } = scanOptions
 
-	signal?.throwIfAborted()
+	if (signal?.aborted) {
+		return next(0)
+	}
 
 	const isDir = entry.isDirectory()
 	let direntPath: string
@@ -36,7 +38,55 @@ export async function walkIncludes(options: WalkOptions): Promise<0 | 1 | 2> {
 		const { depth, depthSlash } = getDepth(path, maxDepth)
 		if (depth > maxDepth) {
 			const failedPrev = ctx.failed.length
-			let match = await target.ignores({ fs, cwd, entry: path, ctx, signal, target, parentPath })
+			target
+				.ignores({ fs, cwd, entry: path, ctx, signal, target, parentPath })
+				.then((match) => {
+					if (invert) {
+						match.ignored = !match.ignored
+					}
+
+					if (failedPrev < ctx.failed.length) {
+						if (stream) {
+							stream.emit("dirent", { dirent: entry, match, path: direntPath, ctx })
+						}
+						return next(2)
+					}
+
+					if (match.ignored) {
+						if (isDir && fastInternal && match.kind === "internal") {
+							return next(1)
+						}
+						return next(0)
+					}
+
+					if (isDir) {
+						// ctx.totalMatchedDirs++;
+						// ctx.depthPaths.set(path, (ctx.depthPaths.get(path) ?? 0) + 1);
+						return next(0)
+					}
+
+					ctx.totalMatchedFiles++
+					const dir = path.substring(0, depthSlash)
+					ctx.depthPaths.set(dir, (ctx.depthPaths.get(dir) ?? 0) + 1)
+					return next(1)
+				})
+				.catch(() => next(0))
+			return
+		}
+	}
+
+	const failedPrev = ctx.failed.length
+	target
+		.ignores({
+			fs,
+			cwd,
+			entry: path,
+			ctx,
+			signal,
+			target,
+			parentPath: parentPath,
+		})
+		.then((match) => {
 			if (invert) {
 				match.ignored = !match.ignored
 			}
@@ -45,98 +95,59 @@ export async function walkIncludes(options: WalkOptions): Promise<0 | 1 | 2> {
 				if (stream) {
 					stream.emit("dirent", { dirent: entry, match, path: direntPath, ctx })
 				}
-				return 2
+				return next(2)
 			}
 
 			if (match.ignored) {
-				if (isDir && fastInternal && match.kind === "internal") {
-					return 1
+				if (stream) {
+					stream.emit("dirent", { dirent: entry, match, path: direntPath, ctx })
 				}
-				return 0
+				if (isDir && fastInternal && match.kind === "internal") {
+					return next(1)
+				}
+				return next(0)
 			}
 
 			if (isDir) {
 				// ctx.totalMatchedDirs++;
 				// ctx.depthPaths.set(path, (ctx.depthPaths.get(path) ?? 0) + 1);
-				return 0
+				const { depth } = getDepth(path, maxDepth)
+				if (depth <= maxDepth) {
+					ctx.paths.set(direntPath, match)
+					if (stream) {
+						stream.emit("dirent", { dirent: entry, match, path: direntPath, ctx })
+					}
+				}
+				return next(0)
 			}
 
 			ctx.totalMatchedFiles++
-			const dir = path.substring(0, depthSlash)
-			ctx.depthPaths.set(dir, (ctx.depthPaths.get(dir) ?? 0) + 1)
-			return 1
-		}
-	}
-
-	const failedPrev = ctx.failed.length
-	let match = await target.ignores({
-		fs,
-		cwd,
-		entry: path,
-		ctx,
-		signal,
-		target,
-		parentPath: parentPath,
-	})
-	if (invert) {
-		match.ignored = !match.ignored
-	}
-
-	if (failedPrev < ctx.failed.length) {
-		if (stream) {
-			stream.emit("dirent", { dirent: entry, match, path: direntPath, ctx })
-		}
-		return 2
-	}
-
-	if (match.ignored) {
-		if (stream) {
-			stream.emit("dirent", { dirent: entry, match, path: direntPath, ctx })
-		}
-		if (isDir && fastInternal && match.kind === "internal") {
-			return 1
-		}
-		return 0
-	}
-
-	if (isDir) {
-		// ctx.totalMatchedDirs++;
-		// ctx.depthPaths.set(path, (ctx.depthPaths.get(path) ?? 0) + 1);
-		const { depth } = getDepth(path, maxDepth)
-		if (depth <= maxDepth) {
-			ctx.paths.set(direntPath, match)
-			if (stream) {
-				stream.emit("dirent", { dirent: entry, match, path: direntPath, ctx })
+			const { depth, depthSlash } = getDepth(path, maxDepth)
+			if (depth > maxDepth) {
+				const dir = path.substring(0, depthSlash)
+				ctx.depthPaths.set(dir, (ctx.depthPaths.get(dir) ?? 0) + 1)
+				return next(0)
 			}
-		}
-		return 0
-	}
 
-	ctx.totalMatchedFiles++
-	const { depth, depthSlash } = getDepth(path, maxDepth)
-	if (depth > maxDepth) {
-		const dir = path.substring(0, depthSlash)
-		ctx.depthPaths.set(dir, (ctx.depthPaths.get(dir) ?? 0) + 1)
-		return 0
-	}
-
-	if (depth <= maxDepth) {
-		const lastSlash = path.lastIndexOf("/")
-		if (lastSlash >= 0) {
-			const dir = path.substring(0, lastSlash) + "/"
-			const dirMatch = ctx.paths.get(dir)
-			if (dirMatch === undefined || dirMatch.ignored) {
-				ctx.paths.set(dir, match)
+			if (depth <= maxDepth) {
+				const lastSlash = path.lastIndexOf("/")
+				if (lastSlash >= 0) {
+					const dir = path.substring(0, lastSlash) + "/"
+					const dirMatch = ctx.paths.get(dir)
+					if (dirMatch === undefined || dirMatch.ignored) {
+						ctx.paths.set(dir, match)
+						if (stream) {
+							stream.emit("dirent", { dirent: entry, match, path: dir, ctx })
+						}
+					}
+				}
+				ctx.paths.set(path, match)
 				if (stream) {
-					stream.emit("dirent", { dirent: entry, match, path: dir, ctx })
+					stream.emit("dirent", { dirent: entry, match, path: direntPath, ctx })
 				}
 			}
-		}
-		ctx.paths.set(path, match)
-		if (stream) {
-			stream.emit("dirent", { dirent: entry, match, path: direntPath, ctx })
-		}
-	}
 
-	return 0
+			return next(0)
+		})
+		.catch(() => next(0))
 }

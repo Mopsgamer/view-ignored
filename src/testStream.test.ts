@@ -43,10 +43,10 @@ describe("Git", () => {
 						"file",
 						"no-match", // included
 						"src/",
-						"external", // ignored
-						"src/file",
 						"no-match", // included
 						".gitignore",
+						"external", // ignored
+						"src/file",
 						"internal", // ignored internal
 						".git/",
 						"internal", // ignored internal

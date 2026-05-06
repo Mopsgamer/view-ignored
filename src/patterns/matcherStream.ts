@@ -101,7 +101,7 @@ export class MatcherStream extends EventEmitter<EventMap> {
 	 *
 	 * @since 0.8.0
 	 */
-	async start(): Promise<void> {
+	start(): Promise<void> {
 		clearTimeout(this.#timeout)
 		const {
 			target,
@@ -139,18 +139,43 @@ export class MatcherStream extends EventEmitter<EventMap> {
 			target,
 		}
 
-		await target.init?.({ ctx, cwd, fs, signal, target })
-		let from = join(normalCwd, within)
-		await opendir({ ctx, cwd: normalCwd, fs, signal, target }, from, (entry, parentPath, path) => {
-			return walkIncludes({
-				path,
-				parentPath,
-				entry,
-				ctx,
-				stream: this,
-				scanOptions,
-			})
+		const from = join(normalCwd, within)
+
+		return new Promise<void>((resolve, reject) => {
+			const startOpendir = () => {
+				opendir(
+					{ ctx, cwd: normalCwd, fs, signal, target },
+					from,
+					(entry, parentPath, path, next) => {
+						walkIncludes(
+							{
+								path,
+								parentPath,
+								entry,
+								ctx,
+								stream: this,
+								scanOptions,
+							},
+							next,
+						)
+					},
+					() => {
+						this.emit("end", ctx)
+						resolve()
+					},
+				)
+			}
+
+			if (target.init) {
+				target
+					.init({ ctx, cwd, fs, signal, target })
+					.then(startOpendir)
+					.catch((err) => {
+						reject(err)
+					})
+			} else {
+				startOpendir()
+			}
 		})
-		this.emit("end", ctx)
 	}
 }

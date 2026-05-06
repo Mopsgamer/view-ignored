@@ -47,12 +47,12 @@ export interface ResolveSourcesOptions extends PatternFinderOptions {
  *
  * @since 0.6.0
  */
-export async function resolveSources(options: ResolveSourcesOptions): Promise<void> {
+export function resolveSources(options: ResolveSourcesOptions): Promise<void> {
 	const { fs, ctx, cwd, signal, target } = options
 	let dir = options.dir
 
 	if (ctx.external.has(dir)) {
-		return
+		return Promise.resolve()
 	}
 
 	let source: Source | "none" | undefined
@@ -63,14 +63,14 @@ export async function resolveSources(options: ResolveSourcesOptions): Promise<vo
 
 		// find source from an ancestor [dir < ... < cwd]
 		while (true) {
-			signal?.throwIfAborted()
+			if (signal?.aborted) return Promise.resolve()
 			source = ctx.external.get(dir)
 			if (source !== undefined) {
 				// if cache is found populate descendants [cwd > ... > dir]
 				for (const noSourceDir of noSourceDirList) {
 					ctx.external.set(noSourceDir, source)
 				}
-				return
+				return Promise.resolve()
 			}
 			noSourceDirList.push(dir)
 			const parent = dirname(dir)
@@ -87,7 +87,7 @@ export async function resolveSources(options: ResolveSourcesOptions): Promise<vo
 	if (target.root.startsWith("/")) {
 		let c = dirname(cwd)
 		while (true) {
-			signal?.throwIfAborted()
+			if (signal?.aborted) break
 			preCwdSegments.push(c)
 			if (c === target.root) break
 			const parent = dirname(c)
@@ -95,50 +95,67 @@ export async function resolveSources(options: ResolveSourcesOptions): Promise<vo
 		}
 		preCwdSegments.reverse()
 
-		source = await findSourceForAbsoluteDirs(preCwdSegments, ctx, fs, target, signal)
-		if (typeof source === "object") {
-			for (const noSourceDir of noSourceDirList) {
-				signal?.throwIfAborted()
-				ctx.external.set(noSourceDir, source)
+		return findSourceForAbsoluteDirs(preCwdSegments, ctx, fs, target, signal).then((source) => {
+			if (typeof source === "object") {
+				for (const noSourceDir of noSourceDirList) {
+					ctx.external.set(noSourceDir, source)
+				}
+				return
 			}
-			return
-		}
+
+			const absPaths = noSourceDirList.map((rel) => join(cwd, rel))
+			return findSourceForAbsoluteDirs(absPaths, ctx, fs, target, signal).then((source) => {
+				for (const noSourceDir of noSourceDirList) {
+					ctx.external.set(noSourceDir, source as any)
+				}
+			})
+		})
 	}
 
 	const absPaths = noSourceDirList.map((rel) => join(cwd, rel))
-	source = await findSourceForAbsoluteDirs(absPaths, ctx, fs, target, signal)
-	if (source !== undefined) {
+	return findSourceForAbsoluteDirs(absPaths, ctx, fs, target, signal).then((source) => {
 		for (const noSourceDir of noSourceDirList) {
-			signal?.throwIfAborted()
-			ctx.external.set(noSourceDir, source)
+			ctx.external.set(noSourceDir, source as any)
 		}
-	}
+	})
 }
 
-async function findSourceForAbsoluteDirs(
+function findSourceForAbsoluteDirs(
 	paths: string[],
 	ctx: MatcherContext,
 	fs: FsAdapter,
 	target: Target,
 	signal: AbortSignal | null,
 ): Promise<Source | "none"> {
-	for (const parent of paths) {
-		for (const extractor of target.extractors) {
-			signal?.throwIfAborted()
-			const s = await tryExtractor(parent, fs, ctx, extractor)
-			if (typeof s === "object" && s.error) {
-				ctx.failed.push(s)
-				return s
-			}
-			if (typeof s === "object") {
-				return s
-			}
+	let i = 0
+	function next(): Promise<Source | "none"> {
+		if (i >= paths.length || signal?.aborted) {
+			return Promise.resolve("none")
 		}
+		const parent = paths[i++] as string
+		let j = 0
+		function nextExtractor(): Promise<Source | "none"> {
+			if (j >= target.extractors.length || signal?.aborted) {
+				return next()
+			}
+			const extractor = target.extractors[j++] as Extractor
+			return tryExtractor(parent, fs, ctx, extractor).then((s) => {
+				if (typeof s === "object" && s.error) {
+					ctx.failed.push(s)
+					return s
+				}
+				if (typeof s === "object") {
+					return s
+				}
+				return nextExtractor()
+			})
+		}
+		return nextExtractor()
 	}
-	return "none"
+	return next()
 }
 
-async function tryExtractor(
+function tryExtractor(
 	cwd: string,
 	fs: FsAdapter,
 	ctx: MatcherContext,
@@ -154,32 +171,32 @@ async function tryExtractor(
 		pattern: [],
 	}
 
-	let buff: Buffer | undefined
-	try {
-		buff = await fs.promises.readFile(abs)
-	} catch (err) {
-		const error = err as NodeJS.ErrnoException
-		if (error.code === "ENOENT") {
-			return "none"
-		}
-		newSource.error = error
-		return newSource
-	}
-
-	try {
-		const act = extractor.extract(newSource, buff, ctx)
-		if (act === "none") {
-			return act
-		}
-	} catch (err) {
-		if (err === "none") {
-			return err
-		}
-		newSource.error =
-			err instanceof Error
-				? err
-				: new Error("Unknown error during source extraction", { cause: err })
-		return newSource
-	}
-	return newSource
+	return fs.promises
+		.readFile(abs)
+		.then((buff) => {
+			try {
+				const act = extractor.extract(newSource, buff, ctx)
+				if (act === "none") {
+					return act
+				}
+			} catch (err) {
+				if (err === "none") {
+					return err
+				}
+				newSource.error =
+					err instanceof Error
+						? err
+						: new Error("Unknown error during source extraction", { cause: err })
+				return newSource
+			}
+			return newSource
+		})
+		.catch((err) => {
+			const error = err as NodeJS.ErrnoException
+			if (error.code === "ENOENT") {
+				return "none"
+			}
+			newSource.error = error
+			return newSource
+		})
 }

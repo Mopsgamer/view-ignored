@@ -64,19 +64,41 @@ export function scan(
 		target,
 	}
 
-	return (async (): Promise<MatcherContext> => {
-		await target.init?.({ ctx, cwd, fs, signal, target })
-		let from = join(normalCwd, within)
-		await opendir({ ctx, cwd: normalCwd, fs, signal, target }, from, (entry, parentPath, path) => {
-			return walkIncludes({
-				path,
-				entry,
-				parentPath,
-				ctx,
-				stream: undefined,
-				scanOptions,
-			})
-		})
-		return ctx
-	})()
+	const from = join(normalCwd, within)
+
+	return new Promise<MatcherContext>((resolve, reject) => {
+		const startOpendir = () => {
+			opendir(
+				{ ctx, cwd: normalCwd, fs, signal, target },
+				from,
+				(entry, parentPath, path, next) => {
+					walkIncludes(
+						{
+							path,
+							entry,
+							parentPath,
+							ctx,
+							stream: undefined,
+							scanOptions,
+						},
+						next,
+					)
+				},
+				() => {
+					resolve(ctx)
+				},
+			)
+		}
+
+		if (target.init) {
+			target
+				.init({ ctx, cwd, fs, signal, target })
+				.then(startOpendir)
+				.catch((err) => {
+					reject(err)
+				})
+		} else {
+			startOpendir()
+		}
+	})
 }

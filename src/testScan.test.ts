@@ -54,20 +54,35 @@ export async function testScan(
 			options: o,
 		})
 		const stream = scanStream(o)
-		stream.addListener("end", async (sctx) => {
-			await test({
-				vol,
-				fs: adapter,
-				ctx: sctx,
-				options: o,
+		const streamPromise = new Promise<void>((resolve, reject) => {
+			stream.addListener("end", async (sctx) => {
+				try {
+					await test({
+						vol,
+						fs: adapter,
+						ctx: sctx,
+						options: o,
+					})
+					resolve()
+				} catch (e) {
+					reject(e)
+				}
 			})
-			done()
 		})
 		await stream.start()
+		await streamPromise
+		done()
 		return
 	}
 
-	const ctx = await scan(o)
+	const ctx = await (async () => {
+		try {
+			return await scan(o)
+		} catch (e) {
+			done()
+			throw e
+		}
+	})()
 	const { paths } = ctx
 	expect(sortFirstFolders(paths.keys())).toStrictEqual(sortFirstFolders(test))
 
@@ -78,11 +93,15 @@ export async function testScan(
 		if (results.has(dirent.path)) results.delete(dirent.path)
 		results.add(dirent.path)
 	})
-	stream.addListener("end", () => {
-		expect(sortFirstFolders(results)).toStrictEqual(sortFirstFolders(test))
-		done()
+	const streamPromise = new Promise<void>((resolve) => {
+		stream.addListener("end", () => {
+			expect(sortFirstFolders(results)).toStrictEqual(sortFirstFolders(test))
+			resolve()
+		})
 	})
 	await stream.start()
+	await streamPromise
+	done()
 }
 
 /**
@@ -100,13 +119,14 @@ export async function testStream(
 
 	if (typeof test === "function") {
 		const stream = scanStream(o)
-		await stream.start()
-		await test({
+		const promise = test({
 			vol,
 			fs: adapter,
 			stream,
 			options: o,
 		})
+		await stream.start()
+		await promise
 		return
 	}
 }
