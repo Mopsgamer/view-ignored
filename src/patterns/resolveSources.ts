@@ -46,7 +46,6 @@ export interface ResolveSourcesOptions extends PatternFinderOptions {
 	 * "dir" => Source
 	 * "dir/subdir" => Source
 	 *
-	 * @since 0.11.0
 	 */
 	external: Map<string, Resource>
 }
@@ -126,7 +125,6 @@ export async function resolveSources(options: ResolveSourcesOptions): Promise<Re
 }
 
 /**
- * @since 0.12.0
  */
 export function resolveSourcesCb(
 	options: ResolveSourcesOptions,

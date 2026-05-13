@@ -21,7 +21,6 @@ export function scanStream(options: ScanOptions): MatcherStream {
 /**
  * @see {@link scanCb}
  *
- * @since 0.12.0
  */
 export function scanStreamCb(options: ScanOptions): MatcherStream {
 	const { cwd = process.cwd(), fs = nodefs } = options

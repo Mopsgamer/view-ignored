@@ -17,7 +17,6 @@ export interface IgnoresOptions extends InitState {
 	/**
 	 * The associated resource.
 	 *
-	 * @since 0.11.0
 	 */
 	resource: Resource
 	/**
@@ -42,6 +41,5 @@ export type Ignores = (options: IgnoresOptions) => RuleMatch | Promise<RuleMatch
 /**
  * @see {@link Ignores}
  *
- * @since 0.12.0
  */
 export type IgnoresCb = (options: IgnoresOptions, cb: (err: Error | null, match: RuleMatch) => void) => void

@@ -172,7 +172,6 @@ export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
 }
 
 /**
- * @since 0.12.0
  */
 export function walkIncludesCb(
 	options: WalkOptions,

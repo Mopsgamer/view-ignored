@@ -30,7 +30,6 @@ export function scan(options: ScanOptions): Promise<MatcherContext> {
 /**
  * @see {@link scanCb}
  *
- * @since 0.12.0
  */
 export function scanCb(
 	options: ScanOptions,

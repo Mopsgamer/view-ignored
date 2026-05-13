@@ -58,7 +58,6 @@ export interface PatternFinderOptions {
 	/**
 	 * The associated resource.
 	 *
-	 * @since 0.11.0
 	 */
 	resource?: Resource
 	/**

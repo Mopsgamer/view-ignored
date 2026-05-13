@@ -32,7 +32,6 @@ export interface Target {
 	/**
 	 * Returns `true` if the given file path is an ignore file for this target.
 	 *
-	 * @since 0.11.0
 	 */
 	isIgnoreFile: (path: string) => boolean
 	/**
@@ -46,7 +45,6 @@ export interface Target {
 	/**
 	 * @see {@link IgnoresCb}
 	 *
-	 * @since 0.12.0
 	 */
 	ignoresCb?: IgnoresCb
 	/**
@@ -64,7 +62,6 @@ export interface Target {
 	/**
 	 * @see {@link InitCb}
 	 *
-	 * @since 0.12.0
 	 */
 	initCb?: InitCb
 }
