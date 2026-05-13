@@ -1,6 +1,6 @@
 import type { Extractor } from "../patterns/extractor.js"
-import type { Ignores } from "../patterns/ignores.js"
-import type { Init } from "../patterns/init.js"
+import type { Ignores, IgnoresCb } from "../patterns/ignores.js"
+import type { Init, InitCb } from "../patterns/init.js"
 import type { Rule } from "../patterns/rule.js"
 
 /**
@@ -44,6 +44,12 @@ export interface Target {
 	 */
 	ignores: Ignores
 	/**
+	 * @see {@link IgnoresCb}
+	 *
+	 * @since 0.12.0
+	 */
+	ignoresCb?: IgnoresCb
+	/**
 	 * Initialization function.
 	 * Called by the scanner method.
 	 *
@@ -55,4 +61,10 @@ export interface Target {
 	 * @since 0.8.0
 	 */
 	init?: Init
+	/**
+	 * @see {@link InitCb}
+	 *
+	 * @since 0.12.0
+	 */
+	initCb?: InitCb
 }

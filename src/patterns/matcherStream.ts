@@ -7,7 +7,7 @@ import type { ScanOptions, FsAdapter } from "../types.js"
 import type { Resource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"
 
-import { scanParallel } from "../scanParallel.js"
+import { scanParallel, scanParallelCb } from "../scanParallel.js"
 import { walkPatchResult } from "../walk.js"
 
 /**
@@ -136,5 +136,82 @@ export class MatcherStream extends EventEmitter<EventMap> {
 			within,
 		})
 		this.emit("end", ctx)
+	}
+
+	/**
+	 * Resolves when everything is scanned. (Callback version)
+	 *
+	 * @since 0.12.0
+	 */
+	startCb(cb: (err: Error | null, ctx: MatcherContext) => void): void {
+		clearTimeout(this.#timeout)
+		const {
+			target,
+			cwd,
+			within = ".",
+			invert = false,
+			depth: maxDepth = Infinity,
+			signal = null,
+			fastDepth = false,
+			fastInternal = false,
+			fs,
+		} = this.#options
+
+		const ctx: MatcherContext = {
+			external: new Map<string, Resource>(),
+			failed: [],
+			paths: new Map<string, RuleMatch>(),
+			total: new Map<string, Total>([[".", { totalDirs: 0, totalFiles: 0, totalMatchedFiles: 0 }]]),
+		}
+
+		const scanOptions: Required<ScanOptions> = {
+			cwd,
+			depth: maxDepth,
+			fastDepth,
+			fastInternal,
+			fs,
+			invert,
+			signal,
+			target,
+			within,
+		}
+
+		const startScan = () => {
+			scanParallelCb(
+				{
+					external: ctx.external,
+					failed: ctx.failed,
+					onResult: (r) => walkPatchResult(ctx, scanOptions.depth, r),
+					scanOptions,
+					stream: this,
+					within,
+				},
+				(err) => {
+					if (err) {
+						cb(err, null as any)
+						return
+					}
+					cb(null, ctx)
+					this.emit("end", ctx)
+				},
+			)
+		}
+
+		if (target.initCb) {
+			target.initCb({ cwd, fs, signal, target }, (err) => {
+				if (err) {
+					cb(err, null as any)
+					return
+				}
+				startScan()
+			})
+		} else if (target.init) {
+			target.init({ cwd, fs, signal, target }).then(
+				() => startScan(),
+				(err) => cb(err, null as any),
+			)
+		} else {
+			startScan()
+		}
 	}
 }

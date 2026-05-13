@@ -11,3 +11,12 @@ export type * from "./types.js"
 export function scanStream(options: ScanOptions & { fs: FsAdapter; cwd: string }): MatcherStream {
 	return new MatcherStream(options)
 }
+
+/**
+ * @see {@link scanCb}
+ *
+ * @since 0.12.0
+ */
+export function scanStreamCb(options: ScanOptions & { fs: FsAdapter; cwd: string }): MatcherStream {
+	return new MatcherStream(options)
+}

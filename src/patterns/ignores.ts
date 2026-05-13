@@ -38,3 +38,10 @@ export interface IgnoresOptions extends InitState {
  * @since 0.6.0
  */
 export type Ignores = (options: IgnoresOptions) => RuleMatch | Promise<RuleMatch>
+
+/**
+ * @see {@link Ignores}
+ *
+ * @since 0.12.0
+ */
+export type IgnoresCb = (options: IgnoresOptions, cb: (err: Error | null, match: RuleMatch) => void) => void
