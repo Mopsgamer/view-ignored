@@ -270,28 +270,35 @@ function testExternal(
  * Checks whether a given entry should be ignored based on internal and external patterns.
  * Populates unknown sources using {@link resolveSources}.
  *
- * @since 0.6.0
+ * @since 0.11.0
  */
-export function ruleTest(options: RuleTestOptions): RuleMatch {
+export function ruleTest(
+	options: RuleTestOptions,
+	cb: (err: Error | null, match: RuleMatch) => void,
+): void {
 	const src = options.resource
 
 	if (src === undefined) {
-		throw new Error("view-ignored has crashed: no source cached.")
+		cb(new Error("view-ignored has crashed: no source cached."), null as any)
+		return
 	}
 
 	if (src === null) {
-		return { ignored: false, kind: RuleMatchKind.missingSource }
+		cb(null, { ignored: false, kind: RuleMatchKind.missingSource })
+		return
 	}
 
 	if ("error" in src) {
-		return { ...src, ignored: true, kind: RuleMatchKind.invalidSource }
+		cb(null, { ...src, ignored: true, kind: RuleMatchKind.invalidSource })
+		return
 	}
 
 	let internalMatch = testInternal(options)
 	if (internalMatch !== null) {
-		return internalMatch
+		cb(null, internalMatch)
+		return
 	}
 
 	const externalMatch = testExternal(options.entry, src)
-	return externalMatch
+	cb(null, externalMatch)
 }

@@ -50,14 +50,22 @@ export async function matcherContextAddPath(
 		})
 		ctx.paths.set(
 			entry,
-			await target.ignores({
-				cwd,
-				entry: direntPath,
-				fs,
-				parentPath,
-				resource,
-				signal,
-				target,
+			await new Promise((resolve, reject) => {
+				target.ignores(
+					{
+						cwd,
+						entry: direntPath,
+						fs,
+						parentPath,
+						resource,
+						signal,
+						target,
+					},
+					(err, res) => {
+						if (err) reject(err)
+						else resolve(res)
+					},
+				)
 			}),
 		)
 		const total = ctx.total.get(parentPath)
@@ -101,12 +109,8 @@ export async function matcherContextAddPath(
 	// 1. recursively populate parents
 	await matcherContextAddPath(ctx, options, parentPath + "/")
 	// 2. if ignored, remove, otherwise add
-	const match = await target.ignores({
-		cwd,
-		entry,
-		fs,
-		parentPath,
-		resource: (await new Promise((resolve, reject) => {
+	const match = (await new Promise((resolve, reject) => {
+		new Promise((resolve, reject) => {
 			resolveSources(
 				{
 					cwd,
@@ -121,10 +125,24 @@ export async function matcherContextAddPath(
 					else resolve(res)
 				},
 			)
-		}))!,
-		signal,
-		target,
-	})
+		}).then((resource) => {
+			target.ignores(
+				{
+					cwd,
+					entry,
+					fs,
+					parentPath,
+					resource: resource as any,
+					signal,
+					target,
+				},
+				(err, res) => {
+					if (err) reject(err)
+					else resolve(res)
+				},
+			)
+		})
+	})) as any
 	if (match.ignored) {
 		// 2.1. remove
 		await matcherContextRemovePath(ctx, options, entry)

@@ -137,30 +137,14 @@ export function walkIncludes(
 				signal,
 				target,
 			}
-			if (target.ignoresCb) {
-				target.ignoresCb(ignoresOptions, (err, m) => {
-					if (err) {
-						cb(err, null as any)
-						return
-					}
-					Object.assign(match, m)
-					finishFastDepth()
-				})
-			} else {
-				const m = target.ignores(ignoresOptions)
-				if (m instanceof Promise) {
-					m.then(
-						(m) => {
-							Object.assign(match, m)
-							finishFastDepth()
-						},
-						(err) => cb(err, null as any),
-					)
-				} else {
-					Object.assign(match, m)
-					finishFastDepth()
+			target.ignores(ignoresOptions, (err, m) => {
+				if (err) {
+					cb(err, null as any)
+					return
 				}
-			}
+				Object.assign(match, m)
+				finishFastDepth()
+			})
 
 			function finishFastDepth() {
 				if (invert) {
@@ -209,30 +193,14 @@ export function walkIncludes(
 		signal,
 		target,
 	}
-	if (target.ignoresCb) {
-		target.ignoresCb(ignoresOptions, (err, m) => {
-			if (err) {
-				cb(err, null as any)
-				return
-			}
-			Object.assign(match, m)
-			handleMatch()
-		})
-	} else {
-		const m = target.ignores(ignoresOptions)
-		if (m instanceof Promise) {
-			m.then(
-				(m) => {
-					Object.assign(match, m)
-					handleMatch()
-				},
-				(err) => cb(err, null as any),
-			)
-		} else {
-			Object.assign(match, m)
-			handleMatch()
+	target.ignores(ignoresOptions, (err, m) => {
+		if (err) {
+			cb(err, null as any)
+			return
 		}
-	}
+		Object.assign(match, m)
+		handleMatch()
+	})
 }
 
 /**

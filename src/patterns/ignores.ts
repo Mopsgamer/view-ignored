@@ -34,14 +34,3 @@ export interface IgnoresOptions extends InitState {
  * @since 0.11.0
  */
 export type IgnoresCb = (options: IgnoresOptions, cb: (err: Error | null, match: RuleMatch) => void) => void
-
-/**
- * Checks whether a given entry path should be ignored based on its patterns.
- *
- * @see {@link resolveSources}
- * @see {@link ruleTest}
- * @see {@link https://github.com/Mopsgamer/view-ignored/tree/main/src/targets} for usage examples.
- *
- * @since 0.6.0
- */
-export type Ignores = (options: IgnoresOptions) => RuleMatch | Promise<RuleMatch>

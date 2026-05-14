@@ -164,19 +164,14 @@ export class MatcherStream extends EventEmitter<EventMap> {
 			)
 		}
 
-		if (target.initCb) {
-			target.initCb({ cwd, fs, signal, target }, (err) => {
+		if (target.init) {
+			target.init({ cwd, fs, signal, target }, (err) => {
 				if (err) {
 					cb(err, null as any)
 					return
 				}
 				startScan()
 			})
-		} else if (target.init) {
-			target.init({ cwd, fs, signal, target }).then(
-				() => startScan(),
-				(err) => cb(err, null as any),
-			)
 		} else {
 			startScan()
 		}

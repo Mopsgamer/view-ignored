@@ -36,24 +36,34 @@ const internal: Rule[] = [
 export const JSR: Target = <Target>{
 	extractors,
 	ignores: ruleTest,
-	async init({ fs, cwd }) {
+	init({ fs, cwd }, cb) {
 		const normalCwd = unixify(cwd)
 
-		const tasks = extractors.map(async ({ path }) => {
-			const data = await fs.promises.readFile(normalCwd + "/" + path)
-			return { data, path }
-		})
-
-		try {
-			const { data } = await Promise.any(tasks)
-			const dist = jsrManifestParse(data.toString())
-
-			if (!dist || typeof dist !== "object") {
-				throw new Error("Manifest is empty or not an object")
+		let i = 0
+		function next() {
+			if (i >= extractors.length) {
+				cb(new Error("Error while initializing JSR: No valid manifest found"))
+				return
 			}
-		} catch (error) {
-			throw new Error("Error while initializing Deno: No valid manifest found", { cause: error })
+			const extractor = extractors[i++]
+			fs.readFile(normalCwd + "/" + extractor.path, (err, data) => {
+				if (err) {
+					next()
+					return
+				}
+				try {
+					const dist = jsrManifestParse(data!.toString())
+					if (!dist || typeof dist !== "object") {
+						next()
+						return
+					}
+					cb()
+				} catch {
+					next()
+				}
+			})
 		}
+		next()
 	},
 	internalRules: internal,
 	isIgnoreFile: (path) => extractors.some((e) => e.path === path),
