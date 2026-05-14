@@ -1,7 +1,6 @@
 import type { Target } from "../targets/target.js"
 import type { FsAdapter } from "../types.js"
 import { type PatternFinderOptions, type Extractor, type ExtractorFn } from "./extractor.js"
-import type { MatcherContext } from "./matcherContext.js" // oxlint-disable-line no-unused-vars used by tsdoc
 import type { PatternCompileOptions } from "./patternCompile.js"
 import type { Resource } from "./resource.js"
 import type { Rule } from "./rule.js"
@@ -180,7 +179,8 @@ function findSourceForAbsoluteDirsCb(
 			cb(null, null)
 			return
 		}
-		const { parent, extractor } = flatTasks[i++]
+		const task = flatTasks[i++]!
+		const { parent, extractor } = task
 		tryExtractorCb(parent, fs, extractor, (err, source) => {
 			if (err) {
 				cb(err, null)

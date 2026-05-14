@@ -58,7 +58,7 @@ export const Deno: Target = <Target>{
 				cb(new Error("Error while initializing Deno: No valid manifest found"))
 				return
 			}
-			const extractor = extractors[i++]
+			const extractor = extractors[i++]!
 			fs.readFile(normalCwd + "/" + extractor.path, (err, data) => {
 				if (err) {
 					next()

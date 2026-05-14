@@ -6,6 +6,7 @@ import { scanParallel } from "../scanParallel.js"
 import { dirname } from "../unixify.js"
 import { walkPatchResult } from "../walk.js"
 import { resolveSources } from "./resolveSources.js"
+import type { Resource } from "./resource.js"
 
 /**
  * Provides patching abilities for the given {@link MatcherContext}.
@@ -32,7 +33,7 @@ export async function matcherContextAddPath(
 			return true
 		}
 		const parentPath = dirname(direntPath)
-		const resource = await new Promise((resolve, reject) => {
+		const resource = (await new Promise((resolve, reject) => {
 			resolveSources(
 				{
 					cwd,
@@ -47,7 +48,7 @@ export async function matcherContextAddPath(
 					else resolve(res)
 				},
 			)
-		})
+		})) as Resource
 		ctx.paths.set(
 			entry,
 			await new Promise((resolve, reject) => {
