@@ -7,7 +7,7 @@ import type { ScanOptions, FsAdapter } from "../types.js"
 import type { Resource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"
 
-import { scanParallel, scanParallelCb } from "../scanParallel.js"
+import { scanParallel } from "../scanParallel.js"
 import { walkPatchResult } from "../walk.js"
 
 /**
@@ -93,49 +93,16 @@ export class MatcherStream extends EventEmitter<EventMap> {
 	 *
 	 * @since 0.8.0
 	 */
-	async start(): Promise<void> {
-		clearTimeout(this.#timeout)
-		const {
-			target,
-			cwd,
-			within = ".",
-			invert = false,
-			depth: maxDepth = Infinity,
-			signal = null,
-			fastDepth = false,
-			fastInternal = false,
-			fs,
-		} = this.#options
-
-		const ctx: MatcherContext = {
-			external: new Map<string, Resource>(),
-			failed: [],
-			paths: new Map<string, RuleMatch>(),
-			total: new Map<string, Total>([[".", { totalDirs: 0, totalFiles: 0, totalMatchedFiles: 0 }]]),
-		}
-
-		const scanOptions: Required<ScanOptions> = {
-			cwd,
-			depth: maxDepth,
-			fastDepth,
-			fastInternal,
-			fs,
-			invert,
-			signal,
-			target,
-			within,
-		}
-
-		await target.init?.({ cwd, fs, signal, target })
-		await scanParallel({
-			external: ctx.external,
-			failed: ctx.failed,
-			onResult: (r) => walkPatchResult(ctx, scanOptions.depth, r),
-			scanOptions,
-			stream: this,
-			within,
+	start(): Promise<void> {
+		return new Promise((resolve, reject) => {
+			this.startCb((err) => {
+				if (err) {
+					reject(err)
+					return
+				}
+				resolve()
+			})
 		})
-		this.emit("end", ctx)
 	}
 
 	/**
@@ -177,7 +144,7 @@ export class MatcherStream extends EventEmitter<EventMap> {
 		}
 
 		const startScan = () => {
-			scanParallelCb(
+			scanParallel(
 				{
 					external: ctx.external,
 					failed: ctx.failed,

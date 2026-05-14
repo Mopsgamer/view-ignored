@@ -3,7 +3,7 @@ import type { Resource } from "./patterns/resource.js"
 import type { RuleMatch } from "./patterns/rule.js"
 import type { ScanOptions, FsAdapter } from "./types.js"
 
-import { scanParallelCb } from "./scanParallel.js"
+import { scanParallel } from "./scanParallel.js"
 import { unixify } from "./unixify.js"
 import { walkPatchResult } from "./walk.js"
 
@@ -58,7 +58,7 @@ export function scanCb(
 	}
 
 	const startScan = () => {
-		scanParallelCb(
+		scanParallel(
 			{
 				external: ctx.external,
 				failed: ctx.failed,

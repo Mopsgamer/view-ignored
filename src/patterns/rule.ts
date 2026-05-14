@@ -78,6 +78,7 @@ export interface RuleMatchBasePattern<K extends string | number | symbol> extend
 /**
  * @see {@link RuleMatch}
  *
+ * @since 0.11.0
  */
 export interface RuleMatchBaseError<K extends string | number | symbol> extends RuleMatchBase<K> {
 	error: Error
@@ -86,6 +87,7 @@ export interface RuleMatchBaseError<K extends string | number | symbol> extends 
 /**
  * @see {@link RuleMatch}
  *
+ * @since 0.11.0
  */
 export interface RuleMatchBaseInvalidSource<K extends string | number | symbol>
 	extends RuleMatchBaseError<K>, RuleMatchBaseSource<K> {}
@@ -93,6 +95,7 @@ export interface RuleMatchBaseInvalidSource<K extends string | number | symbol>
 /**
  * @see {@link RuleMatch}
  *
+ * @since 0.11.0
  */
 export interface RuleMatchBaseInvalidPattern<K extends string | number | symbol>
 	extends RuleMatchBasePattern<K>, RuleMatchBaseError<K> {}
@@ -100,6 +103,7 @@ export interface RuleMatchBaseInvalidPattern<K extends string | number | symbol>
 /**
  * @see {@link RuleMatch}
  *
+ * @since 0.11.0
  */
 export interface RuleMatchBaseInvalidExternal<K extends string | number | symbol>
 	extends RuleMatchBaseInvalidPattern<K>, RuleMatchBaseSource<K> {}
@@ -143,6 +147,7 @@ export type RuleMatch =
 /**
  * Check if a rule match is invalid.
  *
+ * @since 0.11.0
  */
 export function isRuleMatchInvalid(
 	match: RuleMatch,

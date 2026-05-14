@@ -32,13 +32,21 @@ export async function matcherContextAddPath(
 			return true
 		}
 		const parentPath = dirname(direntPath)
-		const resource = await resolveSources({
-			cwd,
-			dir: direntPath,
-			external: ctx.external,
-			fs,
-			signal,
-			target,
+		const resource = await new Promise((resolve, reject) => {
+			resolveSources(
+				{
+					cwd,
+					dir: direntPath,
+					external: ctx.external,
+					fs,
+					signal,
+					target,
+				},
+				(err, res) => {
+					if (err) reject(err)
+					else resolve(res)
+				},
+			)
 		})
 		ctx.paths.set(
 			entry,
@@ -69,13 +77,21 @@ export async function matcherContextAddPath(
 	const isSource = target.isIgnoreFile(entry)
 	if (isSource) {
 		// add pattern sources
-		const resultPromise = scanParallel({
-			external: ctx.external,
-			failed: ctx.failed,
-			onResult: (r) => walkPatchResult(ctx, options.depth, r),
-			scanOptions: options,
-			stream: undefined,
-			within: parentPath,
+		const resultPromise = new Promise((resolve, reject) => {
+			scanParallel(
+				{
+					external: ctx.external,
+					failed: ctx.failed,
+					onResult: (r) => walkPatchResult(ctx, options.depth, r),
+					scanOptions: options,
+					stream: undefined,
+					within: parentPath,
+				},
+				(err, results) => {
+					if (err) reject(err)
+					else resolve(results)
+				},
+			)
 		})
 		await matcherContextRemovePath(ctx, options, parentPath + "/")
 		await resultPromise
@@ -90,13 +106,21 @@ export async function matcherContextAddPath(
 		entry,
 		fs,
 		parentPath,
-		resource: (await resolveSources({
-			cwd,
-			dir: parentPath,
-			external: ctx.external,
-			fs,
-			signal,
-			target,
+		resource: (await new Promise((resolve, reject) => {
+			resolveSources(
+				{
+					cwd,
+					dir: parentPath,
+					external: ctx.external,
+					fs,
+					signal,
+					target,
+				},
+				(err, res) => {
+					if (err) reject(err)
+					else resolve(res)
+				},
+			)
 		}))!,
 		signal,
 		target,
@@ -185,13 +209,21 @@ export async function matcherContextRemovePath(
 	if (isSource) {
 		// remove pattern sources
 		// rescan directory and repopulate stats
-		const resultPromise = scanParallel({
-			external: ctx.external,
-			failed: ctx.failed,
-			onResult: (r) => walkPatchResult(ctx, options.depth, r),
-			scanOptions: options,
-			stream: undefined,
-			within: parentPath,
+		const resultPromise = new Promise((resolve, reject) => {
+			scanParallel(
+				{
+					external: ctx.external,
+					failed: ctx.failed,
+					onResult: (r) => walkPatchResult(ctx, options.depth, r),
+					scanOptions: options,
+					stream: undefined,
+					within: parentPath,
+				},
+				(err, results) => {
+					if (err) reject(err)
+					else resolve(results)
+				},
+			)
 		})
 		await matcherContextRemovePath(ctx, options, parentPathDir)
 		await resultPromise

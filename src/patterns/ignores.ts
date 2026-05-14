@@ -45,9 +45,3 @@ export type IgnoresCb = (options: IgnoresOptions, cb: (err: Error | null, match:
  * @since 0.6.0
  */
 export type Ignores = (options: IgnoresOptions) => RuleMatch | Promise<RuleMatch>
-
-/**
- * @see {@link Ignores}
- *
- */
-export type IgnoresCb = (options: IgnoresOptions, cb: (err: Error | null, match: RuleMatch) => void) => void

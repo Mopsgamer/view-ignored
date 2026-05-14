@@ -52,6 +52,7 @@ export interface MatcherContext {
 	 * "src/components" => { totalFiles: 0, totalMatchedFiles: 0, totalDirs: 0 }
 	 * "src/views" => { totalFiles: 1, totalMatchedFiles: 1, totalDirs: 0 }
 	 *
+	 * @since 0.11.0
 	 */
 	total: Map<string, Total>
 }
