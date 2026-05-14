@@ -53,7 +53,7 @@ export interface ResolveSourcesOptions extends PatternFinderOptions {
 
 
 /**
- * @since 0.11.0
+ * @since 0.6.0
  */
 export function resolveSources(
 	options: ResolveSourcesOptions,

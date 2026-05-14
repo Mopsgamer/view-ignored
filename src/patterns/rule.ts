@@ -270,7 +270,7 @@ function testExternal(
  * Checks whether a given entry should be ignored based on internal and external patterns.
  * Populates unknown sources using {@link resolveSources}.
  *
- * @since 0.11.0
+ * @since 0.6.0
  */
 export function ruleTest(
 	options: RuleTestOptions,
