@@ -13,6 +13,7 @@ import { walkPatchResult } from "./walk.js"
  * @param options Scan options.
  * @param cb Callback function.
  *
+ * @since 0.11.0
  */
 export function scanCb(
 	options: ScanOptions & { fs: FsAdapter; cwd: string },

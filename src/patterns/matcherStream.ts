@@ -141,6 +141,7 @@ export class MatcherStream extends EventEmitter<EventMap> {
 	/**
 	 * Resolves when everything is scanned. (Callback version)
 	 *
+	 * @since 0.11.0
 	 */
 	startCb(cb: (err: Error | null, ctx: MatcherContext) => void): void {
 		clearTimeout(this.#timeout)

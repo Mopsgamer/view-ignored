@@ -15,6 +15,7 @@ export function scanStream(options: ScanOptions & { fs: FsAdapter; cwd: string }
 /**
  * @see {@link scanCb}
  *
+ * @since 0.11.0
  */
 export function scanStreamCb(options: ScanOptions & { fs: FsAdapter; cwd: string }): MatcherStream {
 	return new MatcherStream(options)

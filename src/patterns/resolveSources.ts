@@ -46,6 +46,7 @@ export interface ResolveSourcesOptions extends PatternFinderOptions {
 	 * "dir" => Source
 	 * "dir/subdir" => Source
 	 *
+	 * @since 0.11.0
 	 */
 	external: Map<string, Resource>
 }
@@ -53,7 +54,7 @@ export interface ResolveSourcesOptions extends PatternFinderOptions {
 /**
  * Populates the {@link MatcherContext.external} map with {@link Source} objects.
  *
- * @since 0.6.0
+ * @since 0.11.0
  */
 export async function resolveSources(options: ResolveSourcesOptions): Promise<Resource> {
 	const resource = options.resource
@@ -125,6 +126,7 @@ export async function resolveSources(options: ResolveSourcesOptions): Promise<Re
 }
 
 /**
+ * @since 0.11.0
  */
 export function resolveSourcesCb(
 	options: ResolveSourcesOptions,

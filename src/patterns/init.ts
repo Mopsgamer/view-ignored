@@ -12,5 +12,6 @@ export type Init = (options: InitState) => Promise<void>
 /**
  * @see {@link Init}
  *
+ * @since 0.11.0
  */
 export type InitCb = (options: InitState, cb: (err?: Error | null) => void) => void

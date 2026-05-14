@@ -17,6 +17,7 @@ export interface IgnoresOptions extends InitState {
 	/**
 	 * The associated resource.
 	 *
+	 * @since 0.11.0
 	 */
 	resource: Resource
 	/**
@@ -26,6 +27,13 @@ export interface IgnoresOptions extends InitState {
 	 */
 	parentPath: string
 }
+
+/**
+ * @see {@link Ignores}
+ *
+ * @since 0.11.0
+ */
+export type IgnoresCb = (options: IgnoresOptions, cb: (err: Error | null, match: RuleMatch) => void) => void
 
 /**
  * Checks whether a given entry path should be ignored based on its patterns.
