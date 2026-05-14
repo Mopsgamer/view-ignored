@@ -1,6 +1,6 @@
 import type { Extractor } from "../patterns/extractor.js"
-import type { Ignores } from "../patterns/ignores.js"
-import type { Init } from "../patterns/init.js"
+import type { IgnoresCb } from "../patterns/ignores.js"
+import type { InitCb } from "../patterns/init.js"
 import type { Rule } from "../patterns/rule.js"
 
 /**
@@ -36,23 +36,15 @@ export interface Target {
 	 */
 	isIgnoreFile: (path: string) => boolean
 	/**
-	 * Glob-pattern parser.
+	 * @see {@link IgnoresCb}
 	 *
-	 * @see {@link Ignores}
-	 *
-	 * @since 0.6.0
+	 * @since 0.11.0
 	 */
-	ignores: Ignores
+	ignores: IgnoresCb
 	/**
-	 * Initialization function.
-	 * Called by the scanner method.
+	 * @see {@link InitCb}
 	 *
-	 * @example
-	 * scan({ target: { ...Git, init: undefined } })
-	 *
-	 * @see {@link Init}
-	 *
-	 * @since 0.8.0
+	 * @since 0.11.0
 	 */
-	init?: Init
+	init?: InitCb
 }

@@ -6,6 +6,7 @@ import { scanParallel } from "../scanParallel.js"
 import { dirname } from "../unixify.js"
 import { walkPatchResult } from "../walk.js"
 import { resolveSources } from "./resolveSources.js"
+import type { Resource } from "./resource.js"
 
 /**
  * Provides patching abilities for the given {@link MatcherContext}.
@@ -32,24 +33,40 @@ export async function matcherContextAddPath(
 			return true
 		}
 		const parentPath = dirname(direntPath)
-		const resource = await resolveSources({
-			cwd,
-			dir: direntPath,
-			external: ctx.external,
-			fs,
-			signal,
-			target,
-		})
+		const resource = (await new Promise((resolve, reject) => {
+			resolveSources(
+				{
+					cwd,
+					dir: direntPath,
+					external: ctx.external,
+					fs,
+					signal,
+					target,
+				},
+				(err, res) => {
+					if (err) reject(err)
+					else resolve(res)
+				},
+			)
+		})) as Resource
 		ctx.paths.set(
 			entry,
-			await target.ignores({
-				cwd,
-				entry: direntPath,
-				fs,
-				parentPath,
-				resource,
-				signal,
-				target,
+			await new Promise((resolve, reject) => {
+				target.ignores(
+					{
+						cwd,
+						entry: direntPath,
+						fs,
+						parentPath,
+						resource,
+						signal,
+						target,
+					},
+					(err, res) => {
+						if (err) reject(err)
+						else resolve(res)
+					},
+				)
 			}),
 		)
 		const total = ctx.total.get(parentPath)
@@ -69,13 +86,21 @@ export async function matcherContextAddPath(
 	const isSource = target.isIgnoreFile(entry)
 	if (isSource) {
 		// add pattern sources
-		const resultPromise = scanParallel({
-			external: ctx.external,
-			failed: ctx.failed,
-			onResult: (r) => walkPatchResult(ctx, options.depth, r),
-			scanOptions: options,
-			stream: undefined,
-			within: parentPath,
+		const resultPromise = new Promise((resolve, reject) => {
+			scanParallel(
+				{
+					external: ctx.external,
+					failed: ctx.failed,
+					onResult: (r) => walkPatchResult(ctx, options.depth, r),
+					scanOptions: options,
+					stream: undefined,
+					within: parentPath,
+				},
+				(err, results) => {
+					if (err) reject(err)
+					else resolve(results)
+				},
+			)
 		})
 		await matcherContextRemovePath(ctx, options, parentPath + "/")
 		await resultPromise
@@ -85,22 +110,40 @@ export async function matcherContextAddPath(
 	// 1. recursively populate parents
 	await matcherContextAddPath(ctx, options, parentPath + "/")
 	// 2. if ignored, remove, otherwise add
-	const match = await target.ignores({
-		cwd,
-		entry,
-		fs,
-		parentPath,
-		resource: (await resolveSources({
-			cwd,
-			dir: parentPath,
-			external: ctx.external,
-			fs,
-			signal,
-			target,
-		}))!,
-		signal,
-		target,
-	})
+	const match = (await new Promise((resolve, reject) => {
+		new Promise((resolve, reject) => {
+			resolveSources(
+				{
+					cwd,
+					dir: parentPath,
+					external: ctx.external,
+					fs,
+					signal,
+					target,
+				},
+				(err, res) => {
+					if (err) reject(err)
+					else resolve(res)
+				},
+			)
+		}).then((resource) => {
+			target.ignores(
+				{
+					cwd,
+					entry,
+					fs,
+					parentPath,
+					resource: resource as any,
+					signal,
+					target,
+				},
+				(err, res) => {
+					if (err) reject(err)
+					else resolve(res)
+				},
+			)
+		})
+	})) as any
 	if (match.ignored) {
 		// 2.1. remove
 		await matcherContextRemovePath(ctx, options, entry)
@@ -185,13 +228,21 @@ export async function matcherContextRemovePath(
 	if (isSource) {
 		// remove pattern sources
 		// rescan directory and repopulate stats
-		const resultPromise = scanParallel({
-			external: ctx.external,
-			failed: ctx.failed,
-			onResult: (r) => walkPatchResult(ctx, options.depth, r),
-			scanOptions: options,
-			stream: undefined,
-			within: parentPath,
+		const resultPromise = new Promise((resolve, reject) => {
+			scanParallel(
+				{
+					external: ctx.external,
+					failed: ctx.failed,
+					onResult: (r) => walkPatchResult(ctx, options.depth, r),
+					scanOptions: options,
+					stream: undefined,
+					within: parentPath,
+				},
+				(err, results) => {
+					if (err) reject(err)
+					else resolve(results)
+				},
+			)
 		})
 		await matcherContextRemovePath(ctx, options, parentPathDir)
 		await resultPromise

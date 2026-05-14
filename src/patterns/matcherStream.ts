@@ -93,7 +93,24 @@ export class MatcherStream extends EventEmitter<EventMap> {
 	 *
 	 * @since 0.8.0
 	 */
-	async start(): Promise<void> {
+	start(): Promise<void> {
+		return new Promise((resolve, reject) => {
+			this.startCb((err) => {
+				if (err) {
+					reject(err)
+					return
+				}
+				resolve()
+			})
+		})
+	}
+
+	/**
+	 * Resolves when everything is scanned. (Callback version)
+	 *
+	 * @since 0.11.0
+	 */
+	startCb(cb: (err: Error | null, ctx: MatcherContext) => void): void {
 		clearTimeout(this.#timeout)
 		const {
 			target,
@@ -126,15 +143,37 @@ export class MatcherStream extends EventEmitter<EventMap> {
 			within,
 		}
 
-		await target.init?.({ cwd, fs, signal, target })
-		await scanParallel({
-			external: ctx.external,
-			failed: ctx.failed,
-			onResult: (r) => walkPatchResult(ctx, scanOptions.depth, r),
-			scanOptions,
-			stream: this,
-			within,
-		})
-		this.emit("end", ctx)
+		const startScan = () => {
+			scanParallel(
+				{
+					external: ctx.external,
+					failed: ctx.failed,
+					onResult: (r) => walkPatchResult(ctx, scanOptions.depth, r),
+					scanOptions,
+					stream: this,
+					within,
+				},
+				(err) => {
+					if (err) {
+						cb(err, null as any)
+						return
+					}
+					cb(null, ctx)
+					this.emit("end", ctx)
+				},
+			)
+		}
+
+		if (target.init) {
+			target.init({ cwd, fs, signal, target }, (err) => {
+				if (err) {
+					cb(err, null as any)
+					return
+				}
+				startScan()
+			})
+		} else {
+			startScan()
+		}
 	}
 }

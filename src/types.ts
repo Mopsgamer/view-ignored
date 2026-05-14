@@ -13,6 +13,8 @@ export interface FsAdapter {
 		readdir: typeof fs.promises.readdir
 		readFile: typeof fs.promises.readFile
 	}
+	readdir: typeof fs.readdir
+	readFile: typeof fs.readFile
 }
 
 /**

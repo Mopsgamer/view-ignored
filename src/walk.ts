@@ -25,12 +25,22 @@ export type WalkResult = {
 	next: 0 | 1
 }
 
-export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
+
+/**
+ * @since 0.11.0
+ */
+export function walkIncludes(
+	options: WalkOptions,
+	cb: (err: Error | null, result: WalkResult) => void,
+): void {
 	const { entry, stream, scanOptions, relPath: path, parentPath, resource } = options
 
 	const { fs, target, cwd, depth: maxDepth, invert, signal, fastDepth, fastInternal } = scanOptions
 
-	signal?.throwIfAborted()
+	if (signal?.aborted) {
+		cb(signal.reason, null as any)
+		return
+	}
 
 	const isDir = entry.isDirectory()
 	let direntPath: string
@@ -48,127 +58,149 @@ export async function walkIncludes(options: WalkOptions): Promise<WalkResult> {
 		tooDeep: false,
 	}
 
+	const handleMatch = () => {
+		if (invert) {
+			match.ignored = !match.ignored
+		}
+
+		if (isRuleMatchInvalid(match)) {
+			if (stream) {
+				stream.emit("dirent", { dirent: entry, match, path: direntPath })
+			}
+			result.next = 0
+			cb(null, result)
+			return
+		}
+
+		if (match.ignored) {
+			if (stream) {
+				stream.emit("dirent", { dirent: entry, match, path: direntPath })
+			}
+			if (isDir && fastInternal && match.kind === RuleMatchKind.internal) {
+				result.next = 1
+				cb(null, result)
+				return
+			}
+			result.next = 0
+			cb(null, result)
+			return
+		}
+
+		if (isDir) {
+			const { depth } = getDepth(path, maxDepth)
+			if (depth <= maxDepth) {
+				if (stream) {
+					stream.emit("dirent", { dirent: entry, match, path: direntPath })
+				}
+			} else {
+				result.tooDeep = true
+			}
+			result.next = 0
+			cb(null, result)
+			return
+		}
+
+		const { depth } = getDepth(path, maxDepth)
+		if (depth > maxDepth) {
+			result.tooDeep = true
+			result.next = 0
+			cb(null, result)
+			return
+		}
+
+		const lastSlash = path.lastIndexOf("/")
+		if (lastSlash >= 0) {
+			result.includeParent = true
+		}
+
+		if (stream) {
+			if (result.includeParent) {
+				stream.emit("dirent", { dirent: entry, match, path: parentPath + "/" })
+			}
+			stream.emit("dirent", { dirent: entry, match, path: direntPath })
+		}
+
+		result.next = 0
+		cb(null, result)
+	}
+
 	if (fastDepth) {
 		const { depth } = getDepth(path, maxDepth)
 		if (depth > maxDepth) {
 			result.tooDeep = true
-			Object.assign(
-				match,
-				target.ignores({
-					cwd,
-					entry: path,
-					fs,
-					parentPath,
-					resource,
-					signal,
-					target,
-				}),
-			)
-			if (invert) {
-				match.ignored = !match.ignored
+			const ignoresOptions = {
+				cwd,
+				entry: path,
+				fs,
+				parentPath,
+				resource,
+				signal,
+				target,
 			}
-
-			if (isRuleMatchInvalid(match)) {
-				if (stream) {
-					stream.emit("dirent", { dirent: entry, match, path: direntPath })
+			target.ignores(ignoresOptions, (err, m) => {
+				if (err) {
+					cb(err, null as any)
+					return
 				}
-				result.next = 0
-				return result
-			}
+				Object.assign(match, m)
+				finishFastDepth()
+			})
 
-			if (match.ignored) {
-				if (isDir && fastInternal && match.kind === RuleMatchKind.internal) {
-					result.next = 1
-					return result
+			function finishFastDepth() {
+				if (invert) {
+					match.ignored = !match.ignored
 				}
-				result.next = 0
-				return result
+
+				if (isRuleMatchInvalid(match)) {
+					if (stream) {
+						stream.emit("dirent", { dirent: entry, match, path: direntPath })
+					}
+					result.next = 0
+					cb(null, result)
+					return
+				}
+
+				if (match.ignored) {
+					if (isDir && fastInternal && match.kind === RuleMatchKind.internal) {
+						result.next = 1
+						cb(null, result)
+						return
+					}
+					result.next = 0
+					cb(null, result)
+					return
+				}
+
+				if (isDir) {
+					result.next = 0
+					cb(null, result)
+					return
+				}
+
+				result.next = 1
+				cb(null, result)
 			}
-
-			if (isDir) {
-				// ctx.totalMatchedDirs++;
-				// ctx.depthPaths.set(path, (ctx.depthPaths.get(path) ?? 0) + 1);
-				result.next = 0
-				return result
-			}
-
-			result.next = 1
-			return result
+			return
 		}
 	}
 
-	Object.assign(
-		match,
-		target.ignores({
-			cwd,
-			entry: path,
-			fs,
-			parentPath,
-			resource,
-			signal,
-			target,
-		}),
-	)
-	if (invert) {
-		match.ignored = !match.ignored
+	const ignoresOptions = {
+		cwd,
+		entry: path,
+		fs,
+		parentPath,
+		resource,
+		signal,
+		target,
 	}
-
-	if (isRuleMatchInvalid(match)) {
-		if (stream) {
-			stream.emit("dirent", { dirent: entry, match, path: direntPath })
+	target.ignores(ignoresOptions, (err, m) => {
+		if (err) {
+			cb(err, null as any)
+			return
 		}
-		result.next = 0
-		return result
-	}
-
-	if (match.ignored) {
-		if (stream) {
-			stream.emit("dirent", { dirent: entry, match, path: direntPath })
-		}
-		if (isDir && fastInternal && match.kind === RuleMatchKind.internal) {
-			result.next = 1
-			return result
-		}
-		result.next = 0
-		return result
-	}
-
-	if (isDir) {
-		// ctx.totalMatchedDirs++;
-		// ctx.depthPaths.set(path, (ctx.depthPaths.get(path) ?? 0) + 1);
-		const { depth } = getDepth(path, maxDepth)
-		if (depth <= maxDepth) {
-			if (stream) {
-				stream.emit("dirent", { dirent: entry, match, path: direntPath })
-			}
-		} else {
-			result.tooDeep = true
-		}
-		result.next = 0
-		return result
-	}
-
-	const { depth } = getDepth(path, maxDepth)
-	if (depth > maxDepth) {
-		result.tooDeep = true
-		result.next = 0
-		return result
-	}
-
-	const lastSlash = path.lastIndexOf("/")
-	if (lastSlash >= 0) {
-		result.includeParent = true
-	}
-
-	if (stream) {
-		if (result.includeParent) {
-			stream.emit("dirent", { dirent: entry, match, path: parentPath + "/" })
-		}
-		stream.emit("dirent", { dirent: entry, match, path: direntPath })
-	}
-
-	result.next = 0
-	return result
+		Object.assign(match, m)
+		handleMatch()
+	})
 }
 
 /**

@@ -95,20 +95,22 @@ const internal: Rule[] = [
 export const YarnClassic: Target = <Target>{
 	extractors,
 	ignores: ruleTest,
-	async init({ fs, cwd }) {
-		let content: Buffer
+	init({ fs, cwd }, cb) {
 		const normalCwd = unixify(cwd)
-		try {
-			content = await fs.promises.readFile(normalCwd + "/" + "package.json")
-		} catch (error) {
-			throw new Error("Error while initializing Yarn classic", { cause: error })
-		}
+		fs.readFile(normalCwd + "/" + "package.json", (err, content) => {
+			if (err) {
+				cb(new Error("Error while initializing Yarn classic", { cause: err }))
+				return
+			}
 
-		const dist = npmManifestParse(content.toString())
+			const dist = npmManifestParse(content!.toString())
 
-		if (!dist || typeof dist !== "object") {
-			throw new Error("Invalid 'package.json': Manifest is empty or not an object")
-		}
+			if (!dist || typeof dist !== "object") {
+				cb(new Error("Invalid 'package.json': Manifest is empty or not an object"))
+				return
+			}
+			cb()
+		})
 	},
 	internalRules: internal,
 	isIgnoreFile: (path) => extractors.some((e) => e.path === path),

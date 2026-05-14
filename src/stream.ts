@@ -17,3 +17,14 @@ export function scanStream(options: ScanOptions): MatcherStream {
 
 	return browserStream({ cwd, fs, ...options })
 }
+
+/**
+ * @see {@link scanCb}
+ *
+ * @since 0.11.0
+ */
+export function scanStreamCb(options: ScanOptions): MatcherStream {
+	const { cwd = process.cwd(), fs = nodefs } = options
+
+	return browserStream({ cwd, fs, ...options })
+}

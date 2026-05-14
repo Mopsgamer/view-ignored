@@ -73,20 +73,21 @@ const internal: Rule[] = [
 export const VSCE: Target = <Target>{
 	extractors,
 	ignores: ruleTest,
-	async init({ fs, cwd }) {
-		let content: Buffer
+	init({ fs, cwd }, cb) {
 		const normalCwd = unixify(cwd)
-		try {
-			content = await fs.promises.readFile(normalCwd + "/" + "package.json")
-		} catch (error) {
-			throw new Error("Error while initializing VSCE", { cause: error })
-		}
+		fs.readFile(normalCwd + "/" + "package.json", (err, content) => {
+			if (err) {
+				cb(new Error("Error while initializing VSCE", { cause: err }))
+				return
+			}
 
-		try {
-			vsceManifestParse(content.toString())
-		} catch (error) {
-			throw new Error("Invalid 'package.json'", { cause: error })
-		}
+			try {
+				vsceManifestParse(content!.toString())
+				cb()
+			} catch (error) {
+				cb(new Error("Invalid 'package.json'", { cause: error }))
+			}
+		})
 	},
 	internalRules: internal,
 	isIgnoreFile: (path) => extractors.some((e) => e.path === path),

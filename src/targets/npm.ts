@@ -93,24 +93,26 @@ const internal: Rule[] = [
 export const NPM: Target = <Target>{
 	extractors,
 	ignores: ruleTest,
-	async init({ fs, cwd }) {
-		let content: Buffer
+	init({ fs, cwd }, cb) {
 		const normalCwd = unixify(cwd)
-		try {
-			content = await fs.promises.readFile(normalCwd + "/package.json")
-		} catch (err) {
-			const error = err as NodeJS.ErrnoException
-			if (error.code === "ENOENT") {
+		fs.readFile(normalCwd + "/package.json", (err, content) => {
+			if (err) {
+				const error = err as NodeJS.ErrnoException
+				if (error.code === "ENOENT") {
+					cb()
+					return
+				}
+				cb(new Error("Error while initializing NPM", { cause: error }))
 				return
 			}
-			throw new Error("Error while initializing NPM", { cause: error })
-		}
 
-		try {
-			npmManifestParse(content.toString())
-		} catch {
-			// handled by extractor
-		}
+			try {
+				npmManifestParse(content!.toString())
+			} catch {
+				// handled by extractor
+			}
+			cb()
+		})
 
 		// const set = new Set<string>()
 
