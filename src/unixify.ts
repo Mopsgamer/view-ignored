@@ -1,53 +1,63 @@
 const strippedCwd = strip(process.cwd())
 
 export function unixify(path: string): string {
-	let result = strip(path)
-	if (result.startsWith("./")) {
-		result = strippedCwd + result.substring(1)
-	} else if (!result.startsWith("/")) {
-		result = strippedCwd + "/" + result
+	const result = strip(path)
+	const c0 = result.charCodeAt(0)
+	if (c0 === 46 && result.charCodeAt(1) === 47) {
+		// "./"
+		return strippedCwd + result.substring(1)
+	}
+	if (c0 !== 47 && c0 !== 92) {
+		// not starts with "/" or "\"
+		return strippedCwd + "/" + result
 	}
 	return result
 }
 
 export function join(from: string, p2: string): string {
-	if (p2 === "." || p2 === "./") {
-		return from
-	}
-	let start = 0
-	if (p2.startsWith("./")) {
-		start = 2
-	}
-	if (!from.endsWith("/")) {
-		from += "/"
-	}
-	if (from.startsWith("./")) {
-		from = from.slice(2)
-	}
-	from += p2.slice(start)
+	if (p2 === "." || p2 === "./") return from
 
-	return from
+	const p2startsDotSlash = p2.charCodeAt(0) === 46 && p2.charCodeAt(1) === 47
+	const start = p2startsDotSlash ? 2 : 0
+
+	let res = from
+	if (from.charCodeAt(0) === 46 && from.charCodeAt(1) === 47) {
+		res = from.substring(2)
+	}
+
+	const resLen = res.length
+	if (resLen > 0 && res.charCodeAt(resLen - 1) !== 47) {
+		res += "/"
+	}
+
+	return res + p2.substring(start)
 }
 
 export function relative(base: string, to: string): string {
-	if (!base.endsWith("/")) {
+	const blen = base.length
+	if (blen > 0 && base.charCodeAt(blen - 1) !== 47) {
 		base += "/"
 	}
-	const result = to.replace(base, "")
-	return result
+	return to.replace(base, "")
 }
 
 function strip(path: string): string {
-	return path.replaceAll("\\", "/").replace(/^[a-zA-Z]:/, "")
+	let res = path.indexOf("\\") === -1 ? path : path.replaceAll("\\", "/")
+	if (res.length > 1 && res.charCodeAt(1) === 58) {
+		// X:
+		res = res.substring(2)
+	}
+	return res
 }
 
 export function dirname(path: string): string {
 	if (path === "/" || path === ".") return path
-	const lastSlash = path.endsWith("/") ? path.lastIndexOf("/", -1) : path.lastIndexOf("/")
-	if (lastSlash === -1) {
-		return "."
-	}
-	path = path.slice(0, lastSlash)
-	if (path.length === 0) return "/"
-	return path
+	const len = path.length
+	const lastIdx = len - 1
+	const endsWithSlash = path.charCodeAt(lastIdx) === 47
+	const lastSlash = path.lastIndexOf("/", endsWithSlash ? lastIdx - 1 : lastIdx)
+
+	if (lastSlash === -1) return "."
+	if (lastSlash === 0) return "/"
+	return path.substring(0, lastSlash)
 }

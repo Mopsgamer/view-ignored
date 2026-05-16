@@ -1,3 +1,4 @@
+import type { Dirent } from "node:fs"
 import type { Target } from "../targets/target.js"
 import type { FsAdapter } from "../types.js"
 import { type PatternFinderOptions, type Extractor, type ExtractorFn } from "./extractor.js"
@@ -48,6 +49,13 @@ export interface ResolveSourcesOptions extends PatternFinderOptions {
 	 * @since 0.11.0
 	 */
 	external: Map<string, Resource>
+	/**
+	 * Directory entries of the current directory.
+	 * Used for optimization to avoid redundant `fs.readFile` calls.
+	 *
+	 * @since 0.11.1
+	 */
+	entries?: Dirent[]
 }
 
 
@@ -58,15 +66,15 @@ export function resolveSources(
 	options: ResolveSourcesOptions,
 	cb: (err: Error | null, resource: Resource) => void,
 ): void {
-	const resource = options.resource
-	if (resource !== undefined) {
-		cb(null, resource)
-		return
-	}
-	const { fs, external, cwd, signal, target } = options
+	const { fs, external, cwd, signal, target, resource: parentResource } = options
 	let dir = options.dir
 
-	let source: Resource | undefined
+	let source = external.get(dir)
+	if (source !== undefined) {
+		cb(null, source)
+		return
+	}
+
 	const noSourceDirList: string[] = [dir]
 
 	if (dir !== ".") {
@@ -80,12 +88,7 @@ export function resolveSources(
 			}
 			source = external.get(dir)
 			if (source !== undefined) {
-				// if cache is found populate descendants [cwd > ... > dir]
-				for (const noSourceDir of noSourceDirList) {
-					external.set(noSourceDir, source)
-				}
-				cb(null, source)
-				return
+				break;
 			}
 			noSourceDirList.push(dir)
 			const parent = dirname(dir)
@@ -95,11 +98,10 @@ export function resolveSources(
 		}
 	}
 
-	// else
 	// find non-cwd source [root > cwd) and populate [cwd > ... > dir]
 
 	const preCwdSegments: string[] = []
-	if (target.root.startsWith("/")) {
+	if (target.root.charCodeAt(0) === 47) { // "/"
 		let c = dirname(cwd)
 		while (true) {
 			if (signal?.aborted) {
@@ -118,43 +120,37 @@ export function resolveSources(
 				cb(err, null)
 				return
 			}
-			if (source !== null) {
-				for (const noSourceDir of noSourceDirList) {
-					external.set(noSourceDir, source)
-				}
-				cb(null, source)
-				return
+
+			const absPaths = new Array(noSourceDirList.length)
+			for (let i = 0, len = noSourceDirList.length; i < len; i++) {
+				absPaths[i] = join(cwd, noSourceDirList[i]!)
 			}
-			const absPaths = noSourceDirList.map((rel) => join(cwd, rel))
-			findSourceForAbsoluteDirsCb(absPaths, fs, target, signal, (err, source) => {
+			findSourceForAbsoluteDirsCb(absPaths, fs, target, signal, (err, s) => {
 				if (err) {
 					cb(err, null)
 					return
 				}
-				if (source !== undefined) {
-					for (const noSourceDir of noSourceDirList) {
-						external.set(noSourceDir, source)
-					}
-				}
-				cb(null, source)
-			})
+				const finalSource = s || source || parentResource || null
+				external.set(options.dir, finalSource)
+				cb(null, finalSource)
+			}, options.entries)
 		})
 		return
 	}
 
-	const absPaths = noSourceDirList.map((rel) => join(cwd, rel))
+	const absPaths = new Array(noSourceDirList.length)
+	for (let i = 0, len = noSourceDirList.length; i < len; i++) {
+		absPaths[i] = join(cwd, noSourceDirList[i]!)
+	}
 	findSourceForAbsoluteDirsCb(absPaths, fs, target, signal, (err, source) => {
 		if (err) {
 			cb(err, null)
 			return
 		}
-		if (source !== undefined) {
-			for (const noSourceDir of noSourceDirList) {
-				external.set(noSourceDir, source)
-			}
-		}
-		cb(null, source)
-	})
+		const finalSource = source || parentResource || null
+		external.set(options.dir, finalSource)
+		cb(null, finalSource)
+	}, options.entries)
 }
 
 
@@ -164,23 +160,49 @@ function findSourceForAbsoluteDirsCb(
 	target: Target,
 	signal: AbortSignal | null,
 	cb: (err: Error | null, resource: Resource) => void,
+	entries?: Dirent[],
 ): void {
 	if (signal?.aborted) {
 		cb(signal.reason, null)
 		return
 	}
-	const flatTasks = paths.flatMap((parent) =>
-		target.extractors.map((extractor) => ({ parent, extractor })),
-	)
+	const extractors = target.extractors
+	const plen = paths.length
+	const elen = extractors.length
 
 	let i = 0
+	let j = 0
 	function next() {
-		if (i >= flatTasks.length) {
+		if (i >= plen) {
 			cb(null, null)
 			return
 		}
-		const task = flatTasks[i++]!
-		const { parent, extractor } = task
+		const parent = paths[i]!
+		const extractor = extractors[j]!
+
+		j++
+		if (j >= elen) {
+			i++
+			j = 0
+		}
+
+		if (entries && plen > 0 && parent === paths[0]) {
+			const epath = extractor.path
+			const slashIdx = epath.indexOf("/")
+			const firstSegment = slashIdx === -1 ? epath : epath.substring(0, slashIdx)
+			let found = false
+			for (let k = 0, len = entries.length; k < len; k++) {
+				if (entries[k]!.name === firstSegment) {
+					found = true
+					break
+				}
+			}
+			if (!found) {
+				next()
+				return
+			}
+		}
+
 		tryExtractorCb(parent, fs, extractor, (err, source) => {
 			if (err) {
 				cb(err, null)
@@ -203,7 +225,7 @@ function tryExtractorCb(
 	extractor: Extractor,
 	cb: (err: Error | null, resource: Resource) => void,
 ): void {
-	let abs = join(cwd, extractor.path)
+	const abs = join(cwd, extractor.path)
 
 	fs.readFile(abs, (err, buff) => {
 		if (err) {

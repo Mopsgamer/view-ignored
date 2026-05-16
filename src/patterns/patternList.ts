@@ -14,7 +14,7 @@ export type PatternCache = {
 	 *
 	 * @since 0.6.0
 	 */
-	re: { test(string: string): boolean }
+	re: { test(string: string, matchCtx: { lower?: string }): boolean }
 	/**
 	 * The original pattern string this cache was compiled from.
 	 *
@@ -34,8 +34,12 @@ export type PatternCache = {
  *
  * @since 0.6.0
  */
-export function patternCacheTest(cache: PatternCache, path: string): boolean {
-	return cache.re.test(path)
+export function patternCacheTest(
+	cache: PatternCache,
+	path: string,
+	matchCtx: { lower?: string } = {},
+): boolean {
+	return cache.re.test(path, matchCtx)
 }
 
 /**
@@ -57,5 +61,10 @@ export function patternListCompile(
 	list: PatternList,
 	options?: PatternCompileOptions,
 ): PatternCache[] {
-	return list.map((p, _, pattern) => patternCompile(p, pattern, options))
+	const len = list.length
+	const res = new Array(len)
+	for (let i = 0; i < len; i++) {
+		res[i] = patternCompile(list[i]!, list, options)
+	}
+	return res
 }
