@@ -1,4 +1,5 @@
 import type { Dirent } from "node:fs"
+
 import type { FsAdapter } from "./types.js"
 
 /**

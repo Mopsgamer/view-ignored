@@ -1,13 +1,14 @@
 import type { Dirent } from "node:fs"
+
 import type { Target } from "../targets/target.js"
 import type { FsAdapter } from "../types.js"
-import { type PatternFinderOptions, type Extractor, type ExtractorFn } from "./extractor.js"
 import type { PatternCompileOptions } from "./patternCompile.js"
 import type { Resource } from "./resource.js"
 import type { Rule } from "./rule.js"
 import type { Source } from "./source.js"
 
 import { dirname, join } from "../unixify.js"
+import { type PatternFinderOptions, type Extractor, type ExtractorFn } from "./extractor.js"
 import { patternListCompile } from "./patternList.js"
 
 /**
@@ -58,7 +59,6 @@ export interface ResolveSourcesOptions extends PatternFinderOptions {
 	entries?: Dirent[]
 }
 
-
 /**
  * @since 0.6.0
  */
@@ -69,6 +69,22 @@ export function resolveSources(
 	const { fs, external, cwd, signal, target, resource: parentResource } = options
 	let dir = options.dir
 
+	if (target.root === "." && dir !== ".") {
+		resolveSources({ ...options, dir: "." }, (err, res) => {
+			if (err) return cb(err, null as any)
+			external.set(dir, res)
+			cb(null, res)
+		})
+		return
+	}
+	if (target.root === "." && dir !== ".") {
+		resolveSources({ ...options, dir: "." }, (err, res) => {
+			if (err) return cb(err, null as any)
+			external.set(dir, res)
+			cb(null, res)
+		})
+		return
+	}
 	let source = external.get(dir)
 	if (source !== undefined) {
 		cb(null, source)
@@ -88,7 +104,7 @@ export function resolveSources(
 			}
 			source = external.get(dir)
 			if (source !== undefined) {
-				break;
+				break
 			}
 			noSourceDirList.push(dir)
 			const parent = dirname(dir)
@@ -101,7 +117,8 @@ export function resolveSources(
 	// find non-cwd source [root > cwd) and populate [cwd > ... > dir]
 
 	const preCwdSegments: string[] = []
-	if (target.root.charCodeAt(0) === 47) { // "/"
+	if (target.root.charCodeAt(0) === 47) {
+		// "/"
 		let c = dirname(cwd)
 		while (true) {
 			if (signal?.aborted) {
@@ -121,38 +138,51 @@ export function resolveSources(
 				return
 			}
 
-			const absPaths = new Array(noSourceDirList.length)
+			const absPaths = Array.from<string>({ length: noSourceDirList.length })
 			for (let i = 0, len = noSourceDirList.length; i < len; i++) {
 				absPaths[i] = join(cwd, noSourceDirList[i]!)
 			}
-			findSourceForAbsoluteDirsCb(absPaths, fs, target, signal, (err, s) => {
-				if (err) {
-					cb(err, null)
-					return
-				}
-				const finalSource = s || source || parentResource || null
-				external.set(options.dir, finalSource)
-				cb(null, finalSource)
-			}, options.entries)
+			findSourceForAbsoluteDirsCb(
+				absPaths,
+				fs,
+				target,
+				signal,
+				(err, s) => {
+					if (err) {
+						cb(err, null)
+						return
+					}
+					const finalSource = s || source || parentResource || null
+					external.set(options.dir, finalSource)
+					cb(null, finalSource)
+				},
+				options.entries,
+			)
 		})
 		return
 	}
 
-	const absPaths = new Array(noSourceDirList.length)
+	const absPaths = Array.from<string>({ length: noSourceDirList.length })
 	for (let i = 0, len = noSourceDirList.length; i < len; i++) {
 		absPaths[i] = join(cwd, noSourceDirList[i]!)
 	}
-	findSourceForAbsoluteDirsCb(absPaths, fs, target, signal, (err, source) => {
-		if (err) {
-			cb(err, null)
-			return
-		}
-		const finalSource = source || parentResource || null
-		external.set(options.dir, finalSource)
-		cb(null, finalSource)
-	}, options.entries)
+	findSourceForAbsoluteDirsCb(
+		absPaths,
+		fs,
+		target,
+		signal,
+		(err, source) => {
+			if (err) {
+				cb(err, null)
+				return
+			}
+			const finalSource = source || parentResource || null
+			external.set(options.dir, finalSource)
+			cb(null, finalSource)
+		},
+		options.entries,
+	)
 }
-
 
 function findSourceForAbsoluteDirsCb(
 	paths: string[],
@@ -217,7 +247,6 @@ function findSourceForAbsoluteDirsCb(
 	}
 	next()
 }
-
 
 function tryExtractorCb(
 	cwd: string,

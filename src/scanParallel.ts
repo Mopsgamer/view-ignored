@@ -2,10 +2,10 @@ import type { MatcherStream } from "./patterns/matcherStream.js"
 import type { Resource, InvalidSource } from "./patterns/resource.js"
 import type { ScanOptions } from "./types.js"
 
+import { opendir } from "./opendir.js"
 import { resolveSources } from "./patterns/resolveSources.js"
 import { join, unixify } from "./unixify.js"
 import { walkIncludes, type WalkResult, type WalkTotal } from "./walk.js"
-import { opendir } from "./opendir.js"
 
 export interface ScanParallelOptions {
 	scanOptions: Required<ScanOptions>
@@ -15,7 +15,6 @@ export interface ScanParallelOptions {
 	failed?: InvalidSource[]
 	onResult?: (result: WalkResult | WalkTotal) => void
 }
-
 
 /**
  * Executes a parallel directory scan.
@@ -46,7 +45,7 @@ export function scanParallel(
 				return
 			}
 
-			resolveSources({ ...scanOptions, dir: relPath, external, resource, entries }, (err, res) => {
+			resolveSources({ ...scanOptions, dir: relPath, entries, external, resource }, (err, res) => {
 				if (err) {
 					handleError(err)
 					return
@@ -62,7 +61,7 @@ export function scanParallel(
 
 				const len = entries.length
 				const prefix = relPath === "." || relPath === "" ? "" : relPath + "/"
-				const lowerPrefix = lowerRelPath ? lowerRelPath + "/" : (prefix ? prefix.toLowerCase() : "")
+				const lowerPrefix = lowerRelPath ? lowerRelPath + "/" : prefix ? prefix.toLowerCase() : ""
 
 				let pendingResults = len
 				let dirFiles = 0
@@ -78,6 +77,7 @@ export function scanParallel(
 							files: 0,
 							ignored: false,
 							matched: 0,
+							type: "total",
 						})
 					}
 				}
@@ -134,6 +134,7 @@ export function scanParallel(
 										files: dirFiles,
 										ignored: false,
 										matched: dirMatched,
+										type: "total",
 									})
 								}
 							}

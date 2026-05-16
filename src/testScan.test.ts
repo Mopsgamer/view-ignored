@@ -15,8 +15,8 @@ export function createAdapter(vol: Volume): FsAdapter {
 	const { opendir, readdir, readFile } = fs.promises
 	const adapter = {
 		promises: { opendir, readFile, readdir },
-		readdir: fs.readdir.bind(fs),
 		readFile: fs.readFile.bind(fs),
+		readdir: fs.readdir.bind(fs),
 	} as unknown as FsAdapter
 	return adapter
 }

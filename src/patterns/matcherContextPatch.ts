@@ -1,11 +1,17 @@
 import type { ScanOptions } from "../types.js"
 import type { MatcherContext } from "./matcherContext.js"
+import type { Resource } from "./resource.js"
 
 import { scanParallel } from "../scanParallel.js"
 import { dirname } from "../unixify.js"
-import { walkPatchResult, walkPatchTotal, propagateTotals } from "../walk.js"
+import {
+	walkPatchResult,
+	walkPatchTotal,
+	propagateTotals,
+	type WalkResult,
+	type WalkTotal,
+} from "../walk.js"
 import { resolveSources } from "./resolveSources.js"
-import type { Resource } from "./resource.js"
 
 /**
  * Provides patching abilities for the given {@link MatcherContext}.
@@ -91,10 +97,10 @@ export async function matcherContextAddPath(
 					external: ctx.external,
 					failed: ctx.failed,
 					onResult: (result) => {
-						if ("match" in result) {
-							walkPatchResult(ctx, maxDepth, result)
+						if ("dir" in result) {
+							walkPatchTotal(ctx, maxDepth, result as WalkTotal)
 						} else {
-							walkPatchTotal(ctx, maxDepth, result)
+							walkPatchResult(ctx, maxDepth, result as WalkResult)
 						}
 					},
 					scanOptions: options,
@@ -242,10 +248,10 @@ export async function matcherContextRemovePath(
 					external: ctx.external,
 					failed: ctx.failed,
 					onResult: (result) => {
-						if ("match" in result) {
-							walkPatchResult(ctx, maxDepth, result)
+						if ("dir" in result) {
+							walkPatchTotal(ctx, maxDepth, result as WalkTotal)
 						} else {
-							walkPatchTotal(ctx, maxDepth, result)
+							walkPatchResult(ctx, maxDepth, result as WalkResult)
 						}
 					},
 					scanOptions: options,
