@@ -87,15 +87,12 @@ function test(
 		}
 	}
 
-	if (cleaned.indexOf("*") !== -1) {
-		if (isMatch(normStr)) return true
-
-		if (!isRoot) {
-			let lastSlash = normStr.lastIndexOf("/")
-			while (lastSlash !== -1) {
-				if (isMatch(normStr.slice(0, lastSlash))) return true
-				lastSlash = normStr.lastIndexOf("/", lastSlash - 1)
-			}
+	if (isMatch(normStr)) return true
+	if (!isRoot) {
+		let lastSlash = normStr.lastIndexOf("/")
+		while (lastSlash !== -1) {
+			if (isMatch(normStr.slice(0, lastSlash))) return true
+			lastSlash = normStr.lastIndexOf("/", lastSlash - 1)
 		}
 	}
 
