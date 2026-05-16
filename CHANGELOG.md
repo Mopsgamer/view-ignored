@@ -8,8 +8,12 @@ and this project adheres to
 
 ## [Unreleased]
 
+- Performance improvements.
+- Added callback API.
+- Changed walker APIs to avoid `ctx: MatcherContext` patching.
 - Rename `Source.pattern` to `Source.rules`.
 - Remove ctx option from some walker methods to allow complete concurrency.
+- Removed `arktype`.
 
 ## [0.10.1] - 2026-03-20
 
