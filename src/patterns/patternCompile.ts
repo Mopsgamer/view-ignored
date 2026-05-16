@@ -28,11 +28,11 @@ export function patternCompile(
 	context: PatternList = [],
 	options?: PatternCompileOptions,
 ): PatternCache {
-	const isRoot = pattern.startsWith("/")
+	const isRoot = pattern.charCodeAt(0) === 47 // '/'
 	const nocase = !!options?.nocase
 
 	let cleaned = pattern
-	if (cleaned.endsWith("/")) cleaned = cleaned.slice(0, -1)
+	if (cleaned.charCodeAt(cleaned.length - 1) === 47) cleaned = cleaned.slice(0, -1)
 	if (isRoot) cleaned = cleaned.slice(1)
 
 	const lowerCleaned = nocase ? cleaned.toLowerCase() : cleaned
@@ -46,8 +46,11 @@ export function patternCompile(
 		nonegate: true,
 	}
 
+	const isMatch = glob.matcher(lowerCleaned, { ...matcherOpts, nocase: false })
+
 	const re = {
-		test: (str: string) => test(str, matcherOpts, lowerCleaned, isRoot),
+		test: (str: string, matchCtx: { lower?: string }) =>
+			test(str, matchCtx, isMatch, lowerCleaned, isRoot, nocase, matchBase),
 	}
 
 	const cache = { pattern, patternContext: context, re }
@@ -55,38 +58,43 @@ export function patternCompile(
 	return cache
 }
 
-function test(str: string, matcherOpts: glob.Options, cleaned: string, isRoot: boolean): boolean {
-	const lowerStr = matcherOpts.nocase ? str.toLowerCase() : str
+function test(
+	str: string,
+	matchCtx: { lower?: string },
+	isMatch: (str: string) => boolean,
+	cleaned: string,
+	isRoot: boolean,
+	nocase: boolean,
+	matchBase: boolean,
+): boolean {
+	const normStr = nocase ? (matchCtx.lower ?? (matchCtx.lower = str.toLowerCase())) : str
 
-	if (lowerStr === cleaned || lowerStr.startsWith(cleaned + "/")) {
+	if (normStr === cleaned || normStr.startsWith(cleaned + "/")) {
 		return true
 	}
 
-	if (matcherOpts.matchBase) {
+	if (matchBase) {
 		const len = cleaned.length
-		let pos = str.indexOf(cleaned)
+		let pos = normStr.indexOf(cleaned)
 		while (pos !== -1) {
 			if (
-				(pos === 0 || str[pos - 1] === "/") &&
-				(pos + len === str.length || str[pos + len] === "/")
+				(pos === 0 || normStr.charCodeAt(pos - 1) === 47) &&
+				(pos + len === normStr.length || normStr.charCodeAt(pos + len) === 47)
 			) {
 				return true
 			}
-			pos = str.indexOf(cleaned, pos + 1)
+			pos = normStr.indexOf(cleaned, pos + 1)
 		}
 	}
 
-	const hasGlob = cleaned.includes("*")
-
-	if (hasGlob) {
-		if (glob.isMatch(str, cleaned, matcherOpts)) return true
+	if (cleaned.indexOf("*") !== -1) {
+		if (isMatch(normStr)) return true
 
 		if (!isRoot) {
-			let lastSlash = str.lastIndexOf("/")
+			let lastSlash = normStr.lastIndexOf("/")
 			while (lastSlash !== -1) {
-				const parent = str.slice(0, lastSlash)
-				if (glob.isMatch(parent, cleaned, matcherOpts)) return true
-				lastSlash = str.lastIndexOf("/", lastSlash - 1)
+				if (isMatch(normStr.slice(0, lastSlash))) return true
+				lastSlash = normStr.lastIndexOf("/", lastSlash - 1)
 			}
 		}
 	}

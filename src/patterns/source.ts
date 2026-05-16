@@ -1,4 +1,4 @@
-import type { Rule } from "./rule.js"
+import type { Rule, RuleMatch } from "./rule.js"
 
 /**
  * Represents a source of external patterns.
@@ -6,6 +6,10 @@ import type { Rule } from "./rule.js"
  * @since 0.6.0
  */
 export type Source = {
+	/**
+	 * @internal
+	 */
+	_noMatchCache?: RuleMatch
 	/**
 	 * Patterns defined within the source file.
 	 * Those patterns are for ignoring files.

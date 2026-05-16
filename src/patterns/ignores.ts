@@ -15,6 +15,12 @@ export interface IgnoresOptions extends InitState {
 	 */
 	entry: string
 	/**
+	 * Pre-lowercased entry path.
+	 *
+	 * @since 0.11.1
+	 */
+	lowerEntry?: string
+	/**
 	 * The associated resource.
 	 *
 	 * @since 0.11.0

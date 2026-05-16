@@ -5,24 +5,37 @@ import type { MatcherStream } from "./patterns/matcherStream.js"
 import type { Resource } from "./patterns/resource.js"
 import type { ScanOptions } from "./types.js"
 
-import { getDepth } from "./getDepth.js"
-import { isRuleMatchInvalid, RuleMatchKind, type RuleMatch } from "./patterns/rule.js"
-import { dirname } from "./unixify.js"
+import { isRuleMatchInvalid, type RuleMatch } from "./patterns/rule.js"
 
 export type WalkOptions = {
 	relPath: string
+	lowerRelPath?: string
 	parentPath: string
 	entry: Dirent
 	resource: Resource
 	stream: MatcherStream | undefined
 	scanOptions: Required<ScanOptions>
+	depth: number
 }
 
 export type WalkResult = {
-	match: [path: string, parentPath: string, RuleMatch]
+	path: string
+	parentPath: string
+	match: RuleMatch
 	includeParent: boolean
 	tooDeep: boolean
 	next: 0 | 1
+	depth: number
+	isDir: boolean
+}
+
+export type WalkTotal = {
+	dir: string
+	files: number
+	matched: number
+	dirs: number
+	depth: number
+	ignored: boolean
 }
 
 
@@ -33,173 +46,104 @@ export function walkIncludes(
 	options: WalkOptions,
 	cb: (err: Error | null, result: WalkResult) => void,
 ): void {
-	const { entry, stream, scanOptions, relPath: path, parentPath, resource } = options
-
-	const { fs, target, cwd, depth: maxDepth, invert, signal, fastDepth, fastInternal } = scanOptions
-
-	if (signal?.aborted) {
-		cb(signal.reason, null as any)
-		return
-	}
+	const { entry, stream, scanOptions, relPath: path, lowerRelPath, parentPath, resource, depth } = options
+	const { target, depth: maxDepth, invert, fastDepth, fastInternal, fs, cwd, signal } = scanOptions
 
 	const isDir = entry.isDirectory()
-	let direntPath: string
-	if (isDir) {
-		direntPath = path + "/"
-	} else {
-		direntPath = path
-	}
+	const direntPath = isDir ? path + "/" : path
+	const lowerEntry = lowerRelPath || path.toLowerCase()
 
-	const match = <RuleMatch>{ ignored: false, kind: RuleMatchKind.none }
-	const result: WalkResult = {
-		includeParent: false,
-		match: [direntPath, parentPath, match],
-		next: 0,
-		tooDeep: false,
-	}
-
-	const handleMatch = () => {
-		if (invert) {
-			match.ignored = !match.ignored
-		}
-
-		if (isRuleMatchInvalid(match)) {
-			if (stream) {
-				stream.emit("dirent", { dirent: entry, match, path: direntPath })
-			}
-			result.next = 0
-			cb(null, result)
-			return
-		}
-
-		if (match.ignored) {
-			if (stream) {
-				stream.emit("dirent", { dirent: entry, match, path: direntPath })
-			}
-			if (isDir && fastInternal && match.kind === RuleMatchKind.internal) {
-				result.next = 1
-				cb(null, result)
-				return
-			}
-			result.next = 0
-			cb(null, result)
-			return
-		}
-
-		if (isDir) {
-			const { depth } = getDepth(path, maxDepth)
-			if (depth <= maxDepth) {
-				if (stream) {
-					stream.emit("dirent", { dirent: entry, match, path: direntPath })
-				}
-			} else {
-				result.tooDeep = true
-			}
-			result.next = 0
-			cb(null, result)
-			return
-		}
-
-		const { depth } = getDepth(path, maxDepth)
-		if (depth > maxDepth) {
-			result.tooDeep = true
-			result.next = 0
-			cb(null, result)
-			return
-		}
-
-		const lastSlash = path.lastIndexOf("/")
-		if (lastSlash >= 0) {
-			result.includeParent = true
-		}
-
-		if (stream) {
-			if (result.includeParent) {
-				stream.emit("dirent", { dirent: entry, match, path: parentPath + "/" })
-			}
-			stream.emit("dirent", { dirent: entry, match, path: direntPath })
-		}
-
-		result.next = 0
-		cb(null, result)
-	}
-
-	if (fastDepth) {
-		const { depth } = getDepth(path, maxDepth)
-		if (depth > maxDepth) {
-			result.tooDeep = true
-			const ignoresOptions = {
-				cwd,
-				entry: path,
-				fs,
-				parentPath,
-				resource,
-				signal,
-				target,
-			}
-			target.ignores(ignoresOptions, (err, m) => {
-				if (err) {
-					cb(err, null as any)
-					return
-				}
-				Object.assign(match, m)
-				finishFastDepth()
-			})
-
-			function finishFastDepth() {
-				if (invert) {
-					match.ignored = !match.ignored
-				}
-
-				if (isRuleMatchInvalid(match)) {
-					if (stream) {
-						stream.emit("dirent", { dirent: entry, match, path: direntPath })
-					}
-					result.next = 0
-					cb(null, result)
-					return
-				}
-
-				if (match.ignored) {
-					if (isDir && fastInternal && match.kind === RuleMatchKind.internal) {
-						result.next = 1
-						cb(null, result)
-						return
-					}
-					result.next = 0
-					cb(null, result)
-					return
-				}
-
-				if (isDir) {
-					result.next = 0
-					cb(null, result)
-					return
-				}
-
-				result.next = 1
-				cb(null, result)
-			}
-			return
-		}
-	}
-
-	const ignoresOptions = {
+	const testOptions = {
 		cwd,
 		entry: path,
 		fs,
+		lowerEntry,
 		parentPath,
 		resource,
 		signal,
 		target,
 	}
-	target.ignores(ignoresOptions, (err, m) => {
-		if (err) {
-			cb(err, null as any)
-			return
+
+	if (fastDepth && depth > maxDepth) {
+		return target.ignores(testOptions, (err, match) => {
+			if (err) return cb(err, null as any)
+			if (invert) match.ignored = !match.ignored
+			const result: WalkResult = {
+				depth,
+				includeParent: false,
+				isDir,
+				match,
+				next: 0,
+				parentPath,
+				path: direntPath,
+				tooDeep: true,
+			}
+			if (isRuleMatchInvalid(match)) {
+				if (stream) {
+					stream.emit("dirent", { dirent: entry, match, path: direntPath })
+				}
+				return cb(null, result)
+			}
+			if (match.ignored) {
+				if (stream) stream.emit("dirent", { dirent: entry, match, path: direntPath })
+				if (isDir && fastInternal) result.next = 1
+				return cb(null, result)
+			}
+			result.next = isDir ? 0 : 1
+			cb(null, result)
+		})
+	}
+
+	target.ignores(testOptions, (err, match) => {
+		if (err) return cb(err, null as any)
+
+		if (invert) match.ignored = !match.ignored
+
+		const result: WalkResult = {
+			depth,
+			includeParent: false,
+			isDir,
+			match,
+			next: 0,
+			parentPath,
+			path: direntPath,
+			tooDeep: false,
 		}
-		Object.assign(match, m)
-		handleMatch()
+
+		if (isRuleMatchInvalid(match)) {
+			if (stream) stream.emit("dirent", { dirent: entry, match, path: direntPath })
+			return cb(null, result)
+		}
+
+		if (match.ignored) {
+			if (stream) stream.emit("dirent", { dirent: entry, match, path: direntPath })
+			if (isDir && fastInternal) result.next = 1
+			return cb(null, result)
+		}
+
+		if (isDir) {
+			if (depth <= maxDepth) {
+				if (stream) stream.emit("dirent", { dirent: entry, match, path: direntPath })
+			} else {
+				result.tooDeep = true
+			}
+			return cb(null, result)
+		}
+
+		if (depth > maxDepth) {
+			result.tooDeep = true
+			return cb(null, result)
+		}
+
+		const lastSlash = path.lastIndexOf("/")
+		if (lastSlash >= 0) result.includeParent = true
+
+		if (stream) {
+			if (result.includeParent) stream.emit("dirent", { dirent: entry, match, path: parentPath + "/" })
+			stream.emit("dirent", { dirent: entry, match, path: direntPath })
+		}
+
+		cb(null, result)
 	})
 }
 
@@ -207,26 +151,33 @@ export function walkIncludes(
  * Patches the {@link MatcherContext} with the given result.
  */
 export function walkPatchResult(ctx: MatcherContext, maxDepth: number, r: WalkResult): void {
-	const [path, parentPath, match] = r.match
-	const isDir = path.endsWith("/")
-
+	const { path, parentPath, match, isDir, tooDeep, depth, includeParent } = r
 	if (isDir) {
-		if (!match.ignored) {
-			if (!r.tooDeep) ctx.paths.set(path, match)
-		}
-		fillTotal(maxDepth, ctx.total, path.slice(0, -1), match, 0, 0, 1)
+		if (!match.ignored && !tooDeep) ctx.paths.set(path, match)
+		fillTotal(maxDepth, ctx.total, path.slice(0, -1), match, 0, 0, 1, depth)
 	} else {
 		if (!match.ignored) {
-			if (!r.tooDeep) ctx.paths.set(path, match)
-			fillTotal(maxDepth, ctx.total, parentPath, match, 1, 1, 0)
+			if (!tooDeep) ctx.paths.set(path, match)
+			fillTotal(maxDepth, ctx.total, parentPath, match, 1, 1, 0, depth)
 		} else {
-			fillTotal(maxDepth, ctx.total, path, match, 1, 0, 0)
+			fillTotal(maxDepth, ctx.total, path, match, 1, 0, 0, depth)
 		}
 	}
-	if (r.includeParent) {
-		if (!match.ignored) {
-			ctx.paths.set(parentPath + "/", match)
-		}
+	if (includeParent && !match.ignored) ctx.paths.set(parentPath + "/", match)
+}
+
+/**
+ * Patches the {@link MatcherContext} with the given total.
+ */
+export function walkPatchTotal(ctx: MatcherContext, maxDepth: number, t: WalkTotal): void {
+	const { dir, files, matched, dirs, depth, ignored } = t
+	const dirTotal = ctx.total.get(dir)
+	if (dirTotal) {
+		dirTotal.totalFiles += files
+		dirTotal.totalDirs += dirs
+		dirTotal.totalMatchedFiles += matched
+	} else if (depth <= maxDepth && !ignored) {
+		ctx.total.set(dir, { totalDirs: dirs, totalFiles: files, totalMatchedFiles: matched })
 	}
 }
 
@@ -234,8 +185,8 @@ export function walkPatchResult(ctx: MatcherContext, maxDepth: number, r: WalkRe
  * Patches the {@link MatcherContext} with the given results.
  */
 export function walkPatch(ctx: MatcherContext, maxDepth: number, results: WalkResult[]): void {
-	for (const r of results) {
-		walkPatchResult(ctx, maxDepth, r)
+	for (let i = 0, len = results.length; i < len; i++) {
+		walkPatchResult(ctx, maxDepth, results[i]!)
 	}
 }
 
@@ -247,9 +198,9 @@ export function fillTotal(
 	addFiles: number,
 	addMatchedFiles: number,
 	addDirs: number,
+	depth: number,
 ): void {
 	const dirTotal = total.get(dir)
-	let { depth, depthSlash } = getDepth(dir, maxDepth)
 	if (dirTotal) {
 		dirTotal.totalFiles += addFiles
 		dirTotal.totalDirs += addDirs
@@ -257,28 +208,30 @@ export function fillTotal(
 	} else if (depth <= maxDepth && !match.ignored) {
 		total.set(dir, { totalDirs: addDirs, totalFiles: addFiles, totalMatchedFiles: addMatchedFiles })
 	}
-	if (dir === ".") return
-	depth--
-	for (
-		let parent = depthSlash <= 0 ? dirname(dir) : dir.slice(0, depthSlash);
-		;
-		depth--, parent = dirname(parent)
-	) {
-		if (depth > maxDepth && parent !== ".") {
-			continue
-		}
+}
+
+/**
+ * Propagates totals from child directories to their parents.
+ */
+export function propagateTotals(_maxDepth: number, total: Map<string, Total>): void {
+	const dirs = Array.from(total.keys()).sort((a, b) => b.length - a.length)
+	for (let i = 0, len = dirs.length; i < len; i++) {
+		const dir = dirs[i]!
+		if (dir === "." || dir === "/") continue
+		const dirTotal = total.get(dir)!
+		const lastSlash = dir.lastIndexOf("/")
+		const parent = lastSlash === -1 ? "." : (dir.slice(0, lastSlash) || "/")
 		const parentTotal = total.get(parent)
 		if (parentTotal) {
-			parentTotal.totalFiles += addFiles
-			parentTotal.totalDirs += addDirs
-			parentTotal.totalMatchedFiles += addMatchedFiles
-		} else if (depth <= maxDepth && !match.ignored) {
+			parentTotal.totalFiles += dirTotal.totalFiles
+			parentTotal.totalDirs += dirTotal.totalDirs
+			parentTotal.totalMatchedFiles += dirTotal.totalMatchedFiles
+		} else {
 			total.set(parent, {
-				totalDirs: addDirs,
-				totalFiles: addFiles,
-				totalMatchedFiles: addMatchedFiles,
+				totalDirs: dirTotal.totalDirs,
+				totalFiles: dirTotal.totalFiles,
+				totalMatchedFiles: dirTotal.totalMatchedFiles,
 			})
 		}
-		if (parent === ".") break
 	}
 }

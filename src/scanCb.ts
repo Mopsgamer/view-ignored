@@ -5,7 +5,7 @@ import type { ScanOptions, FsAdapter } from "./types.js"
 
 import { scanParallel } from "./scanParallel.js"
 import { unixify } from "./unixify.js"
-import { walkPatchResult } from "./walk.js"
+import { walkPatchResult, propagateTotals } from "./walk.js"
 
 /**
  * Scan the directory for included files based on the provided targets. (Callback version)
@@ -62,7 +62,7 @@ export function scanCb(
 			{
 				external: ctx.external,
 				failed: ctx.failed,
-				onResult: (r) => walkPatchResult(ctx, scanOptions.depth, r),
+				onResult: (result) => walkPatchResult(ctx, scanOptions.depth, result),
 				scanOptions,
 				within,
 			},
@@ -71,13 +71,14 @@ export function scanCb(
 					cb(err, null as any)
 					return
 				}
+				propagateTotals(scanOptions.depth, ctx.total)
 				cb(null, ctx)
 			},
 		)
 	}
 
 	if (target.init) {
-		target.init({ cwd, fs, signal, target }, (err) => {
+		target.init({ cwd: normalCwd, fs, signal, target }, (err) => {
 			if (err) {
 				cb(err, null as any)
 				return

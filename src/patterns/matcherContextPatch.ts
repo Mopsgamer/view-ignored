@@ -1,10 +1,9 @@
 import type { ScanOptions } from "../types.js"
 import type { MatcherContext } from "./matcherContext.js"
 
-import { getDepth } from "../getDepth.js"
 import { scanParallel } from "../scanParallel.js"
 import { dirname } from "../unixify.js"
-import { walkPatchResult } from "../walk.js"
+import { walkPatchResult, walkPatchTotal, propagateTotals } from "../walk.js"
 import { resolveSources } from "./resolveSources.js"
 import type { Resource } from "./resource.js"
 
@@ -23,7 +22,7 @@ export async function matcherContextAddPath(
 		return false
 	}
 
-	const { target, fs, cwd, signal } = options
+	const { target, fs, cwd, signal, depth: maxDepth } = options
 
 	const isDir = entry.endsWith("/")
 	if (isDir) {
@@ -91,7 +90,13 @@ export async function matcherContextAddPath(
 				{
 					external: ctx.external,
 					failed: ctx.failed,
-					onResult: (r) => walkPatchResult(ctx, options.depth, r),
+					onResult: (result) => {
+						if ("match" in result) {
+							walkPatchResult(ctx, maxDepth, result)
+						} else {
+							walkPatchTotal(ctx, maxDepth, result)
+						}
+					},
 					scanOptions: options,
 					stream: undefined,
 					within: parentPath,
@@ -104,46 +109,48 @@ export async function matcherContextAddPath(
 		})
 		await matcherContextRemovePath(ctx, options, parentPath + "/")
 		await resultPromise
+		propagateTotals(maxDepth, ctx.total)
 	}
 
 	// add paths
 	// 1. recursively populate parents
 	await matcherContextAddPath(ctx, options, parentPath + "/")
 	// 2. if ignored, remove, otherwise add
+	const resource = (await new Promise((resolve, reject) => {
+		resolveSources(
+			{
+				cwd,
+				dir: parentPath,
+				external: ctx.external,
+				fs,
+				signal,
+				target,
+			},
+			(err, res) => {
+				if (err) reject(err)
+				else resolve(res)
+			},
+		)
+	})) as Resource
+
 	const match = (await new Promise((resolve, reject) => {
-		new Promise((resolve, reject) => {
-			resolveSources(
-				{
-					cwd,
-					dir: parentPath,
-					external: ctx.external,
-					fs,
-					signal,
-					target,
-				},
-				(err, res) => {
-					if (err) reject(err)
-					else resolve(res)
-				},
-			)
-		}).then((resource) => {
-			target.ignores(
-				{
-					cwd,
-					entry,
-					fs,
-					parentPath,
-					resource: resource as any,
-					signal,
-					target,
-				},
-				(err, res) => {
-					if (err) reject(err)
-					else resolve(res)
-				},
-			)
-		})
+		target.ignores(
+			{
+				cwd,
+				entry,
+				fs,
+				parentPath,
+				resource,
+				signal,
+				target,
+			},
+			(err, res) => {
+				if (err) reject(err)
+				else resolve(res)
+			},
+		)
 	})) as any
+
 	if (match.ignored) {
 		// 2.1. remove
 		await matcherContextRemovePath(ctx, options, entry)
@@ -191,7 +198,7 @@ export async function matcherContextRemovePath(
 			if (!element.startsWith(entry)) {
 				continue
 			}
-			if (total.totalFiles >= 0) {
+			if (total && total.totalFiles >= 0) {
 				const isDir = element.endsWith("/")
 				if (isDir) {
 					deletedDirs++
@@ -226,6 +233,7 @@ export async function matcherContextRemovePath(
 
 	const isSource = options.target.isIgnoreFile(entry)
 	if (isSource) {
+		const maxDepth = options.depth
 		// remove pattern sources
 		// rescan directory and repopulate stats
 		const resultPromise = new Promise((resolve, reject) => {
@@ -233,7 +241,13 @@ export async function matcherContextRemovePath(
 				{
 					external: ctx.external,
 					failed: ctx.failed,
-					onResult: (r) => walkPatchResult(ctx, options.depth, r),
+					onResult: (result) => {
+						if ("match" in result) {
+							walkPatchResult(ctx, maxDepth, result)
+						} else {
+							walkPatchTotal(ctx, maxDepth, result)
+						}
+					},
 					scanOptions: options,
 					stream: undefined,
 					within: parentPath,
@@ -246,6 +260,7 @@ export async function matcherContextRemovePath(
 		})
 		await matcherContextRemovePath(ctx, options, parentPathDir)
 		await resultPromise
+		propagateTotals(maxDepth, ctx.total)
 		return true
 	}
 	// remove path
@@ -257,12 +272,6 @@ export async function matcherContextRemovePath(
 		} else if (total.totalFiles >= 0) {
 			total.totalFiles--
 			total.totalMatchedFiles--
-		}
-		// 1.1 remove depthPaths
-		const { depthSlash } = getDepth(entry, options.depth)
-		if (depthSlash >= 0) {
-			const dir = entry.slice(0, depthSlash + 1)
-			deleteTotals(ctx, dir, 0, 1)
 		}
 	}
 	// 2. remove from paths

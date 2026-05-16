@@ -4,7 +4,7 @@ import type { ScanOptions } from "./types.js"
 
 import { resolveSources } from "./patterns/resolveSources.js"
 import { join, unixify } from "./unixify.js"
-import { walkIncludes, type WalkResult } from "./walk.js"
+import { walkIncludes, type WalkResult, type WalkTotal } from "./walk.js"
 import { opendir } from "./opendir.js"
 
 export interface ScanParallelOptions {
@@ -13,64 +13,90 @@ export interface ScanParallelOptions {
 	stream?: MatcherStream
 	external: Map<string, Resource>
 	failed?: InvalidSource[]
-	onResult?: (result: WalkResult) => void
+	onResult?: (result: WalkResult | WalkTotal) => void
 }
 
 
 /**
- * Executes a parallel directory scan with a concurrency limit. (Callback version)
+ * Executes a parallel directory scan.
  *
  * @since 0.11.0
  */
 export function scanParallel(
 	options: ScanParallelOptions,
-	cb: (err: Error | null, results: WalkResult[]) => void,
+	cb: (err: Error | null, results: WalkResult[] | null) => void,
 ): void {
 	const { scanOptions, stream, external, failed, onResult } = options
 	scanOptions.cwd = unixify(scanOptions.cwd)
 	let { within } = options
 	if (within.startsWith("./")) within = within.slice(2)
 
-	const results: WalkResult[] = []
+	const results: WalkResult[] | null = onResult ? null : []
 
 	let activeTasks = 0
 	let errorOccurred: Error | null = null
 
-	function walk(relPath: string) {
+	function walk(relPath: string, depth: number, resource?: Resource, lowerRelPath?: string) {
 		if (errorOccurred) return
 		activeTasks++
 
-		resolveSources({ ...scanOptions, dir: relPath, external }, (err, resource) => {
+		opendir(scanOptions.fs, join(scanOptions.cwd, relPath), (err, entries) => {
 			if (err) {
 				handleError(err)
 				return
 			}
-			external.set(relPath, resource)
-			if (resource && "error" in resource && resource.error) {
-				if (failed) {
-					failed.push(resource)
-				} else {
-					handleError(resource.error)
-					return
-				}
-			}
 
-			opendir(scanOptions.fs, join(scanOptions.cwd, relPath), (err, entries) => {
+			resolveSources({ ...scanOptions, dir: relPath, external, resource, entries }, (err, res) => {
 				if (err) {
 					handleError(err)
 					return
 				}
+				if (res && "error" in res && res.error) {
+					if (failed) {
+						failed.push(res)
+					} else {
+						handleError(res.error)
+						return
+					}
+				}
 
-				for (const entry of entries) {
+				const len = entries.length
+				const prefix = relPath === "." || relPath === "" ? "" : relPath + "/"
+				const lowerPrefix = lowerRelPath ? lowerRelPath + "/" : (prefix ? prefix.toLowerCase() : "")
+
+				let pendingResults = len
+				let dirFiles = 0
+				let dirMatched = 0
+				let dirDirs = 0
+
+				if (len === 0) {
+					if (onResult) {
+						onResult({
+							depth,
+							dir: relPath,
+							dirs: 0,
+							files: 0,
+							ignored: false,
+							matched: 0,
+						})
+					}
+				}
+
+				for (let i = 0; i < len; i++) {
+					const entry = entries[i]!
 					activeTasks++
-					const currentRelPath = join(relPath, entry.name)
+					const name = entry.name
+					const currentRelPath = prefix + name
+					const currentLowerRelPath = lowerPrefix + name.toLowerCase()
 
 					walkIncludes(
 						{
+							depth,
 							entry,
+							lowerRelPath: currentLowerRelPath,
 							parentPath: relPath,
 							relPath: currentRelPath,
-							resource,
+							resource: res,
 							scanOptions,
 							stream,
 						},
@@ -80,14 +106,36 @@ export function scanParallel(
 								return
 							}
 
-							if (onResult) {
-								onResult(self)
-							} else {
-								results.push(self)
-							}
+							if (self && self.match) {
+								if (self.isDir) {
+									dirDirs++
+								} else {
+									dirFiles++
+									if (!self.match.ignored) dirMatched++
+								}
 
-							if (entry.isDirectory() && self.next === 0) {
-								walk(currentRelPath)
+								if (onResult) {
+									onResult(self)
+								} else {
+									results!.push(self)
+								}
+
+								if (entry.isDirectory() && self.next === 0) {
+									walk(currentRelPath, depth + 1, res, currentLowerRelPath)
+								}
+							}
+							pendingResults--
+							if (pendingResults === 0) {
+								if (onResult) {
+									onResult({
+										depth,
+										dir: relPath,
+										dirs: dirDirs,
+										files: dirFiles,
+										ignored: false,
+										matched: dirMatched,
+									})
+								}
 							}
 							taskDone()
 						},
@@ -112,5 +160,12 @@ export function scanParallel(
 		}
 	}
 
-	walk(within)
+	let initialDepth = 0
+	if (within !== "." && within !== "") {
+		const len = within.length
+		for (let i = 0; i < len; i++) {
+			if (within.charCodeAt(i) === 47) initialDepth++
+		}
+	}
+	walk(within, initialDepth, undefined, within === "." || within === "" ? "" : within.toLowerCase())
 }

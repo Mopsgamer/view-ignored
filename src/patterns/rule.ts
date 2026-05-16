@@ -155,10 +155,11 @@ export function isRuleMatchInvalid(
 	| RuleMatchBaseInvalidSource<RuleMatchKind.invalidSource>
 	| RuleMatchBaseInvalidExternal<RuleMatchKind.invalidExternal>
 	| RuleMatchBaseInvalidPattern<RuleMatchKind.invalidInternal> {
+	const k = match.kind
 	return (
-		match.kind === RuleMatchKind.invalidSource ||
-		match.kind === RuleMatchKind.invalidExternal ||
-		match.kind === RuleMatchKind.invalidInternal
+		k === RuleMatchKind.invalidSource ||
+		k === RuleMatchKind.invalidExternal ||
+		k === RuleMatchKind.invalidInternal
 	)
 }
 
@@ -178,91 +179,117 @@ export interface RuleTestOptions extends PatternFinderOptions {
 	 * @since 0.6.0
 	 */
 	entry: string
+
+	/**
+	 * Pre-lowercased entry path.
+	 *
+	 * @since 0.11.1
+	 */
+	lowerEntry?: string
 }
 
-type TestResult = {
-	pattern: string
-	error: Error | undefined
-}
-
-function cacheTest(rs: PatternCache[], path: string, out: TestResult): boolean {
+function cacheTest(
+	rs: PatternCache[],
+	path: string,
+	matchCtx: { lower?: string },
+): PatternCache | Error | null {
 	const len = rs.length
 	for (let i = 0; i < len; i++) {
 		const r = rs[i]!
 		try {
-			if (patternCacheTest(r, path)) {
-				out.pattern = r.pattern
-				out.error = undefined
-				return true
+			if (patternCacheTest(r, path, matchCtx)) {
+				return r
 			}
 		} catch (err) {
-			out.pattern = r.pattern
-			out.error = err as Error
-			return true
+			return err as Error
 		}
 	}
-	return false
-}
-
-function testInternal(
-	options: RuleTestOptions,
-):
-	| RuleMatchBaseInvalidPattern<RuleMatchKind.invalidInternal>
-	| RuleMatchBasePattern<RuleMatchKind.internal>
-	| null {
-	const test: TestResult = { error: undefined, pattern: "" }
-	for (const { compiled, excludes } of options.target.internalRules) {
-		if (!cacheTest(compiled!, options.entry, test)) continue
-		if (test.error !== undefined)
-			return <RuleMatchBaseInvalidPattern<RuleMatchKind.invalidInternal>>{
-				error: test.error,
-				ignored: false,
-				kind: RuleMatchKind.invalidInternal,
-				pattern: test.pattern,
-			}
-
-		return <RuleMatchBasePattern<RuleMatchKind.internal>>{
-			ignored: excludes,
-			kind: RuleMatchKind.internal,
-			pattern: test.pattern,
-		}
-	}
-
 	return null
 }
 
-function testExternal(
-	path: string,
-	source: Source,
-):
-	| RuleMatchBaseInvalidExternal<RuleMatchKind.invalidExternal>
-	| RuleMatchBaseExternal<RuleMatchKind.external>
-	| RuleMatchBaseSource<RuleMatchKind.noMatch> {
-	const test: TestResult = { error: undefined, pattern: "" }
-	for (const { compiled, excludes } of source.rules) {
-		if (!cacheTest(compiled!, path, test)) continue
-		if (test.error !== undefined) {
-			return <RuleMatchBaseInvalidExternal<RuleMatchKind.invalidExternal>>{
-				error: test.error,
+/**
+ * Synchronous version of {@link ruleTest}.
+ *
+ * @since 0.11.1
+ */
+export function ruleTestSync(options: RuleTestOptions): RuleMatch {
+	const src = options.resource
+
+	if (src === undefined) {
+		throw new Error("view-ignored has crashed: no source cached.")
+	}
+
+	if (src === null) {
+		return { ignored: false, kind: RuleMatchKind.missingSource }
+	}
+
+	if ("error" in src) {
+		return { ...src, ignored: true, kind: RuleMatchKind.invalidSource }
+	}
+
+	const entry = options.entry
+	const matchCtx = { lower: options.lowerEntry }
+
+	const internalRules = options.target.internalRules
+	for (let i = 0, len = internalRules.length; i < len; i++) {
+		const rule = internalRules[i]!
+		const res = cacheTest(rule.compiled!, entry, matchCtx)
+		if (res === null) continue
+		if (res instanceof Error) {
+			return {
+				error: res,
 				ignored: false,
-				kind: RuleMatchKind.invalidExternal,
-				pattern: test.pattern,
-				source,
+				kind: RuleMatchKind.invalidInternal,
+				pattern: "",
 			}
 		}
 
-		return <RuleMatchBaseExternal<RuleMatchKind.external>>{
-			ignored: excludes,
-			kind: RuleMatchKind.external,
-			pattern: test.pattern,
-			source,
+		return {
+			ignored: rule.excludes,
+			kind: RuleMatchKind.internal,
+			pattern: res.pattern,
 		}
 	}
 
-	return <RuleMatchBaseSource<RuleMatchKind.noMatch>>{
-		ignored: source.inverted,
+	const rules = src.rules
+	const elen = rules.length
+	if (elen === 0) {
+		return (
+			(src._noMatchCache as any) ??
+			(src._noMatchCache = {
+				ignored: src.inverted,
+				kind: RuleMatchKind.noMatch,
+				source: src,
+			})
+		)
+	}
+
+	for (let i = 0; i < elen; i++) {
+		const rule = rules[i]!
+		const res = cacheTest(rule.compiled!, entry, matchCtx)
+		if (res === null) continue
+		if (res instanceof Error) {
+			return {
+				error: res,
+				ignored: false,
+				kind: RuleMatchKind.invalidExternal,
+				pattern: "",
+				source: src,
+			}
+		}
+
+		return {
+			ignored: rule.excludes,
+			kind: RuleMatchKind.external,
+			pattern: res.pattern,
+			source: src,
+		}
+	}
+
+	return {
+		ignored: src.inverted,
 		kind: RuleMatchKind.noMatch,
-		source,
+		source: src,
 	}
 }
 
@@ -276,29 +303,9 @@ export function ruleTest(
 	options: RuleTestOptions,
 	cb: (err: Error | null, match: RuleMatch) => void,
 ): void {
-	const src = options.resource
-
-	if (src === undefined) {
-		cb(new Error("view-ignored has crashed: no source cached."), null as any)
-		return
+	try {
+		cb(null, ruleTestSync(options))
+	} catch (err) {
+		cb(err as Error, null as any)
 	}
-
-	if (src === null) {
-		cb(null, { ignored: false, kind: RuleMatchKind.missingSource })
-		return
-	}
-
-	if ("error" in src) {
-		cb(null, { ...src, ignored: true, kind: RuleMatchKind.invalidSource })
-		return
-	}
-
-	let internalMatch = testInternal(options)
-	if (internalMatch !== null) {
-		cb(null, internalMatch)
-		return
-	}
-
-	const externalMatch = testExternal(options.entry, src)
-	cb(null, externalMatch)
 }

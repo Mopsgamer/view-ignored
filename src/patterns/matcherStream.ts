@@ -1,6 +1,5 @@
-import type { Dirent } from "node:fs"
-
 import { EventEmitter } from "node:events"
+import type { Dirent } from "node:fs"
 
 import type { MatcherContext, Total } from "../patterns/matcherContext.js"
 import type { ScanOptions, FsAdapter } from "../types.js"
@@ -8,7 +7,8 @@ import type { Resource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"
 
 import { scanParallel } from "../scanParallel.js"
-import { walkPatchResult } from "../walk.js"
+import { unixify } from "../unixify.js"
+import { walkPatchResult, propagateTotals } from "../walk.js"
 
 /**
  * Post-scan entry information.
@@ -131,8 +131,10 @@ export class MatcherStream extends EventEmitter<EventMap> {
 			total: new Map<string, Total>([[".", { totalDirs: 0, totalFiles: 0, totalMatchedFiles: 0 }]]),
 		}
 
+		const normalCwd = unixify(cwd)
+
 		const scanOptions: Required<ScanOptions> = {
-			cwd,
+			cwd: normalCwd,
 			depth: maxDepth,
 			fastDepth,
 			fastInternal,
@@ -148,7 +150,7 @@ export class MatcherStream extends EventEmitter<EventMap> {
 				{
 					external: ctx.external,
 					failed: ctx.failed,
-					onResult: (r) => walkPatchResult(ctx, scanOptions.depth, r),
+					onResult: (result) => walkPatchResult(ctx, scanOptions.depth, result),
 					scanOptions,
 					stream: this,
 					within,
@@ -158,6 +160,7 @@ export class MatcherStream extends EventEmitter<EventMap> {
 						cb(err, null as any)
 						return
 					}
+					propagateTotals(scanOptions.depth, ctx.total)
 					cb(null, ctx)
 					this.emit("end", ctx)
 				},
@@ -165,7 +168,7 @@ export class MatcherStream extends EventEmitter<EventMap> {
 		}
 
 		if (target.init) {
-			target.init({ cwd, fs, signal, target }, (err) => {
+			target.init({ cwd: normalCwd, fs, signal, target }, (err) => {
 				if (err) {
 					cb(err, null as any)
 					return
