@@ -95,15 +95,15 @@ export class MatcherStream extends EventEmitter<EventMap> {
 	 * @since 0.8.0
 	 */
 	start(): Promise<void> {
-		return new Promise((resolve, reject) => {
-			this.startCb((err) => {
-				if (err) {
-					reject(err)
-					return
-				}
-				resolve()
-			})
+		const { promise, resolve, reject } = Promise.withResolvers<void>()
+		this.startCb((err) => {
+			if (err) {
+				reject(err)
+				return
+			}
+			resolve()
 		})
+		return promise
 	}
 
 	/**

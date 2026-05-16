@@ -14,6 +14,16 @@ import {
 } from "../walk.js"
 import { resolveSources } from "./resolveSources.js"
 
+function promiseCb(resolve: (value: any) => void, reject: (reason?: any) => void) {
+	return (err: Error | null, res: any) => {
+		if (err) {
+			reject(err)
+			return
+		}
+		resolve(res)
+	}
+}
+
 /**
  * Provides patching abilities for the given {@link MatcherContext}.
  * Directories should have the slash suffix.
@@ -39,7 +49,7 @@ export async function matcherContextAddPath(
 			return true
 		}
 		const parentPath = dirname(direntPath)
-		const resource = (await new Promise((resolve, reject) => {
+		const resource = await new Promise<Resource>((resolve, reject) => {
 			resolveSources(
 				{
 					cwd,
@@ -49,12 +59,9 @@ export async function matcherContextAddPath(
 					signal,
 					target,
 				},
-				(err, res) => {
-					if (err) reject(err)
-					else resolve(res)
-				},
+				promiseCb(resolve, reject),
 			)
-		})) as Resource
+		})
 		ctx.paths.set(
 			entry,
 			await new Promise<RuleMatch>((resolve, reject) => {
@@ -68,10 +75,7 @@ export async function matcherContextAddPath(
 						signal,
 						target,
 					},
-					(err, res) => {
-						if (err) reject(err)
-						else resolve(res)
-					},
+					promiseCb(resolve, reject),
 				)
 			}),
 		)
@@ -92,7 +96,7 @@ export async function matcherContextAddPath(
 	const isSource = target.isIgnoreFile(entry)
 	if (isSource) {
 		// add pattern sources
-		const resultPromise = new Promise((resolve, reject) => {
+		const resultPromise = new Promise<WalkResult[] | null>((resolve, reject) => {
 			scanParallel(
 				{
 					external: ctx.external,
@@ -108,10 +112,7 @@ export async function matcherContextAddPath(
 					stream: undefined,
 					within: parentPath,
 				},
-				(err, results) => {
-					if (err) reject(err)
-					else resolve(results)
-				},
+				promiseCb(resolve, reject),
 			)
 		})
 		await matcherContextRemovePath(ctx, options, parentPath + "/")
@@ -123,7 +124,7 @@ export async function matcherContextAddPath(
 	// 1. recursively populate parents
 	await matcherContextAddPath(ctx, options, parentPath + "/")
 	// 2. if ignored, remove, otherwise add
-	const resource = (await new Promise((resolve, reject) => {
+	const resource = (await new Promise<Resource>((resolve, reject) => {
 		resolveSources(
 			{
 				cwd,
@@ -133,10 +134,7 @@ export async function matcherContextAddPath(
 				signal,
 				target,
 			},
-			(err, res) => {
-				if (err) reject(err)
-				else resolve(res)
-			},
+			promiseCb(resolve, reject),
 		)
 	})) as Resource
 
@@ -151,10 +149,7 @@ export async function matcherContextAddPath(
 				signal,
 				target,
 			},
-			(err, res) => {
-				if (err) reject(err)
-				else resolve(res)
-			},
+			promiseCb(resolve, reject),
 		)
 	})
 
@@ -222,14 +217,13 @@ export async function matcherContextRemovePath(
 			if (!element.startsWith(direntPath)) {
 				continue
 			}
-			if (ctx.external.delete(element) && ctx.failed.length) {
-				// 3.1. remove failed sources
-				const failedEntryIndex = ctx.failed.findIndex(
-					(fail) => dirname(fail.source.path) === element,
-				)
-				if (failedEntryIndex >= 0) {
-					ctx.failed.splice(failedEntryIndex, 1)
-				}
+			if (!ctx.external.delete(element) || !ctx.failed.length) {
+				continue
+			}
+			// 3.1. remove failed sources
+			const failedEntryIndex = ctx.failed.findIndex((fail) => dirname(fail.source.path) === element)
+			if (failedEntryIndex >= 0) {
+				ctx.failed.splice(failedEntryIndex, 1)
 			}
 		}
 		return true
@@ -243,7 +237,7 @@ export async function matcherContextRemovePath(
 		const maxDepth = options.depth
 		// remove pattern sources
 		// rescan directory and repopulate stats
-		const resultPromise = new Promise((resolve, reject) => {
+		const resultPromise = new Promise<WalkResult[] | null>((resolve, reject) => {
 			scanParallel(
 				{
 					external: ctx.external,
@@ -259,10 +253,7 @@ export async function matcherContextRemovePath(
 					stream: undefined,
 					within: parentPath,
 				},
-				(err, results) => {
-					if (err) reject(err)
-					else resolve(results)
-				},
+				promiseCb(resolve, reject),
 			)
 		})
 		await matcherContextRemovePath(ctx, options, parentPathDir)

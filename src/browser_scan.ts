@@ -21,13 +21,13 @@ export type * from "./types.js"
 export function scan(
 	options: ScanOptions & { fs: FsAdapter; cwd: string },
 ): Promise<MatcherContext> {
-	return new Promise((resolve, reject) => {
-		scanCb(options, (err, ctx) => {
-			if (err) {
-				reject(err)
-				return
-			}
-			resolve(ctx)
-		})
+	const { promise, resolve, reject } = Promise.withResolvers<MatcherContext>()
+	scanCb(options, (err, ctx) => {
+		if (err) {
+			reject(err)
+			return
+		}
+		resolve(ctx)
 	})
+	return promise
 }
