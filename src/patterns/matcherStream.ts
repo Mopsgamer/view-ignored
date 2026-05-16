@@ -1,5 +1,6 @@
-import { EventEmitter } from "node:events"
 import type { Dirent } from "node:fs"
+
+import { EventEmitter } from "node:events"
 
 import type { MatcherContext, Total } from "../patterns/matcherContext.js"
 import type { ScanOptions, FsAdapter } from "../types.js"
@@ -8,7 +9,7 @@ import type { RuleMatch } from "./rule.js"
 
 import { scanParallel } from "../scanParallel.js"
 import { unixify } from "../unixify.js"
-import { walkPatchResult, propagateTotals } from "../walk.js"
+import { walkPatchResult, walkPatchTotal, propagateTotals, type WalkResult } from "../walk.js"
 
 /**
  * Post-scan entry information.
@@ -150,7 +151,13 @@ export class MatcherStream extends EventEmitter<EventMap> {
 				{
 					external: ctx.external,
 					failed: ctx.failed,
-					onResult: (result) => walkPatchResult(ctx, scanOptions.depth, result),
+					onResult: (result) => {
+						if ("dir" in result) {
+							walkPatchTotal(ctx, scanOptions.depth, result as any)
+						} else {
+							walkPatchResult(ctx, scanOptions.depth, result as WalkResult)
+						}
+					},
 					scanOptions,
 					stream: this,
 					within,

@@ -39,4 +39,7 @@ export interface IgnoresOptions extends InitState {
  *
  * @since 0.11.0
  */
-export type IgnoresCb = (options: IgnoresOptions, cb: (err: Error | null, match: RuleMatch) => void) => void
+export type IgnoresCb = (
+	options: IgnoresOptions,
+	cb: (err: Error | null, match: RuleMatch) => void,
+) => void

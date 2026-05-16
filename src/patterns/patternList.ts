@@ -62,7 +62,7 @@ export function patternListCompile(
 	options?: PatternCompileOptions,
 ): PatternCache[] {
 	const len = list.length
-	const res = new Array(len)
+	const res = Array.from<PatternCache>({ length: len })
 	for (let i = 0; i < len; i++) {
 		res[i] = patternCompile(list[i]!, list, options)
 	}

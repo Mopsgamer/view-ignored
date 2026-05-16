@@ -30,6 +30,7 @@ export type WalkResult = {
 }
 
 export type WalkTotal = {
+	type?: "total"
 	dir: string
 	files: number
 	matched: number
@@ -38,7 +39,6 @@ export type WalkTotal = {
 	ignored: boolean
 }
 
-
 /**
  * @since 0.11.0
  */
@@ -46,7 +46,16 @@ export function walkIncludes(
 	options: WalkOptions,
 	cb: (err: Error | null, result: WalkResult) => void,
 ): void {
-	const { entry, stream, scanOptions, relPath: path, lowerRelPath, parentPath, resource, depth } = options
+	const {
+		entry,
+		stream,
+		scanOptions,
+		relPath: path,
+		lowerRelPath,
+		parentPath,
+		resource,
+		depth,
+	} = options
 	const { target, depth: maxDepth, invert, fastDepth, fastInternal, fs, cwd, signal } = scanOptions
 
 	const isDir = entry.isDirectory()
@@ -139,7 +148,8 @@ export function walkIncludes(
 		if (lastSlash >= 0) result.includeParent = true
 
 		if (stream) {
-			if (result.includeParent) stream.emit("dirent", { dirent: entry, match, path: parentPath + "/" })
+			if (result.includeParent)
+				stream.emit("dirent", { dirent: entry, match, path: parentPath + "/" })
 			stream.emit("dirent", { dirent: entry, match, path: direntPath })
 		}
 
@@ -150,33 +160,30 @@ export function walkIncludes(
 /**
  * Patches the {@link MatcherContext} with the given result.
  */
-export function walkPatchResult(ctx: MatcherContext, maxDepth: number, r: WalkResult): void {
-	const { path, parentPath, match, isDir, tooDeep, depth, includeParent } = r
+export function walkPatchResult(ctx: MatcherContext, _maxDepth: number, r: WalkResult): void {
+	const { path, parentPath, match, isDir, tooDeep, includeParent } = r
 	if (isDir) {
 		if (!match.ignored && !tooDeep) ctx.paths.set(path, match)
-		fillTotal(maxDepth, ctx.total, path.slice(0, -1), match, 0, 0, 1, depth)
 	} else {
 		if (!match.ignored) {
 			if (!tooDeep) ctx.paths.set(path, match)
-			fillTotal(maxDepth, ctx.total, parentPath, match, 1, 1, 0, depth)
-		} else {
-			fillTotal(maxDepth, ctx.total, path, match, 1, 0, 0, depth)
 		}
 	}
-	if (includeParent && !match.ignored) ctx.paths.set(parentPath + "/", match)
+	if (includeParent && !match.ignored)
+		if (!ctx.paths.has(parentPath + "/")) ctx.paths.set(parentPath + "/", match)
 }
 
 /**
  * Patches the {@link MatcherContext} with the given total.
  */
 export function walkPatchTotal(ctx: MatcherContext, maxDepth: number, t: WalkTotal): void {
-	const { dir, files, matched, dirs, depth, ignored } = t
+	const { dir, files, matched, dirs, ignored } = t
 	const dirTotal = ctx.total.get(dir)
 	if (dirTotal) {
 		dirTotal.totalFiles += files
 		dirTotal.totalDirs += dirs
 		dirTotal.totalMatchedFiles += matched
-	} else if (depth <= maxDepth && !ignored) {
+	} else if (t.depth <= maxDepth && !ignored) {
 		ctx.total.set(dir, { totalDirs: dirs, totalFiles: files, totalMatchedFiles: matched })
 	}
 }
@@ -220,7 +227,7 @@ export function propagateTotals(_maxDepth: number, total: Map<string, Total>): v
 		if (dir === "." || dir === "/") continue
 		const dirTotal = total.get(dir)!
 		const lastSlash = dir.lastIndexOf("/")
-		const parent = lastSlash === -1 ? "." : (dir.slice(0, lastSlash) || "/")
+		const parent = lastSlash === -1 ? "." : dir.slice(0, lastSlash) || "/"
 		const parentTotal = total.get(parent)
 		if (parentTotal) {
 			parentTotal.totalFiles += dirTotal.totalFiles
