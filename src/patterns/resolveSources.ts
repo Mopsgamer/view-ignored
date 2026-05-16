@@ -77,14 +77,7 @@ export function resolveSources(
 		})
 		return
 	}
-	if (target.root === "." && dir !== ".") {
-		resolveSources({ ...options, dir: "." }, (err, res) => {
-			if (err) return cb(err, null as any)
-			external.set(dir, res)
-			cb(null, res)
-		})
-		return
-	}
+
 	let source = external.get(dir)
 	if (source !== undefined) {
 		cb(null, source)

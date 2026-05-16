@@ -100,7 +100,7 @@ export async function matcherContextAddPath(
 						if ("dir" in result) {
 							walkPatchTotal(ctx, maxDepth, result as WalkTotal)
 						} else {
-							walkPatchResult(ctx, maxDepth, result as WalkResult)
+							walkPatchResult(ctx, result as WalkResult)
 						}
 					},
 					scanOptions: options,
@@ -115,7 +115,7 @@ export async function matcherContextAddPath(
 		})
 		await matcherContextRemovePath(ctx, options, parentPath + "/")
 		await resultPromise
-		propagateTotals(maxDepth, ctx.total)
+		propagateTotals(ctx.total)
 	}
 
 	// add paths
@@ -251,7 +251,7 @@ export async function matcherContextRemovePath(
 						if ("dir" in result) {
 							walkPatchTotal(ctx, maxDepth, result as WalkTotal)
 						} else {
-							walkPatchResult(ctx, maxDepth, result as WalkResult)
+							walkPatchResult(ctx, result as WalkResult)
 						}
 					},
 					scanOptions: options,
@@ -266,7 +266,7 @@ export async function matcherContextRemovePath(
 		})
 		await matcherContextRemovePath(ctx, options, parentPathDir)
 		await resultPromise
-		propagateTotals(maxDepth, ctx.total)
+		propagateTotals(ctx.total)
 		return true
 	}
 	// remove path

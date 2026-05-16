@@ -155,7 +155,7 @@ export class MatcherStream extends EventEmitter<EventMap> {
 						if ("dir" in result) {
 							walkPatchTotal(ctx, scanOptions.depth, result as any)
 						} else {
-							walkPatchResult(ctx, scanOptions.depth, result as WalkResult)
+							walkPatchResult(ctx, result as WalkResult)
 						}
 					},
 					scanOptions,
@@ -167,7 +167,7 @@ export class MatcherStream extends EventEmitter<EventMap> {
 						cb(err, null as any)
 						return
 					}
-					propagateTotals(scanOptions.depth, ctx.total)
+					propagateTotals(ctx.total)
 					cb(null, ctx)
 					this.emit("end", ctx)
 				},

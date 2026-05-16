@@ -160,7 +160,7 @@ export function walkIncludes(
 /**
  * Patches the {@link MatcherContext} with the given result.
  */
-export function walkPatchResult(ctx: MatcherContext, _maxDepth: number, r: WalkResult): void {
+export function walkPatchResult(ctx: MatcherContext, r: WalkResult): void {
 	const { path, parentPath, match, isDir, tooDeep, includeParent } = r
 	if (isDir) {
 		if (!match.ignored && !tooDeep) ctx.paths.set(path, match)
@@ -191,9 +191,9 @@ export function walkPatchTotal(ctx: MatcherContext, maxDepth: number, t: WalkTot
 /**
  * Patches the {@link MatcherContext} with the given results.
  */
-export function walkPatch(ctx: MatcherContext, maxDepth: number, results: WalkResult[]): void {
+export function walkPatch(ctx: MatcherContext, results: WalkResult[]): void {
 	for (let i = 0, len = results.length; i < len; i++) {
-		walkPatchResult(ctx, maxDepth, results[i]!)
+		walkPatchResult(ctx, results[i]!)
 	}
 }
 
@@ -220,7 +220,7 @@ export function fillTotal(
 /**
  * Propagates totals from child directories to their parents.
  */
-export function propagateTotals(_maxDepth: number, total: Map<string, Total>): void {
+export function propagateTotals(total: Map<string, Total>): void {
 	const dirs = Array.from(total.keys()).sort((a, b) => b.length - a.length)
 	for (let i = 0, len = dirs.length; i < len; i++) {
 		const dir = dirs[i]!

@@ -66,7 +66,7 @@ export function scanCb(
 					if ("dir" in result) {
 						walkPatchTotal(ctx, scanOptions.depth, result)
 					} else {
-						walkPatchResult(ctx, scanOptions.depth, result as WalkResult)
+						walkPatchResult(ctx, result as WalkResult)
 					}
 				},
 				scanOptions,
@@ -77,7 +77,7 @@ export function scanCb(
 					cb(err, null as any)
 					return
 				}
-				propagateTotals(scanOptions.depth, ctx.total)
+				propagateTotals(ctx.total)
 				cb(null, ctx)
 			},
 		)
