@@ -8,7 +8,7 @@ import type { Rule } from "./rule.js"
 import type { Source } from "./source.js"
 
 import { dirname, join } from "../unixify.js"
-import { type PatternFinderOptions, type Extractor, type ExtractorFn } from "./extractor.js"
+import { type PatternFinderOptions, type Extractor } from "./extractor.js"
 import { patternListCompile } from "./patternList.js"
 
 /**
@@ -44,8 +44,8 @@ export interface ResolveSourcesOptions extends PatternFinderOptions {
 	 * Maps directory paths to their corresponding sources.
 	 *
 	 * @example
-	 * "dir" => Source
-	 * "dir/subdir" => Source
+	 * "dir" => Resource
+	 * "dir/subdir" => Resource
 	 *
 	 * @since 0.11.0
 	 */
@@ -54,7 +54,7 @@ export interface ResolveSourcesOptions extends PatternFinderOptions {
 	 * Directory entries of the current directory.
 	 * Used for optimization to avoid redundant `fs.readFile` calls.
 	 *
-	 * @since 0.11.1
+	 * @since 0.11.0
 	 */
 	entries?: Dirent[]
 }
@@ -273,7 +273,7 @@ function tryExtractorCb(
 			rules: [],
 		}
 
-		const act = (extractor.extract as ExtractorFn)(newSource, buff!)
+		const act = extractor.extract(newSource, buff!)
 		if (act === null) {
 			cb(null, null)
 			return

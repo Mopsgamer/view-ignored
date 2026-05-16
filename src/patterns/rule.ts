@@ -117,6 +117,9 @@ export interface RuleMatchBaseExternal<K extends string | number | symbol>
 	extends RuleMatchBasePattern<K>, RuleMatchBaseSource<K> {}
 
 /**
+ * The kind of a pattern match.
+ *
+ * @since 0.11.0
  */
 export const enum RuleMatchKind {
 	"none",
@@ -183,7 +186,7 @@ export interface RuleTestOptions extends PatternFinderOptions {
 	/**
 	 * Pre-lowercased entry path.
 	 *
-	 * @since 0.11.1
+	 * @since 0.11.0
 	 */
 	lowerEntry?: string
 }
@@ -210,7 +213,7 @@ function cacheTest(
 /**
  * Synchronous version of {@link ruleTest}.
  *
- * @since 0.11.1
+ * @since 0.11.0
  */
 export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 	const src = options.resource

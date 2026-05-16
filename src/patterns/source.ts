@@ -8,6 +8,8 @@ import type { Rule, RuleMatch } from "./rule.js"
 export type Source = {
 	/**
 	 * @internal
+	 *
+	 * @since 0.11.0
 	 */
 	_noMatchCache?: RuleMatch
 	/**
@@ -16,7 +18,7 @@ export type Source = {
 	 *
 	 * @see {@link ruleTest}
 	 *
-	 * @since 0.6.0
+	 * @since 0.11.0
 	 */
 	rules: Rule[]
 

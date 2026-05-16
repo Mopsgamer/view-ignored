@@ -197,26 +197,6 @@ export function walkPatch(ctx: MatcherContext, results: WalkResult[]): void {
 	}
 }
 
-export function fillTotal(
-	maxDepth: number,
-	total: Map<string, Total>,
-	dir: string,
-	match: RuleMatch,
-	addFiles: number,
-	addMatchedFiles: number,
-	addDirs: number,
-	depth: number,
-): void {
-	const dirTotal = total.get(dir)
-	if (dirTotal) {
-		dirTotal.totalFiles += addFiles
-		dirTotal.totalDirs += addDirs
-		dirTotal.totalMatchedFiles += addMatchedFiles
-	} else if (depth <= maxDepth && !match.ignored) {
-		total.set(dir, { totalDirs: addDirs, totalFiles: addFiles, totalMatchedFiles: addMatchedFiles })
-	}
-}
-
 /**
  * Propagates totals from child directories to their parents.
  */

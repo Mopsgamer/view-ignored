@@ -1,6 +1,7 @@
 import type { ScanOptions } from "../types.js"
 import type { MatcherContext } from "./matcherContext.js"
 import type { Resource } from "./resource.js"
+import type { RuleMatch } from "./rule.js"
 
 import { scanParallel } from "../scanParallel.js"
 import { dirname } from "../unixify.js"
@@ -56,7 +57,7 @@ export async function matcherContextAddPath(
 		})) as Resource
 		ctx.paths.set(
 			entry,
-			await new Promise((resolve, reject) => {
+			await new Promise<RuleMatch>((resolve, reject) => {
 				target.ignores(
 					{
 						cwd,
@@ -139,7 +140,7 @@ export async function matcherContextAddPath(
 		)
 	})) as Resource
 
-	const match = (await new Promise((resolve, reject) => {
+	const match = await new Promise<RuleMatch>((resolve, reject) => {
 		target.ignores(
 			{
 				cwd,
@@ -155,7 +156,7 @@ export async function matcherContextAddPath(
 				else resolve(res)
 			},
 		)
-	})) as any
+	})
 
 	if (match.ignored) {
 		// 2.1. remove
@@ -289,10 +290,9 @@ function deleteTotals(ctx: MatcherContext, entry: string, deletedDirs = 0, delet
 	if (entry.endsWith("/")) ctx.total.delete(entry)
 	for (let parent = dirname(entry); parent !== "./"; parent = dirname(parent) + "/") {
 		const total = ctx.total.get(parent)
-		if (total) {
-			total.totalDirs -= deletedDirs
-			total.totalFiles -= deletedFiles
-			total.totalMatchedFiles -= deletedFiles
-		}
+		if (!total) continue
+		total.totalDirs -= deletedDirs
+		total.totalFiles -= deletedFiles
+		total.totalMatchedFiles -= deletedFiles
 	}
 }

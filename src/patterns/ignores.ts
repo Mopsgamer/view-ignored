@@ -3,7 +3,7 @@ import type { Resource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"
 
 /**
- * Used in {@link Ignores}.
+ * Used in {@link IgnoresCb}.
  *
  * @since 0.6.0
  */
@@ -35,7 +35,7 @@ export interface IgnoresOptions extends InitState {
 }
 
 /**
- * @see {@link Ignores}
+ * @see {@link IgnoresCb}
  *
  * @since 0.11.0
  */
