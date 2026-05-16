@@ -8,7 +8,9 @@ import { unixify } from "./unixify.js"
 import { walkPatchResult, walkPatchTotal, propagateTotals, type WalkResult } from "./walk.js"
 
 /**
- * Scan the directory for included files based on the provided targets. (Callback version)
+ * Scan the directory for included files based on the provided targets.
+ *
+ * It also normalizes paths to use forward slashes.
  *
  * @param options Scan options.
  * @param cb Callback function.
