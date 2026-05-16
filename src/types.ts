@@ -8,11 +8,9 @@ import type { Target } from "./targets/target.js"
  * @since 0.6.0
  */
 export interface FsAdapter {
-	promises: {
-		opendir: typeof fs.promises.opendir
-		readdir: typeof fs.promises.readdir
-		readFile: typeof fs.promises.readFile
-	}
+    /**
+     * `readdir` is better than `opendir`.
+     */
 	readdir: typeof fs.readdir
 	readFile: typeof fs.readFile
 }
