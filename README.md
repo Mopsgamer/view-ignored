@@ -38,6 +38,7 @@ Node.js 18 or later. Any compatible environment.
 ## v1 Roadmap
 
 - [x] Works for common use cases.
+- [ ] Validate manifests correctly.
 - [ ] Handle Git config.
 - [ ] Include node_modules bundled dependencies correctly. Missing: NPM, Yarn + Classic, Bun, Deno, JSR.
 - [ ] *Move targets into separate packages (or not).
@@ -165,7 +166,7 @@ The following built-in scanners are available:
   - Check this scanner by running `git ls-files --others --exclude-standard --cached`.
 - NPM ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/npm.ts))
   - `view-ignored` should be compatible with NPM, PNPM, and others.
-  - Reads `package.json` `files` field, `.npmignore` and `.gitignore`.
+  - Reads `package.json` `files` field or `.npmignore` or `.gitignore`.
   - Searches from `.` (current working directory).
   - Requires `package.json`: `name`, `version`.
   - Check this scanner by running `npm pack --dry-run`.
@@ -176,20 +177,22 @@ The following built-in scanners are available:
   - Check this scanner by running `bun pm pack --dry-run`.
 - Yarn ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/yarn.ts))
   - Modern Berry and ZPM behavior. `YarnClassic` is available. ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/yarnClassic.ts))
-  - Reads `package.json` `files` field, `.npmignore` and `.gitignore`.
+  - Reads `package.json` `files` field or `.npmignore` or `.gitignore`.
   - Searches from `.` (current working directory).
   - Requires `package.json`: `name`, `version`. Forces paths from `main`, `module`, `browser` and `bin` to be included.
 - VSCE ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/vsce.ts))
-  - Reads `package.json` `files` field, `.vscodeignore` and `.gitignore`.
+  - Reads `package.json` `files` field or `.vscodeignore` or `.gitignore`.
   - Searches from `.` (current working directory).
   - Requires `package.json`: `name`, `version`, `engines.vscode`.
   - Check this scanner by running `vsce ls`.
 - JSR ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/jsr.ts))
-  - Validates and reads `jsr.json(c)` `include` and `exclude` fields.
   - Searches from `.` (current working directory).
+  - Requires `jsr.json` or `jsr.jsonc`.
+  - Validates `publish.include` and `publish.exclude` or `include` and `exclude` fields.
 - Deno ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/deno.ts))
-  - Validates and reads `jsr.json(c)` and `deno.json(c)` `include` and `exclude` fields.
   - Searches from `.` (current working directory).
+  - Requires `jsr.json` or `jsr.jsonc` or `deno.json` or `deno.jsonc`.
+  - Validates `publish.include` and `publish.exclude` or `include` and `exclude` fields.
 
 ## See also
 
