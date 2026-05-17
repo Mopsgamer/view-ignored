@@ -39,16 +39,17 @@ export async function matcherContextAddPath(
 		return false
 	}
 
+	const isDir = entry.endsWith("/")
+	const direntPath = isDir ? entry.slice(0, -1) : entry
+	if (isDir && direntPath === ".") {
+		return true
+	}
+	const parentPath = dirname(direntPath)
+
 	const { target, fs, cwd, signal, depth: maxDepth } = options
 
-	const isDir = entry.endsWith("/")
 	if (isDir) {
 		// recursive parent population
-		const direntPath = entry.replace(/\/$/, "")
-		if (direntPath === ".") {
-			return true
-		}
-		const parentPath = dirname(direntPath)
 		const resource = await new Promise<Resource>((resolve, reject) => {
 			resolveSources(
 				{
@@ -90,8 +91,6 @@ export async function matcherContextAddPath(
 		}
 		return true
 	}
-
-	const parentPath = dirname(entry)
 
 	const isSource = target.extractors.some((e) => e.path === entry)
 	if (isSource) {
@@ -182,17 +181,19 @@ export async function matcherContextRemovePath(
 	entry: string,
 ): Promise<boolean> {
 	const isDir = entry.endsWith("/")
+	const direntPath = isDir ? entry.slice(0, -1) : entry
+	if (isDir && direntPath === ".") {
+		ctx.paths.clear()
+		ctx.external.clear()
+		ctx.failed.length = 0
+		ctx.total.set(direntPath, { totalDirs: 0, totalFiles: 0, totalMatchedFiles: 0 })
+		return true
+	}
+	const parentPath = dirname(direntPath)
+	const parentPathDir = parentPath + "/"
+
 	if (isDir) {
 		// remove directories
-		const direntPath = entry.slice(0, -1)
-		if (direntPath === ".") {
-			ctx.paths.clear()
-			ctx.external.clear()
-			ctx.failed.length = 0
-			ctx.total.set(direntPath, { totalDirs: 0, totalFiles: 0, totalMatchedFiles: 0 })
-			return true
-		}
-
 		let deletedDirs = 0,
 			deletedFiles = 0
 		const total = ctx.total.get(direntPath)!
@@ -228,9 +229,6 @@ export async function matcherContextRemovePath(
 		}
 		return true
 	}
-
-	const parentPath = dirname(entry)
-	const parentPathDir = parentPath + "/"
 
 	const isSource = options.target.extractors.some((e) => e.path === entry)
 	if (isSource) {
