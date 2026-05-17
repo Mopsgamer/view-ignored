@@ -1,5 +1,5 @@
 <div align="center">
-<h4>view-ignored</h4>
+<h1>view-ignored</h1>
 
 [![npm version](https://img.shields.io/npm/v/view-ignored.svg?style=flat)](https://www.npmjs.com/package/view-ignored)
 [![npm downloads](https://img.shields.io/npm/dm/view-ignored.svg?style=flat)](https://www.npmjs.com/package/view-ignored)
