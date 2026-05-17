@@ -39,6 +39,9 @@ Node.js 18 or later.
 
 ```ts
 import * as vign from "view-ignored"
+// also available:
+// "/scan", "/stream"
+// "/browser", "/browser/scan", "/browser/stream"
 import { Git as target } from "view-ignored/targets"
 
 const ctx = await vign.scan({ target })
@@ -99,6 +102,7 @@ export const Git: Target = <Target>{
 
 ```ts
 import * as vign from "view-ignored"
+// or import * as vign from "view-ignored/stream"
 import { NPM as target } from "view-ignored/targets"
 
 const stream = vign.scanStream({ target })
@@ -130,12 +134,7 @@ import * as vign from "view-ignored/browser"
 import { Git as target } from "view-ignored/targets"
 
 export const cwd = process.cwd()
-
-const customFs = {
-	readdir,
-	readFile,
-}
-
+const customFs = { readdir, readFile }
 vign.scan({ target, cwd, fs })
 ```
 
@@ -144,37 +143,37 @@ vign.scan({ target, cwd, fs })
 The following built-in scanners are available:
 
 - Git ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/git.ts))
-  - `view-ignored` does not handle patterns the same way Git does, though it should.
-  - Reads `.gitignore` and `.git/info/exclude` but does not consider global settings.
-  - Starts searching from `/`.
+  - `view-ignored` handles Git-specific ignoring almost identically to Git: does not consider config.
+  - Reads `.gitignore` and `.git/info/exclude`.
+  - Searches from `/`. (system's root)
   - Check this scanner by running `git ls-files --others --exclude-standard --cached`.
 - NPM ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/npm.ts))
-  - Expecting to be compatible with PNPM, and others.
-  - Validates `package.json`.
+  - `view-ignored` should be compatible with NPM, PNPM, and others.
   - Reads `package.json` `files` field, `.npmignore` and `.gitignore`.
-  - Starts searching from `.` (current working directory).
+  - Searches from `.` (current working directory).
+  - Requires `package.json`: `name`, `version`.
   - Check this scanner by running `npm pack --dry-run`.
 - Bun ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/bun.ts))
   - Bun tries to mimic NPM, but that does not mean it behaves the same way.
+  - Searches from `.` (current working directory).
+  - Requires `package.json`: `name`, `version`. Forces paths from `bin` to be included.
   - Check this scanner by running `bun pm pack --dry-run`.
 - Yarn ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/yarn.ts))
-  - Modern Berry behavior.
-  - Validates `package.json`.
+  - Modern Berry and ZPM behavior. `YarnClassic` is available. ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/yarnClassic.ts))
   - Reads `package.json` `files` field, `.npmignore` and `.gitignore`.
-  - Requires `package.json`: includes paths from `main`, `module`, `browser` and `bin`.
-  - Starts searching from `.` (current working directory).
-  - `YarnClassic` is available. ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/yarnClassic.ts))
+  - Searches from `.` (current working directory).
+  - Requires `package.json`: `name`, `version`. Forces paths from `main`, `module`, `browser` and `bin` to be included.
 - VSCE ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/vsce.ts))
-  - Validates `package.json`.
   - Reads `package.json` `files` field, `.vscodeignore` and `.gitignore`.
-  - Starts searching from `.` (current working directory).
+  - Searches from `.` (current working directory).
+  - Requires `package.json`: `name`, `version`, `engines.vscode`.
   - Check this scanner by running `vsce ls`.
 - JSR ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/jsr.ts))
   - Validates and reads `jsr.json(c)` `include` and `exclude` fields.
-  - Starts searching from `.` (current working directory).
+  - Searches from `.` (current working directory).
 - Deno ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/deno.ts))
   - Validates and reads `jsr.json(c)` and `deno.json(c)` `include` and `exclude` fields.
-  - Starts searching from `.` (current working directory).
+  - Searches from `.` (current working directory).
 
 ## See also
 
