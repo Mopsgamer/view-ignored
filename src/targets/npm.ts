@@ -99,7 +99,7 @@ export const NPM: Target = <Target>{
 			if (err) {
 				const error = err as NodeJS.ErrnoException
 				if (error.code === "ENOENT") {
-					cb()
+					cb(new Error("'package.json' not found", { cause: error }))
 					return
 				}
 				cb(new Error("Error while initializing NPM", { cause: error }))
@@ -108,18 +108,18 @@ export const NPM: Target = <Target>{
 
 			try {
 				npmManifestParse(content!.toString())
-			} catch {
-				// handled by extractor
+			} catch (error) {
+				cb(new Error("Invalid 'package.json'", { cause: error }))
+				return
 			}
+			// const set = new Set<string>()
+
+			// TODO: NPM should include bundled deps
+
+			// internalInclude.pattern = Array.from(set)
+			// ruleCompile(internalInclude, { nocase: true })
 			cb()
 		})
-
-		// const set = new Set<string>()
-
-		// TODO: NPM should include bundled deps
-
-		// internalInclude.pattern = Array.from(set)
-		// ruleCompile(internalInclude, { nocase: true })
 	},
 	internalRules: internal,
 	isIgnoreFile: (path) => extractors.some((e) => e.path === path),

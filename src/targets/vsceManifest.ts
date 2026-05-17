@@ -1,6 +1,6 @@
-import { type NpmManifest } from "./npmManifest.js"
+import { npmManifestParse, type PackageJson } from "./npmManifest.js"
 
-export interface VsceManifest extends NpmManifest {
+export interface VsceManifest extends PackageJson {
 	engines: {
 		vscode: string
 	}
@@ -10,7 +10,7 @@ export interface VsceManifest extends NpmManifest {
 const VSCODE_ENGINE_REGEX = /^\*$|^(\^|>=)?((\d+)|x)\.((\d+)|x)\.((\d+)|x)(-.*)?$/
 
 export function vsceManifestParse(s: string): VsceManifest {
-	const parsed = JSON.parse(s)
+	const parsed = npmManifestParse(s)
 
 	if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
 		throw new Error("VSCE manifest must be a JSON object")

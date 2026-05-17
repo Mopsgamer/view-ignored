@@ -9,7 +9,7 @@ import {
 	extractGitignoreNocase,
 } from "../patterns/index.js"
 import { join, unixify } from "../unixify.js"
-import { npmManifestParse } from "./npmManifest.js"
+import { npmManifestParse, type PackageJson } from "./npmManifest.js"
 
 const extractors: Extractor[] = [
 	{
@@ -80,7 +80,7 @@ export const Yarn: Target = <Target>{
 	ignores: ruleTest,
 	init({ fs, cwd }, cb) {
 		const normalCwd = unixify(cwd)
-		fs.readFile(normalCwd + "/" + "package.json", (err, content) => {
+		fs.readFile(normalCwd + "/package.json", (err, content) => {
 			if (err) {
 				const error = err as NodeJS.ErrnoException
 				if (error.code === "ENOENT") {
@@ -91,15 +91,11 @@ export const Yarn: Target = <Target>{
 				return
 			}
 
-			let dist: any
+			let dist: PackageJson
 			try {
 				dist = npmManifestParse(content!.toString())
-			} catch {
-				// handled by extractor
-			}
-
-			if (!dist || typeof dist !== "object") {
-				cb()
+			} catch (error) {
+				cb(new Error("Invalid 'package.json'", { cause: error }))
 				return
 			}
 

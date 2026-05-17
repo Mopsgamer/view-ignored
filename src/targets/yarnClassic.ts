@@ -97,16 +97,16 @@ export const YarnClassic: Target = <Target>{
 	ignores: ruleTest,
 	init({ fs, cwd }, cb) {
 		const normalCwd = unixify(cwd)
-		fs.readFile(normalCwd + "/" + "package.json", (err, content) => {
+		fs.readFile(normalCwd + "/package.json", (err, content) => {
 			if (err) {
 				cb(new Error("Error while initializing Yarn classic", { cause: err }))
 				return
 			}
 
-			const dist = npmManifestParse(content!.toString())
-
-			if (!dist || typeof dist !== "object") {
-				cb(new Error("Invalid 'package.json': Manifest is empty or not an object"))
+			try {
+				npmManifestParse(content!.toString())
+			} catch (error) {
+				cb(new Error("Invalid 'package.json'", { cause: error }))
 				return
 			}
 			cb()

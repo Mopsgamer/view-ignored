@@ -5,12 +5,16 @@ import { describe, test } from "bun:test"
 import { testScan, type PathHandlerOptions } from "../testScan.test.js"
 import { JSR as target } from "./jsr.js"
 
-function testJsr(
+async function testJSR(
 	done: () => void,
 	tree: NestedDirectoryJSON,
 	handler: ((o: PathHandlerOptions) => void | Promise<void>) | string[],
 ) {
-	return testScan(done, tree, handler, { target })
+	try {
+		await testScan(done, tree, handler, { target })
+	} catch (error) {
+		throw new Error("Error while testing JSR", { cause: error })
+	}
 }
 
 const jsrJson = JSON.stringify({
@@ -21,7 +25,7 @@ const jsrJson = JSON.stringify({
 
 describe("JSR", () => {
 	test("includes jsr.json and exports", async (done) => {
-		await testJsr(done, { "jsr.json": jsrJson, "mod.ts": "", "other.ts": "" }, [
+		await testJSR(done, { "jsr.json": jsrJson, "mod.ts": "", "other.ts": "" }, [
 			"jsr.json",
 			"mod.ts",
 			"other.ts",

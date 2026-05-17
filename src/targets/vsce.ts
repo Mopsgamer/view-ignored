@@ -75,7 +75,7 @@ export const VSCE: Target = <Target>{
 	ignores: ruleTest,
 	init({ fs, cwd }, cb) {
 		const normalCwd = unixify(cwd)
-		fs.readFile(normalCwd + "/" + "package.json", (err, content) => {
+		fs.readFile(normalCwd + "/package.json", (err, content) => {
 			if (err) {
 				cb(new Error("Error while initializing VSCE", { cause: err }))
 				return
@@ -83,10 +83,11 @@ export const VSCE: Target = <Target>{
 
 			try {
 				vsceManifestParse(content!.toString())
-				cb()
 			} catch (error) {
 				cb(new Error("Invalid 'package.json'", { cause: error }))
+				return
 			}
+			cb()
 		})
 	},
 	internalRules: internal,

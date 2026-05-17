@@ -5,12 +5,16 @@ import { test, describe } from "bun:test"
 import { testScan, type PathHandlerOptions } from "../testScan.test.js"
 import { Git as target } from "./git.js"
 
-function testGit(
+async function testGit(
 	done: () => void,
 	tree: NestedDirectoryJSON,
 	handler: ((o: PathHandlerOptions) => void | Promise<void>) | string[],
 ) {
-	return testScan(done, tree, handler, { target })
+	try {
+		await testScan(done, tree, handler, { target })
+	} catch (error) {
+		throw new Error("Error while testing Git", { cause: error })
+	}
 }
 
 describe("Git", () => {

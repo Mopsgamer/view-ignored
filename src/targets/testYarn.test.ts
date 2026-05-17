@@ -6,12 +6,16 @@ import { RuleMatchKind } from "../patterns/rule.js"
 import { testScan, type PathHandlerOptions } from "../testScan.test.js"
 import { Yarn as target } from "./yarn.js"
 
-function testYarn(
+async function testYarn(
 	done: () => void,
 	tree: NestedDirectoryJSON,
 	handler: ((o: PathHandlerOptions) => void | Promise<void>) | string[],
 ) {
-	return testScan(done, tree, handler, { target })
+	try {
+		await testScan(done, tree, handler, { target })
+	} catch (error) {
+		throw new Error("Error while testing Yarn", { cause: error })
+	}
 }
 
 const packageJsonNoFiles = JSON.stringify({
@@ -131,20 +135,6 @@ describe("Yarn", () => {
 		)
 	})
 
-	test("collects errors", async (done) => {
-		await testYarn(
-			done,
-			{
-				"foo.js": "",
-				"negkeep.js": "",
-				"package.json": "{",
-			},
-			({ ctx }) => {
-				expect(ctx.failed.length).toBeGreaterThan(0)
-				expect(ctx.failed[0]!.error.message).toInclude("Expected")
-			},
-		)
-	})
 	test("monorepo should use package.json if cwd is .", async (done) => {
 		await testScan(
 			done,
@@ -236,6 +226,8 @@ describe("Yarn", () => {
 				"package.json": JSON.stringify({
 					bin: "./bin/app",
 					files: ["index.js"],
+					name: "test",
+					version: "1.0.0",
 				}),
 			},
 			["index.js", "package.json", "bin/", "bin/app"],
@@ -252,6 +244,8 @@ describe("Yarn", () => {
 				"package.json": JSON.stringify({
 					bin: "bin/app",
 					files: ["index.js"],
+					name: "test",
+					version: "1.0.0",
 				}),
 			},
 			["index.js", "package.json", "bin/", "bin/app"],
@@ -268,9 +262,18 @@ describe("Yarn", () => {
 				"package.json": JSON.stringify({
 					bin: { bin: "./bin/app" },
 					files: ["index.js"],
+					name: "test",
+					version: "1.0.0",
 				}),
 			},
 			["index.js", "package.json", "bin/", "bin/app"],
 		)
+	})
+	test("throws an error if package.json is invalid", async (done) => {
+		expect(() => testYarn(done, { "package.json": "{ invalid json }" }, () => {})).toThrow()
+		expect(() => testYarn(done, { "package.json": "{}" }, () => {})).toThrow()
+		expect(() =>
+			testYarn(done, { "package.json": '{ "name": 0, "version": 0 }' }, () => {}),
+		).toThrow()
 	})
 })

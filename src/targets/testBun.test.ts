@@ -1,16 +1,20 @@
 import type { NestedDirectoryJSON } from "memfs"
 
-import { describe, test } from "bun:test"
+import { describe, test, expect } from "bun:test"
 
 import { testScan, type PathHandlerOptions } from "../testScan.test.js"
 import { Bun as target } from "./bun.js"
 
-function testBun(
+async function testBun(
 	done: () => void,
 	tree: NestedDirectoryJSON,
 	handler: ((o: PathHandlerOptions) => void | Promise<void>) | string[],
 ) {
-	return testScan(done, tree, handler, { target })
+	try {
+		await testScan(done, tree, handler, { target })
+	} catch (error) {
+		throw new Error("Error while testing Bun", { cause: error })
+	}
 }
 
 const packageJson = JSON.stringify({
@@ -32,5 +36,13 @@ describe("Bun", () => {
 			"node_modules/",
 			"node_modules/a",
 		])
+	})
+
+	test("throws an error if package.json is invalid", async (done) => {
+		expect(() => testBun(done, { "package.json": "{ invalid json }" }, () => {})).toThrow()
+		expect(() => testBun(done, { "package.json": "{}" }, () => {})).toThrow()
+		expect(() =>
+			testBun(done, { "package.json": '{ "name": 0, "version": 0 }' }, () => {}),
+		).toThrow()
 	})
 })

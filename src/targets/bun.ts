@@ -9,7 +9,7 @@ import {
 	extractGitignore,
 } from "../patterns/index.js"
 import { join, unixify } from "../unixify.js"
-import { npmManifestParse } from "./npmManifest.js"
+import { npmManifestParse, type PackageJson } from "./npmManifest.js"
 
 const extractors: Extractor[] = [
 	{
@@ -111,10 +111,17 @@ export const Bun: Target = <Target>{
 				return
 			}
 
-			const dist = npmManifestParse(content!.toString())
+			let dist: PackageJson
+			try {
+				dist = npmManifestParse(content!.toString())
+				// const set = new Set<string>()
 
-			if (!dist || typeof dist !== "object") {
-				cb(new Error("Invalid 'package.json': Manifest is empty or not an object"))
+				// TODO: NPM should include bundled deps
+
+				// internalInclude.pattern = Array.from(set)
+				// ruleCompile(internalInclude, { nocase: true })
+			} catch (error) {
+				cb(new Error("Invalid 'package.json'", { cause: error }))
 				return
 			}
 

@@ -8,9 +8,9 @@ import type { Target } from "./targets/target.js"
  * @since 0.6.0
  */
 export interface FsAdapter {
-    /**
-     * `readdir` is better than `opendir`.
-     */
+	/**
+	 * `readdir` is better than `opendir`.
+	 */
 	readdir: typeof fs.readdir
 	readFile: typeof fs.readFile
 }

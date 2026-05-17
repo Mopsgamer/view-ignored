@@ -6,12 +6,16 @@ import { RuleMatchKind } from "../patterns/rule.js"
 import { testScan, type PathHandlerOptions } from "../testScan.test.js"
 import { NPM as target } from "./npm.js"
 
-function testNpm(
+async function testNPM(
 	done: () => void,
 	tree: NestedDirectoryJSON,
 	handler: ((o: PathHandlerOptions) => void | Promise<void>) | string[],
 ) {
-	return testScan(done, tree, handler, { target })
+	try {
+		await testScan(done, tree, handler, { target })
+	} catch (error) {
+		throw new Error("Error while testing NPM", { cause: error })
+	}
 }
 
 const packageJsonNoFiles = JSON.stringify({
@@ -21,15 +25,15 @@ const packageJsonNoFiles = JSON.stringify({
 
 describe("NPM", () => {
 	test("empty for empty", async (done) => {
-		await testNpm(done, { ".": null, "package.json": packageJsonNoFiles }, ["package.json"])
+		await testNPM(done, { ".": null, "package.json": packageJsonNoFiles }, ["package.json"])
 	})
 
 	test("includes for no sources", async (done) => {
-		await testNpm(done, { file: "", "package.json": packageJsonNoFiles }, ["file", "package.json"])
+		await testNPM(done, { file: "", "package.json": packageJsonNoFiles }, ["file", "package.json"])
 	})
 
 	test("keeps for empty source", async (done) => {
-		await testNpm(
+		await testNPM(
 			done,
 			{
 				".npmignore": "",
@@ -41,7 +45,7 @@ describe("NPM", () => {
 	})
 
 	test("ignores file", async (done) => {
-		await testNpm(
+		await testNPM(
 			done,
 			{
 				".npmignore": "file",
@@ -53,7 +57,7 @@ describe("NPM", () => {
 	})
 
 	test("ignores multiple files", async (done) => {
-		await testNpm(
+		await testNPM(
 			done,
 			{
 				".npmignore": "file1.txt\nfile2.txt",
@@ -66,7 +70,7 @@ describe("NPM", () => {
 	})
 
 	test("ignores files with pattern", async (done) => {
-		await testNpm(
+		await testNPM(
 			done,
 			{
 				".npmignore": "*.js",
@@ -79,7 +83,7 @@ describe("NPM", () => {
 	})
 
 	test("ignores files in subdirectory", async (done) => {
-		await testNpm(
+		await testNPM(
 			done,
 			{
 				".npmignore": "src/",
@@ -94,7 +98,7 @@ describe("NPM", () => {
 	})
 
 	test("does not ignore files not matching pattern", async (done) => {
-		await testNpm(
+		await testNPM(
 			done,
 			{
 				".npmignore": "*.js",
@@ -107,7 +111,7 @@ describe("NPM", () => {
 	})
 
 	test("negation pattern keeps file", async (done) => {
-		await testNpm(
+		await testNPM(
 			done,
 			{
 				".npmignore": "*.js\n!bar.js",
@@ -119,20 +123,6 @@ describe("NPM", () => {
 		)
 	})
 
-	test("collects errors", async (done) => {
-		await testNpm(
-			done,
-			{
-				"foo.js": "",
-				"negkeep.js": "",
-				"package.json": "{",
-			},
-			({ ctx }) => {
-				expect(ctx.failed.length).toBeGreaterThan(0)
-				expect(ctx.failed[0]!.error.message).toInclude("Expected")
-			},
-		)
-	})
 	test("monorepo should use package.json if cwd is .", async (done) => {
 		await testScan(
 			done,
@@ -211,5 +201,13 @@ describe("NPM", () => {
 			},
 			{ cwd: process.cwd() + "/test/packages/a", target },
 		)
+	})
+
+	test("throws an error if package.json is invalid", async (done) => {
+		expect(() => testNPM(done, { "package.json": "{ invalid json }" }, () => {})).toThrow()
+		expect(() => testNPM(done, { "package.json": "{}" }, () => {})).toThrow()
+		expect(() =>
+			testNPM(done, { "package.json": '{ "name": 0, "version": 0 }' }, () => {}),
+		).toThrow()
 	})
 })

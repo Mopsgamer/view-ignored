@@ -52,15 +52,12 @@ export const JSR: Target = <Target>{
 					return
 				}
 				try {
-					const dist = jsrManifestParse(data!.toString())
-					if (!dist || typeof dist !== "object") {
-						next()
-						return
-					}
-					cb()
-				} catch {
-					next()
+					jsrManifestParse(data!.toString())
+				} catch (error) {
+					cb(new Error("Invalid '" + extractor.path + "'", { cause: error }))
+					return
 				}
+				cb()
 			})
 		}
 		next()
