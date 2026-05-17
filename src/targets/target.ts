@@ -30,12 +30,6 @@ export interface Target {
 	 */
 	extractors: Extractor[]
 	/**
-	 * Returns `true` if the given file path is an ignore file for this target.
-	 *
-	 * @since 0.11.0
-	 */
-	isIgnoreFile: (path: string) => boolean
-	/**
 	 * @see {@link IgnoresCb}
 	 *
 	 * @since 0.11.0

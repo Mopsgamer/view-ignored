@@ -122,6 +122,5 @@ export const NPM: Target = <Target>{
 		})
 	},
 	internalRules: internal,
-	isIgnoreFile: (path) => extractors.some((e) => e.path === path),
 	root: ".",
 }

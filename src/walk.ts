@@ -89,12 +89,17 @@ export function walkIncludes(
 			}
 			if (isRuleMatchInvalid(match)) {
 				if (stream) {
-					stream.emit("dirent", { dirent: entry, match, path: direntPath })
+					stream.dispatchEvent(
+						new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
+					)
 				}
 				return cb(null, result)
 			}
 			if (match.ignored) {
-				if (stream) stream.emit("dirent", { dirent: entry, match, path: direntPath })
+				if (stream)
+					stream.dispatchEvent(
+						new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
+					)
 				if (isDir && fastInternal) result.next = 1
 				return cb(null, result)
 			}
@@ -120,19 +125,28 @@ export function walkIncludes(
 		}
 
 		if (isRuleMatchInvalid(match)) {
-			if (stream) stream.emit("dirent", { dirent: entry, match, path: direntPath })
+			if (stream)
+				stream.dispatchEvent(
+					new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
+				)
 			return cb(null, result)
 		}
 
 		if (match.ignored) {
-			if (stream) stream.emit("dirent", { dirent: entry, match, path: direntPath })
+			if (stream)
+				stream.dispatchEvent(
+					new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
+				)
 			if (isDir && fastInternal) result.next = 1
 			return cb(null, result)
 		}
 
 		if (isDir) {
 			if (depth <= maxDepth) {
-				if (stream) stream.emit("dirent", { dirent: entry, match, path: direntPath })
+				if (stream)
+					stream.dispatchEvent(
+						new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
+					)
 			} else {
 				result.tooDeep = true
 			}
@@ -149,8 +163,12 @@ export function walkIncludes(
 
 		if (stream) {
 			if (result.includeParent)
-				stream.emit("dirent", { dirent: entry, match, path: parentPath + "/" })
-			stream.emit("dirent", { dirent: entry, match, path: direntPath })
+				stream.dispatchEvent(
+					new CustomEvent("dirent", { detail: { dirent: entry, match, path: parentPath + "/" } }),
+				)
+			stream.dispatchEvent(
+				new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
+			)
 		}
 
 		cb(null, result)

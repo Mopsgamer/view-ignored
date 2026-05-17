@@ -14,6 +14,7 @@ and this project adheres to
 - Rename `Source.pattern` to `Source.rules`.
 - Remove ctx option from some walker methods to allow complete concurrency.
 - Removed `arktype`.
+- `MatcherStream` extends `EventTarget` instead of Node's `EventEmitter`.
 
 ## [0.10.1] - 2026-03-20
 

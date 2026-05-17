@@ -12,9 +12,7 @@ import { sortFirstFolders } from "./testSort.test.js"
 
 export function createAdapter(vol: Volume): FsAdapter {
 	const fs = createFsFromVolume(vol)
-	const { opendir, readdir, readFile } = fs.promises
 	const adapter = {
-		promises: { opendir, readFile, readdir },
 		readFile: fs.readFile.bind(fs),
 		readdir: fs.readdir.bind(fs),
 	} as unknown as FsAdapter
@@ -64,18 +62,22 @@ export async function testScan(
 			vol,
 		})
 		const stream = scanStream(o)
-		stream.addListener("end", async (sctx) => {
-			try {
-				await test({
-					ctx: sctx,
-					fs: adapter,
-					options: o,
-					vol,
-				})
-			} finally {
-				done()
-			}
-		})
+		stream.addEventListener(
+			"end",
+			async ({ detail: sctx }) => {
+				try {
+					await test({
+						ctx: sctx,
+						fs: adapter,
+						options: o,
+						vol,
+					})
+				} finally {
+					done()
+				}
+			},
+			{ once: true },
+		)
 		try {
 			await stream.start()
 		} catch (e) {
@@ -97,18 +99,22 @@ export async function testScan(
 
 	const stream = scanStream(o)
 	const results = new Set<string>()
-	stream.addListener("dirent", (dirent) => {
+	stream.addEventListener("dirent", ({ detail: dirent }) => {
 		if (dirent.match.ignored) return
 		if (results.has(dirent.path)) results.delete(dirent.path)
 		results.add(dirent.path)
 	})
-	stream.addListener("end", () => {
-		try {
-			expect(sortFirstFolders(results)).toStrictEqual(sortFirstFolders(test))
-		} finally {
-			done()
-		}
-	})
+	stream.addEventListener(
+		"end",
+		() => {
+			try {
+				expect(sortFirstFolders(results)).toStrictEqual(sortFirstFolders(test))
+			} finally {
+				done()
+			}
+		},
+		{ once: true },
+	)
 	try {
 		await stream.start()
 	} catch (e) {

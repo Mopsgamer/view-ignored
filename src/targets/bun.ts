@@ -149,6 +149,5 @@ export const Bun: Target = <Target>{
 		})
 	},
 	internalRules: internal,
-	isIgnoreFile: (path) => extractors.some((e) => e.path === path),
 	root: ".",
 }

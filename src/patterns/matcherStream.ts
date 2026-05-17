@@ -1,7 +1,5 @@
 import type { Dirent } from "node:fs"
 
-import { EventEmitter } from "node:events"
-
 import type { MatcherContext, Total } from "../patterns/matcherContext.js"
 import type { ScanOptions, FsAdapter } from "../types.js"
 import type { Resource } from "./resource.js"
@@ -59,18 +57,35 @@ export type EndListener = (ctx: MatcherContext) => void
  * @since 0.6.0
  */
 export type EventMap = {
-	dirent: [EntryInfo]
-	// source: [Source]
-	end: [MatcherContext]
+	dirent: CustomEvent<EntryInfo>
+	end: CustomEvent<MatcherContext>
+}
+
+/**
+ * @see {@link MatcherStream} uses it for its event map.
+ *
+ * @since 0.11.0
+ */
+interface EventListener<K extends keyof EventMap> {
+	(evt: EventMap[K]): void
+}
+
+/**
+ * @see {@link MatcherStream} uses it for its event map.
+ *
+ * @since 0.11.0
+ */
+interface EventListenerObject<K extends keyof EventMap> {
+	handleEvent(object: EventMap[K]): void
 }
 
 /**
  * Event emitter.
- * @augments EventEmitter
+ * @augments EventTarget
  *
  * @since 0.6.0
  */
-export class MatcherStream extends EventEmitter<EventMap> {
+export class MatcherStream extends EventTarget {
 	#timeout: NodeJS.Timeout | undefined
 	#options: ScanOptions & { fs: FsAdapter; cwd: string } & { captureRejections?: boolean }
 	constructor(
@@ -78,7 +93,7 @@ export class MatcherStream extends EventEmitter<EventMap> {
 			captureRejections?: boolean
 		},
 	) {
-		super({ captureRejections: options.captureRejections })
+		super()
 		this.#options = options
 		if (!options.noTimeout) {
 			this.#timeout = setTimeout(() => {
@@ -87,6 +102,26 @@ export class MatcherStream extends EventEmitter<EventMap> {
 				)
 			}, 5e3)
 		}
+	}
+
+	override addEventListener<K extends keyof EventMap>(
+		type: K,
+		callback: EventListenerObject<K> | EventListener<K>,
+		options?: boolean | AddEventListenerOptions,
+	): void {
+		super.addEventListener(type as string, callback as any, options)
+	}
+
+	override removeEventListener<K extends keyof EventMap>(
+		type: K,
+		callback: EventListenerObject<K> | EventListener<K>,
+		options?: boolean | EventListenerOptions,
+	): void {
+		super.removeEventListener(type as string, callback as any, options)
+	}
+
+	override dispatchEvent(event: EventMap[keyof EventMap]): boolean {
+		return super.dispatchEvent(event)
 	}
 
 	/**
@@ -169,7 +204,7 @@ export class MatcherStream extends EventEmitter<EventMap> {
 					}
 					propagateTotals(ctx.total)
 					cb(null, ctx)
-					this.emit("end", ctx)
+					this.dispatchEvent(new CustomEvent("end", { detail: ctx }))
 				},
 			)
 		}

@@ -93,7 +93,7 @@ export async function matcherContextAddPath(
 
 	const parentPath = dirname(entry)
 
-	const isSource = target.isIgnoreFile(entry)
+	const isSource = target.extractors.some((e) => e.path === entry)
 	if (isSource) {
 		// add pattern sources
 		const resultPromise = new Promise<WalkResult[] | null>((resolve, reject) => {
@@ -232,7 +232,7 @@ export async function matcherContextRemovePath(
 	const parentPath = dirname(entry)
 	const parentPathDir = parentPath + "/"
 
-	const isSource = options.target.isIgnoreFile(entry)
+	const isSource = options.target.extractors.some((e) => e.path === entry)
 	if (isSource) {
 		const maxDepth = options.depth
 		// remove pattern sources

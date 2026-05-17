@@ -2,3 +2,8 @@
 pathIgnorePatterns = ["out/**"]
 coveragePathIgnorePatterns = ["src/testSelf*.test.ts"]
 onlyFailures = true
+
+[install]
+minimumReleaseAge = 604800 # 7 days
+linker = "isolated"
+globalStore = true

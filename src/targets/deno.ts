@@ -76,6 +76,5 @@ export const Deno: Target = <Target>{
 		next()
 	},
 	internalRules: internal,
-	isIgnoreFile: (path) => extractors.some((e) => e.path === path),
 	root: ".",
 }
