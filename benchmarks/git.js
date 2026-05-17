@@ -10,6 +10,10 @@ const igw = process.argv.includes("--igw")
 const vign = process.argv.includes("--vign")
 const cwd = process.cwd()
 
+console.log("Git target benchmark")
+console.log("You can use --igw to test ignore-walk separately")
+console.log("You can use --vign to test view-ignored separately")
+
 barplot(() => {
 	summary(async () => {
 		if (!igw)

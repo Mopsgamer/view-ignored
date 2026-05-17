@@ -183,6 +183,10 @@ The following built-in scanners are available:
 - https://npmx.dev/package/ignore-walk - A Node.js module for walking directories while respecting ignore files. (It does it incorrectly for Git).
 - https://npmx.dev/package/npm-packlist - A Node.js module for listing files to be included in an npm package. (Heavy)
 
+## Git target benchmarks for `view-ignored` folder
+
+See [BENCHMARKS.md](https://github.com/Mopsgamer/view-ignored/tree/main/benchmarks/README.md).
+
 ## License
 
 MIT License. See [LICENSE.txt](LICENSE.txt) for details.
