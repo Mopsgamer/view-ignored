@@ -185,7 +185,7 @@ The following built-in scanners are available:
 
 ## Git target benchmarks for `view-ignored` folder
 
-See [BENCHMARKS.md](https://github.com/Mopsgamer/view-ignored/tree/main/benchmarks/README.md).
+See [BENCHMARKS.md](https://github.com/Mopsgamer/view-ignored/tree/main/benchmarks).
 
 ## License
 
