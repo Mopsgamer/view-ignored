@@ -1,4 +1,5 @@
-# view-ignored
+<div align="center">
+<h4>view-ignored</h4>
 
 [![npm version](https://img.shields.io/npm/v/view-ignored.svg?style=flat)](https://www.npmjs.com/package/view-ignored)
 [![npm downloads](https://img.shields.io/npm/dm/view-ignored.svg?style=flat)](https://www.npmjs.com/package/view-ignored)
@@ -7,10 +8,11 @@
 
 Retrieve list of files ignored/included
 by Git, NPM, Yarn, JSR, VSCE or other tools.
+</div>
 
 ## Requirements
 
-Node.js 18 or later.
+Node.js 18 or later. Any compatible environment.
 
 ## Highlights
 
@@ -32,6 +34,20 @@ Node.js 18 or later.
 > **included** files, i.e., files that are **not ignored**.
 > You can invert the results if you need the ignored files
 > by setting the `invert` option to `true`.
+
+## v1 Roadmap
+
+- [x] Works for common use cases.
+- [ ] Handle Git config.
+- [ ] Include node_modules bundled dependencies correctly. Missing: NPM, Yarn + Classic, Bun, Deno, JSR.
+- [ ] *Move targets into separate packages (or not).
+- [ ] Import and pass upstream source tests.
+- [ ] *Make it standard: NPM cli, VS Code file tree, VSCE, GitHub.
+- [ ] *Upstream to Bun, PNPM and other package managers.
+
+## Why this library exists?
+
+Incorrect VS Code file tree git status, huge `npm-packlist` package, missing Git's wildmatch algorithm in JS ecosistem, and the fact that there's no lightweight way to get a list of ignored files, which would explain why specific files are being included or excluded.
 
 ## Usage
 
@@ -183,7 +199,7 @@ The following built-in scanners are available:
 - https://npmx.dev/package/ignore-walk - A Node.js module for walking directories while respecting ignore files. (It does it incorrectly for Git).
 - https://npmx.dev/package/npm-packlist - A Node.js module for listing files to be included in an npm package. (Heavy)
 
-## Git target benchmarks for `view-ignored` folder
+## Benchmarks
 
 See [BENCHMARKS.md](https://github.com/Mopsgamer/view-ignored/tree/main/benchmarks).
 
