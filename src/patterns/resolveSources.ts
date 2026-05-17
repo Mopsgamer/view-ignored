@@ -7,7 +7,7 @@ import type { Resource } from "./resource.js"
 import type { Rule } from "./rule.js"
 import type { Source } from "./source.js"
 
-import { dirname, join } from "../unixify.js"
+import { join } from "../unixify.js"
 import { type PatternFinderOptions, type Extractor } from "./extractor.js"
 import { patternListCompile } from "./patternList.js"
 
@@ -87,43 +87,40 @@ export function resolveSources(
 	const noSourceDirList: string[] = [dir]
 
 	if (dir !== ".") {
-		dir = dirname(dir)
-
-		// find source from an ancestor [dir < ... < cwd]
-		while (true) {
+		const segments = dir.split("/")
+		for (let i = segments.length - 1; i >= 0; i--) {
 			if (signal?.aborted) {
 				cb(signal.reason, null)
 				return
 			}
-			source = external.get(dir)
+			const d = segments.slice(0, i).join("/") || "."
+			source = external.get(d)
 			if (source !== undefined) {
+				dir = d
 				break
 			}
-			noSourceDirList.push(dir)
-			const parent = dirname(dir)
-			if (dir === parent) break
-			dir = parent
-			continue
+			noSourceDirList.push(d)
+			if (d === ".") {
+				dir = "."
+				break
+			}
 		}
 	}
 
 	// find non-cwd source [root > cwd) and populate [cwd > ... > dir]
 
-	const preCwdSegments: string[] = []
 	if (target.root.charCodeAt(0) === 47) {
 		// "/"
-		let c = dirname(cwd)
-		while (true) {
-			if (signal?.aborted) {
-				cb(signal.reason, null)
-				return
+		const segments = cwd.split("/")
+		const preCwdSegments: string[] = []
+		let current = ""
+		for (let i = 0, len = segments.length - 1; i < len; i++) {
+			current += segments[i] + "/"
+			const path = current.length > 1 ? current.slice(0, -1) : "/"
+			if (path.length >= target.root.length) {
+				preCwdSegments.push(path)
 			}
-			preCwdSegments.push(c)
-			if (c === target.root) break
-			const parent = dirname(c)
-			c = parent
 		}
-		preCwdSegments.reverse()
 
 		findSourceForAbsoluteDirsCb(preCwdSegments, fs, target, signal, (err, source) => {
 			if (err) {
