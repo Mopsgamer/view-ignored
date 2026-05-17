@@ -8,6 +8,7 @@
 
 Retrieve list of files ignored/included
 by Git, NPM, Yarn, JSR, VSCE or other tools.
+
 </div>
 
 ## Requirements
@@ -41,10 +42,10 @@ Node.js 18 or later. Any compatible environment.
 - [ ] Validate manifests correctly.
 - [ ] Handle Git config.
 - [ ] Include node_modules bundled dependencies correctly. Missing: NPM, Yarn + Classic, Bun, Deno, JSR.
-- [ ] *Move targets into separate packages (or not).
+- [ ] \*Move targets into separate packages (or not).
 - [ ] Import and pass upstream source tests.
-- [ ] *Make it standard: NPM cli, VS Code file tree, VSCE, GitHub.
-- [ ] *Upstream to Bun, PNPM and other package managers.
+- [ ] \*Make it standard: NPM cli, VS Code file tree, VSCE, GitHub.
+- [ ] \*Upstream to Bun, PNPM and other package managers.
 
 ## Why this library exists?
 
