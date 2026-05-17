@@ -201,7 +201,7 @@ The following built-in scanners are available:
 
 ## Benchmarks
 
-See [BENCHMARKS.md](https://github.com/Mopsgamer/view-ignored/tree/main/benchmarks).
+See [benchmarks directory](https://github.com/Mopsgamer/view-ignored/tree/main/benchmarks).
 
 ## License
 
