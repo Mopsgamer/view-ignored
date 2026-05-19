@@ -1,19 +1,36 @@
 <div align="center">
 <h1>view-ignored</h1>
 
-[![npm version](https://img.shields.io/npm/v/view-ignored.svg?style=flat)](https://www.npmjs.com/package/view-ignored)
-[![npm downloads](https://img.shields.io/npm/dm/view-ignored.svg?style=flat)](https://www.npmjs.com/package/view-ignored)
-[![github](https://img.shields.io/github/stars/Mopsgamer/view-ignored.svg?style=flat)](https://github.com/Mopsgamer/view-ignored)
-[![github issues](https://img.shields.io/github/issues/Mopsgamer/view-ignored.svg?style=flat)](https://github.com/Mopsgamer/view-ignored/issues)
+[![npm version](https://img.shields.io/npm/v/view-ignored.svg)](https://www.npmjs.com/package/view-ignored)
+[![npm downloads](https://img.shields.io/npm/dm/view-ignored.svg)](https://www.npmjs.com/package/view-ignored)
+![node-v-18-or-later](https://img.shields.io/badge/node->=18-salad?repo=Mopsgamer/view-ignored)
+[![speed-fast](https://img.shields.io/badge/speed-fast-salad?repo=Mopsgamer/view-ignored)](https://github.com/Mopsgamer/view-ignored/tree/main/benchmarks)
+
+[![github issues](https://img.shields.io/github/issues/Mopsgamer/view-ignored.svg)](https://github.com/Mopsgamer/view-ignored/issues)
+[![github](https://img.shields.io/github/stars/Mopsgamer/view-ignored.svg)](https://github.com/Mopsgamer/view-ignored)
 
 Retrieve list of files ignored/included
 by Git, NPM, Yarn, JSR, Deno, Bun, VSCode extension CLI and other tools.
 
+---
+
+### `view-ignored` scans for
+
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/git/git-original.svg" width="32" height="32" alt="git" />
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/npm/npm-original-wordmark.svg" width="32" height="32" alt="npm" />
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/yarn/yarn-original.svg" width="32" height="32" alt="yarn" />
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/bun/bun-original.svg" width="32" height="32" alt="bun" />
+<img src="https://unpkg.com/simple-icons@v14/icons/deno.svg" width="32" height="32" alt="deno" />
+<img src="https://jsr.io/logo.svg" width="32" height="32" alt="jsr" />
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vscode/vscode-original.svg" width="32" height="32" alt="vsce" />
+
+and more!
+
+[![issues](https://img.shields.io/github/issues-search?query=repo%3AMopsgamer%2Fview-ignored%20label%3Atargets%20type%3Aissue&label=issues)](https://github.com/search?q=repo%3AMopsgamer%2Fview-ignored+label%3Atargets+type%3Aissue&type=issues&query=repo%3AMopsgamer%2Fview-ignored+label%3Atargets)
+[![suggest](https://img.shields.io/badge/suggest-salad?repo=Mopsgamer/view-ignored)](https://github.com/Mopsgamer/view-ignored/issues/new)
+[![details](https://img.shields.io/badge/details-gray?repo=Mopsgamer/view-ignored)](#targets)
+
 </div>
-
-## Requirements
-
-Node.js 18 or later. Any compatible environment.
 
 ## Highlights
 
