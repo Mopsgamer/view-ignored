@@ -1,5 +1,3 @@
-import { type } from "arktype"
-
 import type { Target } from "./target.js"
 
 import {
@@ -26,41 +24,44 @@ const extractors: Extractor[] = [
 
 const internal: Rule[] = [
 	ruleCompile({
+		compiled: null,
 		excludes: true,
 		pattern: [".git", ".DS_Store"],
-		compiled: null,
 	}),
 ]
 
 /**
  * @since 0.6.0
  */
-export const JSR: Target = {
-	internalRules: internal,
+export const JSR: Target = <Target>{
 	extractors,
-	root: ".",
-	async init({ fs, cwd }) {
-		let content: Buffer
-		const normalCwd = unixify(cwd)
-		let path: string
-		for (const [i, { path: p }] of extractors.entries()) {
-			path = p
-			try {
-				content = await fs.promises.readFile(normalCwd + "/" + path)
-			} catch (error) {
-				if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-					if (i < extractors.length - 1) {
-						continue
-					}
-				}
-				throw new Error("Error while initializing Deno", { cause: error })
-			}
-		}
-
-		const dist = jsrManifestParse(content!.toString())
-		if (dist instanceof type.errors) {
-			throw new Error("Invalid '" + path! + "': " + dist.summary, { cause: dist })
-		}
-	},
 	ignores: ruleTest,
+	init({ fs, cwd }, cb) {
+		const normalCwd = unixify(cwd)
+
+		let i = 0
+		function next() {
+			if (i >= extractors.length) {
+				cb(new Error("Error while initializing JSR: No valid manifest found"))
+				return
+			}
+			const extractor = extractors[i++]!
+			fs.readFile(normalCwd + "/" + extractor.path, (err, data) => {
+				if (err) {
+					next()
+					return
+				}
+				try {
+					jsrManifestParse(data!.toString())
+				} catch (error) {
+					cb(new Error("Invalid '" + extractor.path + "'", { cause: error }))
+					return
+				}
+				cb()
+			})
+		}
+		next()
+	},
+	internalRules: internal,
+	root: ".",
 }

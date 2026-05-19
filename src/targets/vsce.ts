@@ -1,5 +1,3 @@
-import { type } from "arktype"
-
 import type { Target } from "./target.js"
 
 import {
@@ -11,7 +9,7 @@ import {
 	extractGitignore,
 } from "../patterns/index.js"
 import { unixify } from "../unixify.js"
-import { npmManifest } from "./npmManifest.js"
+import { vsceManifestParse } from "./vsceManifest.js"
 
 const extractors: Extractor[] = [
 	{
@@ -30,6 +28,7 @@ const extractors: Extractor[] = [
 
 const internal: Rule[] = [
 	ruleCompile({
+		compiled: null,
 		excludes: true,
 		pattern: [
 			// https://github.com/microsoft/vscode-vsce/blob/main/src/package.ts#L1633
@@ -65,41 +64,32 @@ const internal: Rule[] = [
 			".vscode-test",
 			".vscode-test-web",
 		],
-		compiled: null,
 	}),
 ]
-
-const vsceManifest = npmManifest.and({
-	engines: {
-		// https://github.com/microsoft/vscode-vsce/blob/main/src/validation.ts#L52
-		vscode: "/^\\*$|^(\\^|>=)?((\\d+)|x)\\.((\\d+)|x)\\.((\\d+)|x)(\\-.*)?$/",
-	},
-})
-
-const vsceManifestParse = type("string")
-	.pipe((s) => JSON.parse(s))
-	.pipe(vsceManifest)
 
 /**
  * @since 0.6.0
  */
-export const VSCE: Target = {
-	internalRules: internal,
+export const VSCE: Target = <Target>{
 	extractors,
-	root: ".",
-	async init({ fs, cwd }) {
-		let content: Buffer
-		const normalCwd = unixify(cwd)
-		try {
-			content = await fs.promises.readFile(normalCwd + "/" + "package.json")
-		} catch (error) {
-			throw new Error("Error while initializing VSCE", { cause: error })
-		}
-
-		const dist = vsceManifestParse(content.toString())
-		if (dist instanceof type.errors) {
-			throw new Error("Invalid 'package.json': " + dist.summary, { cause: dist })
-		}
-	},
 	ignores: ruleTest,
+	init({ fs, cwd }, cb) {
+		const normalCwd = unixify(cwd)
+		fs.readFile(normalCwd + "/package.json", (err, content) => {
+			if (err) {
+				cb(new Error("Error while initializing VSCE", { cause: err }))
+				return
+			}
+
+			try {
+				vsceManifestParse(content!.toString())
+			} catch (error) {
+				cb(new Error("Invalid 'package.json'", { cause: error }))
+				return
+			}
+			cb()
+		})
+	},
+	internalRules: internal,
+	root: ".",
 }

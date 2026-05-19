@@ -8,30 +8,34 @@ import { Git as target } from "../out/targets/index.js"
 
 const igw = process.argv.includes("--igw")
 const vign = process.argv.includes("--vign")
+const cwd = process.cwd()
+
+console.log("Git target benchmark")
+console.log("You can use --igw to test ignore-walk separately")
+console.log("You can use --vign to test view-ignored separately")
 
 barplot(() => {
 	summary(async () => {
-		const gc = "inner"
 		if (!igw)
 			bench("scan (fast)", async () => {
-				return scan({ target, fs, cwd: process.cwd(), fastInternal: true, fastDepth: true })
-			}).gc(gc)
+				return scan({ cwd, fastDepth: true, fastInternal: true, fs, target })
+			})
 		if (!igw)
 			bench("browserScan (fast)", async () => {
-				return browserScan({ target, fs, cwd: process.cwd(), fastInternal: true, fastDepth: true })
-			}).gc(gc)
+				return browserScan({ cwd, fastDepth: true, fastInternal: true, fs, target })
+			})
 		if (!igw)
 			bench("scan", async () => {
-				return scan({ target, fs, cwd: process.cwd() })
-			}).gc(gc)
+				return scan({ cwd, fs, target })
+			})
 		if (!igw)
 			bench("browserScan", async () => {
-				return browserScan({ target, fs, cwd: process.cwd() })
-			}).gc(gc)
+				return browserScan({ cwd, fs, target })
+			})
 		if (!vign)
 			bench("ignoreWalk", async () => {
 				return walk({ ignoreFiles: [".gitignore"] })
-			}).gc(gc)
+			})
 	})
 })
 

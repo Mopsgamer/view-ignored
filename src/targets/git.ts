@@ -21,19 +21,19 @@ const extractors: Extractor[] = [
 
 const internal: Rule[] = [
 	ruleCompile({
+		compiled: null,
 		excludes: true,
 		pattern: [".git", ".DS_Store"],
-		compiled: null,
 	}),
 ]
 
 /**
  * @since 0.6.0
  */
-export const Git: Target = {
-	internalRules: internal,
+export const Git: Target = <Target>{
 	extractors,
-	root: "/",
 	// TODO: Git should read configs
 	ignores: ruleTest,
+	internalRules: internal,
+	root: "/",
 }

@@ -1,14 +1,14 @@
-import { dirname } from "node:path"
+import type { Dirent } from "node:fs"
 
 import type { Target } from "../targets/target.js"
 import type { FsAdapter } from "../types.js"
-import type { PatternFinderOptions, Extractor } from "./extractor.js"
-import type { MatcherContext } from "./matcherContext.js"
 import type { PatternCompileOptions } from "./patternCompile.js"
+import type { Resource } from "./resource.js"
 import type { Rule } from "./rule.js"
 import type { Source } from "./source.js"
 
-import { join, base } from "../unixify.js"
+import { join } from "../unixify.js"
+import { type PatternFinderOptions, type Extractor } from "./extractor.js"
 import { patternListCompile } from "./patternList.js"
 
 /**
@@ -20,9 +20,9 @@ import { patternListCompile } from "./patternList.js"
  *
  * @since 0.6.0
  */
-export function ruleCompile(signedPattern: Rule, options?: PatternCompileOptions): Rule {
-	signedPattern.compiled = patternListCompile(signedPattern.pattern, options)
-	return signedPattern
+export function ruleCompile(rule: Rule, options?: PatternCompileOptions): Rule {
+	rule.compiled = patternListCompile(rule.pattern, options)
+	return rule
 }
 
 /**
@@ -40,146 +40,245 @@ export interface ResolveSourcesOptions extends PatternFinderOptions {
 	 * @since 0.6.0
 	 */
 	dir: string
+	/**
+	 * Maps directory paths to their corresponding sources.
+	 *
+	 * @example
+	 * "dir" => Resource
+	 * "dir/subdir" => Resource
+	 *
+	 * @since 0.11.0
+	 */
+	external: Map<string, Resource>
+	/**
+	 * Directory entries of the current directory.
+	 * Used for optimization to avoid redundant `fs.readFile` calls.
+	 *
+	 * @since 0.11.0
+	 */
+	entries?: Dirent[]
 }
 
 /**
- * Populates the {@link MatcherContext.external} map with {@link Source} objects.
- *
  * @since 0.6.0
  */
-export async function resolveSources(options: ResolveSourcesOptions): Promise<void> {
-	const { fs, ctx, cwd, signal, target } = options
+export function resolveSources(
+	options: ResolveSourcesOptions,
+	cb: (err: Error | null, resource: Resource) => void,
+): void {
+	const { fs, external, cwd, signal, target, resource: parentResource } = options
 	let dir = options.dir
 
-	if (ctx.external.has(dir)) {
+	if (target.root === "." && dir !== ".") {
+		resolveSources({ ...options, dir: "." }, (err, res) => {
+			if (err) return cb(err, null as any)
+			external.set(dir, res)
+			cb(null, res)
+		})
 		return
 	}
 
-	let source: Source | "none" | undefined
+	let source = external.get(dir)
+	if (source !== undefined) {
+		cb(null, source)
+		return
+	}
+
 	const noSourceDirList: string[] = [dir]
 
 	if (dir !== ".") {
-		dir = dirname(dir)
-
-		// find source from an ancestor [dir < ... < cwd]
-		while (true) {
-			signal?.throwIfAborted()
-			source = ctx.external.get(dir)
-			if (source !== undefined) {
-				// if cache is found populate descendants [cwd > ... > dir]
-				for (const noSourceDir of noSourceDirList) {
-					ctx.external.set(noSourceDir, source)
-				}
+		const segments = dir.split("/")
+		for (let i = segments.length - 1; i >= 0; i--) {
+			if (signal?.aborted) {
+				cb(signal.reason, null)
 				return
 			}
-			noSourceDirList.push(dir)
-			const parent = dirname(dir)
-			if (dir === parent) break
-			dir = parent
-			continue
+			const d = segments.slice(0, i).join("/") || "."
+			source = external.get(d)
+			if (source !== undefined) {
+				dir = d
+				break
+			}
+			noSourceDirList.push(d)
+			if (d === ".") {
+				dir = "."
+				break
+			}
 		}
 	}
 
-	// else
 	// find non-cwd source [root > cwd) and populate [cwd > ... > dir]
 
-	const preCwdSegments: string[] = []
-	if (target.root.startsWith("/")) {
-		let c = dirname(cwd)
-		while (true) {
-			signal?.throwIfAborted()
-			preCwdSegments.push(c)
-			if (c === target.root) break
-			const parent = dirname(c)
-			c = parent
-		}
-		preCwdSegments.reverse()
-
-		source = await findSourceForAbsoluteDirs(preCwdSegments, ctx, fs, target, signal)
-		if (typeof source === "object") {
-			for (const noSourceDir of noSourceDirList) {
-				signal?.throwIfAborted()
-				ctx.external.set(noSourceDir, source)
+	if (target.root.charCodeAt(0) === 47) {
+		// "/"
+		const segments = cwd.split("/")
+		const preCwdSegments: string[] = []
+		let current = ""
+		for (let i = 0, len = segments.length - 1; i < len; i++) {
+			current += segments[i] + "/"
+			const path = current.length > 1 ? current.slice(0, -1) : "/"
+			if (path.length >= target.root.length) {
+				preCwdSegments.push(path)
 			}
-			return
 		}
+
+		findSourceForAbsoluteDirsCb(preCwdSegments, fs, target, signal, (err, source) => {
+			if (err) {
+				cb(err, null)
+				return
+			}
+
+			const absPaths = Array.from<string>({ length: noSourceDirList.length })
+			for (let i = 0, len = noSourceDirList.length; i < len; i++) {
+				absPaths[i] = join(cwd, noSourceDirList[i]!)
+			}
+			findSourceForAbsoluteDirsCb(
+				absPaths,
+				fs,
+				target,
+				signal,
+				(err, s) => {
+					if (err) {
+						cb(err, null)
+						return
+					}
+					const finalSource = s || source || parentResource || null
+					external.set(options.dir, finalSource)
+					cb(null, finalSource)
+				},
+				options.entries,
+			)
+		})
+		return
 	}
 
-	const absPaths = noSourceDirList.map((rel) => join(cwd, rel))
-	source = await findSourceForAbsoluteDirs(absPaths, ctx, fs, target, signal)
-	if (source !== undefined) {
-		for (const noSourceDir of noSourceDirList) {
-			signal?.throwIfAborted()
-			ctx.external.set(noSourceDir, source)
-		}
+	const absPaths = Array.from<string>({ length: noSourceDirList.length })
+	for (let i = 0, len = noSourceDirList.length; i < len; i++) {
+		absPaths[i] = join(cwd, noSourceDirList[i]!)
 	}
+	findSourceForAbsoluteDirsCb(
+		absPaths,
+		fs,
+		target,
+		signal,
+		(err, source) => {
+			if (err) {
+				cb(err, null)
+				return
+			}
+			const finalSource = source || parentResource || null
+			external.set(options.dir, finalSource)
+			cb(null, finalSource)
+		},
+		options.entries,
+	)
 }
 
-async function findSourceForAbsoluteDirs(
+function findSourceForAbsoluteDirsCb(
 	paths: string[],
-	ctx: MatcherContext,
 	fs: FsAdapter,
 	target: Target,
 	signal: AbortSignal | null,
-): Promise<Source | "none"> {
-	for (const parent of paths) {
-		for (const extractor of target.extractors) {
-			signal?.throwIfAborted()
-			const s = await tryExtractor(parent, fs, ctx, extractor)
-			if (typeof s === "object" && s.error) {
-				ctx.failed.push(s)
-				return s
+	cb: (err: Error | null, resource: Resource) => void,
+	entries?: Dirent[],
+): void {
+	if (signal?.aborted) {
+		cb(signal.reason, null)
+		return
+	}
+	const extractors = target.extractors
+	const plen = paths.length
+	const elen = extractors.length
+
+	let i = 0
+	let j = 0
+	function next() {
+		if (i >= plen) {
+			cb(null, null)
+			return
+		}
+		const parent = paths[i]!
+		const extractor = extractors[j]!
+
+		j++
+		if (j >= elen) {
+			i++
+			j = 0
+		}
+
+		if (entries && plen > 0 && parent === paths[0]) {
+			const epath = extractor.path
+			const slashIdx = epath.indexOf("/")
+			const firstSegment = slashIdx === -1 ? epath : epath.substring(0, slashIdx)
+			let found = false
+			for (let k = 0, len = entries.length; k < len; k++) {
+				if (entries[k]!.name === firstSegment) {
+					found = true
+					break
+				}
 			}
-			if (typeof s === "object") {
-				return s
+			if (!found) {
+				next()
+				return
 			}
 		}
+
+		tryExtractorCb(parent, fs, extractor, (err, source) => {
+			if (err) {
+				cb(err, null)
+				return
+			}
+			if (source !== null) {
+				cb(null, source)
+				return
+			}
+			next()
+		})
 	}
-	return "none"
+	next()
 }
 
-async function tryExtractor(
+function tryExtractorCb(
 	cwd: string,
 	fs: FsAdapter,
-	ctx: MatcherContext,
 	extractor: Extractor,
-): Promise<Source | "none"> {
-	let abs = join(cwd, extractor.path)
-	const name = base(extractor.path)
+	cb: (err: Error | null, resource: Resource) => void,
+): void {
+	const abs = join(cwd, extractor.path)
 
-	const newSource: Source = {
-		name,
-		path: extractor.path,
-		inverted: false,
-		pattern: [],
-	}
+	fs.readFile(abs, (err, buff) => {
+		if (err) {
+			const error = err as NodeJS.ErrnoException
+			if (error.code === "ENOENT") {
+				cb(null, null)
+				return
+			}
+			cb(null, {
+				error,
+				source: {
+					inverted: false,
+					path: extractor.path,
+					rules: [],
+				},
+			})
+			return
+		}
 
-	let buff: Buffer | undefined
-	try {
-		buff = await fs.promises.readFile(abs)
-	} catch (err) {
-		const error = err as NodeJS.ErrnoException
-		if (error.code === "ENOENT") {
-			return "none"
+		const newSource = <Source>{
+			inverted: false,
+			path: extractor.path,
+			rules: [],
 		}
-		newSource.error = error
-		return newSource
-	}
 
-	try {
-		const act = extractor.extract(newSource, buff, ctx)
-		if (act === "none") {
-			return act
+		const act = extractor.extract(newSource, buff!)
+		if (act === null) {
+			cb(null, null)
+			return
 		}
-	} catch (err) {
-		if (err === "none") {
-			return err
+		if (act instanceof Error) {
+			cb(null, { error: act, source: newSource })
+			return
 		}
-		newSource.error =
-			err instanceof Error
-				? err
-				: new Error("Unknown error during source extraction", { cause: err })
-		return newSource
-	}
-	return newSource
+		cb(null, newSource)
+	})
 }

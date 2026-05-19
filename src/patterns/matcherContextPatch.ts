@@ -1,13 +1,28 @@
-import { dirname } from "node:path"
-
 import type { ScanOptions } from "../types.js"
 import type { MatcherContext } from "./matcherContext.js"
+import type { Resource } from "./resource.js"
+import type { RuleMatch } from "./rule.js"
 
-import { getDepth } from "../getDepth.js"
-import { opendir } from "../opendir.js"
-import { unixify, join } from "../unixify.js"
-import { walkIncludes } from "../walk.js"
+import { scanParallel } from "../scanParallel.js"
+import { dirname } from "../unixify.js"
+import {
+	walkPatchResult,
+	walkPatchTotal,
+	propagateTotals,
+	type WalkResult,
+	type WalkTotal,
+} from "../walk.js"
 import { resolveSources } from "./resolveSources.js"
+
+function promiseCb(resolve: (value: any) => void, reject: (reason?: any) => void) {
+	return (err: Error | null, res: any) => {
+		if (err) {
+			reject(err)
+			return
+		}
+		resolve(res)
+	}
+}
 
 /**
  * Provides patching abilities for the given {@link MatcherContext}.
@@ -24,23 +39,52 @@ export async function matcherContextAddPath(
 		return false
 	}
 
-	const { target, fs, cwd, signal } = options
-
 	const isDir = entry.endsWith("/")
+	const direntPath = isDir ? entry.slice(0, -1) : entry
+	if (isDir && direntPath === ".") {
+		return true
+	}
+	const parentPath = dirname(direntPath)
+
+	const { target, fs, cwd, signal, depth: maxDepth } = options
+
 	if (isDir) {
 		// recursive parent population
-		const direntPath = entry.replace(/\/$/, "")
-		if (direntPath === ".") {
-			return true
-		}
-		const parentPath = dirname(direntPath)
-		await resolveSources({ ctx, cwd, dir: direntPath, fs, signal, target })
+		const resource = await new Promise<Resource>((resolve, reject) => {
+			resolveSources(
+				{
+					cwd,
+					dir: direntPath,
+					external: ctx.external,
+					fs,
+					signal,
+					target,
+				},
+				promiseCb(resolve, reject),
+			)
+		})
 		ctx.paths.set(
 			entry,
-			await target.ignores({ fs, cwd, entry: direntPath, ctx, signal, target, parentPath }),
+			await new Promise<RuleMatch>((resolve, reject) => {
+				target.ignores(
+					{
+						cwd,
+						entry: direntPath,
+						fs,
+						parentPath,
+						resource,
+						signal,
+						target,
+					},
+					promiseCb(resolve, reject),
+				)
+			}),
 		)
-		if (ctx.totalFiles >= 0) {
-			ctx.totalDirs++
+		const total = ctx.total.get(parentPath)
+		if (!total) {
+			ctx.total.set(parentPath, { totalDirs: 1, totalFiles: 0, totalMatchedFiles: 0 })
+		} else if (total.totalFiles >= 0) {
+			total.totalDirs++
 		}
 		if (parentPath !== ".") {
 			void (await matcherContextAddPath(ctx, options, parentPath + "/"))
@@ -48,29 +92,78 @@ export async function matcherContextAddPath(
 		return true
 	}
 
-	const parentPath = dirname(entry)
-
 	const isSource = target.extractors.some((e) => e.path === entry)
 	if (isSource) {
 		// add pattern sources
+		const resultPromise = new Promise<WalkResult[] | null>((resolve, reject) => {
+			scanParallel(
+				{
+					external: ctx.external,
+					failed: ctx.failed,
+					onResult: (result) => {
+						if ("dir" in result) {
+							walkPatchTotal(ctx, maxDepth, result as WalkTotal)
+						} else {
+							walkPatchResult(ctx, result as WalkResult)
+						}
+					},
+					scanOptions: options,
+					stream: undefined,
+					within: parentPath,
+				},
+				promiseCb(resolve, reject),
+			)
+		})
 		await matcherContextRemovePath(ctx, options, parentPath + "/")
-		await rescan(ctx, { ...options, within: parentPath })
+		await resultPromise
+		propagateTotals(ctx.total)
 	}
 
 	// add paths
 	// 1. recursively populate parents
 	await matcherContextAddPath(ctx, options, parentPath + "/")
 	// 2. if ignored, remove, otherwise add
-	const match = await target.ignores({ fs, cwd, entry, ctx, signal, target, parentPath })
+	const resource = (await new Promise<Resource>((resolve, reject) => {
+		resolveSources(
+			{
+				cwd,
+				dir: parentPath,
+				external: ctx.external,
+				fs,
+				signal,
+				target,
+			},
+			promiseCb(resolve, reject),
+		)
+	})) as Resource
+
+	const match = await new Promise<RuleMatch>((resolve, reject) => {
+		target.ignores(
+			{
+				cwd,
+				entry,
+				fs,
+				parentPath,
+				resource,
+				signal,
+				target,
+			},
+			promiseCb(resolve, reject),
+		)
+	})
+
 	if (match.ignored) {
 		// 2.1. remove
 		await matcherContextRemovePath(ctx, options, entry)
 		return false
 	}
 	// 2.2. add
-	if (ctx.totalFiles >= 0) {
-		ctx.totalFiles++
-		ctx.totalMatchedFiles++
+	const total = ctx.total.get(parentPath)
+	if (!total) {
+		ctx.total.set(parentPath, { totalDirs: 0, totalFiles: 1, totalMatchedFiles: 1 })
+	} else {
+		total.totalFiles++
+		total.totalMatchedFiles++
 	}
 	ctx.paths.set(entry, match)
 	return true
@@ -88,75 +181,93 @@ export async function matcherContextRemovePath(
 	entry: string,
 ): Promise<boolean> {
 	const isDir = entry.endsWith("/")
+	const direntPath = isDir ? entry.slice(0, -1) : entry
+	if (isDir && direntPath === ".") {
+		ctx.paths.clear()
+		ctx.external.clear()
+		ctx.failed.length = 0
+		ctx.total.set(direntPath, { totalDirs: 0, totalFiles: 0, totalMatchedFiles: 0 })
+		return true
+	}
+	const parentPath = dirname(direntPath)
+	const parentPathDir = parentPath + "/"
+
 	if (isDir) {
 		// remove directories
-		const direntPath = entry.replace(/\/$/, "")
+		let deletedDirs = 0,
+			deletedFiles = 0
+		const total = ctx.total.get(direntPath)!
 		for (const [element] of ctx.paths) {
-			if (entry !== "./" && !element.startsWith(entry)) {
+			if (!element.startsWith(entry)) {
 				continue
 			}
-			if (ctx.totalFiles >= 0) {
+			if (total && total.totalFiles >= 0) {
 				const isDir = element.endsWith("/")
 				if (isDir) {
-					ctx.totalDirs--
+					deletedDirs++
 				} else {
-					ctx.totalFiles--
-					ctx.totalMatchedFiles--
+					deletedFiles++
 				}
 			}
 			ctx.paths.delete(element)
 		}
-		for (const [element] of ctx.depthPaths) {
-			if (entry !== "./" && !element.startsWith(direntPath)) {
-				continue
-			}
-			ctx.depthPaths.delete(element)
-		}
+
+		deleteTotals(ctx, entry, deletedDirs, deletedFiles)
+
 		for (const [element] of ctx.external) {
-			if (entry !== "./" && !element.startsWith(direntPath)) {
+			if (!element.startsWith(direntPath)) {
 				continue
 			}
-			if (ctx.external.delete(element) && ctx.failed.length) {
-				// 3.1. remove failed sources
-				const failedEntryIndex = ctx.failed.findIndex((fail) => dirname(fail.path) === element)
-				if (failedEntryIndex >= 0) {
-					ctx.failed.splice(failedEntryIndex, 1)
-				}
+			if (!ctx.external.delete(element) || !ctx.failed.length) {
+				continue
+			}
+			// 3.1. remove failed sources
+			const failedEntryIndex = ctx.failed.findIndex((fail) => dirname(fail.source.path) === element)
+			if (failedEntryIndex >= 0) {
+				ctx.failed.splice(failedEntryIndex, 1)
 			}
 		}
 		return true
 	}
 
-	const parent = dirname(entry)
-
 	const isSource = options.target.extractors.some((e) => e.path === entry)
 	if (isSource) {
+		const maxDepth = options.depth
 		// remove pattern sources
 		// rescan directory and repopulate stats
-		await matcherContextRemovePath(ctx, options, parent + "/")
-		await rescan(ctx, { ...options, within: parent })
+		const resultPromise = new Promise<WalkResult[] | null>((resolve, reject) => {
+			scanParallel(
+				{
+					external: ctx.external,
+					failed: ctx.failed,
+					onResult: (result) => {
+						if ("dir" in result) {
+							walkPatchTotal(ctx, maxDepth, result as WalkTotal)
+						} else {
+							walkPatchResult(ctx, result as WalkResult)
+						}
+					},
+					scanOptions: options,
+					stream: undefined,
+					within: parentPath,
+				},
+				promiseCb(resolve, reject),
+			)
+		})
+		await matcherContextRemovePath(ctx, options, parentPathDir)
+		await resultPromise
+		propagateTotals(ctx.total)
 		return true
 	}
 	// remove path
 	// 1. change stats
 	{
-		if (ctx.totalFiles >= 0) {
-			ctx.totalFiles--
-			ctx.totalMatchedFiles--
-		}
-		// 1.1 remove depthPaths
-		const { depthSlash } = getDepth(entry, options.depth)
-		if (depthSlash >= 0) {
-			const dir = entry.substring(0, depthSlash)
-			let num = ctx.depthPaths.get(dir)
-			if (num) {
-				num--
-				if (num <= 0) {
-					ctx.depthPaths.delete(dir)
-				} else {
-					ctx.depthPaths.set(dir, num)
-				}
-			}
+		const total = ctx.total.get(parentPath)
+		if (!total) {
+			ctx.total.set(parentPath, { totalDirs: 0, totalFiles: 0, totalMatchedFiles: 0 })
+		} else if (total.totalFiles >= 0) {
+			total.totalFiles--
+			total.totalMatchedFiles--
 		}
 	}
 	// 2. remove from paths
@@ -164,20 +275,13 @@ export async function matcherContextRemovePath(
 	return true
 }
 
-async function rescan(ctx: MatcherContext, options: Required<ScanOptions>): Promise<void> {
-	const { cwd, within, fs, signal, target } = options
-
-	const normalCwd = unixify(cwd)
-	let from = join(normalCwd, within)
-	await opendir({ ctx, cwd: normalCwd, fs, signal, target }, from, (entry, parentPath, path) => {
-		return walkIncludes({
-			path,
-			parentPath,
-			entry,
-			ctx,
-			stream: undefined,
-			scanOptions: { ...options, cwd: normalCwd },
-		})
-	})
-	ctx.totalDirs = ctx.totalFiles = ctx.totalMatchedFiles = -1
+function deleteTotals(ctx: MatcherContext, entry: string, deletedDirs = 0, deletedFiles = 0) {
+	if (entry.endsWith("/")) ctx.total.delete(entry)
+	for (let parent = dirname(entry); parent !== "./"; parent = dirname(parent) + "/") {
+		const total = ctx.total.get(parent)
+		if (!total) continue
+		total.totalDirs -= deletedDirs
+		total.totalFiles -= deletedFiles
+		total.totalMatchedFiles -= deletedFiles
+	}
 }

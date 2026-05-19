@@ -12,8 +12,10 @@ import { sortFirstFolders } from "./testSort.test.js"
 
 export function createAdapter(vol: Volume): FsAdapter {
 	const fs = createFsFromVolume(vol)
-	const { opendir, readFile } = fs.promises
-	const adapter = { promises: { opendir, readFile } } as FsAdapter
+	const adapter = {
+		readFile: fs.readFile.bind(fs),
+		readdir: fs.readdir.bind(fs),
+	} as unknown as FsAdapter
 	return adapter
 }
 
@@ -46,43 +48,79 @@ export async function testScan(
 	const o = { cwd: cwd, fs: adapter, ...options } as ScanOptions & { fs: FsAdapter; cwd: string }
 
 	if (typeof test === "function") {
-		const ctx = await scan(o)
+		let ctx: MatcherContext
+		try {
+			ctx = await scan(o)
+		} catch (e) {
+			done()
+			throw e
+		}
 		await test({
-			vol,
-			fs: adapter,
 			ctx,
+			fs: adapter,
 			options: o,
+			vol,
 		})
 		const stream = scanStream(o)
-		stream.addListener("end", async (sctx) => {
-			await test({
-				vol,
-				fs: adapter,
-				ctx: sctx,
-				options: o,
-			})
+		stream.addEventListener(
+			"end",
+			async ({ detail: sctx }) => {
+				try {
+					await test({
+						ctx: sctx,
+						fs: adapter,
+						options: o,
+						vol,
+					})
+				} finally {
+					done()
+				}
+			},
+			{ once: true },
+		)
+		try {
+			await stream.start()
+		} catch (e) {
 			done()
-		})
-		await stream.start()
+			throw e
+		}
 		return
 	}
 
-	const ctx = await scan(o)
+	let ctx: MatcherContext
+	try {
+		ctx = await scan(o)
+	} catch (e) {
+		done()
+		throw e
+	}
 	const { paths } = ctx
 	expect(sortFirstFolders(paths.keys())).toStrictEqual(sortFirstFolders(test))
 
 	const stream = scanStream(o)
 	const results = new Set<string>()
-	stream.addListener("dirent", (dirent) => {
+	stream.addEventListener("dirent", ({ detail: dirent }) => {
 		if (dirent.match.ignored) return
 		if (results.has(dirent.path)) results.delete(dirent.path)
 		results.add(dirent.path)
 	})
-	stream.addListener("end", () => {
-		expect(sortFirstFolders(results)).toStrictEqual(sortFirstFolders(test))
+	stream.addEventListener(
+		"end",
+		() => {
+			try {
+				expect(sortFirstFolders(results)).toStrictEqual(sortFirstFolders(test))
+			} finally {
+				done()
+			}
+		},
+		{ once: true },
+	)
+	try {
+		await stream.start()
+	} catch (e) {
 		done()
-	})
-	await stream.start()
+		throw e
+	}
 }
 
 /**
@@ -100,13 +138,14 @@ export async function testStream(
 
 	if (typeof test === "function") {
 		const stream = scanStream(o)
-		await stream.start()
-		await test({
-			vol,
+		const promise = test({
 			fs: adapter,
-			stream,
 			options: o,
+			stream,
+			vol,
 		})
+		await stream.start()
+		await promise
 		return
 	}
 }

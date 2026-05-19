@@ -1,4 +1,4 @@
-import type { Rule } from "./rule.js"
+import type { Rule, RuleMatch } from "./rule.js"
 
 /**
  * Represents a source of external patterns.
@@ -7,21 +7,20 @@ import type { Rule } from "./rule.js"
  */
 export type Source = {
 	/**
+	 * @internal
+	 *
+	 * @since 0.11.0
+	 */
+	_noMatchCache?: RuleMatch
+	/**
 	 * Patterns defined within the source file.
 	 * Those patterns are for ignoring files.
 	 *
 	 * @see {@link ruleTest}
 	 *
-	 * @since 0.6.0
+	 * @since 0.11.0
 	 */
-	pattern: Rule[]
-
-	/**
-	 * Name of the source file.
-	 *
-	 * @since 0.6.0
-	 */
-	name: string
+	rules: Rule[]
 
 	/**
 	 * Relative path to the source file.
@@ -40,15 +39,6 @@ export type Source = {
 	 * @since 0.6.0
 	 */
 	inverted: boolean
-
-	/**
-	 * Error encountered during extraction, if any.
-	 *
-	 * @see {@link ExtractorFn}
-	 *
-	 * @since 0.6.0
-	 */
-	error?: Error
 }
 
 /**

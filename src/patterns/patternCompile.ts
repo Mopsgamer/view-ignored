@@ -28,62 +28,73 @@ export function patternCompile(
 	context: PatternList = [],
 	options?: PatternCompileOptions,
 ): PatternCache {
-	const original = pattern
-	const isRoot = pattern.startsWith("/")
+	const isRoot = pattern.charCodeAt(0) === 47 // '/'
 	const nocase = !!options?.nocase
 
 	let cleaned = pattern
-	if (cleaned.endsWith("/")) cleaned = cleaned.slice(0, -1)
+	if (cleaned.charCodeAt(cleaned.length - 1) === 47) cleaned = cleaned.slice(0, -1)
 	if (isRoot) cleaned = cleaned.slice(1)
 
 	const lowerCleaned = nocase ? cleaned.toLowerCase() : cleaned
-	const prefix = lowerCleaned + "/"
-	const hasGlob = cleaned.includes("*")
-
 	const matchBase = !isRoot && !cleaned.includes("/")
 
-	const matcherOpts = {
+	const matcherOpts: glob.Options = {
 		dot: true,
-		nonegate: true,
-		nocomment: true,
+		matchBase,
 		nobrace: true,
 		nocase,
-		matchBase,
-		optimizationLevel: 2,
+		nonegate: true,
 	}
+
+	const isMatch = glob.matcher(lowerCleaned, { ...matcherOpts, nocase: false })
 
 	const re = {
-		test(str: string): boolean {
-			const lowerStr = nocase ? str.toLowerCase() : str
-
-			if (lowerStr === lowerCleaned || lowerStr.startsWith(prefix)) {
-				return true
-			}
-
-			if (matchBase) {
-				if (str.includes(cleaned)) {
-					const segments = str.split("/")
-					for (const seg of segments) {
-						if (seg === lowerCleaned) return true
-					}
-				}
-			}
-
-			if (hasGlob) {
-				if (glob.isMatch(str, cleaned, matcherOpts)) return true
-
-				// Check parents only if there's a glob
-				let lastSlash = str.lastIndexOf("/")
-				while (lastSlash !== -1) {
-					const parent = str.substring(0, lastSlash)
-					if (glob.isMatch(parent, cleaned, matcherOpts)) return true
-					lastSlash = str.lastIndexOf("/", lastSlash - 1)
-				}
-			}
-
-			return false
-		},
+		test: (str: string, matchCtx: { lower?: string }) =>
+			test(str, matchCtx, isMatch, lowerCleaned, isRoot, nocase, matchBase),
 	}
 
-	return { re, pattern: original, patternContext: context }
+	const cache = { pattern, patternContext: context, re }
+
+	return cache
+}
+
+function test(
+	str: string,
+	matchCtx: { lower?: string },
+	isMatch: (str: string) => boolean,
+	cleaned: string,
+	isRoot: boolean,
+	nocase: boolean,
+	matchBase: boolean,
+): boolean {
+	const normStr = nocase ? (matchCtx.lower ?? (matchCtx.lower = str.toLowerCase())) : str
+
+	if (normStr === cleaned || normStr.startsWith(cleaned + "/")) {
+		return true
+	}
+
+	if (matchBase) {
+		const len = cleaned.length
+		let pos = normStr.indexOf(cleaned)
+		while (pos !== -1) {
+			if (
+				(pos === 0 || normStr.charCodeAt(pos - 1) === 47) &&
+				(pos + len === normStr.length || normStr.charCodeAt(pos + len) === 47)
+			) {
+				return true
+			}
+			pos = normStr.indexOf(cleaned, pos + 1)
+		}
+	}
+
+	if (isMatch(normStr)) return true
+	if (!isRoot) {
+		let lastSlash = normStr.lastIndexOf("/")
+		while (lastSlash !== -1) {
+			if (isMatch(normStr.slice(0, lastSlash))) return true
+			lastSlash = normStr.lastIndexOf("/", lastSlash - 1)
+		}
+	}
+
+	return false
 }

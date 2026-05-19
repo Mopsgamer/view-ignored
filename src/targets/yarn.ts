@@ -1,5 +1,3 @@
-import { type } from "arktype"
-
 import type { Target } from "./target.js"
 
 import {
@@ -11,7 +9,7 @@ import {
 	extractGitignoreNocase,
 } from "../patterns/index.js"
 import { join, unixify } from "../unixify.js"
-import { npmManifestParse } from "./npmManifest.js"
+import { npmManifestParse, type PackageJson } from "./npmManifest.js"
 
 const extractors: Extractor[] = [
 	{
@@ -29,14 +27,15 @@ const extractors: Extractor[] = [
 ]
 
 const internalInclude: Rule = {
+	compiled: [],
 	excludes: false,
 	pattern: [],
-	compiled: [],
 }
 
 const internal: Rule[] = [
 	internalInclude,
 	ruleCompile({
+		compiled: null,
 		excludes: true,
 		pattern: [
 			// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L26
@@ -53,10 +52,10 @@ const internal: Rule[] = [
 			".#*",
 			".DS_Store",
 		],
-		compiled: null,
 	}),
 	ruleCompile(
 		{
+			compiled: null,
 			excludes: false,
 			pattern: [
 				// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L10
@@ -68,7 +67,6 @@ const internal: Rule[] = [
 				"/LICENCE",
 				"/LICENCE.*",
 			],
-			compiled: null,
 		},
 		{ nocase: true },
 	),
@@ -77,44 +75,53 @@ const internal: Rule[] = [
 /**
  * @since 0.6.0
  */
-export const Yarn: Target = {
-	internalRules: internal,
+export const Yarn: Target = <Target>{
 	extractors,
-	root: ".",
-	async init({ fs, cwd }) {
-		let content: Buffer
-		const normalCwd = unixify(cwd)
-		try {
-			content = await fs.promises.readFile(normalCwd + "/" + "package.json")
-		} catch (error) {
-			throw new Error("Error while initializing Yarn", { cause: error })
-		}
-
-		const dist = npmManifestParse(content.toString())
-		if (dist instanceof type.errors) {
-			throw new Error("Invalid 'package.json': " + dist.summary, { cause: dist })
-		}
-
-		// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L215-L231
-
-		const set = new Set<string>()
-
-		function normal(path: string): string {
-			const result = unixify(join(normalCwd, path)).substring(normalCwd.length)
-			return result
-		}
-
-		if (dist.main) set.add(normal(dist.main))
-		if (dist.module) set.add(normal(dist.module))
-		if (dist.browser) set.add(normal(dist.browser))
-		if (typeof dist.bin === "string") {
-			set.add(normal(dist.bin))
-		} else if (typeof dist.bin === "object" && dist.bin !== null) {
-			Object.values(dist.bin).forEach((binPath) => set.add(normal(binPath)))
-		}
-
-		internalInclude.pattern = Array.from(set)
-		ruleCompile(internalInclude, { nocase: true })
-	},
 	ignores: ruleTest,
+	init({ fs, cwd }, cb) {
+		const normalCwd = unixify(cwd)
+		fs.readFile(normalCwd + "/package.json", (err, content) => {
+			if (err) {
+				const error = err as NodeJS.ErrnoException
+				if (error.code === "ENOENT") {
+					cb()
+					return
+				}
+				cb(new Error("Error while initializing Yarn", { cause: error }))
+				return
+			}
+
+			let dist: PackageJson
+			try {
+				dist = npmManifestParse(content!.toString())
+			} catch (error) {
+				cb(new Error("Invalid 'package.json'", { cause: error }))
+				return
+			}
+
+			const set = new Set<string>()
+
+			function normal(path: string): string {
+				return unixify(join(normalCwd, path)).substring(normalCwd.length)
+			}
+
+			if (typeof dist.main === "string") set.add(normal(dist.main))
+			if (typeof dist.module === "string") set.add(normal(dist.module))
+			if (typeof dist.browser === "string") set.add(normal(dist.browser))
+
+			if (typeof dist.bin === "string") {
+				set.add(normal(dist.bin))
+			} else if (typeof dist.bin === "object" && dist.bin !== null) {
+				Object.values(dist.bin).forEach((binPath) => {
+					if (typeof binPath === "string") set.add(normal(binPath))
+				})
+			}
+
+			internalInclude.pattern = Array.from(set)
+			ruleCompile(internalInclude, { nocase: true })
+			cb()
+		})
+	},
+	internalRules: internal,
+	root: ".",
 }

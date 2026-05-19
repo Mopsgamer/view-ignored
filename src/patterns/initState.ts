@@ -1,6 +1,5 @@
 import type { Target } from "../targets/target.js"
 import type { FsAdapter } from "../types.js"
-import type { MatcherContext } from "./matcherContext.js"
 
 /**
  * Used in {@link IgnoresOptions}.
@@ -18,12 +17,6 @@ export interface InitState {
 	 * @since 0.6.0
 	 */
 	cwd: string
-	/**
-	 * The context to populate.
-	 *
-	 * @since 0.6.0
-	 */
-	ctx: MatcherContext
 	/**
 	 * The target implementation.
 	 *

@@ -2,17 +2,20 @@ import type { NestedDirectoryJSON } from "memfs"
 
 import { describe, test, expect } from "bun:test"
 
-import type { Source } from "../patterns/source.js"
-
+import { RuleMatchKind } from "../patterns/rule.js"
 import { testScan, type PathHandlerOptions } from "../testScan.test.js"
 import { Yarn as target } from "./yarn.js"
 
-function testYarn(
+async function testYarn(
 	done: () => void,
 	tree: NestedDirectoryJSON,
 	handler: ((o: PathHandlerOptions) => void | Promise<void>) | string[],
 ) {
-	return testScan(done, tree, handler, { target })
+	try {
+		await testScan(done, tree, handler, { target })
+	} catch (error) {
+		throw new Error("Error while testing Yarn", { cause: error })
+	}
 }
 
 const packageJsonNoFiles = JSON.stringify({
@@ -33,8 +36,8 @@ describe("Yarn", () => {
 		await testYarn(
 			done,
 			{
-				filekeep: "",
 				".npmignore": "",
+				filekeep: "",
 				"package.json": packageJsonNoFiles,
 			},
 			["filekeep", "package.json"],
@@ -45,8 +48,8 @@ describe("Yarn", () => {
 		await testYarn(
 			done,
 			{
-				file: "",
 				".npmignore": "file",
+				file: "",
 				"package.json": packageJsonNoFiles,
 			},
 			["package.json"],
@@ -57,8 +60,8 @@ describe("Yarn", () => {
 		await testYarn(
 			done,
 			{
-				file: "",
 				".npmignore": "File",
+				file: "",
 				"package.json": packageJsonNoFiles,
 			},
 			["package.json"],
@@ -69,9 +72,9 @@ describe("Yarn", () => {
 		await testYarn(
 			done,
 			{
+				".npmignore": "file1.txt\nfile2.txt",
 				"file1.txt": "",
 				"file2.txt": "",
-				".npmignore": "file1.txt\nfile2.txt",
 				"package.json": packageJsonNoFiles,
 			},
 			["package.json"],
@@ -82,9 +85,9 @@ describe("Yarn", () => {
 		await testYarn(
 			done,
 			{
-				"foo.js": "",
-				"bar.js": "",
 				".npmignore": "*.js",
+				"bar.js": "",
+				"foo.js": "",
 				"package.json": packageJsonNoFiles,
 			},
 			["package.json"],
@@ -95,12 +98,12 @@ describe("Yarn", () => {
 		await testYarn(
 			done,
 			{
-				src: {
-					"main.js": "",
-					"helper.js": "",
-				},
 				".npmignore": "src/",
 				"package.json": packageJsonNoFiles,
+				src: {
+					"helper.js": "",
+					"main.js": "",
+				},
 			},
 			["package.json"],
 		)
@@ -110,9 +113,9 @@ describe("Yarn", () => {
 		await testYarn(
 			done,
 			{
-				"foo.txt": "",
-				"bar.js": "",
 				".npmignore": "*.js",
+				"bar.js": "",
+				"foo.txt": "",
 				"package.json": packageJsonNoFiles,
 			},
 			["foo.txt", "package.json"],
@@ -123,91 +126,77 @@ describe("Yarn", () => {
 		await testYarn(
 			done,
 			{
-				"foo.js": "",
-				"bar.js": "",
 				".npmignore": "*.js\n!bar.js",
+				"bar.js": "",
+				"foo.js": "",
 				"package.json": packageJsonNoFiles,
 			},
 			["bar.js", "package.json"],
 		)
 	})
 
-	test("collects errors", async (done) => {
-		expect(
-			testYarn(
-				done,
-				{
-					"foo.js": "",
-					"negkeep.js": "",
-					"package.json": "{",
-				},
-				[],
-			),
-		).rejects.toThrowError("Expected")
-	})
 	test("monorepo should use package.json if cwd is .", async (done) => {
 		await testScan(
 			done,
 			{
-				packages: {
-					a: {
-						"index.js": "('a')",
-						"package.json": JSON.stringify({
-							name: "a",
-							version: "0.0.1",
-							files: ["index.js"],
-						}),
-					},
-				},
 				file: "1",
 				"index.js": "('src')",
 				"index.ts": "('src')",
 				"package.json": JSON.stringify({
+					files: ["index.ts"],
 					name: "root",
 					version: "0.0.1",
-					files: ["index.ts"],
 				}),
+				packages: {
+					a: {
+						"index.js": "('a')",
+						"package.json": JSON.stringify({
+							files: ["index.js"],
+							name: "a",
+							version: "0.0.1",
+						}),
+					},
+				},
 			},
 			({ ctx }) => {
 				expect(ctx.paths.has("file")).toBeFalse()
 				expect(ctx.paths.get("index.ts")).toMatchObject({
 					ignored: false,
+					kind: RuleMatchKind.external,
 					pattern: "index.ts",
-					kind: "external",
 				})
 				expect(ctx.paths.has("index.js")).toBeFalse()
 				expect(ctx.paths.has("packages/a/index.js")).toBeFalse()
 
-				let source = ctx.external.get("packages/a")
-				expect(source).toBeObject()
-				source = source as Source
-				expect(source.path).toBe("package.json")
+				const src = ctx.external.get("packages/a") as any
+				expect(src).toBeObject()
+				expect(src?.path).toBe("package.json")
 			},
-			{ target, cwd: process.cwd() + "/test" },
+			{ cwd: process.cwd() + "/test", target },
 		)
 	})
 	test("monorepo should use packages/a/package.json if cwd is packages/a", async (done) => {
 		await testScan(
 			done,
 			{
-				packages: {
-					a: {
-						"index.js": "('a')",
-						"package.json": JSON.stringify({
-							name: "a",
-							version: "0.0.1",
-							files: ["index.js"],
-						}),
-					},
-				},
 				file: "1",
 				"index.js": "('src')",
 				"index.ts": "('src')",
 				"package.json": JSON.stringify({
+					files: ["index.ts"],
 					name: "root",
 					version: "0.0.1",
-					files: ["index.ts"],
 				}),
+				packages: {
+					a: {
+						"index.js": "('a')",
+						"package.json": JSON.stringify({
+							files: ["index.js"],
+							name: "a",
+							version: "0.0.1",
+						}),
+					},
+				},
 			},
 			({ ctx }) => {
 				expect(ctx.paths.has("file")).toBeFalse()
@@ -218,9 +207,11 @@ describe("Yarn", () => {
 				expect(ctx.paths.get("packages/a/")).toBeUndefined()
 
 				expect(ctx.external.get("packages/a")).toBeUndefined()
-				expect((ctx.external.get(".") as Source)?.path).toBe("package.json")
+				const src = ctx.external.get(".") as any
+				expect(src).toBeObject()
+				expect(src?.path).toBe("package.json")
 			},
-			{ target, cwd: process.cwd() + "/test/packages/a" },
+			{ cwd: process.cwd() + "/test/packages/a", target },
 		)
 	})
 
@@ -235,6 +226,8 @@ describe("Yarn", () => {
 				"package.json": JSON.stringify({
 					bin: "./bin/app",
 					files: ["index.js"],
+					name: "test",
+					version: "1.0.0",
 				}),
 			},
 			["index.js", "package.json", "bin/", "bin/app"],
@@ -251,6 +244,8 @@ describe("Yarn", () => {
 				"package.json": JSON.stringify({
 					bin: "bin/app",
 					files: ["index.js"],
+					name: "test",
+					version: "1.0.0",
 				}),
 			},
 			["index.js", "package.json", "bin/", "bin/app"],
@@ -267,9 +262,18 @@ describe("Yarn", () => {
 				"package.json": JSON.stringify({
 					bin: { bin: "./bin/app" },
 					files: ["index.js"],
+					name: "test",
+					version: "1.0.0",
 				}),
 			},
 			["index.js", "package.json", "bin/", "bin/app"],
 		)
+	})
+	test("throws an error if package.json is invalid", async (done) => {
+		expect(() => testYarn(done, { "package.json": "{ invalid json }" }, () => {})).toThrow()
+		expect(() => testYarn(done, { "package.json": "{}" }, () => {})).toThrow()
+		expect(() =>
+			testYarn(done, { "package.json": '{ "name": 0, "version": 0 }' }, () => {}),
+		).toThrow()
 	})
 })

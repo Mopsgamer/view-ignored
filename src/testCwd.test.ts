@@ -13,12 +13,12 @@ function testCwd(
 		done,
 		{
 			".git/HEAD": "",
+			".gitignore": "",
 			file: "",
 			folder: { nested: "" },
-			".gitignore": "",
 		},
 		paths,
-		{ target, cwd, within },
+		{ cwd, target, within },
 	)
 }
 

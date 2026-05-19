@@ -1,5 +1,6 @@
 import { describe, test, expect } from "bun:test"
 
+import { RuleMatchKind } from "./patterns/rule.js"
 import { Git as target } from "./targets/git.js"
 import { testStream } from "./testScan.test.js"
 
@@ -8,52 +9,54 @@ describe("Git", () => {
 		await testStream(
 			{ file: "1", src: { file: "2" } },
 			({ stream }) => {
-				const paths: string[] = []
-				stream.addListener("dirent", (d) => {
-					paths.push(d.match.kind)
-					paths.push(d.path)
+				const paths: { kind: number; path: string }[] = []
+				stream.addEventListener("dirent", ({ detail: d }) => {
+					paths.push({ kind: d.match.kind, path: d.path })
 				})
-				stream.once("end", () => {
-					expect(paths).toMatchObject([
-						"missing-source",
-						"file",
-						"missing-source",
-						"src/",
-						"missing-source",
-						"src/file",
-					])
-					done()
-				})
+				stream.addEventListener(
+					"end",
+					() => {
+						expect(paths.sort((a, b) => a.path.localeCompare(b.path))).toMatchObject(
+							[
+								{ kind: RuleMatchKind.missingSource, path: "file" },
+								{ kind: RuleMatchKind.missingSource, path: "src/" },
+								{ kind: RuleMatchKind.missingSource, path: "src/" },
+								{ kind: RuleMatchKind.missingSource, path: "src/file" },
+							].sort((a, b) => a.path.localeCompare(b.path)),
+						)
+						done()
+					},
+					{ once: true },
+				)
 			},
 			{ target },
 		)
 	})
 	test("scanStream .gitignore", async (done) => {
 		await testStream(
-			{ file: "1", src: { file: "2" }, ".gitignore": "file", ".git": { HEAD: "" } },
+			{ ".git": { HEAD: "" }, ".gitignore": "file", file: "1", src: { file: "2" } },
 			({ stream }) => {
-				const paths: string[] = []
-				stream.addListener("dirent", (d) => {
-					paths.push(d.match.kind)
-					paths.push(d.path)
+				const paths: { kind: number; path: string }[] = []
+				stream.addEventListener("dirent", ({ detail: d }) => {
+					paths.push({ kind: d.match.kind, path: d.path })
 				})
-				stream.once("end", () => {
-					expect(paths).toMatchObject([
-						"external", // ignored
-						"file",
-						"no-match", // included
-						"src/",
-						"external", // ignored
-						"src/file",
-						"no-match", // included
-						".gitignore",
-						"internal", // ignored internal
-						".git/",
-						"internal", // ignored internal
-						".git/HEAD",
-					])
-					done()
-				})
+				stream.addEventListener(
+					"end",
+					() => {
+						expect(paths.sort((a, b) => a.path.localeCompare(b.path))).toMatchObject(
+							[
+								{ kind: RuleMatchKind.external, path: "file" },
+								{ kind: RuleMatchKind.noMatch, path: "src/" },
+								{ kind: RuleMatchKind.external, path: "src/file" },
+								{ kind: RuleMatchKind.noMatch, path: ".gitignore" },
+								{ kind: RuleMatchKind.internal, path: ".git/" },
+								{ kind: RuleMatchKind.internal, path: ".git/HEAD" },
+							].sort((a, b) => a.path.localeCompare(b.path)),
+						)
+						done()
+					},
+					{ once: true },
+				)
 			},
 			{ target },
 		)

@@ -10,7 +10,7 @@ describe.skipIf(!!process.env.TEST_NO_SELF)("Git", () => {
 		"scans self",
 		async () => {
 			const files = gitFiles()
-			const r = await scan({ target, fastInternal: true })
+			const r = await scan({ fastInternal: true, target })
 			// this test uses sortFirstFolders implementation
 			// provided by https://jsr.io/@m234/path/0.1.4/sort-cmp.ts
 			// you can install this jsr package in your project
@@ -29,25 +29,22 @@ function gitFiles(): Promise<string[]> {
 	const git = spawn("git", ["ls-files", "--others", "--exclude-standard", "--cached"], {
 		env: { ...process.env, NO_COLOR: "1" },
 	})
-	return new Promise((resolve, reject) => {
-		let output = ""
-		git.stdout.on("data", (data) => {
-			output += data.toString()
-		})
-		git.stderr.on("data", (data) => {
-			output += data.toString()
-		})
-		git.on("close", (code) => {
-			if (code !== 0) {
-				reject(
-					new Error(
-						`'git ls-files --others --exclude-standard --cached' exited with code ${code}\n${output}`,
-					),
-				)
-				return
-			}
-			const files = output.trim().split("\n")
-			resolve(files)
-		})
+	const { promise, resolve, reject } = Promise.withResolvers<string[]>()
+	let output = ""
+	git.stdout.on("data", (data) => {
+		output += data.toString()
 	})
+	git.stderr.on("data", (data) => {
+		output += data.toString()
+	})
+	git.on("close", (code) => {
+		if (code !== 0) {
+			const command = "git ls-files --others --exclude-standard --cached"
+			reject(new Error(`'${command}' exited with code ${code}\n${output}`))
+			return
+		}
+		const files = output.trim().split("\n")
+		resolve(files)
+	})
+	return promise
 }

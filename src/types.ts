@@ -8,10 +8,11 @@ import type { Target } from "./targets/target.js"
  * @since 0.6.0
  */
 export interface FsAdapter {
-	promises: {
-		opendir: typeof fs.promises.opendir
-		readFile: typeof fs.promises.readFile
-	}
+	/**
+	 * `readdir` is better than `opendir`.
+	 */
+	readdir: typeof fs.readdir
+	readFile: typeof fs.readFile
 }
 
 /**
@@ -85,10 +86,10 @@ export type ScanOptions = {
 	 * {@link MatcherContext.totalDirs},
 	 * {@link MatcherContext.totalFiles},
 	 * {@link MatcherContext.totalMatchedFiles}
-	 * and {@link MatcherContext.depthPaths}.
+	 * and {@link MatcherContext.depthPaths} numbers.
 	 *
 	 * It's recommended to use this option unless you
-	 * need precise statistics
+	 * care about these stats.
 	 *
 	 * @default `false`
 	 *
@@ -107,7 +108,7 @@ export type ScanOptions = {
 	 * and {@link MatcherContext.depthPaths}.
 	 *
 	 * It's recommended to use this option unless the target
-	 * allows overriding internal patterns.
+	 * allows overriding internal patterns and you don't care about these stats.
 	 * This option should never affect {@link MatcherContext.totalMatchedFiles}.
 	 *
 	 * @default `false`

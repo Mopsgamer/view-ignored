@@ -8,12 +8,16 @@ import { scanStream as browserStream } from "./browser_stream.js"
 export type * from "./types.js"
 
 /**
- * @see {@link scan}
+ * Scan the directory for included files based on the provided targets.
+ *
+ * It also normalizes paths to use forward slashes.
+ *
+ * @param options Scan options.
+ * @returns A stream containing the scan results.
  *
  * @since 0.6.0
  */
 export function scanStream(options: ScanOptions): MatcherStream {
 	const { cwd = process.cwd(), fs = nodefs } = options
-
-	return browserStream({ fs, cwd, ...options })
+	return browserStream({ cwd, fs, ...options })
 }

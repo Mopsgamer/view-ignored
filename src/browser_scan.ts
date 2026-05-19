@@ -1,20 +1,14 @@
 import type { MatcherContext } from "./patterns/matcherContext.js"
-import type { RuleMatch } from "./patterns/rule.js"
-import type { Source } from "./patterns/source.js"
 import type { ScanOptions, FsAdapter } from "./types.js"
 
-import { opendir } from "./opendir.js"
-import { unixify, join } from "./unixify.js"
-import { walkIncludes } from "./walk.js"
+import { scanCb } from "./scanCb.js"
+export { scanCb } from "./scanCb.js"
 export type * from "./types.js"
 
 /**
  * Scan the directory for included files based on the provided targets.
  *
- * Note that this function uses `fs.promises.readFile` and `fs.promises.opendir` without options within
- * custom recursion, instead of `fs.promises.readdir` with `{ withFileTypes: true }.
  * It also normalizes paths to use forward slashes.
- * Please report any issues if you encounter problems related to this behavior.
  *
  * @param options Scan options.
  * @returns A promise that resolves to a {@link MatcherContext} containing the scan results.
@@ -24,59 +18,13 @@ export type * from "./types.js"
 export function scan(
 	options: ScanOptions & { fs: FsAdapter; cwd: string },
 ): Promise<MatcherContext> {
-	const {
-		target,
-		cwd,
-		within = ".",
-		invert = false,
-		depth: maxDepth = Infinity,
-		signal = null,
-		fastDepth = false,
-		fastInternal = false,
-		fs,
-	} = options
-
-	if (maxDepth < 0) {
-		throw new TypeError("Depth must be a non-negative integer")
-	}
-
-	const ctx: MatcherContext = {
-		paths: new Map<string, RuleMatch>(),
-		external: new Map<string, Source>(),
-		failed: [],
-		depthPaths: new Map<string, number>(),
-		totalFiles: 0,
-		totalMatchedFiles: 0,
-		totalDirs: 0,
-	}
-
-	const normalCwd = unixify(cwd)
-
-	const scanOptions: Required<ScanOptions> = {
-		cwd: normalCwd,
-		within,
-		depth: maxDepth,
-		fastDepth,
-		fastInternal,
-		fs,
-		invert,
-		signal,
-		target,
-	}
-
-	return (async (): Promise<MatcherContext> => {
-		await target.init?.({ ctx, cwd, fs, signal, target })
-		let from = join(normalCwd, within)
-		await opendir({ ctx, cwd: normalCwd, fs, signal, target }, from, (entry, parentPath, path) => {
-			return walkIncludes({
-				path,
-				entry,
-				parentPath,
-				ctx,
-				stream: undefined,
-				scanOptions,
-			})
-		})
-		return ctx
-	})()
+	const { promise, resolve, reject } = Promise.withResolvers<MatcherContext>()
+	scanCb(options, (err, ctx) => {
+		if (err) {
+			reject(err)
+			return
+		}
+		resolve(ctx)
+	})
+	return promise
 }

@@ -4,7 +4,12 @@ import { MatcherStream } from "./patterns/matcherStream.js"
 export type * from "./types.js"
 
 /**
- * @see {@link browserScan}
+ * Scan the directory for included files based on the provided targets.
+ *
+ * It also normalizes paths to use forward slashes.
+ *
+ * @param options Scan options.
+ * @returns A stream containing the scan results.
  *
  * @since 0.6.0
  */

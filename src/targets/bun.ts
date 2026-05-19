@@ -1,5 +1,3 @@
-import { type } from "arktype"
-
 import type { Target } from "./target.js"
 
 import {
@@ -11,7 +9,7 @@ import {
 	extractGitignore,
 } from "../patterns/index.js"
 import { join, unixify } from "../unixify.js"
-import { npmManifestParse } from "./npmManifest.js"
+import { npmManifestParse, type PackageJson } from "./npmManifest.js"
 
 const extractors: Extractor[] = [
 	{
@@ -29,14 +27,15 @@ const extractors: Extractor[] = [
 ]
 
 const internalInclude: Rule = {
+	compiled: [],
 	excludes: false,
 	pattern: [], // filled within init
-	compiled: [],
 }
 
 const internal: Rule[] = [
 	internalInclude,
 	ruleCompile({
+		compiled: null,
 		excludes: true,
 		pattern: [
 			// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L180
@@ -76,10 +75,10 @@ const internal: Rule[] = [
 			// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L285
 			"node_modules",
 		],
-		compiled: null,
 	}), // nocase should be false here
 	ruleCompile(
 		{
+			compiled: null,
 			excludes: true,
 			pattern: [
 				// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L2586
@@ -93,7 +92,6 @@ const internal: Rule[] = [
 				"README",
 				"README.*",
 			],
-			compiled: null,
 		},
 		{ nocase: true },
 	),
@@ -102,44 +100,54 @@ const internal: Rule[] = [
 /**
  * @since 0.8.1
  */
-export const Bun: Target = {
-	internalRules: internal,
+export const Bun: Target = <Target>{
 	extractors,
-	root: ".",
-	async init({ fs, cwd }) {
-		let content: Buffer
-		const normalCwd = unixify(cwd)
-		try {
-			content = await fs.promises.readFile(normalCwd + "/" + "package.json")
-		} catch (error) {
-			throw new Error("Error while initializing Bun", { cause: error })
-		}
-
-		const dist = npmManifestParse(content.toString())
-		if (dist instanceof type.errors) {
-			throw new Error("Invalid 'package.json': " + dist.summary, { cause: dist })
-		}
-
-		const set = new Set<string>()
-
-		function normal(path: string): string {
-			const result = unixify(join(normalCwd, path)).substring(normalCwd.length)
-			return result
-		}
-
-		// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L1440
-		if (typeof dist.bin === "string") {
-			set.add(normal(dist.bin))
-		} else if (typeof dist.bin === "object" && dist.bin !== null) {
-			Object.values(dist.bin).forEach((binPath) => set.add(normal(binPath)))
-		}
-
-		// TODO: Bun should include bundled deps
-		// nothing else
-		// link zig code
-
-		internalInclude.pattern = Array.from(set)
-		ruleCompile(internalInclude, { nocase: true })
-	},
 	ignores: ruleTest,
+	init({ fs, cwd }, cb) {
+		const normalCwd = unixify(cwd)
+		fs.readFile(normalCwd + "/" + "package.json", (err, content) => {
+			if (err) {
+				cb(new Error("Error while initializing Bun", { cause: err }))
+				return
+			}
+
+			let dist: PackageJson
+			try {
+				dist = npmManifestParse(content!.toString())
+				// const set = new Set<string>()
+
+				// TODO: NPM should include bundled deps
+
+				// internalInclude.pattern = Array.from(set)
+				// ruleCompile(internalInclude, { nocase: true })
+			} catch (error) {
+				cb(new Error("Invalid 'package.json'", { cause: error }))
+				return
+			}
+
+			const set = new Set<string>()
+
+			function normal(path: string): string {
+				const result = unixify(join(normalCwd, path)).substring(normalCwd.length)
+				return result
+			}
+
+			// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L1440
+			if (typeof dist.bin === "string") {
+				set.add(normal(dist.bin))
+			} else if (typeof dist.bin === "object") {
+				Object.values<string>(dist.bin).forEach((binPath) => set.add(normal(binPath)))
+			}
+
+			// TODO: Bun should include bundled deps
+			// nothing else
+			// link zig code
+
+			internalInclude.pattern = Array.from(set)
+			ruleCompile(internalInclude, { nocase: true })
+			cb()
+		})
+	},
+	internalRules: internal,
+	root: ".",
 }

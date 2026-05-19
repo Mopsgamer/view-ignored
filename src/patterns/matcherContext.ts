@@ -1,5 +1,5 @@
+import type { Resource, InvalidSource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"
-import type { Source } from "./source.js"
 
 /**
  * Post-scan results.
@@ -24,7 +24,7 @@ export interface MatcherContext {
 	 *
 	 * @since 0.6.0
 	 */
-	external: Map<string, Source | "none">
+	external: Map<string, Resource>
 
 	/**
 	 * If any fatal errors were encountered during source extractions,
@@ -32,10 +32,10 @@ export interface MatcherContext {
 	 *
 	 * @since 0.6.0
 	 */
-	failed: Source[]
+	failed: InvalidSource[]
 
 	/**
-	 * Maps directory paths to the quantity of files they contain.
+	 * Total number of files and directories scanned.
 	 *
 	 * @example
 	 * // for
@@ -45,16 +45,19 @@ export interface MatcherContext {
 	 * "src/views/index.html"
 	 *
 	 * // depth: 0
-	 * "src" => 1
+	 * "." => { totalFiles: 1, totalMatchedFiles: 1, totalDirs: 3 }
+	 * "src" => { totalFiles: 1, totalMatchedFiles: 1, totalDirs: 2 }
 	 *
 	 * // depth: 1
-	 * "src/components" => 0
-	 * "src/views" => 1
+	 * "src/components" => { totalFiles: 0, totalMatchedFiles: 0, totalDirs: 0 }
+	 * "src/views" => { totalFiles: 1, totalMatchedFiles: 1, totalDirs: 0 }
 	 *
-	 * @since 0.6.0
+	 * @since 0.11.0
 	 */
-	depthPaths: Map<string, number>
+	total: Map<string, Total>
+}
 
+export interface Total {
 	/**
 	 * Total number of files scanned.
 	 *

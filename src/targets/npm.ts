@@ -1,5 +1,3 @@
-import { type } from "arktype"
-
 import type { Target } from "./target.js"
 
 import {
@@ -29,14 +27,15 @@ const extractors: Extractor[] = [
 ]
 
 const internalInclude: Rule = {
+	compiled: [],
 	excludes: false,
 	pattern: [], // filled within init
-	compiled: [],
 }
 
 const internal: Rule[] = [
 	internalInclude,
 	ruleCompile({
+		compiled: null,
 		excludes: true,
 		pattern: [
 			// https://github.com/npm/npm-packlist/blob/main/lib/index.js#L16
@@ -68,9 +67,9 @@ const internal: Rule[] = [
 			"/pnpm-lock.yaml",
 			"/bun.lockb",
 		],
-		compiled: null,
 	}),
 	ruleCompile({
+		compiled: null,
 		excludes: false,
 		pattern: [
 			// https://github.com/npm/npm-packlist/blob/main/lib/index.js#L287
@@ -85,37 +84,43 @@ const internal: Rule[] = [
 			"LICENSE.*",
 			"LICENCE.*",
 		],
-		compiled: null,
 	}),
 ]
 
 /**
  * @since 0.6.0
  */
-export const NPM: Target = {
-	internalRules: internal,
+export const NPM: Target = <Target>{
 	extractors,
-	root: ".",
-	async init({ fs, cwd }) {
-		let content: Buffer
-		const normalCwd = unixify(cwd)
-		try {
-			content = await fs.promises.readFile(normalCwd + "/" + "package.json")
-		} catch (error) {
-			throw new Error("Error while initializing NPM", { cause: error })
-		}
-
-		const dist = npmManifestParse(content.toString())
-		if (dist instanceof type.errors) {
-			throw new Error("Invalid 'package.json': " + dist.summary, { cause: dist })
-		}
-
-		// const set = new Set<string>()
-
-		// TODO: NPM should include bundled deps
-
-		// internalInclude.pattern = Array.from(set)
-		// ruleCompile(internalInclude, { nocase: true })
-	},
 	ignores: ruleTest,
+	init({ fs, cwd }, cb) {
+		const normalCwd = unixify(cwd)
+		fs.readFile(normalCwd + "/package.json", (err, content) => {
+			if (err) {
+				const error = err as NodeJS.ErrnoException
+				if (error.code === "ENOENT") {
+					cb(new Error("'package.json' not found", { cause: error }))
+					return
+				}
+				cb(new Error("Error while initializing NPM", { cause: error }))
+				return
+			}
+
+			try {
+				npmManifestParse(content!.toString())
+			} catch (error) {
+				cb(new Error("Invalid 'package.json'", { cause: error }))
+				return
+			}
+			// const set = new Set<string>()
+
+			// TODO: NPM should include bundled deps
+
+			// internalInclude.pattern = Array.from(set)
+			// ruleCompile(internalInclude, { nocase: true })
+			cb()
+		})
+	},
+	internalRules: internal,
+	root: ".",
 }

@@ -1,142 +1,233 @@
 import type { Dirent } from "node:fs"
 
-import type { MatcherContext } from "./patterns/matcherContext.js"
+import type { MatcherContext, Total } from "./patterns/matcherContext.js"
 import type { MatcherStream } from "./patterns/matcherStream.js"
+import type { Resource } from "./patterns/resource.js"
 import type { ScanOptions } from "./types.js"
 
-import { getDepth } from "./getDepth.js"
+import { isRuleMatchInvalid, type RuleMatch } from "./patterns/rule.js"
 
 export type WalkOptions = {
-	path: string
+	relPath: string
+	lowerRelPath?: string
 	parentPath: string
 	entry: Dirent
-	ctx: MatcherContext
+	resource: Resource
 	stream: MatcherStream | undefined
 	scanOptions: Required<ScanOptions>
+	depth: number
 }
 
-export async function walkIncludes(options: WalkOptions): Promise<0 | 1 | 2> {
-	const { entry, ctx, stream, scanOptions, path, parentPath } = options
+export type WalkResult = {
+	path: string
+	parentPath: string
+	match: RuleMatch
+	includeParent: boolean
+	tooDeep: boolean
+	next: 0 | 1
+	depth: number
+	isDir: boolean
+}
 
-	const { fs, target, cwd, depth: maxDepth, invert, signal, fastDepth, fastInternal } = scanOptions
+export type WalkTotal = {
+	type?: "total"
+	dir: string
+	files: number
+	matched: number
+	dirs: number
+	depth: number
+	ignored: boolean
+}
 
-	signal?.throwIfAborted()
+/**
+ * @since 0.11.0
+ */
+export function walkIncludes(
+	options: WalkOptions,
+	cb: (err: Error | null, result: WalkResult) => void,
+): void {
+	const {
+		entry,
+		stream,
+		scanOptions,
+		relPath: path,
+		lowerRelPath,
+		parentPath,
+		resource,
+		depth,
+	} = options
+	const { target, depth: maxDepth, invert, fastDepth, fastInternal, fs, cwd, signal } = scanOptions
 
 	const isDir = entry.isDirectory()
-	let direntPath: string
-	if (isDir) {
-		direntPath = path + "/"
-		ctx.totalDirs++
-	} else {
-		direntPath = path
-		ctx.totalFiles++
-	}
+	const direntPath = isDir ? path + "/" : path
+	const lowerEntry = lowerRelPath || path.toLowerCase()
 
-	if (fastDepth) {
-		const { depth, depthSlash } = getDepth(path, maxDepth)
-		if (depth > maxDepth) {
-			const failedPrev = ctx.failed.length
-			let match = await target.ignores({ fs, cwd, entry: path, ctx, signal, target, parentPath })
-			if (invert) {
-				match.ignored = !match.ignored
-			}
-
-			if (failedPrev < ctx.failed.length) {
-				if (stream) {
-					stream.emit("dirent", { dirent: entry, match, path: direntPath, ctx })
-				}
-				return 2
-			}
-
-			if (match.ignored) {
-				if (isDir && fastInternal && match.kind === "internal") {
-					return 1
-				}
-				return 0
-			}
-
-			if (isDir) {
-				// ctx.totalMatchedDirs++;
-				// ctx.depthPaths.set(path, (ctx.depthPaths.get(path) ?? 0) + 1);
-				return 0
-			}
-
-			ctx.totalMatchedFiles++
-			const dir = path.substring(0, depthSlash)
-			ctx.depthPaths.set(dir, (ctx.depthPaths.get(dir) ?? 0) + 1)
-			return 1
-		}
-	}
-
-	const failedPrev = ctx.failed.length
-	let match = await target.ignores({
-		fs,
+	const testOptions = {
 		cwd,
 		entry: path,
-		ctx,
+		fs,
+		lowerEntry,
+		parentPath,
+		resource,
 		signal,
 		target,
-		parentPath: parentPath,
-	})
-	if (invert) {
-		match.ignored = !match.ignored
 	}
 
-	if (failedPrev < ctx.failed.length) {
-		if (stream) {
-			stream.emit("dirent", { dirent: entry, match, path: direntPath, ctx })
-		}
-		return 2
-	}
-
-	if (match.ignored) {
-		if (stream) {
-			stream.emit("dirent", { dirent: entry, match, path: direntPath, ctx })
-		}
-		if (isDir && fastInternal && match.kind === "internal") {
-			return 1
-		}
-		return 0
-	}
-
-	if (isDir) {
-		// ctx.totalMatchedDirs++;
-		// ctx.depthPaths.set(path, (ctx.depthPaths.get(path) ?? 0) + 1);
-		const { depth } = getDepth(path, maxDepth)
-		if (depth <= maxDepth) {
-			ctx.paths.set(direntPath, match)
-			if (stream) {
-				stream.emit("dirent", { dirent: entry, match, path: direntPath, ctx })
+	if (fastDepth && depth > maxDepth) {
+		return target.ignores(testOptions, (err, match) => {
+			if (err) return cb(err, null as any)
+			if (invert) match.ignored = !match.ignored
+			const result: WalkResult = {
+				depth,
+				includeParent: false,
+				isDir,
+				match,
+				next: 0,
+				parentPath,
+				path: direntPath,
+				tooDeep: true,
 			}
-		}
-		return 0
-	}
-
-	ctx.totalMatchedFiles++
-	const { depth, depthSlash } = getDepth(path, maxDepth)
-	if (depth > maxDepth) {
-		const dir = path.substring(0, depthSlash)
-		ctx.depthPaths.set(dir, (ctx.depthPaths.get(dir) ?? 0) + 1)
-		return 0
-	}
-
-	if (depth <= maxDepth) {
-		const lastSlash = path.lastIndexOf("/")
-		if (lastSlash >= 0) {
-			const dir = path.substring(0, lastSlash) + "/"
-			const dirMatch = ctx.paths.get(dir)
-			if (dirMatch === undefined || dirMatch.ignored) {
-				ctx.paths.set(dir, match)
+			if (isRuleMatchInvalid(match)) {
 				if (stream) {
-					stream.emit("dirent", { dirent: entry, match, path: dir, ctx })
+					stream.dispatchEvent(
+						new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
+					)
 				}
+				return cb(null, result)
 			}
-		}
-		ctx.paths.set(path, match)
-		if (stream) {
-			stream.emit("dirent", { dirent: entry, match, path: direntPath, ctx })
-		}
+			if (match.ignored) {
+				if (stream)
+					stream.dispatchEvent(
+						new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
+					)
+				if (isDir && fastInternal) result.next = 1
+				return cb(null, result)
+			}
+			result.next = isDir ? 0 : 1
+			cb(null, result)
+		})
 	}
 
-	return 0
+	target.ignores(testOptions, (err, match) => {
+		if (err) return cb(err, null as any)
+
+		if (invert) match.ignored = !match.ignored
+
+		const result: WalkResult = {
+			depth,
+			includeParent: false,
+			isDir,
+			match,
+			next: 0,
+			parentPath,
+			path: direntPath,
+			tooDeep: false,
+		}
+
+		if (isRuleMatchInvalid(match)) {
+			if (stream)
+				stream.dispatchEvent(
+					new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
+				)
+			return cb(null, result)
+		}
+
+		if (match.ignored) {
+			if (stream)
+				stream.dispatchEvent(
+					new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
+				)
+			if (isDir && fastInternal) result.next = 1
+			return cb(null, result)
+		}
+
+		if (isDir) {
+			if (depth <= maxDepth) {
+				if (stream)
+					stream.dispatchEvent(
+						new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
+					)
+			} else {
+				result.tooDeep = true
+			}
+			return cb(null, result)
+		}
+
+		if (depth > maxDepth) {
+			result.tooDeep = true
+			return cb(null, result)
+		}
+
+		const lastSlash = path.lastIndexOf("/")
+		if (lastSlash >= 0) result.includeParent = true
+
+		if (stream) {
+			if (result.includeParent)
+				stream.dispatchEvent(
+					new CustomEvent("dirent", { detail: { dirent: entry, match, path: parentPath + "/" } }),
+				)
+			stream.dispatchEvent(
+				new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
+			)
+		}
+
+		cb(null, result)
+	})
+}
+
+/**
+ * Patches the {@link MatcherContext} with the given result.
+ */
+export function walkPatchResult(ctx: MatcherContext, r: WalkResult): void {
+	const { path, parentPath, match, isDir, tooDeep, includeParent } = r
+	if (isDir) {
+		if (!match.ignored && !tooDeep) ctx.paths.set(path, match)
+	} else {
+		if (!match.ignored) {
+			if (!tooDeep) ctx.paths.set(path, match)
+		}
+	}
+	if (includeParent && !match.ignored)
+		if (!ctx.paths.has(parentPath + "/")) ctx.paths.set(parentPath + "/", match)
+}
+
+/**
+ * Patches the {@link MatcherContext} with the given total.
+ */
+export function walkPatchTotal(ctx: MatcherContext, maxDepth: number, t: WalkTotal): void {
+	const { dir, files, matched, dirs, ignored } = t
+	const dirTotal = ctx.total.get(dir)
+	if (dirTotal) {
+		dirTotal.totalFiles += files
+		dirTotal.totalDirs += dirs
+		dirTotal.totalMatchedFiles += matched
+	} else if (t.depth <= maxDepth && !ignored) {
+		ctx.total.set(dir, { totalDirs: dirs, totalFiles: files, totalMatchedFiles: matched })
+	}
+}
+
+/**
+ * Propagates totals from child directories to their parents.
+ */
+export function propagateTotals(total: Map<string, Total>): void {
+	const dirs = Array.from(total.keys()).sort((a, b) => b.length - a.length)
+	for (let i = 0, len = dirs.length; i < len; i++) {
+		const dir = dirs[i]!
+		if (dir === "." || dir === "/") continue
+		const dirTotal = total.get(dir)!
+		const lastSlash = dir.lastIndexOf("/")
+		const parent = lastSlash === -1 ? "." : dir.slice(0, lastSlash) || "/"
+		const parentTotal = total.get(parent)
+		if (parentTotal) {
+			parentTotal.totalFiles += dirTotal.totalFiles
+			parentTotal.totalDirs += dirTotal.totalDirs
+			parentTotal.totalMatchedFiles += dirTotal.totalMatchedFiles
+		} else {
+			total.set(parent, {
+				totalDirs: dirTotal.totalDirs,
+				totalFiles: dirTotal.totalFiles,
+				totalMatchedFiles: dirTotal.totalMatchedFiles,
+			})
+		}
+	}
 }
