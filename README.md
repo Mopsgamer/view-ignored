@@ -17,7 +17,8 @@ Node.js 18 or later. Any compatible environment.
 
 ## Highlights
 
-- **Alternative for `npm-packlist`, `ignore-walk`, `ignore`, `gitignore`.**
+<!-- - **Faster alternative for `npm-packlist`, `ignore-walk` and `ignore`.** -->
+
 - **Reader.** Get a list of included files using configuration file
   readers, not command-line wrappers.
 - **Reasoning.** Understand why certain files are included or excluded.
@@ -41,13 +42,15 @@ Node.js 18 or later. Any compatible environment.
 ## v1 Roadmap
 
 - [x] Works for common use cases.
-- [ ] Follow `.gitignore` spec.
+- [ ] Follow `.gitignore` spec. (`ignore` does.)
 - [ ] Handle Git config.
 - [ ] Include node_modules bundled dependencies correctly. Missing: NPM, Yarn + Classic, Bun, Deno, JSR.
 - [ ] \*Move targets into separate packages (or not).
 - [ ] Import and pass upstream source tests.
 - [ ] \*Make it standard: NPM cli, VS Code file tree, VSCE, GitHub.
 - [ ] \*Upstream to Bun, PNPM and other package managers.
+
+<sub>\* - Optional.</sub>
 
 ## Why this library exists?
 
