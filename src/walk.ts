@@ -207,15 +207,6 @@ export function walkPatchTotal(ctx: MatcherContext, maxDepth: number, t: WalkTot
 }
 
 /**
- * Patches the {@link MatcherContext} with the given results.
- */
-export function walkPatch(ctx: MatcherContext, results: WalkResult[]): void {
-	for (let i = 0, len = results.length; i < len; i++) {
-		walkPatchResult(ctx, results[i]!)
-	}
-}
-
-/**
  * Propagates totals from child directories to their parents.
  */
 export function propagateTotals(total: Map<string, Total>): void {

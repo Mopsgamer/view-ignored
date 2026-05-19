@@ -1,7 +1,7 @@
 {
 	"name": "view-ignored",
 	"version": "0.10.1",
-	"description": "Retrieve list of files ignored/included by Git, NPM, Yarn, JSR, VSCE or other tools.",
+	"description": "Retrieve list of files ignored/included by Git, NPM, Yarn, JSR, Deno, Bun, VSCode extension CLI and other tools.",
 	"keywords": [
 		".gitignore",
 		".npmignore",
@@ -106,9 +106,9 @@
 	"devDependencies": {
 		"@release-it/keep-a-changelog": "latest",
 		"@types/bun": "latest",
-		"@types/ignore-walk": "4.x",
-		"@types/micromatch": "4.x",
-		"@types/node": "18.x",
+		"@types/ignore-walk": "^4.0.3",
+		"@types/micromatch": "^4.0.10",
+		"@types/node": "^18.19.130",
 		"@typescript/native-preview": "latest",
 		"ignore-walk": "latest",
 		"memfs": "latest",
