@@ -95,9 +95,9 @@
 		"check": "bun tsgo -p src --noEmit",
 		"dev": "bun tsgo -p src",
 		"prod": "rm -rf out && bun tsgo -p src/tsconfig.prod.json",
-		"release:major": "bun run release-it --increment=major",
-		"release:minor": "bun run release-it --increment=minor",
-		"release:patch": "bun run release-it --increment=patch"
+		"release:major": "bun run --bun release-it --increment=major",
+		"release:minor": "bun run --bun release-it --increment=minor",
+		"release:patch": "bun run --bun release-it --increment=patch"
 	},
 	"dependencies": {
 		"micromatch": "^4.0.8",
