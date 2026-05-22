@@ -83,13 +83,14 @@ import * as vign from "view-ignored"
 // "/scan", "/stream"
 // "/browser", "/browser/scan", "/browser/stream"
 import { Git as target } from "view-ignored/targets"
+import { RuleMatchKind } from "view-ignored/patterns"
 
 const ctx = await vign.scan({ target })
 ctx.paths.has(".git/HEAD") // false
 ctx.paths.has("src") // true
 
-const match = ctx.paths.get("src")
-if (match.kind === "external") {
+const match = ctx.paths.get("src")!
+if (match.kind === RuleMatchKind.external) {
 	console.log(match.source.path) // ".gitignore"
 	console.log(match.pattern) // "src/**"
 }
@@ -150,7 +151,7 @@ const stream = vign.scanStream({ target })
 stream.addEventListener("dirent", console.log)
 stream.addEventListener(
 	"end",
-	(ctx) => {
+	({ detail: ctx }) => {
 		ctx.paths.has(".git/HEAD")
 		// false
 		ctx.paths.has("node_modules/")
@@ -170,12 +171,13 @@ use the browser submodule, which requires some additional options.
 
 ```ts
 import * as vign from "view-ignored/browser"
-// or view-ignored/browser/scan
+// or "/browser/scan"
 import { Git as target } from "view-ignored/targets"
+import { readFile, readdir } from "original-fs"
 
 export const cwd = process.cwd()
-const customFs = { readdir, readFile }
-vign.scan({ target, cwd, fs })
+const customFs = { readFile, readdir }
+await vign.scan({ cwd, fs: customFs, target })
 ```
 
 ## Targets
