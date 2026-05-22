@@ -1,4 +1,5 @@
 {
+	"exclude": ["**/*.test.*"],
 	// Visit https://aka.ms/tsconfig to read more about this file
 	"compilerOptions": {
 		// File Layout
@@ -10,14 +11,14 @@
 		"target": "esnext",
 		// For nodejs:
 		"lib": ["esnext"],
-		"types": ["node", "bun"],
+		"types": ["node"],
 		"module": "nodenext",
 		"moduleResolution": "nodenext",
 
 		// Other Outputs
-		"sourceMap": true,
+		"sourceMap": false,
 		"declaration": true,
-		"declarationMap": true,
+		"declarationMap": false,
 
 		// Stricter Typechecking Options
 		"noUncheckedIndexedAccess": true,
@@ -33,9 +34,7 @@
 
 		// Recommended Options
 		"strict": true,
-		"verbatimModuleSyntax": true,
 		"isolatedModules": true,
-		"noUncheckedSideEffectImports": true,
 		"moduleDetection": "force",
 		"skipLibCheck": false
 	}

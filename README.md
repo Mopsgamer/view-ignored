@@ -3,7 +3,7 @@
 
 [![npm version](https://img.shields.io/npm/v/view-ignored.svg)](https://www.npmjs.com/package/view-ignored)
 [![npm downloads](https://img.shields.io/npm/dm/view-ignored.svg)](https://www.npmjs.com/package/view-ignored)
-![node-v-18-or-later](https://img.shields.io/badge/node->=18-salad?repo=Mopsgamer/view-ignored)
+![node-v-20-or-later](https://img.shields.io/badge/node->=20-salad?repo=Mopsgamer/view-ignored)
 [![speed-fast](https://img.shields.io/badge/speed-fast-salad?repo=Mopsgamer/view-ignored)](https://github.com/Mopsgamer/view-ignored/tree/main/benchmarks)
 
 [![github issues](https://img.shields.io/github/issues/Mopsgamer/view-ignored.svg)](https://github.com/Mopsgamer/view-ignored/issues)

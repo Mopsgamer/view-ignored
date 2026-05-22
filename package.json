@@ -76,7 +76,7 @@
 		"access": "public"
 	},
 	"scripts": {
-		"prerelease": "bun run test && bun run prod && bun run lint && bun run fmt --check && bun publint --pack bun --strict",
+		"prerelease": "bun run test && bun run prod && bun run lint && bun run fmt --check && bun run ts-compat && bun publint --pack bun --strict",
 		"heap": "bun scripts/scanHeap.js --snapshot",
 		"heap:node": "node scripts/scanHeap.js --snapshot",
 		"cpu": "bun run --expose-gc --cpu-prof --cpu-prof-md --cpu-prof-name CPU.me scripts/scan.js --fastInternal",
@@ -95,6 +95,9 @@
 		"check": "bun tsgo -p src --noEmit",
 		"dev": "bun tsgo -p src",
 		"prod": "rm -rf out && bun tsgo -p src/tsconfig.prod.json",
+		"ts-compat": "bun run ts-compat-6 && bun run ts-compat-4",
+		"ts-compat-4": "bun node_modules/typescript4/bin/tsc -p src/tsconfig.v4.prod.json --noEmit",
+		"ts-compat-6": "bun node_modules/typescript6/bin/tsc -p src/tsconfig.prod.json --noEmit",
 		"release:major": "bun run --bun release-it --increment=major",
 		"release:minor": "bun run --bun release-it --increment=minor",
 		"release:patch": "bun run --bun release-it --increment=patch"
@@ -106,9 +109,9 @@
 	"devDependencies": {
 		"@release-it/keep-a-changelog": "latest",
 		"@types/bun": "latest",
-		"@types/ignore-walk": "^4.0.3",
-		"@types/micromatch": "^4.0.10",
-		"@types/node": "^18.19.130",
+		"@types/ignore-walk": "npm:@types/ignore-walk@^4.0.3",
+		"@types/micromatch": "npm:@types/micromatch@^4.0.10",
+		"@types/node": "npm:@types/node@^20.19.41",
 		"@typescript/native-preview": "latest",
 		"ignore-walk": "latest",
 		"memfs": "latest",
@@ -117,7 +120,9 @@
 		"oxlint": "latest",
 		"oxlint-tsgolint": "latest",
 		"publint": "latest",
-		"release-it": "latest"
+		"release-it": "latest",
+		"typescript4": "npm:typescript@^4.9.5",
+		"typescript6": "npm:typescript@^6.0.3"
 	},
 	"engines": {
 		"node": ">=18"

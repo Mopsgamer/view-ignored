@@ -1,7 +1,6 @@
-import type { Dirent } from "node:fs"
-
 import type { MatcherContext, Total } from "../patterns/matcherContext.js"
 import type { ScanOptions, FsAdapter } from "../types.js"
+import type { EventMap, EventListener, EventListenerObject } from "./matcherStreamTypes.js"
 import type { Resource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"
 
@@ -9,74 +8,13 @@ import { scanParallel } from "../scanParallel.js"
 import { unixify } from "../unixify.js"
 import { walkPatchResult, walkPatchTotal, propagateTotals, type WalkResult } from "../walk.js"
 
-/**
- * Post-scan entry information.
- *
- * @since 0.6.0
- */
-export type EntryInfo = {
-	/**
-	 * The relative path of the entry.
-	 *
-	 * @since 0.6.0
-	 */
-	path: string
+export type { EntryInfo, EntryListener, EndListener, EventMap } from "./matcherStreamTypes.js"
 
-	/**
-	 * The directory entry.
-	 *
-	 * @since 0.6.0
-	 */
-	dirent: Dirent
-
-	/**
-	 * Whether the entry was ignored.
-	 *
-	 * @since 0.6.0
-	 */
-	match: RuleMatch
-}
-
-/**
- * @see {@link MatcherStream} uses it for the "dirent" event.
- *
- * @since 0.6.0
- */
-export type EntryListener = (info: EntryInfo) => void
-// export type SourceListener = (source: Source) => void
-/**
- * @see {@link MatcherStream} uses it for the "end" event.
- *
- * @since 0.6.0
- */
-export type EndListener = (ctx: MatcherContext) => void
-
-/**
- * @see {@link MatcherStream} uses it for its event map.
- *
- * @since 0.6.0
- */
-export type EventMap = {
-	dirent: CustomEvent<EntryInfo>
-	end: CustomEvent<MatcherContext>
-}
-
-/**
- * @see {@link MatcherStream} uses it for its event map.
- *
- * @since 0.11.0
- */
-interface EventListener<K extends keyof EventMap> {
-	(evt: EventMap[K]): void
-}
-
-/**
- * @see {@link MatcherStream} uses it for its event map.
- *
- * @since 0.11.0
- */
-interface EventListenerObject<K extends keyof EventMap> {
-	handleEvent(object: EventMap[K]): void
+export interface AddEventListenerOptions {
+	capture?: boolean
+	once?: boolean
+	passive?: boolean
+	signal?: AbortSignal
 }
 
 /**
@@ -88,11 +26,7 @@ interface EventListenerObject<K extends keyof EventMap> {
 export class MatcherStream extends EventTarget {
 	#timeout: NodeJS.Timeout | undefined
 	#options: ScanOptions & { fs: FsAdapter; cwd: string } & { captureRejections?: boolean }
-	constructor(
-		options: ScanOptions & { fs: FsAdapter; cwd: string; noTimeout?: boolean } & {
-			captureRejections?: boolean
-		},
-	) {
+	constructor(options: ScanOptions & { fs: FsAdapter; cwd: string; noTimeout?: boolean }) {
 		super()
 		this.#options = options
 		if (!options.noTimeout) {
@@ -106,7 +40,7 @@ export class MatcherStream extends EventTarget {
 
 	override addEventListener<K extends keyof EventMap>(
 		type: K,
-		callback: EventListenerObject<K> | EventListener<K>,
+		callback: EventListenerObject<K> | EventListener<K> | null,
 		options?: boolean | AddEventListenerOptions,
 	): void {
 		super.addEventListener(type as string, callback as any, options)
@@ -114,14 +48,14 @@ export class MatcherStream extends EventTarget {
 
 	override removeEventListener<K extends keyof EventMap>(
 		type: K,
-		callback: EventListenerObject<K> | EventListener<K>,
+		callback: EventListenerObject<K> | EventListener<K> | null,
 		options?: boolean | EventListenerOptions,
 	): void {
 		super.removeEventListener(type as string, callback as any, options)
 	}
 
 	override dispatchEvent(event: EventMap[keyof EventMap]): boolean {
-		return super.dispatchEvent(event)
+		return super.dispatchEvent(event as Event)
 	}
 
 	/**
@@ -130,7 +64,12 @@ export class MatcherStream extends EventTarget {
 	 * @since 0.8.0
 	 */
 	start(): Promise<void> {
-		const { promise, resolve, reject } = Promise.withResolvers<void>()
+		let resolve!: () => void
+		let reject!: (err: Error) => void
+		const promise = new Promise<void>((res, rej) => {
+			resolve = res
+			reject = rej
+		})
 		this.startCb((err) => {
 			if (err) {
 				reject(err)

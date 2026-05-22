@@ -3,6 +3,7 @@
 	"exclude": ["**/*.test.*"],
 	// Visit https://aka.ms/tsconfig to read more about this file
 	"compilerOptions": {
+		"types": ["node"],
 		// Other Outputs
 		"sourceMap": false,
 		"declaration": true,

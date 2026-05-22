@@ -2,6 +2,10 @@
 
 ## `view-ignored` Git and NPM vs. `ignore-walk`
 
+In this benchmark, we compare the performance of
+`view-ignored` with `ignore-walk` for scanning
+Git and NPM ignore files for the 'view-ignored' directory.
+
 ### Node
 
 ```txt
