@@ -6,7 +6,7 @@ import type { ScanOptions } from "./types.js"
 
 import { scan as browserScan } from "./browser_scan.js"
 import { scanCb as browserScanCb } from "./scanCb.js"
-export type * from "./types.js"
+export * from "./types.js"
 
 /**
  * Scan the directory for included files based on the provided targets.

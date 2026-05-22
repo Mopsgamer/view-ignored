@@ -5,7 +5,7 @@ import type { MatcherStream } from "./patterns/matcherStream.js"
 import type { ScanOptions } from "./types.js"
 
 import { scanStream as browserStream } from "./browser_stream.js"
-export type * from "./types.js"
+export * from "./types.js"
 
 /**
  * Scan the directory for included files based on the provided targets.

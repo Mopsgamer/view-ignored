@@ -3,7 +3,7 @@ import type { ScanOptions, FsAdapter } from "./types.js"
 
 import { scanCb } from "./scanCb.js"
 export { scanCb } from "./scanCb.js"
-export type * from "./types.js"
+export * from "./types.js"
 
 /**
  * Scan the directory for included files based on the provided targets.
@@ -18,7 +18,12 @@ export type * from "./types.js"
 export function scan(
 	options: ScanOptions & { fs: FsAdapter; cwd: string },
 ): Promise<MatcherContext> {
-	const { promise, resolve, reject } = Promise.withResolvers<MatcherContext>()
+	let resolve!: (ctx: MatcherContext) => void
+	let reject!: (err: Error) => void
+	const promise = new Promise<MatcherContext>((res, rej) => {
+		resolve = res
+		reject = rej
+	})
 	scanCb(options, (err, ctx) => {
 		if (err) {
 			reject(err)

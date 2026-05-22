@@ -38,6 +38,18 @@
 		"/out"
 	],
 	"type": "module",
+	"typesVersions": {
+		">=6.0": {
+			"out/patterns/matcherStream.d.ts": [
+				"ts-compat/ts6.0/patterns/matcherStream.d.ts"
+			]
+		},
+		">=4.7": {
+			"out/patterns/matcherStream.d.ts": [
+				"ts-compat/ts4.7/patterns/matcherStream.d.ts"
+			]
+		}
+	},
 	"exports": {
 		".": {
 			"types": "./out/index.d.ts",
@@ -76,7 +88,7 @@
 		"access": "public"
 	},
 	"scripts": {
-		"prerelease": "bun run test && bun run prod && bun run lint && bun run fmt --check && bun publint --pack bun --strict",
+		"prerelease": "bun run test && bun run prod && bun run lint && bun run fmt --check && bun run ts-compat && bun publint --pack bun --strict",
 		"heap": "bun scripts/scanHeap.js --snapshot",
 		"heap:node": "node scripts/scanHeap.js --snapshot",
 		"cpu": "bun run --expose-gc --cpu-prof --cpu-prof-md --cpu-prof-name CPU.me scripts/scan.js --fastInternal",
@@ -95,6 +107,7 @@
 		"check": "bun tsgo -p src --noEmit",
 		"dev": "bun tsgo -p src",
 		"prod": "rm -rf out && bun tsgo -p src/tsconfig.prod.json",
+		"ts-compat": "./node_modules/typescript4/bin/tsc -p src/tsconfig.prod.json && ./node_modules/typescript6/bin/tsc -p src/tsconfig.prod.json",
 		"release:major": "bun run --bun release-it --increment=major",
 		"release:minor": "bun run --bun release-it --increment=minor",
 		"release:patch": "bun run --bun release-it --increment=patch"
@@ -117,7 +130,9 @@
 		"oxlint": "latest",
 		"oxlint-tsgolint": "latest",
 		"publint": "latest",
-		"release-it": "latest"
+		"release-it": "latest",
+		"typescript4": "npm:typescript@~4.9.5",
+		"typescript6": "^6.0.0-dev.20260416"
 	},
 	"engines": {
 		"node": ">=18"
