@@ -120,7 +120,7 @@
 		"@types/node-24": "npm:@types/node@24.x",
 		"@typescript/native-preview": "latest",
 		"ignore-walk": "latest",
-		"memfs": "latest",
+		"memfs": "^4.57.2",
 		"mitata": "latest",
 		"oxfmt": "latest",
 		"oxlint": "latest",
