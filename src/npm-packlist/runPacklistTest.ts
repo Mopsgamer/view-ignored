@@ -1,29 +1,33 @@
 import { expect } from "bun:test"
-import { Volume, type NestedDirectoryJSON } from "memfs"
+import { Volume } from "memfs"
 import * as path from "node:path"
-import { scan } from "../browser_scan.js"
+
+import { scan, type ScanOptions } from "../scan.js"
 import { NPM as target } from "../targets/npm.js"
 import { createAdapter, populateVolume } from "../test-utils.js"
 
 export async function runPacklistTest(
-	tree: NestedDirectoryJSON,
+	tree: any,
 	expected: string[],
-	options: {
-		prefix?: string
-		workspaces?: string[]
-	} = {},
+	options: Partial<ScanOptions> = {},
 ) {
-	const cwd = "/test"
+	const base = "/test"
 	const vol = new Volume()
-	populateVolume(vol, tree, cwd)
+	populateVolume(vol, tree, base)
 	const adapter = createAdapter(vol)
 
+	const cwd = options.cwd
+		? path.isAbsolute(options.cwd)
+			? options.cwd
+			: path.join(base, options.cwd)
+		: base
+
 	const ctx = await scan({
-		cwd,
 		fs: adapter,
 		target,
 		...options,
-	} as any)
+		cwd,
+	})
 
 	const results = Array.from(ctx.paths.entries())
 		.filter(([_, match]) => !match.ignored && !match.isDir)

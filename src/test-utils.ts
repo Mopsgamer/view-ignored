@@ -1,15 +1,19 @@
 import { createFsFromVolume, Volume } from "memfs"
+
 import type { FsAdapter } from "./types.js"
 
-export const elfJS = "module.exports = elf => console.log(\"i'm a elf\")";
-export const bin = "echo hi";
+export const elfJS = 'module.exports = elf => console.log("i\'m a elf")'
+export const bin = "echo hi"
 
 export function createAdapter(vol: Volume): FsAdapter {
 	const fs = createFsFromVolume(vol)
-	const adapter = {
-		readFile: fs.readFile.bind(fs),
-		readdir: fs.readdir.bind(fs),
-	} as unknown as FsAdapter
+	const adapter: FsAdapter = {
+		lstat: fs.lstat.bind(fs) as any,
+		readFile: fs.readFile.bind(fs) as any,
+		readlink: fs.readlink.bind(fs) as any,
+		readdir: fs.readdir.bind(fs) as any,
+		stat: fs.stat.bind(fs) as any,
+	}
 	return adapter
 }
 

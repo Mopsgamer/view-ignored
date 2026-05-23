@@ -1,37 +1,33 @@
 import { describe, test } from "bun:test"
+
 import { runPacklistTest } from "./runPacklistTest.js"
-import { elfJS, bin } from "../test-utils.js"
 
 describe("package-json-files-wildcard-strict-defaults", () => {
 	test("wildcard files[] does not override strict default ignores", async () => {
 		await runPacklistTest(
 			{
-  'package.json': JSON.stringify({
-    files: ['**/*'],
-  }),
-  '.git': {
-    HEAD: 'ref: refs/heads/main\n',
-    config: '[core]\n',
-  },
-  '.npmrc': 'always-auth=true\n',
-  node_modules: {
-    foo: {
-      'package.json': JSON.stringify({ name: 'foo', version: '1.0.0' }),
-      'index.js': 'module.exports = "foo"\n',
-    },
-  },
-  src: {
-    'index.js': 'module.exports = "src"\n',
-    '.hidden.js': 'module.exports = "hidden"\n',
-  },
-  'README.md': '# wildcard files test\n',
-},
-			[
-    'src/.hidden.js',
-    'src/index.js',
-    'package.json',
-    'README.md',
-  ]
-		);
-	});
-});
+				"package.json": JSON.stringify({
+					files: ["**/*"],
+				}),
+				".git": {
+					HEAD: "ref: refs/heads/main\n",
+					config: "[core]\n",
+				},
+				".npmrc": "always-auth=true\n",
+				node_modules: {
+					foo: {
+						"package.json": JSON.stringify({ name: "foo", version: "1.0.0" }),
+						"index.js": 'module.exports = "foo"\n',
+					},
+				},
+				src: {
+					"index.js": 'module.exports = "src"\n',
+					".hidden.js": 'module.exports = "hidden"\n',
+				},
+				"README.md": "# wildcard files test\n",
+			},
+			["src/.hidden.js", "src/index.js", "package.json", "README.md"],
+			{},
+		)
+	})
+})
