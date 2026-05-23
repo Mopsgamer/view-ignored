@@ -1,10 +1,12 @@
+/* eslint-disable sort-keys */
 import { describe, test } from "bun:test"
 
 import { runPacklistTest } from "./runPacklistTest.js"
 
 describe("package-json-nested-readme-include-npmignore", () => {
-	test("package with negated files", async () => {
-		await runPacklistTest(
+	// https://github.com/npm/npm-packlist/blob/79d3761d6ab491ceeb192e2b88d0853d57048768/test/package-json-nested-readme-include-npmignore.js#L54
+	test("package with negated files", () =>
+		runPacklistTest(
 			{
 				"package.json": JSON.stringify({
 					files: [".npmignore", "lib"],
@@ -52,6 +54,5 @@ describe("package-json-nested-readme-include-npmignore", () => {
 			},
 			["lib/a/a.js", "lib/a/b/b.js", "lib/a/b/c/c.js", "package.json"],
 			{},
-		)
-	})
+		))
 })

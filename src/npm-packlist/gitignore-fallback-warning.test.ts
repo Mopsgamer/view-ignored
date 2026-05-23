@@ -1,10 +1,14 @@
+/* eslint-disable sort-keys */
 import { describe, test } from "bun:test"
 
 import { runPacklistTest } from "./runPacklistTest.js"
 
 describe("gitignore-fallback-warning", () => {
-	test("warns when root has only .gitignore and no .npmignore", async () => {
-		await runPacklistTest(
+	/**
+	 * @see https://github.com/npm/npm-packlist/blob/79d3761d6ab491ceeb192e2b88d0853d57048768/test/gitignore-fallback-warning.js#L7
+	 */
+	test("warns when root has only .gitignore and no .npmignore", () =>
+		runPacklistTest(
 			{
 				"package.json": JSON.stringify({
 					name: "test-package",
@@ -15,11 +19,13 @@ describe("gitignore-fallback-warning", () => {
 				"secret.txt": "do not publish",
 			},
 			["index.js", "package.json"],
-		)
-	})
+		))
 
-	test("does not warn when root has .npmignore and subdir has .gitignore", async () => {
-		await runPacklistTest(
+	/**
+	 * @see https://github.com/npm/npm-packlist/blob/79d3761d6ab491ceeb192e2b88d0853d57048768/test/gitignore-fallback-warning.js#L34
+	 */
+	test("does not warn when root has .npmignore and subdir has .gitignore", () =>
+		runPacklistTest(
 			{
 				"package.json": JSON.stringify({
 					name: "test-package",
@@ -34,11 +40,13 @@ describe("gitignore-fallback-warning", () => {
 				},
 			},
 			["index.js", "package.json", "subdir/lib.js"],
-		)
-	})
+		))
 
-	test("does not warn when package.json has files field", async () => {
-		await runPacklistTest(
+	/**
+	 * @see https://github.com/npm/npm-packlist/blob/79d3761d6ab491ceeb192e2b88d0853d57048768/test/gitignore-fallback-warning.js#L64
+	 */
+	test("does not warn when package.json has files field", () =>
+		runPacklistTest(
 			{
 				"package.json": JSON.stringify({
 					name: "test-package",
@@ -50,6 +58,5 @@ describe("gitignore-fallback-warning", () => {
 				"secret.txt": "do not publish",
 			},
 			["index.js", "package.json"],
-		)
-	})
+		))
 })

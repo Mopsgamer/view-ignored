@@ -1,10 +1,12 @@
+/* eslint-disable sort-keys */
 import { describe, test } from "bun:test"
 
 import { runPacklistTest } from "./runPacklistTest.js"
 
 describe("workspace", () => {
-	test("respects workspace root ignore files", async () => {
-		await runPacklistTest(
+	// https://github.com/npm/npm-packlist/blob/79d3761d6ab491ceeb192e2b88d0853d57048768/test/workspace.js#L9
+	test("respects workspace root ignore files", () =>
+		runPacklistTest(
 			{
 				"package.json": JSON.stringify({
 					name: "workspace-root",
@@ -33,10 +35,10 @@ describe("workspace", () => {
 			},
 			["child.js", "package.json"],
 			{},
-		)
-	})
-	test("packing a workspace root does not include children", async () => {
-		await runPacklistTest(
+		))
+	// https://github.com/npm/npm-packlist/blob/79d3761d6ab491ceeb192e2b88d0853d57048768/test/workspace.js#L63
+	test("packing a workspace root does not include children", () =>
+		runPacklistTest(
 			{
 				"package.json": JSON.stringify({
 					name: "workspace-root",
@@ -65,10 +67,10 @@ describe("workspace", () => {
 			},
 			["root.js", "package.json"],
 			{},
-		)
-	})
-	test(".gitignore is discarded if .npmignore exists outside of tree", async () => {
-		await runPacklistTest(
+		))
+	// https://github.com/npm/npm-packlist/blob/79d3761d6ab491ceeb192e2b88d0853d57048768/test/workspace.js#L116
+	test(".gitignore is discarded if .npmignore exists outside of tree", () =>
+		runPacklistTest(
 			{
 				"package.json": JSON.stringify({
 					name: "workspace-root",
@@ -104,6 +106,5 @@ describe("workspace", () => {
 			},
 			["dont-ignore-me", "dont-ignore-me-either", "child.js", "package.json"],
 			{},
-		)
-	})
+		))
 })

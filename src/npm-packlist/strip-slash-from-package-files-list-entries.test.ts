@@ -1,10 +1,12 @@
+/* eslint-disable sort-keys */
 import { describe, test } from "bun:test"
 
 import { runPacklistTest } from "./runPacklistTest.js"
 
 describe("strip-slash-from-package-files-list-entries", () => {
-	test("should strip / from package.json files array entry results", async () => {
-		await runPacklistTest(
+	// https://github.com/npm/npm-packlist/blob/79d3761d6ab491ceeb192e2b88d0853d57048768/test/strip-slash-from-package-files-list-entries.js#L7
+	test("should strip / from package.json files array entry results", () =>
+		runPacklistTest(
 			{
 				"package.json": JSON.stringify({
 					files: [
@@ -57,6 +59,5 @@ describe("strip-slash-from-package-files-list-entries", () => {
 				"dist/baz/boo.src",
 			],
 			{},
-		)
-	})
+		))
 })

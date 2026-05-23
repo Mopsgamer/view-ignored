@@ -1,10 +1,12 @@
+/* eslint-disable sort-keys */
 import { describe, test } from "bun:test"
 
 import { runPacklistTest } from "./runPacklistTest.js"
 
 describe("ignore-file-included-by-globstar", () => {
-	test("exclude certain files always", async () => {
-		await runPacklistTest(
+	// https://github.com/npm/npm-packlist/blob/79d3761d6ab491ceeb192e2b88d0853d57048768/test/ignore-file-included-by-globstar.js#L7
+	test("exclude certain files always", () =>
+		runPacklistTest(
 			{
 				".npmrc": "secrets=true",
 				".git": {
@@ -32,10 +34,10 @@ describe("ignore-file-included-by-globstar", () => {
 			},
 			["index.js", "subdir/other.js", "package.json", "glorp.txt"],
 			{},
-		)
-	})
-	test("include a globstar, then exclude one of them", async () => {
-		await runPacklistTest(
+		))
+	// https://github.com/npm/npm-packlist/blob/79d3761d6ab491ceeb192e2b88d0853d57048768/test/ignore-file-included-by-globstar.js#L44
+	test("include a globstar, then exclude one of them", () =>
+		runPacklistTest(
 			{
 				"bar.js": "",
 				bar: {
@@ -50,6 +52,5 @@ describe("ignore-file-included-by-globstar", () => {
 			},
 			["bar.js", "bar/bar.js", "package.json"],
 			{},
-		)
-	})
+		))
 })

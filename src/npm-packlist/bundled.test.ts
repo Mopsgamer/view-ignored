@@ -1,11 +1,13 @@
+/* eslint-disable sort-keys */
 import { describe, test } from "bun:test"
 
 import { elfJS } from "../test-utils.js"
 import { runPacklistTest } from "./runPacklistTest.js"
 
 describe("bundled", () => {
-	test("includes bundled dependency using bundleDependencies", async () => {
-		await runPacklistTest(
+	// https://github.com/npm/npm-packlist/blob/79d3761d6ab491ceeb192e2b88d0853d57048768/test/bundled.js#L9
+	test("includes bundled dependency using bundleDependencies", () =>
+		runPacklistTest(
 			{
 				"package.json": JSON.stringify({
 					name: "test-package",
@@ -36,10 +38,10 @@ describe("bundled", () => {
 				"package.json",
 			],
 			{},
-		)
-	})
-	test("includes bundled dependency using bundledDependencies", async () => {
-		await runPacklistTest(
+		))
+	// https://github.com/npm/npm-packlist/blob/79d3761d6ab491ceeb192e2b88d0853d57048768/test/bundled.js#L47
+	test("includes bundled dependency using bundledDependencies", () =>
+		runPacklistTest(
 			{
 				"package.json": JSON.stringify({
 					name: "test-package",
@@ -70,6 +72,5 @@ describe("bundled", () => {
 				"package.json",
 			],
 			{},
-		)
-	})
+		))
 })

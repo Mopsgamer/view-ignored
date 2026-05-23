@@ -1,10 +1,12 @@
+/* eslint-disable sort-keys */
 import { describe, test } from "bun:test"
 
 import { runPacklistTest } from "./runPacklistTest.js"
 
 describe("package-json-files-no-dir-nested-npmignore", () => {
-	test("package with negated files", async () => {
-		await runPacklistTest(
+	// https://github.com/npm/npm-packlist/blob/79d3761d6ab491ceeb192e2b88d0853d57048768/test/package-json-files-no-dir-nested-npmignore.js#L23
+	test("package with negated files", () =>
+		runPacklistTest(
 			{
 				"package.json": JSON.stringify({
 					files: ["lib/*.js"],
@@ -20,6 +22,5 @@ describe("package-json-files-no-dir-nested-npmignore", () => {
 			},
 			["lib/for.js", "lib/one.js", "lib/tre.js", "package.json"],
 			{},
-		)
-	})
+		))
 })

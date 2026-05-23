@@ -1,11 +1,13 @@
+/* eslint-disable sort-keys */
 import { describe, test } from "bun:test"
 
 import { elfJS } from "../test-utils.js"
 import { runPacklistTest } from "./runPacklistTest.js"
 
 describe("empty-npmignore", () => {
-	test("follows npm package ignoring rules", async () => {
-		await runPacklistTest(
+	// https://github.com/npm/npm-packlist/blob/79d3761d6ab491ceeb192e2b88d0853d57048768/test/empty-npmignore.js#L47
+	test("follows npm package ignoring rules", () =>
+		runPacklistTest(
 			{
 				"package.json": JSON.stringify({
 					name: "test-package",
@@ -50,6 +52,5 @@ describe("empty-npmignore", () => {
 				"package.json",
 			],
 			{},
-		)
-	})
+		))
 })

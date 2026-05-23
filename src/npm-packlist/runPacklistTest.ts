@@ -4,10 +4,10 @@ import * as path from "node:path"
 
 import { scan, type ScanOptions } from "../scan.js"
 import { NPM as target } from "../targets/npm.js"
-import { createAdapter, populateVolume } from "../test-utils.js"
+import { createAdapter, populateVolume, type TestTree } from "../test-utils.js"
 
 export async function runPacklistTest(
-	tree: any,
+	tree: TestTree,
 	expected: string[],
 	options: Partial<ScanOptions> = {},
 ) {
@@ -30,7 +30,7 @@ export async function runPacklistTest(
 	})
 
 	const results = Array.from(ctx.paths.entries())
-		.filter(([_, match]) => !match.ignored && !match.isDir)
+		.filter(([p, match]) => !match.ignored && !p.endsWith("/"))
 		.map(([p, _]) => {
 			const relative = path.relative(cwd, p)
 			return relative.replace(/\\/g, "/")

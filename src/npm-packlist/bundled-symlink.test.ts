@@ -1,11 +1,13 @@
+/* eslint-disable sort-keys */
 import { describe, test } from "bun:test"
 
 import { elfJS } from "../test-utils.js"
 import { runPacklistTest } from "./runPacklistTest.js"
 
 describe("bundled-symlink", () => {
-	test("includes bundled dependency", async () => {
-		await runPacklistTest(
+	// https://github.com/npm/npm-packlist/blob/79d3761d6ab491ceeb192e2b88d0853d57048768/test/bundled-symlink.js#L49
+	test("includes bundled dependency", () =>
+		runPacklistTest(
 			{
 				pkg: {
 					"package.json": JSON.stringify({
@@ -47,6 +49,5 @@ describe("bundled-symlink", () => {
 				"package.json",
 			],
 			{ cwd: "pkg" },
-		)
-	})
+		))
 })

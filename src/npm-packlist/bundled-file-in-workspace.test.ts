@@ -1,10 +1,12 @@
+/* eslint-disable sort-keys */
 import { describe, test } from "bun:test"
 
 import { runPacklistTest } from "./runPacklistTest.js"
 
 describe("bundled-file-in-workspace", () => {
-	test("correctly filters files from workspace subdirectory", async () => {
-		await runPacklistTest(
+	// https://github.com/npm/npm-packlist/blob/79d3761d6ab491ceeb192e2b88d0853d57048768/test/bundled-file-in-workspace.js#L7
+	test("correctly filters files from workspace subdirectory", () =>
+		runPacklistTest(
 			{
 				"package.json": JSON.stringify({
 					name: "root",
@@ -31,10 +33,10 @@ describe("bundled-file-in-workspace", () => {
 			},
 			["index.js", "package.json", "docs/bar.txt", "docs/foo.txt"],
 			{},
-		)
-	})
-	test("does not filter based on package.json if subdirectory is not a workspace", async () => {
-		await runPacklistTest(
+		))
+	// https://github.com/npm/npm-packlist/blob/79d3761d6ab491ceeb192e2b88d0853d57048768/test/bundled-file-in-workspace.js#L44
+	test("does not filter based on package.json if subdirectory is not a workspace", () =>
+		runPacklistTest(
 			{
 				"package.json": JSON.stringify({
 					name: "root",
@@ -78,6 +80,5 @@ describe("bundled-file-in-workspace", () => {
 				"docs/foo.txt",
 			],
 			{},
-		)
-	})
+		))
 })

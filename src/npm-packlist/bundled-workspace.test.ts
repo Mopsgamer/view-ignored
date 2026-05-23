@@ -1,10 +1,12 @@
+/* eslint-disable sort-keys */
 import { describe, test } from "bun:test"
 
 import { runPacklistTest } from "./runPacklistTest.js"
 
 describe("bundled-workspace", () => {
-	test("packs workspace dependencies correctly", async () => {
-		await runPacklistTest(
+	// https://github.com/npm/npm-packlist/blob/79d3761d6ab491ceeb192e2b88d0853d57048768/test/bundled-workspace.js#L7
+	test("packs workspace dependencies correctly", () =>
+		runPacklistTest(
 			{
 				"package.json": JSON.stringify({
 					name: "root",
@@ -51,6 +53,5 @@ describe("bundled-workspace", () => {
 				"package.json",
 			],
 			{},
-		)
-	})
+		))
 })

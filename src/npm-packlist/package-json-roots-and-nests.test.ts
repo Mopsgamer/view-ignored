@@ -1,11 +1,12 @@
+/* eslint-disable sort-keys */
 import { describe, test } from "bun:test"
 
-import { bin } from "../test-utils.js"
 import { runPacklistTest } from "./runPacklistTest.js"
 
 describe("package-json-roots-and-nests", () => {
-	test("package with negated files", async () => {
-		await runPacklistTest(
+	// https://github.com/npm/npm-packlist/blob/79d3761d6ab491ceeb192e2b88d0853d57048768/test/package-json-roots-and-nests.js#L58
+	test("package with negated files", () =>
+		runPacklistTest(
 			{
 				"package.json": JSON.stringify({
 					bin: "bin.js",
@@ -65,6 +66,5 @@ describe("package-json-roots-and-nests", () => {
 				"package.json",
 			],
 			{},
-		)
-	})
+		))
 })

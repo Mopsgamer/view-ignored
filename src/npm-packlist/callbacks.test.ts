@@ -1,3 +1,4 @@
+/* eslint-disable sort-keys */
 import { describe, test, expect } from "bun:test"
 import { Volume } from "memfs"
 import * as path from "node:path"
@@ -7,7 +8,10 @@ import { NPM as target } from "../targets/npm.js"
 import { createAdapter } from "../test-utils.js"
 
 describe("callbacks", () => {
-	test("export supports callbacks", async () => {
+	/**
+	 * @see https://github.com/npm/npm-packlist/blob/79d3761d6ab491ceeb192e2b88d0853d57048768/test/callbacks.js#L14
+	 */
+	test("export supports callbacks", () => {
 		const tree = {
 			"package.json": JSON.stringify({
 				name: "test",
@@ -24,7 +28,7 @@ describe("callbacks", () => {
 					return
 				}
 				const results = Array.from(ctx.paths.entries())
-					.filter(([_, match]) => !match.ignored && !match.isDir)
+					.filter(([p, match]) => !match.ignored && !p.endsWith("/"))
 					.map(([p, _]) => path.relative(cwd, p).replace(/\\/g, "/"))
 					.filter((p) => p !== "")
 

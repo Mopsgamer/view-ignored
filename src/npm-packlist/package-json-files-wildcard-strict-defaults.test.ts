@@ -1,10 +1,12 @@
+/* eslint-disable sort-keys */
 import { describe, test } from "bun:test"
 
 import { runPacklistTest } from "./runPacklistTest.js"
 
 describe("package-json-files-wildcard-strict-defaults", () => {
-	test("wildcard files[] does not override strict default ignores", async () => {
-		await runPacklistTest(
+	// https://github.com/npm/npm-packlist/blob/79d3761d6ab491ceeb192e2b88d0853d57048768/test/package-json-files-wildcard-strict-defaults.js#L32
+	test("wildcard files[] does not override strict default ignores", () =>
+		runPacklistTest(
 			{
 				"package.json": JSON.stringify({
 					files: ["**/*"],
@@ -28,6 +30,5 @@ describe("package-json-files-wildcard-strict-defaults", () => {
 			},
 			["src/.hidden.js", "src/index.js", "package.json", "README.md"],
 			{},
-		)
-	})
+		))
 })
