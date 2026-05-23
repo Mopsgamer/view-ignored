@@ -18,7 +18,7 @@
         "@types/node-24": "npm:@types/node@24.x",
         "@typescript/native-preview": "latest",
         "ignore-walk": "latest",
-        "memfs": "^4.57.2",
+        "memfs": "latest",
         "mitata": "latest",
         "oxfmt": "latest",
         "oxlint": "latest",

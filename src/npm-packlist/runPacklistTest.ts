@@ -3,7 +3,7 @@ import { Volume, type NestedDirectoryJSON } from "memfs"
 import * as path from "node:path"
 import { scan } from "../browser_scan.js"
 import { NPM as target } from "../targets/npm.js"
-import { createAdapter } from "../testScan.test.ts"
+import { createAdapter } from "../test-utils.js"
 
 export async function runPacklistTest(
 	tree: NestedDirectoryJSON,
