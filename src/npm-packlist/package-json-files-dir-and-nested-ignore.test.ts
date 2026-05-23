@@ -1,7 +1,6 @@
 import { describe, test } from "bun:test"
 import { runPacklistTest } from "./runPacklistTest.js"
-
-const elfJS = "module.exports = elf => console.log(\"i'm a elf\")";
+import { elfJS, bin } from "../test-utils.js"
 
 describe("package-json-files-dir-and-nested-ignore", () => {
 	test("package with negated files", async () => {

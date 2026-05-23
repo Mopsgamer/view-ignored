@@ -1,7 +1,6 @@
 import { describe, test } from "bun:test"
 import { runPacklistTest } from "./runPacklistTest.js"
-
-const elfJS = "module.exports = elf => console.log(\"i'm a elf\")";
+import { elfJS, bin } from "../test-utils.js"
 
 describe("package-json-negate-non-root", () => {
 	test("package with negated readme, licence and license files", async () => {

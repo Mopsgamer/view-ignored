@@ -1,7 +1,6 @@
 import { describe, test } from "bun:test"
 import { runPacklistTest } from "./runPacklistTest.js"
-
-const elfJS = "module.exports = elf => console.log(\"i'm a elf\")";
+import { elfJS, bin } from "../test-utils.js"
 
 describe("cannot-include-non-file-or-directory", () => {
 	test("cannot include something that exists but is neither a file nor a directory", async () => {
