@@ -95,8 +95,8 @@
 		"check": "bun tsgo -p src --noEmit",
 		"dev": "bun tsgo -p src",
 		"prod": "rm -rf out && bun tsgo -p src/tsconfig.prod.json",
-		"ts-compat": "bun run ts-compat-6 && bun run ts-compat-4",
-		"ts-compat-4": "bun node_modules/typescript4/bin/tsc -p src/tsconfig.v4.prod.json --noEmit",
+		"ts-compat": "bun run ts-compat-6 && bun run ts-compat-5",
+		"ts-compat-5": "bun node_modules/typescript5/bin/tsc -p src/tsconfig.prod.json --noEmit",
 		"ts-compat-6": "bun node_modules/typescript6/bin/tsc -p src/tsconfig.prod.json --noEmit",
 		"release:major": "bun run --bun release-it --increment=major",
 		"release:minor": "bun run --bun release-it --increment=minor",
@@ -121,7 +121,7 @@
 		"oxlint-tsgolint": "latest",
 		"publint": "latest",
 		"release-it": "latest",
-		"typescript4": "npm:typescript@^4.9.5",
+		"typescript5": "npm:typescript@^5.9.3",
 		"typescript6": "npm:typescript@^6.0.3"
 	},
 	"engines": {

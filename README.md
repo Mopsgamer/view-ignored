@@ -3,11 +3,12 @@
 
 [![npm version](https://img.shields.io/npm/v/view-ignored.svg)](https://www.npmjs.com/package/view-ignored)
 [![npm downloads](https://img.shields.io/npm/dm/view-ignored.svg)](https://www.npmjs.com/package/view-ignored)
-![node-v-20-or-later](https://img.shields.io/badge/node->=20-salad?repo=Mopsgamer/view-ignored)
-[![speed-fast](https://img.shields.io/badge/speed-fast-salad?repo=Mopsgamer/view-ignored)](https://github.com/Mopsgamer/view-ignored/tree/main/benchmarks)
+![node-v20-or-later](https://img.shields.io/badge/node->=20-salad?repo=Mopsgamer/view-ignored.svg)
+![ts-v5-or-later](https://img.shields.io/badge/ts->=5-salad?repo=Mopsgamer/view-ignored)
+[![speed-fast](https://img.shields.io/badge/speed-fast-salad?repo=Mopsgamer/view-ignored.svg)](https://github.com/Mopsgamer/view-ignored/tree/main/benchmarks)
 
 [![github issues](https://img.shields.io/github/issues/Mopsgamer/view-ignored.svg)](https://github.com/Mopsgamer/view-ignored/issues)
-[![github](https://img.shields.io/github/stars/Mopsgamer/view-ignored.svg)](https://github.com/Mopsgamer/view-ignored)
+[![github](https://img.shields.io/github/stars/Mopsgamer/view-ignored)](https://github.com/Mopsgamer/view-ignored)
 
 Retrieve list of files ignored/included
 by Git, NPM, Yarn, JSR, Deno, Bun, VSCode extension CLI and other tools.
@@ -26,7 +27,7 @@ by Git, NPM, Yarn, JSR, Deno, Bun, VSCode extension CLI and other tools.
 
 and more!
 
-[![issues](https://img.shields.io/github/issues-search?query=repo%3AMopsgamer%2Fview-ignored%20label%3Atargets%20type%3Aissue&label=issues)](https://github.com/search?q=repo%3AMopsgamer%2Fview-ignored+label%3Atargets+type%3Aissue&type=issues&query=repo%3AMopsgamer%2Fview-ignored+label%3Atargets)
+[![target-issues](https://img.shields.io/github/issues-search?query=repo%3AMopsgamer%2Fview-ignored%20label%3Atargets%20type%3Aissue&label=target%20issues)](https://github.com/search?q=repo%3AMopsgamer%2Fview-ignored+label%3Atargets+type%3Aissue&type=issues&query=repo%3AMopsgamer%2Fview-ignored+label%3Atargets)
 [![suggest](https://img.shields.io/badge/suggest-salad?repo=Mopsgamer/view-ignored)](https://github.com/Mopsgamer/view-ignored/issues/new)
 [![details](https://img.shields.io/badge/details-gray?repo=Mopsgamer/view-ignored)](#targets)
 
