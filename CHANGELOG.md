@@ -10,7 +10,7 @@ and this project adheres to
 
 - Fix `EventTarget` types. Bun was polluting prod types.
 - Fixed outdated README examples.
-- Requires Node 20. Same for v0.11.0.
+- Requires Node 22. Same for v0.11.0.
 
 ## [0.11.0] - 2026-05-20
 

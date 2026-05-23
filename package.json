@@ -95,11 +95,10 @@
 		"check": "bun tsgo -p src --noEmit",
 		"dev": "bun tsgo -p src",
 		"prod": "rm -rf out && bun tsgo -p src/tsconfig.prod.json",
-		"node-compat": "bun node-compat-20 && bun node-compat-22 && bun node-compat-24",
+		"node-compat": "bun node-compat-22 && bun node-compat-24",
 		"ts-compat": "bun run ts-compat-6 && bun run ts-compat-5",
-		"node-compat-24": "bun tsgo -p src/tsconfig.prod24.json --noEmit",
-		"node-compat-22": "bun tsgo -p src/tsconfig.prod22.json --noEmit",
-		"node-compat-20": "bun tsgo -p src/tsconfig.prod20.json --noEmit",
+		"node-compat-24": "bun node_modules/typescript6/bin/tsc -p src/tsconfig.prod24.json --noEmit",
+		"node-compat-22": "bun node_modules/typescript6/bin/tsc -p src/tsconfig.prod22.json --noEmit",
 		"ts-compat-5": "bun node_modules/typescript5/bin/tsc -p src/tsconfig.prod.json --noEmit",
 		"ts-compat-6": "bun node_modules/typescript6/bin/tsc -p src/tsconfig.prod.json --noEmit",
 		"release:major": "bun run --bun release-it --increment=major",
@@ -112,14 +111,13 @@
 	},
 	"devDependencies": {
 		"@release-it/keep-a-changelog": "latest",
-		"@types/braces": "^3.0.5",
+		"@types/braces": "*",
 		"@types/bun": "latest",
 		"@types/ignore-walk": "npm:@types/ignore-walk@^4.0.3",
 		"@types/micromatch": "npm:@types/micromatch@^4.0.10",
 		"@types/node": "npm:@types/node@latest",
-		"@types/node-20": "npm:@types/node@^20.19.41",
-		"@types/node-22": "npm:@types/node@^22.19.19",
-		"@types/node-24": "npm:@types/node@^24.12.4",
+		"@types/node-22": "npm:@types/node@22.x",
+		"@types/node-24": "npm:@types/node@24.x",
 		"@typescript/native-preview": "latest",
 		"ignore-walk": "latest",
 		"memfs": "latest",
@@ -129,10 +127,11 @@
 		"oxlint-tsgolint": "latest",
 		"publint": "latest",
 		"release-it": "latest",
-		"typescript5": "npm:typescript@^5.9.3",
-		"typescript6": "npm:typescript@^6.0.3"
+		"typescript5": "npm:typescript@5.7.x",
+		"typescript6": "npm:typescript@6.x",
+		"undici-types": "*"
 	},
 	"engines": {
-		"node": ">=20"
+		"node": ">=22"
 	}
 }
