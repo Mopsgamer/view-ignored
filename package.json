@@ -106,6 +106,7 @@
 		"release:patch": "bun run --bun release-it --increment=patch"
 	},
 	"dependencies": {
+		"ini": "^7.0.0",
 		"micromatch": "^4.0.8",
 		"strip-json-comments": "^5.0.3"
 	},
@@ -113,6 +114,7 @@
 		"@release-it/keep-a-changelog": "latest",
 		"@types/bun": "latest",
 		"@types/ignore-walk": "npm:@types/ignore-walk@^4.0.3",
+		"@types/ini": "^4.1.1",
 		"@types/micromatch": "npm:@types/micromatch@^4.0.10",
 		"@types/node": "npm:@types/node@latest",
 		"@types/node-22": "npm:@types/node@^22.19.19",
