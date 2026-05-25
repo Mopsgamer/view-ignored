@@ -174,6 +174,40 @@ const customFs = { readFile, readdir }
 await vign.scan({ cwd, fs: customFs, target })
 ```
 
+### Watching for changes
+
+You can use patchers to update the `MatcherContext` without rescanning the entire tree.
+This is useful for implementing file watchers.
+
+> [!IMPORTANT]
+> Directory paths must have a trailing slash.
+
+```ts
+import {
+	matcherContextAddPath,
+	matcherContextRemovePath,
+} from "view-ignored/patterns"
+
+// Handle "created"
+await matcherContextAddPath(ctx, options, "src/new-file.ts")
+
+// Handle "removed"
+await matcherContextRemovePath(ctx, options, "src/old-file.ts")
+
+// Handle "changed"
+// Best approach: remove and re-add
+await matcherContextRemovePath(ctx, options, "src/file.ts")
+await matcherContextAddPath(ctx, options, "src/file.ts")
+```
+
+#### Edge Cases and Limitations
+
+- **Idempotency**: Patcher functions for files are **not idempotent**. Calling `matcherContextAddPath` multiple times for the same path without removing it first will corrupt the `totalFiles` and `totalMatchedFiles` counts in `ctx.total`. Always call `matcherContextRemovePath` before `matcherContextAddPath` if the path might already exist in the context.
+- **Directories**: Directory paths **must end with a slash** (e.g., `src/`). If you omit the slash, it will be treated as a file, and its contents will not be tracked or updated correctly.
+- **Renames**: To handle a file or directory rename, first call `matcherContextRemovePath` on the old path, then `matcherContextAddPath` on the new path.
+- **Source Files**: If a file that acts as an ignore source (like `.gitignore` or `package.json`) is added or changed, the patcher will automatically rescan the directory containing that source file to update the matching rules and state for all affected files.
+- **Depth**: Patchers respect the `depth` option provided in the `ScanOptions`. If you add a path deeper than the specified depth, it might not be fully processed or added to `ctx.paths`.
+
 ## Targets
 
 The following built-in scanners are available:
