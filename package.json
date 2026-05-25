@@ -111,14 +111,14 @@
 	},
 	"devDependencies": {
 		"@release-it/keep-a-changelog": "latest",
-		"@types/braces": "*",
 		"@types/bun": "latest",
 		"@types/ignore-walk": "npm:@types/ignore-walk@^4.0.3",
 		"@types/micromatch": "npm:@types/micromatch@^4.0.10",
 		"@types/node": "npm:@types/node@latest",
-		"@types/node-22": "npm:@types/node@22.x",
-		"@types/node-24": "npm:@types/node@24.x",
+		"@types/node-22": "npm:@types/node@^22.19.19",
+		"@types/node-24": "npm:@types/node@^24.12.4",
 		"@typescript/native-preview": "latest",
+		"bun-types": "latest",
 		"ignore-walk": "latest",
 		"memfs": "latest",
 		"mitata": "latest",
@@ -127,9 +127,8 @@
 		"oxlint-tsgolint": "latest",
 		"publint": "latest",
 		"release-it": "latest",
-		"typescript5": "npm:typescript@5.7.x",
-		"typescript6": "npm:typescript@6.x",
-		"undici-types": "*"
+		"typescript5": "npm:typescript@^5.7.3",
+		"typescript6": "npm:typescript@^6.0.3"
 	},
 	"engines": {
 		"node": ">=22"
