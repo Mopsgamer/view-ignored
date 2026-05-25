@@ -174,6 +174,32 @@ const customFs = { readFile, readdir }
 await vign.scan({ cwd, fs: customFs, target })
 ```
 
+### Watching for changes
+
+You can use patchers to update the `MatcherContext` without rescanning the entire tree.
+This is useful for implementing file watchers.
+
+> [!IMPORTANT]
+> Directory paths must have a trailing slash.
+
+```ts
+import {
+	matcherContextAddPath,
+	matcherContextRemovePath,
+} from "view-ignored/patterns"
+
+// Handle "created"
+await matcherContextAddPath(ctx, options, "src/new-file.ts")
+
+// Handle "removed"
+await matcherContextRemovePath(ctx, options, "src/old-file.ts")
+
+// Handle "changed"
+// Best approach: remove and re-add
+await matcherContextRemovePath(ctx, options, "src/file.ts")
+await matcherContextAddPath(ctx, options, "src/file.ts")
+```
+
 ## Targets
 
 The following built-in scanners are available:

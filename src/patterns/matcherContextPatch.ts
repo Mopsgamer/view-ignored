@@ -41,8 +41,8 @@ export async function matcherContextAddPath(
 
 	const isDir = entry.endsWith("/")
 	const direntPath = isDir ? entry.slice(0, -1) : entry
-	if (isDir && direntPath === ".") {
-		return true
+	if (isDir && (direntPath === "." || ctx.total.has(direntPath) || ctx.paths.has(entry))) {
+		return isDir && direntPath === "."
 	}
 	const parentPath = dirname(direntPath)
 
@@ -63,29 +63,24 @@ export async function matcherContextAddPath(
 				promiseCb(resolve, reject),
 			)
 		})
-		ctx.paths.set(
-			entry,
-			await new Promise<RuleMatch>((resolve, reject) => {
-				target.ignores(
-					{
-						cwd,
-						entry: direntPath,
-						fs,
-						parentPath,
-						resource,
-						signal,
-						target,
-					},
-					promiseCb(resolve, reject),
-				)
-			}),
-		)
-		const total = ctx.total.get(parentPath)
-		if (!total) {
-			ctx.total.set(parentPath, { totalDirs: 1, totalFiles: 0, totalMatchedFiles: 0 })
-		} else if (total.totalFiles >= 0) {
-			total.totalDirs++
+		const match = await new Promise<RuleMatch>((resolve, reject) => {
+			target.ignores(
+				{
+					cwd,
+					entry: direntPath,
+					fs,
+					parentPath,
+					resource,
+					signal,
+					target,
+				},
+				promiseCb(resolve, reject),
+			)
+		})
+		if (!match.ignored) {
+			ctx.paths.set(entry, match)
 		}
+		updateTotals(ctx, parentPath, 0, 0, 1)
 		if (parentPath !== ".") {
 			void (await matcherContextAddPath(ctx, options, parentPath + "/"))
 		}
@@ -152,19 +147,12 @@ export async function matcherContextAddPath(
 		)
 	})
 
+	updateTotals(ctx, parentPath, 1, match.ignored ? 0 : 1, 0)
+
 	if (match.ignored) {
-		// 2.1. remove
-		await matcherContextRemovePath(ctx, options, entry)
 		return false
 	}
-	// 2.2. add
-	const total = ctx.total.get(parentPath)
-	if (!total) {
-		ctx.total.set(parentPath, { totalDirs: 0, totalFiles: 1, totalMatchedFiles: 1 })
-	} else {
-		total.totalFiles++
-		total.totalMatchedFiles++
-	}
+
 	ctx.paths.set(entry, match)
 	return true
 }
@@ -195,24 +183,25 @@ export async function matcherContextRemovePath(
 	if (isDir) {
 		// remove directories
 		let deletedDirs = 0,
-			deletedFiles = 0
-		const total = ctx.total.get(direntPath)!
-		for (const [element] of ctx.paths) {
-			if (!element.startsWith(entry)) {
-				continue
-			}
-			if (total && total.totalFiles >= 0) {
-				const isDir = element.endsWith("/")
-				if (isDir) {
-					deletedDirs++
-				} else {
-					deletedFiles++
-				}
-			}
-			ctx.paths.delete(element)
+			deletedFiles = 0,
+			deletedMatchedFiles = 0
+		const total = ctx.total.get(direntPath)
+		if (total) {
+			deletedDirs = total.totalDirs + 1
+			deletedFiles = total.totalFiles
+			deletedMatchedFiles = total.totalMatchedFiles
+			ctx.total.delete(direntPath)
+		} else {
+			deletedDirs = 1
 		}
 
-		deleteTotals(ctx, entry, deletedDirs, deletedFiles)
+		updateTotals(ctx, parentPath, -deletedFiles, -deletedMatchedFiles, -deletedDirs)
+
+		for (const [element] of ctx.paths) {
+			if (element.startsWith(entry)) {
+				ctx.paths.delete(element)
+			}
+		}
 
 		for (const [element] of ctx.external) {
 			if (!element.startsWith(direntPath)) {
@@ -261,27 +250,34 @@ export async function matcherContextRemovePath(
 	}
 	// remove path
 	// 1. change stats
-	{
-		const total = ctx.total.get(parentPath)
-		if (!total) {
-			ctx.total.set(parentPath, { totalDirs: 0, totalFiles: 0, totalMatchedFiles: 0 })
-		} else if (total.totalFiles >= 0) {
-			total.totalFiles--
-			total.totalMatchedFiles--
-		}
-	}
+	updateTotals(ctx, parentPath, -1, ctx.paths.has(entry) ? -1 : 0, 0)
+
 	// 2. remove from paths
 	ctx.paths.delete(entry)
 	return true
 }
 
-function deleteTotals(ctx: MatcherContext, entry: string, deletedDirs = 0, deletedFiles = 0) {
-	if (entry.endsWith("/")) ctx.total.delete(entry)
-	for (let parent = dirname(entry); parent !== "./"; parent = dirname(parent) + "/") {
+function updateTotals(
+	ctx: MatcherContext,
+	path: string,
+	deltaFiles: number,
+	deltaMatchedFiles: number,
+	deltaDirs: number,
+) {
+	for (let parent = path; ; ) {
 		const total = ctx.total.get(parent)
-		if (!total) continue
-		total.totalDirs -= deletedDirs
-		total.totalFiles -= deletedFiles
-		total.totalMatchedFiles -= deletedFiles
+		if (total) {
+			total.totalDirs += deltaDirs
+			total.totalFiles += deltaFiles
+			total.totalMatchedFiles += deltaMatchedFiles
+		} else {
+			ctx.total.set(parent, {
+				totalDirs: deltaDirs,
+				totalFiles: deltaFiles,
+				totalMatchedFiles: deltaMatchedFiles,
+			})
+		}
+		if (parent === "." || parent === "/") break
+		parent = dirname(parent)
 	}
 }

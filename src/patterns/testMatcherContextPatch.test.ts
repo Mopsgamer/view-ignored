@@ -356,9 +356,13 @@ describe("matcherContextAddPath", () => {
 			const c = await scan(opt)
 			expect(await matcherContextAddPath(c, opt, "test/")).toBeTrue()
 		})
-		test("ignored file is not added", async () => {
+		test("ignored file is not added to paths, but added to totals", async () => {
 			const c = await scan(opt)
+			const initialTotal = { ...c.total.get(".")! }
 			expect(await matcherContextAddPath(c, opt, "test")).toBeFalse()
+			expect(c.paths.has("test")).toBeFalse()
+			expect(c.total.get(".")!.totalFiles).toBe(initialTotal.totalFiles + 1)
+			expect(c.total.get(".")!.totalMatchedFiles).toBe(initialTotal.totalMatchedFiles)
 		})
 		test("source file is changed", async () => {
 			const o = {
@@ -772,6 +776,38 @@ describe("matcherContextRemovePath", () => {
 			})
 		})
 	})
+	describe("stat consistency", () => {
+		test("adding then removing ignored file restores totals", async () => {
+			const c = await scan(opt)
+			const initialTotal = { ...c.total.get(".")! }
+			await matcherContextAddPath(c, opt, "ignored.js")
+			await matcherContextRemovePath(c, opt, "ignored.js")
+			expect(c.total.get(".")!).toEqual(initialTotal)
+		})
+
+		test("removing directory accounts for ignored files in totals", async () => {
+			const o = {
+				...opt,
+				fs: patchFS((json) => {
+					;(json.src as any)["ignored.js"] = "..."
+					return json
+				}),
+			}
+			const c = await scan(o)
+			const initialTotal = { ...c.total.get(".")! }
+			const srcTotal = { ...c.total.get("src")! }
+
+			await matcherContextRemovePath(c, o, "src/")
+
+			const finalTotal = c.total.get(".")!
+			expect(finalTotal.totalFiles).toBe(initialTotal.totalFiles - srcTotal.totalFiles)
+			expect(finalTotal.totalMatchedFiles).toBe(
+				initialTotal.totalMatchedFiles - srcTotal.totalMatchedFiles,
+			)
+			expect(finalTotal.totalDirs).toBe(initialTotal.totalDirs - srcTotal.totalDirs - 1)
+		})
+	})
+
 	describe("max depth 1", () => {
 		test("should change ctx.total", async () => {
 			const c = await scan(optDepth1)
