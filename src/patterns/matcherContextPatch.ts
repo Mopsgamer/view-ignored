@@ -41,7 +41,7 @@ export async function matcherContextAddPath(
 
 	const isDir = entry.endsWith("/")
 	const direntPath = isDir ? entry.slice(0, -1) : entry
-	if (isDir && (direntPath === "." || ctx.total.has(direntPath) || ctx.paths.has(entry))) {
+	if (isDir && (direntPath === "." || ctx.paths.has(entry))) {
 		return isDir && direntPath === "."
 	}
 	const parentPath = dirname(direntPath)
