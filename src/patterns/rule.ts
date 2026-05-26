@@ -225,37 +225,6 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 	const entry = options.entry
 	const matchCtx = { lower: options.lowerEntry }
 
-	// 1. External rules from .gitignore etc. (highest priority)
-	if (src !== null) {
-		if ("error" in src) {
-			return { ...src, ignored: true, kind: RuleMatchKind.invalidSource }
-		}
-
-		const rules = src.rules
-		for (let i = 0, len = rules.length; i < len; i++) {
-			const rule = rules[i]!
-			const res = cacheTest(rule.compiled!, entry, matchCtx)
-			if (res === null) continue
-			if (res instanceof Error) {
-				return {
-					error: res,
-					ignored: false,
-					kind: RuleMatchKind.invalidExternal,
-					pattern: "",
-					source: src,
-				}
-			}
-
-			return {
-				ignored: rule.excludes,
-				kind: RuleMatchKind.external,
-				pattern: res.pattern,
-				source: src,
-			}
-		}
-	}
-
-	// 2. Internal rules from target (Git, NPM, etc.)
 	const internalRules = options.target.internalRules
 	for (let i = 0, len = internalRules.length; i < len; i++) {
 		const rule = internalRules[i]!
@@ -278,19 +247,54 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 		}
 	}
 
-	// 3. Fallback
 	if (src === null) {
 		return { ignored: false, kind: RuleMatchKind.missingSource }
 	}
 
-	return (
-		(src._noMatchCache as any) ??
-		(src._noMatchCache = {
-			ignored: src.inverted,
-			kind: RuleMatchKind.noMatch,
+	if ("error" in src) {
+		return { ...src, ignored: true, kind: RuleMatchKind.invalidSource }
+	}
+
+	const rules = src.rules
+	const elen = rules.length
+	if (elen === 0) {
+		return (
+			(src._noMatchCache as any) ??
+			(src._noMatchCache = {
+				ignored: src.inverted,
+				kind: RuleMatchKind.noMatch,
+				source: src,
+			})
+		)
+	}
+
+	for (let i = 0; i < elen; i++) {
+		const rule = rules[i]!
+		const res = cacheTest(rule.compiled!, entry, matchCtx)
+		if (res === null) continue
+		if (res instanceof Error) {
+			return {
+				error: res,
+				ignored: false,
+				kind: RuleMatchKind.invalidExternal,
+				pattern: "",
+				source: src,
+			}
+		}
+
+		return {
+			ignored: rule.excludes,
+			kind: RuleMatchKind.external,
+			pattern: res.pattern,
 			source: src,
-		})
-	)
+		}
+	}
+
+	return {
+		ignored: src.inverted,
+		kind: RuleMatchKind.noMatch,
+		source: src,
+	}
 }
 
 /**

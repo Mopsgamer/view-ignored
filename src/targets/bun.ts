@@ -79,7 +79,7 @@ const internal: Rule[] = [
 	ruleCompile(
 		{
 			compiled: null,
-			excludes: false, // WAS TRUE
+			excludes: false,
 			pattern: [
 				// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L2586
 				"package.json",

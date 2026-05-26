@@ -46,11 +46,11 @@ function findKey(obj: any, key: string) {
 function merge(target: any, source: any) {
 	for (const k in source) {
 		const v = source[k]
+		const tk = Object.keys(target).find((i) => i.toLowerCase() === k.toLowerCase()) || k
 		if (v && typeof v === "object" && !Array.isArray(v)) {
-			const tk = Object.keys(target).find((i) => i.toLowerCase() === k.toLowerCase()) || k
 			if (!target[tk]) target[tk] = {}
 			merge(target[tk], v)
-		} else target[Object.keys(target).find((i) => i.toLowerCase() === k.toLowerCase()) || k] = v
+		} else target[tk] = v
 	}
 }
 
