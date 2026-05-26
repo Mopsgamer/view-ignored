@@ -1,5 +1,4 @@
 import type { Target } from "./target.js"
-import * as ini from "ini"
 
 import {
 	type Extractor,
@@ -54,6 +53,30 @@ function merge(target: any, source: any) {
 	}
 }
 
+function parseGit(text: string) {
+	const obj: any = {}
+	let section: any = null
+	for (let line of text.split(/\r?\n/)) {
+		line = line.trim()
+		if (!line || line[0] === "#" || line[0] === ";") continue
+		if (line[0] === "[") {
+			const end = line.lastIndexOf("]")
+			if (end === -1) continue
+			const s = line.substring(1, end).trim()
+			section = obj[s] = obj[s] || {}
+		} else if (section) {
+			const eq = line.indexOf("=")
+			if (eq === -1) continue
+			const key = line.substring(0, eq).trim().toLowerCase()
+			let val = line.substring(eq + 1).trim()
+			if (val[0] === '"' && val[val.length - 1] === '"') val = val.substring(1, val.length - 1)
+			if (key === "path") (section[key] = section[key] || []).push(val)
+			else section[key] = val
+		}
+	}
+	return obj
+}
+
 function getInc(parsed: any, gitDir: string | null): string[] {
 	const res: string[] = []
 	const add = (p: any) => (Array.isArray(p) ? res.push(...p) : typeof p === "string" && res.push(p))
@@ -80,7 +103,7 @@ function loadRec(
 	if (sig?.aborted) return cb(null)
 	fs.readFile(path, (err, res) => {
 		if (err) return cb(null)
-		const p = ini.parse(res!.toString().replace(/^[ \t]*path\s*=/gm, "path[]="))
+		const p = parseGit(res!.toString())
 		const inc = getInc(p, gitDir)
 		if (!inc.length) return cb(p)
 		const dir = dirname(path)
