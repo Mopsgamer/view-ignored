@@ -222,20 +222,13 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 		throw new Error("view-ignored has crashed: no source cached.")
 	}
 
-	if (src === null) {
-		return { ignored: false, kind: RuleMatchKind.missingSource }
-	}
-
-	if ("error" in src) {
-		return { ...src, ignored: true, kind: RuleMatchKind.invalidSource }
-	}
-
 	const entry = options.entry
 	const matchCtx = { lower: options.lowerEntry }
 
 	const internalRules = options.target.internalRules
 	for (let i = 0, len = internalRules.length; i < len; i++) {
 		const rule = internalRules[i]!
+		if (rule.compiled === null) continue
 		const res = cacheTest(rule.compiled!, entry, matchCtx)
 		if (res === null) continue
 		if (res instanceof Error) {
@@ -252,6 +245,14 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 			kind: RuleMatchKind.internal,
 			pattern: res.pattern,
 		}
+	}
+
+	if (src === null) {
+		return { ignored: false, kind: RuleMatchKind.missingSource }
+	}
+
+	if ("error" in src) {
+		return { ...src, ignored: true, kind: RuleMatchKind.invalidSource }
 	}
 
 	const rules = src.rules

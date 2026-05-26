@@ -17,24 +17,22 @@ async function testBun(
 	}
 }
 
-const packageJson = JSON.stringify({
-	name: "bun-test",
-	version: "1.0.0",
+const packageJsonNoFiles = JSON.stringify({
+	name: "me",
+	version: "0.0.1",
 })
 
 describe("Bun", () => {
 	test("includes package.json and README by default", async (done) => {
-		await testBun(done, { "README.md": "", "package.json": packageJson }, [
+		await testBun(done, { "package.json": packageJsonNoFiles, "README.md": "" }, [
 			"package.json",
 			"README.md",
 		])
 	})
 
 	test("ignores node_modules", async (done) => {
-		await testBun(done, { node_modules: { a: "" }, "package.json": packageJson }, [
+		await testBun(done, { node_modules: { a: "" }, "package.json": packageJsonNoFiles }, [
 			"package.json",
-			"node_modules/",
-			"node_modules/a",
 		])
 	})
 

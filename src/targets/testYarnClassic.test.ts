@@ -24,19 +24,15 @@ const packageJson = JSON.stringify({
 
 describe("Yarn Classic", () => {
 	test("includes package.json", async (done) => {
-		await testYarnClassic(done, { "index.js": "", "package.json": packageJson }, [
-			"package.json",
-			"index.js",
-		])
+		await testYarnClassic(done, { "package.json": packageJson }, ["package.json"])
 	})
 
 	test("ignores node_modules", async (done) => {
 		await testYarnClassic(done, { node_modules: { a: "" }, "package.json": packageJson }, [
 			"package.json",
-			"node_modules/",
-			"node_modules/a",
 		])
 	})
+
 	test("throws an error if package.json is invalid", async (done) => {
 		expect(() => testYarnClassic(done, { "package.json": "{ invalid json }" }, () => {})).toThrow()
 		expect(() => testYarnClassic(done, { "package.json": "{}" }, () => {})).toThrow()

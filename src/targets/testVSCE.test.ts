@@ -34,8 +34,6 @@ describe("VSCE", () => {
 	test("ignores .vscode-test", async (done) => {
 		await testVSCE(done, { ".vscode-test": { a: "" }, "package.json": packageJson }, [
 			"package.json",
-			".vscode-test/",
-			".vscode-test/a",
 		])
 	})
 
