@@ -193,6 +193,7 @@ export const Git: Target = <Target>{
 			}
 			if (gitDir) {
 				configsToLoad.push(join(gitDir, "config"))
+				target.root = dirname(gitDir)
 			}
 
 			const mergedConfig: any = {}
