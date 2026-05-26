@@ -1,6 +1,5 @@
 import type { Target } from "./target.js"
 import * as ini from "ini"
-import micromatch from "micromatch"
 
 import {
 	type Extractor,
@@ -8,141 +7,88 @@ import {
 	ruleCompile,
 	type Rule,
 	extractGitignore,
+	patternCompile,
 } from "../patterns/index.js"
 import { dirname, join, unixify } from "../unixify.js"
 import type { FsAdapter } from "../types.js"
 
 const extractors: Extractor[] = [
-	{
-		extract: extractGitignore,
-		path: ".gitignore",
-	},
-	{
-		extract: extractGitignore,
-		path: ".git/info/exclude",
-	},
+	{ extract: extractGitignore, path: ".gitignore" },
+	{ extract: extractGitignore, path: ".git/info/exclude" },
 ]
 
 const env = typeof process !== "undefined" ? process.env : {}
 const HOME = (env.HOME || env.USERPROFILE || "").replaceAll("\\", "/")
-const XDG_CONFIG_HOME = (env.XDG_CONFIG_HOME || (HOME ? HOME + "/.config" : "")).replaceAll(
-	"\\",
-	"/",
-)
+const XDG = (env.XDG_CONFIG_HOME || (HOME ? HOME + "/.config" : "")).replaceAll("\\", "/")
 
-function resolveHome(path: string): string {
-	if (path.startsWith("~/")) {
-		return join(HOME, path.substring(2))
-	}
-	return path
+const resH = (p: string) => (p.startsWith("~/") ? join(HOME, p.substring(2)) : p)
+
+const resP = (base: string, p: string) => {
+	p = resH(p)
+	return p.startsWith("/") || p.includes(":") ? p : join(base, p.startsWith("./") ? p.substring(2) : p)
 }
 
-function resolvePath(baseDir: string, path: string): string {
-	path = resolveHome(path)
-	if (!path.startsWith("/") && !path.includes(":") && !path.startsWith("./")) {
-		return join(baseDir, path)
-	}
-	if (path.startsWith("./")) {
-		return join(baseDir, path.substring(2))
-	}
-	return path
-}
-
-function gitdirMatches(gitdirPattern: string, gitDir: string): boolean {
-	let pattern = resolveHome(gitdirPattern)
+function gitMatches(pattern: string, gitDir: string): boolean {
+	pattern = resH(pattern)
 	if (pattern.endsWith("/")) pattern += "**"
 	if (!pattern.startsWith("/") && !pattern.startsWith("./") && !pattern.startsWith("**/")) {
 		pattern = "**/" + pattern
 	}
-	return micromatch.isMatch(gitDir, pattern, {
-		dot: true,
-		nocase: typeof process !== "undefined" && process.platform === "win32",
-	})
+	return patternCompile(pattern).re.test(gitDir.startsWith("/") ? gitDir.substring(1) : gitDir, {})
 }
 
-function findCaseInsensitive(obj: any, key: string): any {
-	if (!obj) return undefined
-	const foundKey = Object.keys(obj).find((k) => k.toLowerCase() === key.toLowerCase())
-	return foundKey ? obj[foundKey] : undefined
+function findKey(obj: any, key: string) {
+	if (!obj) return
+	const k = Object.keys(obj).find((k) => k.toLowerCase() === key.toLowerCase())
+	return k ? obj[k] : undefined
 }
 
-function deepMerge(target: any, source: any) {
-	for (const key in source) {
-		const val = source[key]
-		if (val && typeof val === "object" && !Array.isArray(val)) {
-			const targetKey = Object.keys(target).find((k) => k.toLowerCase() === key.toLowerCase()) || key
-			if (!target[targetKey]) target[targetKey] = {}
-			deepMerge(target[targetKey], val)
-		} else {
-			const targetKey = Object.keys(target).find((k) => k.toLowerCase() === key.toLowerCase()) || key
-			target[targetKey] = val
-		}
+function merge(target: any, source: any) {
+	for (const k in source) {
+		const v = source[k]
+		if (v && typeof v === "object" && !Array.isArray(v)) {
+			const tk = Object.keys(target).find((i) => i.toLowerCase() === k.toLowerCase()) || k
+			if (!target[tk]) target[tk] = {}
+			merge(target[tk], v)
+		} else target[Object.keys(target).find((i) => i.toLowerCase() === k.toLowerCase()) || k] = v
 	}
 }
 
-function loadConfigRecursive(
+function getInc(parsed: any, gitDir: string | null): string[] {
+	const res: string[] = []
+	const add = (p: any) => (Array.isArray(p) ? res.push(...p) : typeof p === "string" && res.push(p))
+	add(findKey(findKey(parsed, "include"), "path"))
+	if (!gitDir) return res
+	for (const s in parsed) {
+		if (s.toLowerCase().startsWith('includeif "')) {
+			const c = s.substring(11, s.length - 1)
+			if (c.startsWith("gitdir:") && gitMatches(c.substring(7), gitDir)) {
+				add(findKey(parsed[s], "path"))
+			}
+		}
+	}
+	return res
+}
+
+function loadRec(
 	fs: FsAdapter,
-	configPath: string,
+	path: string,
 	gitDir: string | null,
-	signal: AbortSignal | null,
-	cb: (err: Error | null, config: any) => void,
+	sig: AbortSignal | null,
+	cb: (c: any) => void,
 ) {
-	if (signal?.aborted) return cb(signal.reason, null)
-
-	fs.readFile(configPath, (err, content) => {
-		if (err) return cb(null, null)
-
-		const raw = content!.toString()
-		const parsed = ini.parse(raw.replace(/^[ \t]*path\s*=/gm, "path[]="))
-
-		const configDir = dirname(configPath)
-		const includes: string[] = []
-
-		const includeSection = findCaseInsensitive(parsed, "include")
-		if (includeSection) {
-			const p = findCaseInsensitive(includeSection, "path")
-			if (Array.isArray(p)) {
-				includes.push(...p)
-			} else if (typeof p === "string") {
-				includes.push(p)
-			}
-		}
-
-		if (gitDir) {
-			for (const section in parsed) {
-				if (section.toLowerCase().startsWith('includeif "')) {
-					const condition = section.substring(11, section.length - 1)
-					if (condition.startsWith("gitdir:")) {
-						const pattern = condition.substring(7)
-						if (gitdirMatches(pattern, gitDir)) {
-							const val = parsed[section]
-							const p = findCaseInsensitive(val, "path")
-							if (Array.isArray(p)) {
-								includes.push(...p)
-							} else if (typeof p === "string") {
-								includes.push(p)
-							}
-						}
-					}
-				}
-			}
-		}
-
-		if (includes.length === 0) {
-			return cb(null, parsed)
-		}
-
-		let index = 0
-		function next() {
-			if (index >= includes.length) {
-				return cb(null, parsed)
-			}
-			const incPath = resolvePath(configDir, includes[index++]!)
-
-			loadConfigRecursive(fs, incPath, gitDir, signal, (err, incConfig) => {
-				if (incConfig) {
-					deepMerge(parsed, incConfig)
-				}
+	if (sig?.aborted) return cb(null)
+	fs.readFile(path, (err, res) => {
+		if (err) return cb(null)
+		const p = ini.parse(res!.toString().replace(/^[ \t]*path\s*=/gm, "path[]="))
+		const inc = getInc(p, gitDir)
+		if (!inc.length) return cb(p)
+		const dir = dirname(path)
+		let i = 0
+		const next = () => {
+			if (i >= inc.length) return cb(p)
+			loadRec(fs, resP(dir, inc[i++]!), gitDir, sig, (c) => {
+				if (c) merge(p, c)
 				next()
 			})
 		}
@@ -150,26 +96,36 @@ function loadConfigRecursive(
 	})
 }
 
-function findGitDir(fs: FsAdapter, cwd: string, cb: (gitDir: string | null) => void): void {
-	let current = cwd
-	function check() {
-		fs.readdir(current, (err, files) => {
-			if (!err && files) {
-				for (const name of files as string[]) {
-					if (name === ".git") {
-						return cb(join(current, ".git"))
-					}
-				}
-			}
-			const parent = dirname(current)
-			if (parent === current || !current || current === ".") {
-				return cb(null)
-			}
-			current = parent
-			check()
-		})
+function findGit(fs: FsAdapter, cur: string, cb: (g: string | null) => void) {
+	fs.readdir(cur, (err, files) => {
+		if (!err && (files as string[]).includes(".git")) return cb(join(cur, ".git"))
+		const p = dirname(cur)
+		if (p === cur || !cur || cur === ".") return cb(null)
+		findGit(fs, p, cb)
+	})
+}
+
+function done(conf: any, gDir: string | null, cwd: string, fs: FsAdapter, target: Target, cb: () => void) {
+	let ex = findKey(findKey(conf, "core"), "excludesfile")
+	if (!ex) ex = XDG ? join(XDG, "git/ignore") : join(HOME, ".config/git/ignore")
+	const i: Rule = { compiled: null, excludes: false, pattern: [] }
+	const e: Rule = { compiled: null, excludes: true, pattern: [] }
+	const finish = () => {
+		target.internalRules = [
+			ruleCompile({ compiled: null, excludes: true, pattern: [".git", ".DS_Store"] }),
+			ruleCompile(i),
+			ruleCompile(e),
+		]
+		cb()
 	}
-	check()
+	fs.readFile(resP(gDir || cwd, ex), (err, res) => {
+		if (!err && res) {
+			const d: any = { rules: [] }
+			extractGitignore(d, res)
+			for (const r of d.rules) (r.excludes ? e : i).pattern.push(...r.pattern)
+		}
+		finish()
+	})
 }
 
 /**
@@ -179,106 +135,27 @@ export const Git: Target = <Target>{
 	extractors,
 	ignores: ruleTest,
 	init({ fs, cwd, signal, target }, cb) {
-		const normalCwd = unixify(cwd)
-
-		findGitDir(fs, normalCwd, (gitDir) => {
-			if (signal?.aborted) return cb(signal.reason)
-
-			const configsToLoad: string[] = []
-			if (HOME) {
-				configsToLoad.push(join(HOME, ".gitconfig"))
+		const nCwd = unixify(cwd)
+		findGit(fs, nCwd, (gDir) => {
+			if (signal?.aborted) return cb()
+			const confs: string[] = []
+			if (HOME) confs.push(join(HOME, ".gitconfig"))
+			if (XDG) confs.push(join(XDG, "git/config"))
+			if (gDir) {
+				confs.push(join(gDir, "config"))
+				target.root = dirname(gDir)
 			}
-			if (XDG_CONFIG_HOME) {
-				configsToLoad.push(join(XDG_CONFIG_HOME, "git/config"))
-			}
-			if (gitDir) {
-				configsToLoad.push(join(gitDir, "config"))
-				target.root = dirname(gitDir)
-			}
-
-			const mergedConfig: any = {}
-
-			function nextConfig() {
-				if (configsToLoad.length === 0) {
-					return finalize()
-				}
-				const configPath = configsToLoad.shift()!
-				loadConfigRecursive(fs, configPath, gitDir, signal, (err, config) => {
-					if (config) {
-						deepMerge(mergedConfig, config)
-					}
-					nextConfig()
+			const m: any = {}
+			const next = () => {
+				if (!confs.length) return done(m, gDir, nCwd, fs, target, cb)
+				loadRec(fs, confs.shift()!, gDir, signal, (c) => {
+					if (c) merge(m, c)
+					next()
 				})
 			}
-
-			function finalize() {
-				const core = findCaseInsensitive(mergedConfig, "core")
-				let excludesFile = findCaseInsensitive(core, "excludesfile")
-
-				if (!excludesFile) {
-					if (XDG_CONFIG_HOME) {
-						excludesFile = join(XDG_CONFIG_HOME, "git/ignore")
-					} else if (HOME) {
-						excludesFile = join(HOME, ".config/git/ignore")
-					}
-				}
-
-				const fromConfigsInclude: Rule = {
-					compiled: null,
-					excludes: false,
-					pattern: [],
-				}
-
-				const fromConfigsExclude: Rule = {
-					compiled: null,
-					excludes: true,
-					pattern: [],
-				}
-
-				const finish = () => {
-					ruleCompile(fromConfigsInclude)
-					ruleCompile(fromConfigsExclude)
-
-					target.internalRules = [
-						ruleCompile({
-							compiled: null,
-							excludes: true,
-							pattern: [".git", ".DS_Store"],
-						}),
-						fromConfigsInclude,
-						fromConfigsExclude,
-					]
-					cb()
-				}
-
-				if (excludesFile) {
-					excludesFile = resolvePath(gitDir || normalCwd, excludesFile)
-					fs.readFile(excludesFile, (err, content) => {
-						if (!err && content) {
-							const dummySource = { inverted: false, path: excludesFile, rules: [] } as any
-							extractGitignore(dummySource, content)
-							for (const rule of dummySource.rules) {
-								if (rule.excludes) fromConfigsExclude.pattern.push(...rule.pattern)
-								else fromConfigsInclude.pattern.push(...rule.pattern)
-							}
-						}
-
-						finish()
-					})
-				} else {
-					finish()
-				}
-			}
-
-			nextConfig()
+			next()
 		})
 	},
-	internalRules: [
-		ruleCompile({
-			compiled: null,
-			excludes: true,
-			pattern: [".git", ".DS_Store"],
-		}),
-	],
+	internalRules: [ruleCompile({ compiled: null, excludes: true, pattern: [".git", ".DS_Store"] })],
 	root: "/",
 }
