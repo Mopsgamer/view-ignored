@@ -24,7 +24,7 @@ const packageJsonNoFiles = JSON.stringify({
 
 describe("Bun", () => {
 	test("includes package.json and README by default", async (done) => {
-		await testBun(done, { "package.json": packageJsonNoFiles, "README.md": "" }, [
+		await testBun(done, { "README.md": "", "package.json": packageJsonNoFiles }, [
 			"package.json",
 			"README.md",
 		])

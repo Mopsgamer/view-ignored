@@ -183,10 +183,7 @@ This is useful for implementing file watchers.
 > Directory paths must have a trailing slash.
 
 ```ts
-import {
-	matcherContextAddPath,
-	matcherContextRemovePath,
-} from "view-ignored/patterns"
+import { matcherContextAddPath, matcherContextRemovePath } from "view-ignored/patterns"
 
 // Handle "created"
 await matcherContextAddPath(ctx, options, "src/new-file.ts")

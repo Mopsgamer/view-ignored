@@ -1,10 +1,10 @@
 import type { NestedDirectoryJSON } from "memfs"
 
 import { test, describe } from "bun:test"
+import * as process from "node:process"
 
 import { testScan, type PathHandlerOptions } from "../testScan.test.js"
 import { Git as target } from "./git.js"
-import * as process from "node:process"
 
 async function testGit(
 	done: () => void,
@@ -26,7 +26,7 @@ describe("Git Init", () => {
 			done,
 			{
 				".git": {
-					config: '[core]\nexcludesfile = my-ignore',
+					config: "[core]\nexcludesfile = my-ignore",
 					"my-ignore": "ignored-file",
 				},
 				"ignored-file": "",
@@ -38,7 +38,7 @@ describe("Git Init", () => {
 
 	test("reads core.excludesFile from HOME/.gitconfig", async (done) => {
 		const tree: NestedDirectoryJSON = {}
-		tree[HOME + "/.gitconfig"] = '[core]\nexcludesfile = ' + HOME + '/global-ignore'
+		tree[HOME + "/.gitconfig"] = "[core]\nexcludesfile = " + HOME + "/global-ignore"
 		tree[HOME + "/global-ignore"] = "global-ignored"
 		tree["local-file"] = ""
 		tree["global-ignored"] = ""
@@ -51,8 +51,8 @@ describe("Git Init", () => {
 			done,
 			{
 				".git": {
-					config: '[include]\npath = extra-config',
-					"extra-config": '[core]\nexcludesfile = my-ignore',
+					config: "[include]\npath = extra-config",
+					"extra-config": "[core]\nexcludesfile = my-ignore",
 					"my-ignore": "ignored-by-include",
 				},
 				"ignored-by-include": "",
@@ -69,7 +69,7 @@ describe("Git Init", () => {
 			{
 				".git": {
 					config: '[includeIf "gitdir:' + cwd + '/"]\npath = extra-config',
-					"extra-config": '[core]\nexcludesfile = my-ignore',
+					"extra-config": "[core]\nexcludesfile = my-ignore",
 					"my-ignore": "ignored-by-conditional",
 				},
 				"ignored-by-conditional": "",
@@ -84,9 +84,9 @@ describe("Git Init", () => {
 			done,
 			{
 				".git": {
-					config: '[include]\npath = config1\npath = config2',
-					config1: '[core]\nexcludesfile = ignore1',
-					config2: '[core]\nexcludesfile = ignore2',
+					config: "[include]\npath = config1\npath = config2",
+					config1: "[core]\nexcludesfile = ignore1",
+					config2: "[core]\nexcludesfile = ignore2",
 					ignore1: "file1",
 					ignore2: "file2",
 				},

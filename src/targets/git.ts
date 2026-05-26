@@ -1,3 +1,4 @@
+import type { FsAdapter } from "../types.js"
 import type { Target } from "./target.js"
 
 import {
@@ -9,7 +10,6 @@ import {
 	patternCompile,
 } from "../patterns/index.js"
 import { dirname, join, unixify } from "../unixify.js"
-import type { FsAdapter } from "../types.js"
 
 const extractors: Extractor[] = [
 	{ extract: extractGitignore, path: ".gitignore" },
@@ -24,16 +24,9 @@ const resH = (p: string) => (p.startsWith("~/") ? join(HOME, p.substring(2)) : p
 
 const resP = (base: string, p: string) => {
 	p = resH(p)
-	return p.startsWith("/") || p.includes(":") ? p : join(base, p.startsWith("./") ? p.substring(2) : p)
-}
-
-function gitMatches(pattern: string, gitDir: string): boolean {
-	pattern = resH(pattern)
-	if (pattern.endsWith("/")) pattern += "**"
-	if (!pattern.startsWith("/") && !pattern.startsWith("./") && !pattern.startsWith("**/")) {
-		pattern = "**/" + pattern
-	}
-	return patternCompile(pattern).re.test(gitDir.startsWith("/") ? gitDir.substring(1) : gitDir, {})
+	return p.startsWith("/") || p.includes(":")
+		? p
+		: join(base, p.startsWith("./") ? p.substring(2) : p)
 }
 
 function findKey(obj: any, key: string) {
@@ -56,8 +49,12 @@ function merge(target: any, source: any) {
 function parseGit(text: string) {
 	const obj: any = {}
 	let section: any = null
-	for (let line of text.split(/\r?\n/)) {
-		line = line.trim()
+	let pos = 0
+	while (pos < text.length) {
+		let next = text.indexOf("\n", pos)
+		if (next === -1) next = text.length
+		let line = text.substring(pos, next).trim()
+		pos = next + 1
 		if (!line || line[0] === "#" || line[0] === ";") continue
 		if (line[0] === "[") {
 			const end = line.lastIndexOf("]")
@@ -82,10 +79,11 @@ function getInc(parsed: any, gitDir: string | null): string[] {
 	const add = (p: any) => (Array.isArray(p) ? res.push(...p) : typeof p === "string" && res.push(p))
 	add(findKey(findKey(parsed, "include"), "path"))
 	if (!gitDir) return res
+	const gD = gitDir.startsWith("/") ? gitDir.substring(1) : gitDir
 	for (const s in parsed) {
 		if (s.toLowerCase().startsWith('includeif "')) {
 			const c = s.substring(11, s.length - 1)
-			if (c.startsWith("gitdir:") && gitMatches(c.substring(7), gitDir)) {
+			if (c.startsWith("gitdir:") && patternCompile(resH(c.substring(7))).re.test(gD, {})) {
 				add(findKey(parsed[s], "path"))
 			}
 		}
@@ -128,7 +126,14 @@ function findGit(fs: FsAdapter, cur: string, cb: (g: string | null) => void) {
 	})
 }
 
-function done(conf: any, gDir: string | null, cwd: string, fs: FsAdapter, target: Target, cb: () => void) {
+function done(
+	conf: any,
+	gDir: string | null,
+	cwd: string,
+	fs: FsAdapter,
+	target: Target,
+	cb: () => void,
+) {
 	let ex = findKey(findKey(conf, "core"), "excludesfile")
 	if (!ex) ex = XDG ? join(XDG, "git/ignore") : join(HOME, ".config/git/ignore")
 	const i: Rule = { compiled: null, excludes: false, pattern: [] }
