@@ -98,4 +98,37 @@ describe("Git Init", () => {
 			["file1", "file3"],
 		)
 	})
+
+	test("supports [includeIf \"onbranch:...\"]", async (done) => {
+		await testGit(
+			done,
+			{
+				".git": {
+					HEAD: "ref: refs/heads/main\n",
+					config: '[includeIf "onbranch:main"]\npath = main-config',
+					"main-config": "[core]\nexcludesfile = main-ignore",
+					"main-ignore": "only-on-main",
+				},
+				"only-on-main": "",
+				"other-file": "",
+			},
+			["other-file"],
+		)
+	})
+
+	test("supports [includeIf \"hasconfig:...\"]", async (done) => {
+		await testGit(
+			done,
+			{
+				".git": {
+					config: '[user]\nname = Jules\n[includeIf "hasconfig:user.name=Jules"]\npath = jules-config',
+					"jules-config": "[core]\nexcludesfile = jules-ignore",
+					"jules-ignore": "jules-only",
+				},
+				"jules-only": "",
+				"other-file": "",
+			},
+			["other-file"],
+		)
+	})
 })

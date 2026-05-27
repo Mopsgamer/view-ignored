@@ -45,7 +45,14 @@ export function parseGit(text: string) {
 			let e = i
 			while (s < e && text.charCodeAt(s) <= 32) s++
 			while (e > s && text.charCodeAt(e - 1) <= 32) e--
-			section = obj[text.slice(s, e).toLowerCase()] ||= {}
+			let name = text.slice(s, e)
+			const sp = name.indexOf(" ")
+			if (sp !== -1) {
+				let sub = name.slice(sp + 1).trim()
+				if (sub.charCodeAt(0) === 34 && sub.charCodeAt(sub.length - 1) === 34) sub = sub.slice(1, -1)
+				name = name.slice(0, sp).toLowerCase() + ' "' + sub + '"'
+			} else name = name.toLowerCase()
+			section = obj[name] ||= {}
 			while (++i < len && text.charCodeAt(i) !== 10);
 			continue
 		}
@@ -81,7 +88,36 @@ export function parseGit(text: string) {
 
 const patternCache = new Map<string, any>()
 
-export function getInc(parsed: any, gitDir: string | null): string[] {
+function testPat(pat: string, str: string) {
+	let c = patternCache.get(pat)
+	if (!c) patternCache.set(pat, (c = patternCompile(pat)))
+	return c.re.test(str)
+}
+
+function hasConf(obj: any, cond: string): boolean {
+	let key = cond
+	let val: string | null = null
+	const eq = cond.indexOf("=")
+	if (eq !== -1) {
+		key = cond.slice(0, eq)
+		val = cond.slice(eq + 1)
+	}
+	const parts = key.toLowerCase().split(".")
+	let cur = obj
+	for (let i = 0; i < parts.length; i++) {
+		if (!cur || typeof cur !== "object") return false
+		cur = cur[parts[i]!]
+	}
+	if (cur === undefined) return false
+	if (val === null) return true
+	if (Array.isArray(cur)) {
+		for (let i = 0; i < cur.length; i++) if (String(cur[i]) === val) return true
+		return false
+	}
+	return String(cur) === val
+}
+
+export function getInc(parsed: any, gitDir: string | null, branch: string | null): string[] {
 	const res: string[] = []
 	const inc = parsed["include"]
 	if (inc?.path) {
@@ -93,11 +129,14 @@ export function getInc(parsed: any, gitDir: string | null): string[] {
 	for (const s in parsed) {
 		if (!s.startsWith('includeif "')) continue
 		const c = s.slice(11, -1)
-		if (!c.startsWith("gitdir:")) continue
-		const pat = resH(c.slice(7))
-		let compiled = patternCache.get(pat)
-		if (!compiled) patternCache.set(pat, (compiled = patternCompile(pat)))
-		if (compiled.re.test(gD)) {
+		let ok = false
+		if (c.startsWith("gitdir:")) ok = testPat(resH(c.slice(7)), gD)
+		else if (c.startsWith("gitdir/i:"))
+			ok = testPat(resH(c.slice(9)).toLowerCase(), gD.toLowerCase())
+		else if (branch && c.startsWith("onbranch:")) ok = testPat(c.slice(9), branch)
+		else if (c.startsWith("hasconfig:")) ok = hasConf(parsed, c.slice(10))
+
+		if (ok) {
 			const p = parsed[s].path
 			if (Array.isArray(p)) res.push(...p)
 			else if (p) res.push(p)
@@ -118,6 +157,7 @@ export function loadRec(
 	fs: FsAdapter,
 	path: string,
 	gitDir: string | null,
+	branch: string | null,
 	sig: AbortSignal | null,
 	cb: (c: any) => void,
 ) {
@@ -130,14 +170,14 @@ export function loadRec(
 		if (err) return cb(null)
 		const p = parseGit(res!.toString())
 		if (!gitDir) cache.set(path, p)
-		const inc = getInc(p, gitDir)
+		const inc = getInc(p, gitDir, branch)
 		let len = inc.length
 		if (!len) return cb(p)
 		const dir = dirname(path)
 		const vals = new Array(len)
 		let pending = len
 		for (let i = 0; i < len; i++) {
-			loadRec(fs, resP(dir, inc[i]!), gitDir, sig, (v) => {
+			loadRec(fs, resP(dir, inc[i]!), gitDir, branch, sig, (v) => {
 				vals[i] = v
 				if (--pending === 0) {
 					for (const v of vals) if (v) merge(p, v)

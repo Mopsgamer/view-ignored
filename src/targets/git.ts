@@ -102,19 +102,32 @@ export const Git: Target = <Target>{
 			let len = confs.length
 			if (!len) return done(m, gDir, nCwd, fs, target, cb)
 
-			const vals = new Array(len)
-			let pending = len
-			for (let i = 0; i < len; i++) {
-				loadRec(fs, confs[i]!, gDir, signal, (res) => {
-					vals[i] = res
-					if (--pending === 0) {
-						for (let j = 0; j < len; j++) {
-							const v = vals[j]; if (v) merge(m, v)
+			const start = (branch: string | null) => {
+				const vals = new Array(len)
+				let pending = len
+				for (let i = 0; i < len; i++) {
+					loadRec(fs, confs[i]!, gDir, branch, signal, (res) => {
+						vals[i] = res
+						if (--pending === 0) {
+							for (let j = 0; j < len; j++) {
+								const v = vals[j]; if (v) merge(m, v)
+							}
+							done(m, gDir, nCwd, fs, target, cb)
 						}
-						done(m, gDir, nCwd, fs, target, cb)
-					}
-				})
+					})
+				}
 			}
+
+			if (gDir) {
+				fs.readFile(join(gDir, "HEAD"), (err, res) => {
+					let branch: string | null = null
+					if (!err && res) {
+						const s = res.toString().trim()
+						if (s.startsWith("ref: refs/heads/")) branch = s.slice(16)
+					}
+					start(branch)
+				})
+			} else start(null)
 		})
 	},
 	internalRules: defIntRules,
