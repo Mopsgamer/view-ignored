@@ -97,7 +97,7 @@ export function getInc(parsed: any, gitDir: string | null): string[] {
 		const pat = resH(c.slice(7))
 		let compiled = patternCache.get(pat)
 		if (!compiled) patternCache.set(pat, (compiled = patternCompile(pat)))
-		if (compiled.re.test(gD, {})) {
+		if (compiled.re.test(gD)) {
 			const p = parsed[s].path
 			if (Array.isArray(p)) res.push(...p)
 			else if (p) res.push(p)

@@ -106,7 +106,6 @@
 		"release:patch": "bun run --bun release-it --increment=patch"
 	},
 	"dependencies": {
-		"isolated": "^3.0.25",
 		"micromatch": "^4.0.8",
 		"strip-json-comments": "^5.0.3"
 	},

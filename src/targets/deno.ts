@@ -47,7 +47,6 @@ const internal: Rule[] = [
  * @since 0.8.1
  */
 export const Deno: Target = <Target>{
-	configVersion: 1,
 	extractors,
 	ignores: ruleTest,
 	init({ fs, cwd }, cb) {
