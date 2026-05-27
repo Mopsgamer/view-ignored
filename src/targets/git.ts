@@ -65,13 +65,17 @@ function done(
 	const i: Rule = { compiled: null, excludes: false, pattern: [] }
 	const e: Rule = { compiled: null, excludes: true, pattern: [] }
 	fs.readFile(p, (err, res) => {
-		if (!err && res) {
-			const d: any = { rules: [] }
-			extractGitignore(d, res)
-			const rs = d.rules
-			for (let idx = 0, rl = rs.length; idx < rl; idx++) {
-				const r = rs[idx]!; (r.excludes ? e : i).pattern.push(...r.pattern)
-			}
+		if (err || !res) {
+			const rules = [ruleCompile(i), ruleCompile(e)]
+			cache.set(p, rules)
+			target.internalRules = [...defIntRules, ...rules]
+			return cb()
+		}
+		const d: any = { rules: [] }
+		extractGitignore(d, res)
+		const rs = d.rules
+		for (let idx = 0, rl = rs.length; idx < rl; idx++) {
+			const r = rs[idx]!; (r.excludes ? e : i).pattern.push(...r.pattern)
 		}
 		const rules = [ruleCompile(i), ruleCompile(e)]
 		cache.set(p, rules)
@@ -108,26 +112,21 @@ export const Git: Target = <Target>{
 				for (let i = 0; i < len; i++) {
 					loadRec(fs, confs[i]!, gDir, branch, signal, (res) => {
 						vals[i] = res
-						if (--pending === 0) {
-							for (let j = 0; j < len; j++) {
-								const v = vals[j]; if (v) merge(m, v)
-							}
-							done(m, gDir, nCwd, fs, target, cb)
+						if (--pending !== 0) return
+						for (let j = 0; j < len; j++) {
+							const v = vals[j]; if (v) merge(m, v)
 						}
+						done(m, gDir, nCwd, fs, target, cb)
 					})
 				}
 			}
 
-			if (gDir) {
-				fs.readFile(join(gDir, "HEAD"), (err, res) => {
-					let branch: string | null = null
-					if (!err && res) {
-						const s = res.toString().trim()
-						if (s.startsWith("ref: refs/heads/")) branch = s.slice(16)
-					}
-					start(branch)
-				})
-			} else start(null)
+			if (!gDir) return start(null)
+			fs.readFile(join(gDir, "HEAD"), (err, res) => {
+				if (err || !res) return start(null)
+				const s = res.toString().trim()
+				start(s.startsWith("ref: refs/heads/") ? s.slice(16) : null)
+			})
 		})
 	},
 	internalRules: defIntRules,

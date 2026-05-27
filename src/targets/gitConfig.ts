@@ -18,9 +18,11 @@ export const resP = (base: string, p: string) => {
 export function merge(target: any, source: any) {
 	for (const k in source) {
 		const v = source[k]
-		if (v && typeof v === "object" && !Array.isArray(v)) {
-			merge((target[k] ||= {}), v)
-		} else target[k] = v
+		if (!v || typeof v !== "object" || Array.isArray(v)) {
+			target[k] = v
+			continue
+		}
+		merge((target[k] ||= {}), v)
 	}
 }
 
@@ -136,11 +138,10 @@ export function getInc(parsed: any, gitDir: string | null, branch: string | null
 		else if (branch && c.startsWith("onbranch:")) ok = testPat(c.slice(9), branch)
 		else if (c.startsWith("hasconfig:")) ok = hasConf(parsed, c.slice(10))
 
-		if (ok) {
-			const p = parsed[s].path
-			if (Array.isArray(p)) res.push(...p)
-			else if (p) res.push(p)
-		}
+		if (!ok) continue
+		const p = parsed[s].path
+		if (Array.isArray(p)) res.push(...p)
+		else if (p) res.push(p)
 	}
 	return res
 }
@@ -179,10 +180,9 @@ export function loadRec(
 		for (let i = 0; i < len; i++) {
 			loadRec(fs, resP(dir, inc[i]!), gitDir, branch, sig, (v) => {
 				vals[i] = v
-				if (--pending === 0) {
-					for (const v of vals) if (v) merge(p, v)
-					cb(p)
-				}
+				if (--pending !== 0) return
+				for (const v of vals) if (v) merge(p, v)
+				cb(p)
 			})
 		}
 	})

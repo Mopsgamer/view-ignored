@@ -4,7 +4,7 @@ import { test, describe } from "bun:test"
 import * as process from "node:process"
 
 import { testScan, type PathHandlerOptions } from "../testScan.test.js"
-import { Git, createGit } from "./git.js"
+import { createGit } from "./git.js"
 
 async function testGit(
 	done: () => void,

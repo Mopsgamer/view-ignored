@@ -3,7 +3,7 @@ import type { NestedDirectoryJSON } from "memfs"
 import { test, describe } from "bun:test"
 
 import { testScan, type PathHandlerOptions } from "../testScan.test.js"
-import { Git, createGit } from "./git.js"
+import { createGit } from "./git.js"
 
 async function testGit(
 	done: () => void,

@@ -1,6 +1,6 @@
 import { describe, test } from "bun:test"
 
-import { Git, createGit } from "./targets/git.js"
+import { createGit } from "./targets/git.js"
 import { testScan } from "./testScan.test.js"
 
 const dir = {
