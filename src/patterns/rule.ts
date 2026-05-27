@@ -225,6 +225,32 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 	const entry = options.entry
 	const matchCtx = { lower: options.lowerEntry }
 
+	if (src !== null && !("error" in src)) {
+		const rules = src.rules
+		const elen = rules.length
+		for (let i = 0; i < elen; i++) {
+			const rule = rules[i]!
+			const res = cacheTest(rule.compiled!, entry, matchCtx)
+			if (res === null) continue
+			if (res instanceof Error) {
+				return {
+					error: res,
+					ignored: false,
+					kind: RuleMatchKind.invalidExternal,
+					pattern: "",
+					source: src,
+				}
+			}
+
+			return {
+				ignored: rule.excludes,
+				kind: RuleMatchKind.external,
+				pattern: res.pattern,
+				source: src,
+			}
+		}
+	}
+
 	const internalRules = options.target.internalRules
 	for (let i = 0, len = internalRules.length; i < len; i++) {
 		const rule = internalRules[i]!
@@ -253,41 +279,6 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 
 	if ("error" in src) {
 		return { ...src, ignored: true, kind: RuleMatchKind.invalidSource }
-	}
-
-	const rules = src.rules
-	const elen = rules.length
-	if (elen === 0) {
-		return (
-			(src._noMatchCache as any) ??
-			(src._noMatchCache = {
-				ignored: src.inverted,
-				kind: RuleMatchKind.noMatch,
-				source: src,
-			})
-		)
-	}
-
-	for (let i = 0; i < elen; i++) {
-		const rule = rules[i]!
-		const res = cacheTest(rule.compiled!, entry, matchCtx)
-		if (res === null) continue
-		if (res instanceof Error) {
-			return {
-				error: res,
-				ignored: false,
-				kind: RuleMatchKind.invalidExternal,
-				pattern: "",
-				source: src,
-			}
-		}
-
-		return {
-			ignored: rule.excludes,
-			kind: RuleMatchKind.external,
-			pattern: res.pattern,
-			source: src,
-		}
 	}
 
 	return {

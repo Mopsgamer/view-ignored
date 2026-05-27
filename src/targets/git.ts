@@ -53,23 +53,35 @@ function parseGit(text: string) {
 	while (pos < text.length) {
 		let next = text.indexOf("\n", pos)
 		if (next === -1) next = text.length
-		let line = text.substring(pos, next).trim()
+		let end = next
+		while (end > pos && text.charCodeAt(end - 1) <= 32) end--
+		let start = pos
+		while (start < end && text.charCodeAt(start) <= 32) start++
 		pos = next + 1
-		if (!line || line[0] === "#" || line[0] === ";") continue
-		if (line[0] === "[") {
-			const end = line.lastIndexOf("]")
-			if (end === -1) continue
-			const s = line.substring(1, end).trim()
-			section = obj[s] = obj[s] || {}
-		} else if (section) {
-			const eq = line.indexOf("=")
-			if (eq === -1) continue
-			const key = line.substring(0, eq).trim().toLowerCase()
-			let val = line.substring(eq + 1).trim()
-			if (val[0] === '"' && val[val.length - 1] === '"') val = val.substring(1, val.length - 1)
-			if (key === "path") (section[key] = section[key] || []).push(val)
-			else section[key] = val
+		if (start >= end || text.charCodeAt(start) === 35 || text.charCodeAt(start) === 59) continue
+		if (text.charCodeAt(start) === 91) {
+			let sEnd = end
+			while (sEnd > start && text.charCodeAt(sEnd - 1) !== 93) sEnd--
+			if (sEnd > start) section = obj[text.substring(start + 1, sEnd - 1).trim()] ||= {}
+			continue
 		}
+		if (!section) continue
+		const eq = text.indexOf("=", start)
+		if (eq === -1 || eq >= end) continue
+		let kEnd = eq
+		while (kEnd > start && text.charCodeAt(kEnd - 1) <= 32) kEnd--
+		const key = text.substring(start, kEnd).toLowerCase()
+		let vStart = eq + 1
+		while (vStart < end && text.charCodeAt(vStart) <= 32) vStart++
+		let val = text.substring(vStart, end)
+		const cIdx = val.indexOf("#")
+		const sIdx = val.indexOf(";")
+		const commentIdx = cIdx !== -1 && sIdx !== -1 ? Math.min(cIdx, sIdx) : Math.max(cIdx, sIdx)
+		if (commentIdx !== -1) val = val.substring(0, commentIdx).trim()
+		if (val.charCodeAt(0) === 34 && val.charCodeAt(val.length - 1) === 34)
+			val = val.substring(1, val.length - 1).replace(/\\(.)/g, "$1")
+		if (key === "path") (section[key] ||= []).push(val)
+		else section[key] = val
 	}
 	return obj
 }
@@ -175,7 +187,13 @@ export const Git: Target = <Target>{
 			}
 			const m: any = {}
 			const next = () => {
-				if (!confs.length) return done(m, gDir, nCwd, fs, target, cb)
+				if (!confs.length) {
+					if (target === Git) {
+						// cb(new Error("Git target must be isolated. Use createGit() or similar."))
+						// return
+					}
+					return done(m, gDir, nCwd, fs, target, cb)
+				}
 				loadRec(fs, confs.shift()!, gDir, signal, (c) => {
 					if (c) merge(m, c)
 					next()
@@ -186,4 +204,13 @@ export const Git: Target = <Target>{
 	},
 	internalRules: [ruleCompile({ compiled: null, excludes: true, pattern: [".git", ".DS_Store"] })],
 	root: "/",
+}
+
+/**
+ * Creates a new Git target.
+ *
+ * @since 0.11.1
+ */
+export function createGit(): Target {
+	return { ...Git, internalRules: [...Git.internalRules] }
 }
