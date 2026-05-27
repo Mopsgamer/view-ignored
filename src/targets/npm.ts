@@ -91,6 +91,7 @@ const internal: Rule[] = [
  * @since 0.6.0
  */
 export const NPM: Target = <Target>{
+	configVersion: 1,
 	extractors,
 	ignores: ruleTest,
 	init({ fs, cwd }, cb) {

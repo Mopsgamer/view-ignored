@@ -93,6 +93,7 @@ const internal: Rule[] = [
  * @since 0.8.0
  */
 export const YarnClassic: Target = <Target>{
+	configVersion: 1,
 	extractors,
 	ignores: ruleTest,
 	init({ fs, cwd }, cb) {

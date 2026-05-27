@@ -4,7 +4,7 @@ import { test, describe } from "bun:test"
 import * as process from "node:process"
 
 import { testScan, type PathHandlerOptions } from "../testScan.test.js"
-import { Git as target } from "./git.js"
+import { Git, createGit } from "./git.js"
 
 async function testGit(
 	done: () => void,
@@ -12,6 +12,7 @@ async function testGit(
 	handler: ((o: PathHandlerOptions) => void | Promise<void>) | string[],
 ) {
 	try {
+		const target = createGit()
 		await testScan(done, tree, handler, { target })
 	} catch (error) {
 		throw new Error("Error while testing Git", { cause: error })
