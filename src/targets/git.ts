@@ -20,6 +20,8 @@ const env = typeof process !== "undefined" ? process.env : {}
 const HOME = (env.HOME || env.USERPROFILE || "").replaceAll("\\", "/")
 const XDG = (env.XDG_CONFIG_HOME || (HOME ? HOME + "/.config" : "")).replaceAll("\\", "/")
 
+const cache = new Map<string, { m: number; p: any }>()
+
 const resH = (p: string) => (p.startsWith("~/") ? join(HOME, p.substring(2)) : p)
 
 const resP = (base: string, p: string) => {
@@ -29,20 +31,12 @@ const resP = (base: string, p: string) => {
 		: join(base, p.startsWith("./") ? p.substring(2) : p)
 }
 
-function findKey(obj: any, key: string) {
-	if (!obj) return
-	const k = Object.keys(obj).find((k) => k.toLowerCase() === key.toLowerCase())
-	return k ? obj[k] : undefined
-}
-
 function merge(target: any, source: any) {
 	for (const k in source) {
 		const v = source[k]
-		const tk = Object.keys(target).find((i) => i.toLowerCase() === k.toLowerCase()) || k
 		if (v && typeof v === "object" && !Array.isArray(v)) {
-			if (!target[tk]) target[tk] = {}
-			merge(target[tk], v)
-		} else target[tk] = v
+			merge((target[k] ||= {}), v)
+		} else target[k] = v
 	}
 }
 
@@ -50,19 +44,22 @@ function parseGit(text: string) {
 	const obj: any = {}
 	let section: any = null
 	let pos = 0
-	while (pos < text.length) {
+	const len = text.length
+	while (pos < len) {
 		let next = text.indexOf("\n", pos)
-		if (next === -1) next = text.length
+		if (next === -1) next = len
 		let end = next
 		while (end > pos && text.charCodeAt(end - 1) <= 32) end--
 		let start = pos
 		while (start < end && text.charCodeAt(start) <= 32) start++
 		pos = next + 1
-		if (start >= end || text.charCodeAt(start) === 35 || text.charCodeAt(start) === 59) continue
-		if (text.charCodeAt(start) === 91) {
+		if (start >= end) continue
+		const first = text.charCodeAt(start)
+		if (first === 35 || first === 59) continue
+		if (first === 91) {
 			let sEnd = end
 			while (sEnd > start && text.charCodeAt(sEnd - 1) !== 93) sEnd--
-			if (sEnd > start) section = obj[text.substring(start + 1, sEnd - 1).trim()] ||= {}
+			if (sEnd > start) section = obj[text.substring(start + 1, sEnd - 1).trim().toLowerCase()] ||= {}
 			continue
 		}
 		if (!section) continue
@@ -78,8 +75,9 @@ function parseGit(text: string) {
 		const sIdx = val.indexOf(";")
 		const commentIdx = cIdx !== -1 && sIdx !== -1 ? Math.min(cIdx, sIdx) : Math.max(cIdx, sIdx)
 		if (commentIdx !== -1) val = val.substring(0, commentIdx).trim()
-		if (val.charCodeAt(0) === 34 && val.charCodeAt(val.length - 1) === 34)
+		if (val.charCodeAt(0) === 34 && val.charCodeAt(val.length - 1) === 34) {
 			val = val.substring(1, val.length - 1).replace(/\\(.)/g, "$1")
+		}
 		if (key === "path") (section[key] ||= []).push(val)
 		else section[key] = val
 	}
@@ -88,15 +86,20 @@ function parseGit(text: string) {
 
 function getInc(parsed: any, gitDir: string | null): string[] {
 	const res: string[] = []
-	const add = (p: any) => (Array.isArray(p) ? res.push(...p) : typeof p === "string" && res.push(p))
-	add(findKey(findKey(parsed, "include"), "path"))
+	const inc = parsed["include"]
+	if (inc && inc.path) {
+		if (Array.isArray(inc.path)) res.push(...inc.path)
+		else res.push(inc.path)
+	}
 	if (!gitDir) return res
 	const gD = gitDir.startsWith("/") ? gitDir.substring(1) : gitDir
 	for (const s in parsed) {
-		if (s.toLowerCase().startsWith('includeif "')) {
+		if (s.startsWith('includeif "')) {
 			const c = s.substring(11, s.length - 1)
 			if (c.startsWith("gitdir:") && patternCompile(resH(c.substring(7))).re.test(gD, {})) {
-				add(findKey(parsed[s], "path"))
+				const p = parsed[s].path
+				if (Array.isArray(p)) res.push(...p)
+				else if (p) res.push(p)
 			}
 		}
 	}
@@ -111,17 +114,21 @@ function loadRec(
 	cb: (c: any) => void,
 ) {
 	if (sig?.aborted) return cb(null)
+	const c = cache.get(path)
+	if (c && !gitDir) return cb(c.p)
+
 	fs.readFile(path, (err, res) => {
 		if (err) return cb(null)
 		const p = parseGit(res!.toString())
+		if (!gitDir) cache.set(path, { m: Date.now(), p })
 		const inc = getInc(p, gitDir)
 		if (!inc.length) return cb(p)
 		const dir = dirname(path)
 		let i = 0
 		const next = () => {
 			if (i >= inc.length) return cb(p)
-			loadRec(fs, resP(dir, inc[i++]!), gitDir, sig, (c) => {
-				if (c) merge(p, c)
+			loadRec(fs, resP(dir, inc[i++]!), gitDir, sig, (v) => {
+				if (v) merge(p, v)
 				next()
 			})
 		}
@@ -130,8 +137,9 @@ function loadRec(
 }
 
 function findGit(fs: FsAdapter, cur: string, cb: (g: string | null) => void) {
+	const g = join(cur, ".git")
 	fs.readdir(cur, (err, files) => {
-		if (!err && (files as string[]).includes(".git")) return cb(join(cur, ".git"))
+		if (!err && (files as string[]).includes(".git")) return cb(g)
 		const p = dirname(cur)
 		if (p === cur || !cur || cur === ".") return cb(null)
 		findGit(fs, p, cb)
@@ -146,7 +154,8 @@ function done(
 	target: Target,
 	cb: () => void,
 ) {
-	let ex = findKey(findKey(conf, "core"), "excludesfile")
+	const core = conf["core"]
+	let ex = core ? core["excludesfile"] : null
 	if (!ex) ex = XDG ? join(XDG, "git/ignore") : join(HOME, ".config/git/ignore")
 	const i: Rule = { compiled: null, excludes: false, pattern: [] }
 	const e: Rule = { compiled: null, excludes: true, pattern: [] }
@@ -178,6 +187,7 @@ export const Git: Target = <Target>{
 		const nCwd = unixify(cwd)
 		findGit(fs, nCwd, (gDir) => {
 			if (signal?.aborted) return cb()
+			const m: any = {}
 			const confs: string[] = []
 			if (HOME) confs.push(join(HOME, ".gitconfig"))
 			if (XDG) confs.push(join(XDG, "git/config"))
@@ -185,21 +195,16 @@ export const Git: Target = <Target>{
 				confs.push(join(gDir, "config"))
 				target.root = dirname(gDir)
 			}
-			const m: any = {}
-			const next = () => {
-				if (!confs.length) {
-					if (target === Git) {
-						// cb(new Error("Git target must be isolated. Use createGit() or similar."))
-						// return
-					}
-					return done(m, gDir, nCwd, fs, target, cb)
-				}
-				loadRec(fs, confs.shift()!, gDir, signal, (c) => {
-					if (c) merge(m, c)
-					next()
+
+			let pending = confs.length
+			if (!pending) return done(m, gDir, nCwd, fs, target, cb)
+
+			for (const c of confs) {
+				loadRec(fs, c, gDir, signal, (res) => {
+					if (res) merge(m, res)
+					if (--pending === 0) done(m, gDir, nCwd, fs, target, cb)
 				})
 			}
-			next()
 		})
 	},
 	internalRules: [ruleCompile({ compiled: null, excludes: true, pattern: [".git", ".DS_Store"] })],

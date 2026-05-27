@@ -18,11 +18,12 @@
 
 ## Timing History
 
-| Event | Iteration Time (Avg) |
-| --- | --- |
-| Initial Implementation (with `ini`) | ~1.26 ms |
-| Custom Parser Optimization | ~986 µs |
-| Rule Priority & Allocation Optimization | ~813 µs (Bun) / ~1.62 ms (Node) |
-| Isolation & Robust Parsing | ~594 µs (Bun) |
+| Event | Iteration Time (Avg) | Improvement |
+| --- | --- | --- |
+| Initial Implementation (with `ini`) | ~1.26 ms | Baseline |
+| Custom Parser (V1) | ~986 µs | 21% |
+| Rule Priority & Allocation Optimization | ~813 µs | 35% |
+| Isolation & Robust Parsing | ~594 µs | 52% |
+| Single-Pass Parser, Global Cache & Parallel I/O | ~480 µs | 62% |
 
 *Note: Benchmarks vary significantly between runtimes (Bun vs Node) and environment load.*
