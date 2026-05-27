@@ -102,7 +102,7 @@ export const Yarn: Target = <Target>{
 			const set = new Set<string>()
 
 			function normal(path: string): string {
-				return unixify(join(normalCwd, path)).substring(normalCwd.length)
+				return unixify(join(normalCwd, path)).slice(normalCwd.length)
 			}
 
 			if (typeof dist.main === "string") set.add(normal(dist.main))

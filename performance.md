@@ -25,5 +25,15 @@
 | Rule Priority & Allocation Optimization | ~813 µs | 35% |
 | Isolation & Robust Parsing | ~594 µs | 52% |
 | Single-Pass Parser, Global Cache & Parallel I/O | ~480 µs | 62% |
+| Single-Pass Parser V2, WeakMap Cache | ~150 µs | 88% |
+| Zero-Allocation Engine & Parser V3 | ~170 µs | 86% |
+| Path Normalization & Parser V4 | ~150 µs | 88% |
+
+## Scan Performance
+
+| Benchmark | Time (Avg) |
+| --- | --- |
+| scan (fast) | ~2.30 ms |
+| browserScan (fast) | ~2.19 ms |
 
 *Note: Benchmarks vary significantly between runtimes (Bun vs Node) and environment load.*

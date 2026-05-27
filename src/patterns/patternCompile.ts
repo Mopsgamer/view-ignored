@@ -49,8 +49,8 @@ export function patternCompile(
 	const isMatch = glob.matcher(lowerCleaned, { ...matcherOpts, nocase: false })
 
 	const re = {
-		test: (str: string, matchCtx: { lower?: string }) =>
-			test(str, matchCtx, isMatch, lowerCleaned, isRoot, nocase, matchBase),
+		test: (str: string, lower?: string) =>
+			test(str, lower, isMatch, lowerCleaned, isRoot, nocase, matchBase),
 	}
 
 	const cache = { pattern, patternContext: context, re }
@@ -60,14 +60,14 @@ export function patternCompile(
 
 function test(
 	str: string,
-	matchCtx: { lower?: string },
+	lower: string | undefined,
 	isMatch: (str: string) => boolean,
 	cleaned: string,
 	isRoot: boolean,
 	nocase: boolean,
 	matchBase: boolean,
 ): boolean {
-	const normStr = nocase ? (matchCtx.lower ?? (matchCtx.lower = str.toLowerCase())) : str
+	const normStr = nocase ? (lower || str.toLowerCase()) : str
 
 	if (normStr === cleaned || normStr.startsWith(cleaned + "/")) {
 		return true

@@ -128,7 +128,7 @@ export const Bun: Target = <Target>{
 			const set = new Set<string>()
 
 			function normal(path: string): string {
-				const result = unixify(join(normalCwd, path)).substring(normalCwd.length)
+				const result = unixify(join(normalCwd, path)).slice(normalCwd.length)
 				return result
 			}
 

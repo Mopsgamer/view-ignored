@@ -14,7 +14,7 @@ export type PatternCache = {
 	 *
 	 * @since 0.6.0
 	 */
-	re: { test(string: string, matchCtx: { lower?: string }): boolean }
+	re: { test(string: string, lower?: string): boolean }
 	/**
 	 * The original pattern string this cache was compiled from.
 	 *
@@ -34,12 +34,8 @@ export type PatternCache = {
  *
  * @since 0.6.0
  */
-export function patternCacheTest(
-	cache: PatternCache,
-	path: string,
-	matchCtx: { lower?: string } = {},
-): boolean {
-	return cache.re.test(path, matchCtx)
+export function patternCacheTest(cache: PatternCache, path: string, lower?: string): boolean {
+	return cache.re.test(path, lower)
 }
 
 /**

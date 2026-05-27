@@ -20,15 +20,26 @@ const env = typeof process !== "undefined" ? process.env : {}
 const HOME = (env.HOME || env.USERPROFILE || "").replaceAll("\\", "/")
 const XDG = (env.XDG_CONFIG_HOME || (HOME ? HOME + "/.config" : "")).replaceAll("\\", "/")
 
-const cache = new Map<string, { m: number; p: any }>()
+const confCache = new WeakMap<FsAdapter, Map<string, any>>()
+const gitDirCache = new WeakMap<FsAdapter, Map<string, string | null>>()
+const patternCache = new Map<string, any>()
+const excludesCache = new WeakMap<FsAdapter, Map<string, Rule[]>>()
 
-const resH = (p: string) => (p.startsWith("~/") ? join(HOME, p.substring(2)) : p)
+const defIntRules = [ruleCompile({ compiled: null, excludes: true, pattern: [".git", ".DS_Store"] })]
+
+const getCache = <K, V>(wm: WeakMap<FsAdapter, Map<K, V>>, fs: FsAdapter) => {
+	let m = wm.get(fs)
+	if (!m) wm.set(fs, (m = new Map()))
+	return m
+}
+
+const resH = (p: string) =>
+	p.charCodeAt(0) === 126 && p.charCodeAt(1) === 47 ? join(HOME, p.slice(2)) : p
 
 const resP = (base: string, p: string) => {
 	p = resH(p)
-	return p.startsWith("/") || p.includes(":")
-		? p
-		: join(base, p.startsWith("./") ? p.substring(2) : p)
+	const c0 = p.charCodeAt(0)
+	return c0 === 47 || p.includes(":") ? p : join(base, c0 === 46 && p.charCodeAt(1) === 47 ? p.slice(2) : p)
 }
 
 function merge(target: any, source: any) {
@@ -43,40 +54,51 @@ function merge(target: any, source: any) {
 function parseGit(text: string) {
 	const obj: any = {}
 	let section: any = null
-	let pos = 0
+	let i = 0
 	const len = text.length
-	while (pos < len) {
-		let next = text.indexOf("\n", pos)
-		if (next === -1) next = len
-		let end = next
-		while (end > pos && text.charCodeAt(end - 1) <= 32) end--
-		let start = pos
-		while (start < end && text.charCodeAt(start) <= 32) start++
-		pos = next + 1
-		if (start >= end) continue
-		const first = text.charCodeAt(start)
-		if (first === 35 || first === 59) continue
-		if (first === 91) {
-			let sEnd = end
-			while (sEnd > start && text.charCodeAt(sEnd - 1) !== 93) sEnd--
-			if (sEnd > start) section = obj[text.substring(start + 1, sEnd - 1).trim().toLowerCase()] ||= {}
+	while (i < len) {
+		const c = text.charCodeAt(i)
+		if (c <= 32) {
+			i++
 			continue
 		}
-		if (!section) continue
-		const eq = text.indexOf("=", start)
-		if (eq === -1 || eq >= end) continue
-		let kEnd = eq
-		while (kEnd > start && text.charCodeAt(kEnd - 1) <= 32) kEnd--
-		const key = text.substring(start, kEnd).toLowerCase()
-		let vStart = eq + 1
-		while (vStart < end && text.charCodeAt(vStart) <= 32) vStart++
-		let val = text.substring(vStart, end)
-		const cIdx = val.indexOf("#")
-		const sIdx = val.indexOf(";")
-		const commentIdx = cIdx !== -1 && sIdx !== -1 ? Math.min(cIdx, sIdx) : Math.max(cIdx, sIdx)
-		if (commentIdx !== -1) val = val.substring(0, commentIdx).trim()
+		if (c === 35 || c === 59) {
+			while (++i < len && text.charCodeAt(i) !== 10);
+			continue
+		}
+		if (c === 91) {
+			let s = ++i
+			while (i < len && text.charCodeAt(i) !== 93) i++
+			let e = i
+			while (s < e && text.charCodeAt(s) <= 32) s++
+			while (e > s && text.charCodeAt(e - 1) <= 32) e--
+			section = obj[text.slice(s, e).toLowerCase()] ||= {}
+			while (++i < len && text.charCodeAt(i) !== 10);
+			continue
+		}
+		if (!section) {
+			while (++i < len && text.charCodeAt(i) !== 10);
+			continue
+		}
+		const kS = i
+		while (i < len && text.charCodeAt(i) !== 61 && text.charCodeAt(i) !== 10) i++
+		if (i >= len || text.charCodeAt(i) === 10) {
+			i++
+			continue
+		}
+		let kE = i
+		while (kE > kS && text.charCodeAt(kE - 1) <= 32) kE--
+		const key = text.slice(kS, kE).toLowerCase()
+		i++
+		while (i < len && text.charCodeAt(i) <= 32 && text.charCodeAt(i) !== 10) i++
+		const vS = i
+		while (i < len && text.charCodeAt(i) !== 10 && text.charCodeAt(i) !== 35 && text.charCodeAt(i) !== 59) i++
+		let vE = i
+		while (vE > vS && text.charCodeAt(vE - 1) <= 32) vE--
+		let val = text.slice(vS, vE)
 		if (val.charCodeAt(0) === 34 && val.charCodeAt(val.length - 1) === 34) {
-			val = val.substring(1, val.length - 1).replace(/\\(.)/g, "$1")
+			val = val.slice(1, -1)
+			if (val.indexOf("\\") !== -1) val = val.replace(/\\(.)/g, "$1")
 		}
 		if (key === "path") (section[key] ||= []).push(val)
 		else section[key] = val
@@ -87,21 +109,23 @@ function parseGit(text: string) {
 function getInc(parsed: any, gitDir: string | null): string[] {
 	const res: string[] = []
 	const inc = parsed["include"]
-	if (inc && inc.path) {
+	if (inc?.path) {
 		if (Array.isArray(inc.path)) res.push(...inc.path)
 		else res.push(inc.path)
 	}
 	if (!gitDir) return res
-	const gD = gitDir.startsWith("/") ? gitDir.substring(1) : gitDir
+	const gD = gitDir.charCodeAt(0) === 47 ? gitDir.slice(1) : gitDir
 	for (const s in parsed) {
-		if (s.startsWith('includeif "')) {
-			const c = s.substring(11, s.length - 1)
-			if (c.startsWith("gitdir:") && patternCompile(resH(c.substring(7))).re.test(gD, {})) {
-				const p = parsed[s].path
-				if (Array.isArray(p)) res.push(...p)
-				else if (p) res.push(p)
-			}
-		}
+		if (!s.startsWith('includeif "')) continue
+		const c = s.slice(11, -1)
+		if (!c.startsWith("gitdir:")) continue
+		const pat = resH(c.slice(7))
+		let compiled = patternCache.get(pat)
+		if (!compiled) patternCache.set(pat, (compiled = patternCompile(pat)))
+		if (!compiled.re.test(gD, {})) continue
+		const p = parsed[s].path
+		if (Array.isArray(p)) res.push(...p)
+		else if (p) res.push(p)
 	}
 	return res
 }
@@ -114,35 +138,51 @@ function loadRec(
 	cb: (c: any) => void,
 ) {
 	if (sig?.aborted) return cb(null)
+	const cache = getCache(confCache, fs)
 	const c = cache.get(path)
-	if (c && !gitDir) return cb(c.p)
+	if (c && !gitDir) return cb(c)
 
 	fs.readFile(path, (err, res) => {
 		if (err) return cb(null)
 		const p = parseGit(res!.toString())
-		if (!gitDir) cache.set(path, { m: Date.now(), p })
+		if (!gitDir) cache.set(path, p)
 		const inc = getInc(p, gitDir)
-		if (!inc.length) return cb(p)
+		let len = inc.length
+		if (!len) return cb(p)
 		const dir = dirname(path)
-		let i = 0
-		const next = () => {
-			if (i >= inc.length) return cb(p)
-			loadRec(fs, resP(dir, inc[i++]!), gitDir, sig, (v) => {
-				if (v) merge(p, v)
-				next()
+		const vals = new Array(len)
+		let pending = len
+		for (let i = 0; i < len; i++) {
+			loadRec(fs, resP(dir, inc[i]!), gitDir, sig, (v) => {
+				vals[i] = v
+				if (--pending === 0) {
+					for (const v of vals) if (v) merge(p, v)
+					cb(p)
+				}
 			})
 		}
-		next()
 	})
 }
 
 function findGit(fs: FsAdapter, cur: string, cb: (g: string | null) => void) {
-	const g = join(cur, ".git")
+	const cache = getCache(gitDirCache, fs)
+	const c = cache.get(cur)
+	if (c !== undefined) return cb(c)
 	fs.readdir(cur, (err, files) => {
-		if (!err && (files as string[]).includes(".git")) return cb(g)
+		const g = !err && (files as string[]).includes(".git") ? join(cur, ".git") : null
+		if (g) {
+			cache.set(cur, g)
+			return cb(g)
+		}
 		const p = dirname(cur)
-		if (p === cur || !cur || cur === ".") return cb(null)
-		findGit(fs, p, cb)
+		if (p === cur || !cur || cur === ".") {
+			cache.set(cur, null)
+			return cb(null)
+		}
+		findGit(fs, p, (res) => {
+			cache.set(cur, res)
+			cb(res)
+		})
 	})
 }
 
@@ -157,23 +197,29 @@ function done(
 	const core = conf["core"]
 	let ex = core ? core["excludesfile"] : null
 	if (!ex) ex = XDG ? join(XDG, "git/ignore") : join(HOME, ".config/git/ignore")
+	const p = resP(gDir || cwd, ex)
+	const cache = getCache(excludesCache, fs)
+	const cached = cache.get(p)
+	if (cached) {
+		target.internalRules = [...defIntRules, ...cached]
+		return cb()
+	}
+
 	const i: Rule = { compiled: null, excludes: false, pattern: [] }
 	const e: Rule = { compiled: null, excludes: true, pattern: [] }
-	const finish = () => {
-		target.internalRules = [
-			ruleCompile({ compiled: null, excludes: true, pattern: [".git", ".DS_Store"] }),
-			ruleCompile(i),
-			ruleCompile(e),
-		]
-		cb()
-	}
-	fs.readFile(resP(gDir || cwd, ex), (err, res) => {
+	fs.readFile(p, (err, res) => {
 		if (!err && res) {
 			const d: any = { rules: [] }
 			extractGitignore(d, res)
-			for (const r of d.rules) (r.excludes ? e : i).pattern.push(...r.pattern)
+			const rs = d.rules
+			for (let idx = 0, rl = rs.length; idx < rl; idx++) {
+				const r = rs[idx]!; (r.excludes ? e : i).pattern.push(...r.pattern)
+			}
 		}
-		finish()
+		const rules = [ruleCompile(i), ruleCompile(e)]
+		cache.set(p, rules)
+		target.internalRules = [...defIntRules, ...rules]
+		cb()
 	})
 }
 
@@ -196,18 +242,25 @@ export const Git: Target = <Target>{
 				target.root = dirname(gDir)
 			}
 
-			let pending = confs.length
-			if (!pending) return done(m, gDir, nCwd, fs, target, cb)
+			let len = confs.length
+			if (!len) return done(m, gDir, nCwd, fs, target, cb)
 
-			for (const c of confs) {
-				loadRec(fs, c, gDir, signal, (res) => {
-					if (res) merge(m, res)
-					if (--pending === 0) done(m, gDir, nCwd, fs, target, cb)
+			const vals = new Array(len)
+			let pending = len
+			for (let i = 0; i < len; i++) {
+				loadRec(fs, confs[i]!, gDir, signal, (res) => {
+					vals[i] = res
+					if (--pending === 0) {
+						for (let j = 0; j < len; j++) {
+							const v = vals[j]; if (v) merge(m, v)
+						}
+						done(m, gDir, nCwd, fs, target, cb)
+					}
 				})
 			}
 		})
 	},
-	internalRules: [ruleCompile({ compiled: null, excludes: true, pattern: [".git", ".DS_Store"] })],
+	internalRules: defIntRules,
 	root: "/",
 }
 

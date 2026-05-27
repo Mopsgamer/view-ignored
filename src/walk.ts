@@ -76,7 +76,7 @@ export function walkIncludes(
 	if (fastDepth && depth > maxDepth) {
 		return target.ignores(testOptions, (err, match) => {
 			if (err) return cb(err, null as any)
-			if (invert) match.ignored = !match.ignored
+			if (invert) match = { ...match, ignored: !match.ignored }
 			const result: WalkResult = {
 				depth,
 				includeParent: false,
@@ -111,7 +111,7 @@ export function walkIncludes(
 	target.ignores(testOptions, (err, match) => {
 		if (err) return cb(err, null as any)
 
-		if (invert) match.ignored = !match.ignored
+		if (invert) match = { ...match, ignored: !match.ignored }
 
 		const result: WalkResult = {
 			depth,
