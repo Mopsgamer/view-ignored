@@ -1,7 +1,7 @@
 import { describe, test, expect } from "bun:test"
 
 import { patternCompile } from "./patternCompile.js"
-import { patternCacheTest } from "./patternList.js"
+import { patternCacheTest, MatchMode } from "./patternList.js"
 
 describe(".gitignore", () => {
 	test("stringCompile .git .git/message", () => {
@@ -12,7 +12,11 @@ describe(".gitignore", () => {
 	})
 	test("stringCompile .git .Git/message nocase true", () => {
 		expect(
-			patternCacheTest(patternCompile(".git", undefined, { nocase: true }), ".Git/message"),
+			patternCacheTest(
+				patternCompile(".git", undefined, { nocase: true }),
+				".git/message",
+				MatchMode.unsensitive,
+			),
 		).toBeTrue()
 	})
 	test("stringCompile .git .github/message", () => {
@@ -70,5 +74,31 @@ describe(".gitignore", () => {
 	})
 	test("stringCompile .git/ .github", () => {
 		expect(patternCacheTest(patternCompile(".git/"), ".github")).toBeFalse()
+	})
+
+	test("wildmatch mode (noextglob)", () => {
+		const cache = patternCompile("+(a|b)")
+		// In normal mode, micromatch handles extglobs
+		expect(patternCacheTest(cache, "a")).toBeTrue()
+		// In wildmatch mode, noextglob is true, so it shouldn't match "a" as an extglob
+		expect(patternCacheTest(cache, "a", MatchMode.wildmatch)).toBeFalse()
+		// But it should match literal "+(a|b)"
+		expect(patternCacheTest(cache, "+(a|b)", MatchMode.wildmatch)).toBeTrue()
+	})
+
+	test("wildmatch mode case sensitivity", () => {
+		const cache = patternCompile("A")
+		expect(patternCacheTest(cache, "a", MatchMode.wildmatch)).toBeFalse()
+		expect(patternCacheTest(cache, "A", MatchMode.wildmatch)).toBeTrue()
+
+		const cacheI = patternCompile("A", undefined, { nocase: true })
+		expect(patternCacheTest(cacheI, "a", MatchMode.wildmatch)).toBeTrue()
+		expect(patternCacheTest(cacheI, "A", MatchMode.wildmatch)).toBeTrue()
+	})
+
+	test("unsensitive mode", () => {
+		const cache = patternCompile("a", undefined, { nocase: true })
+		expect(patternCacheTest(cache, "A", MatchMode.unsensitive)).toBeFalse() // "A" is not lowercased
+		expect(patternCacheTest(cache, "a", MatchMode.unsensitive)).toBeTrue()
 	})
 })

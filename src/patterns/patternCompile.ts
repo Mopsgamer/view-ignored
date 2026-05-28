@@ -1,6 +1,6 @@
 import glob from "micromatch"
 
-import type { PatternCache, PatternList } from "./patternList.js"
+import { type MatchMode, type PatternCache, type PatternList } from "./patternList.js"
 
 /**
  * @since 0.8.0
@@ -48,9 +48,22 @@ export function patternCompile(
 
 	const isMatch = glob.matcher(lowerCleaned, { ...matcherOpts, nocase: false })
 
+	let wildMatch: ((str: string) => boolean) | null = null
+
 	const re = {
-		test: (str: string, lower?: string) =>
-			test(str, lower, isMatch, lowerCleaned, isRoot, nocase, matchBase),
+		nocase,
+		test: (str: string, mode?: MatchMode) => {
+			if (mode === 2) {
+				// MatchMode.wildmatch
+				wildMatch ||= glob.matcher(lowerCleaned, {
+					...matcherOpts,
+					nocase: false,
+					noextglob: true,
+				})
+				return test(str, undefined, wildMatch, lowerCleaned, isRoot, nocase, matchBase, mode)
+			}
+			return test(str, undefined, isMatch, lowerCleaned, isRoot, nocase, matchBase, mode)
+		},
 	}
 
 	const cache = { pattern, patternContext: context, re }
@@ -66,8 +79,9 @@ function test(
 	isRoot: boolean,
 	nocase: boolean,
 	matchBase: boolean,
+	mode?: MatchMode,
 ): boolean {
-	const normStr = nocase ? lower || str.toLowerCase() : str
+	const normStr = nocase ? (mode === 1 ? str : lower || str.toLowerCase()) : str
 
 	if (normStr === cleaned || normStr.startsWith(cleaned + "/")) {
 		return true

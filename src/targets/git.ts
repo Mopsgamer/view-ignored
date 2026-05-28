@@ -137,11 +137,3 @@ export const Git: Target = <Target>{
 	root: "/",
 }
 
-/**
- * Creates a new Git target.
- *
- * @since 0.11.1
- */
-export function createGit(): Target {
-	return { ...Git, internalRules: [...Git.internalRules] }
-}

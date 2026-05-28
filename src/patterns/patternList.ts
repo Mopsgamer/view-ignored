@@ -1,6 +1,15 @@
 import { patternCompile, type PatternCompileOptions } from "./patternCompile.js"
 
 /**
+ * @since 0.11.2
+ */
+export const enum MatchMode {
+	normal = 0,
+	unsensitive = 1,
+	wildmatch = 2,
+}
+
+/**
  * Compiled pattern.
  *
  * @see {@link patternCompile}
@@ -14,7 +23,7 @@ export type PatternCache = {
 	 *
 	 * @since 0.6.0
 	 */
-	re: { test(string: string, lower?: string): boolean }
+	re: { test(string: string, mode?: MatchMode): boolean; nocase?: boolean }
 	/**
 	 * The original pattern string this cache was compiled from.
 	 *
@@ -34,8 +43,8 @@ export type PatternCache = {
  *
  * @since 0.6.0
  */
-export function patternCacheTest(cache: PatternCache, path: string, lower?: string): boolean {
-	return cache.re.test(path, lower)
+export function patternCacheTest(cache: PatternCache, path: string, mode?: MatchMode): boolean {
+	return cache.re.test(path, mode)
 }
 
 /**
