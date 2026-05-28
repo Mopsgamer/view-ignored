@@ -1,10 +1,9 @@
 import walk from "ignore-walk"
-import { run, bench, summary, barplot } from "mitata"
+import { barplot, bench, run, summary } from "mitata"
 import * as fs from "node:fs"
 
 import { scan as browserScan } from "../out/browser.js"
-import { scan } from "../out/index.js"
-import { ScanFlags } from "../out/index.js"
+import { ScanFlags, scan } from "../out/index.js"
 import { NPM as target } from "../out/targets/index.js"
 
 const igw = process.argv.includes("--igw")

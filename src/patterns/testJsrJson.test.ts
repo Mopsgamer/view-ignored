@@ -1,6 +1,6 @@
-import { describe, test, expect } from "bun:test"
-
 import type { Source } from "./source.js"
+
+import { describe, expect, test } from "bun:test"
 
 import { makeJsrJsonExtractor } from "./jsrjson.js"
 

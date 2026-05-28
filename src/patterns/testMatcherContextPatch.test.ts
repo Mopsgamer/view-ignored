@@ -1,17 +1,21 @@
-import { describe, test, expect } from "bun:test"
-import { Volume, type NestedDirectoryJSON } from "memfs"
+import type { NestedDirectoryJSON } from "memfs"
 
+import type { ScanOptions } from "../scan.js"
 import type { MatcherContext, Total } from "./matcherContext.js"
 import type { Resource } from "./resource.js"
+import type { RuleMatch } from "./rule.js"
 import type { Source } from "./source.js"
 
-import { scan, type ScanOptions, ScanFlags } from "../scan.js"
+import { describe, expect, test } from "bun:test"
+import { Volume } from "memfs"
+
+import { ScanFlags, scan } from "../scan.js"
 import { NPM as target } from "../targets/npm.js"
 import { createAdapter } from "../testScan.test.js"
 import { unixify } from "../unixify.js"
 import { matcherContextAddPath, matcherContextRemovePath } from "./matcherContextPatch.js"
 import { patternCompile } from "./patternCompile.js"
-import { RuleMatchKind, type RuleMatch } from "./rule.js"
+import { RuleMatchKind } from "./rule.js"
 
 const fsJson = {
 	".gitignore": "node_modules\nout\ndist\n*.tgz\n*.cpuprofile",

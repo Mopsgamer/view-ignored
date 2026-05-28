@@ -1,4 +1,4 @@
-import type { ScanOptions, FsAdapter } from "./types.js"
+import type { FsAdapter, ScanOptions } from "./types.js"
 
 import { MatcherStream } from "./patterns/matcherStream.js"
 export type * from "./types.js"

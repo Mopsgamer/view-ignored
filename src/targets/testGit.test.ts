@@ -1,8 +1,10 @@
 import type { NestedDirectoryJSON } from "memfs"
 
-import { test, describe } from "bun:test"
+import type { PathHandlerOptions } from "../testScan.test.js"
 
-import { testScan, type PathHandlerOptions } from "../testScan.test.js"
+import { describe, test } from "bun:test"
+
+import { testScan } from "../testScan.test.js"
 import { Git } from "./git.js"
 
 async function testGit(

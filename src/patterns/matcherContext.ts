@@ -1,4 +1,4 @@
-import type { Resource, InvalidSource } from "./resource.js"
+import type { InvalidSource, Resource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"
 
 /**

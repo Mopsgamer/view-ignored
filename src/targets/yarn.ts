@@ -1,16 +1,16 @@
+import type { Extractor, Rule } from "../patterns/index.js"
+import type { PackageJson } from "./npmManifest.js"
 import type { Target } from "./target.js"
 
 import {
-	type Extractor,
-	ruleTest,
-	type Rule,
-	ruleCompile,
-	makePackageJsonExtractor,
-	makeGitignoreExtractor,
 	MatchMode,
+	makeGitignoreExtractor,
+	makePackageJsonExtractor,
+	ruleCompile,
+	ruleTest,
 } from "../patterns/index.js"
 import { join, unixify } from "../unixify.js"
-import { npmManifestParse, type PackageJson } from "./npmManifest.js"
+import { npmManifestParse } from "./npmManifest.js"
 
 const extractors: Extractor[] = [
 	makePackageJsonExtractor("package.json", MatchMode.unsensitive),

@@ -1,12 +1,11 @@
+import type { Extractor, Rule } from "../patterns/index.js"
 import type { Target } from "./target.js"
 
 import {
-	type Extractor,
-	ruleTest,
-	type Rule,
-	ruleCompile,
 	makeJsrJsonExtractor,
 	makeJsrJsoncExtractor,
+	ruleCompile,
+	ruleTest,
 } from "../patterns/index.js"
 import { unixify } from "../unixify.js"
 import { jsrManifestParse } from "./jsrManifest.js"

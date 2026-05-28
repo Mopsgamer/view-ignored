@@ -1,4 +1,4 @@
-import { run, bench, summary, barplot } from "mitata"
+import { barplot, bench, run, summary } from "mitata"
 import * as fs from "node:fs"
 
 import { createGit } from "../out/targets/index.js"

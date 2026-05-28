@@ -2,6 +2,7 @@
 	"$schema": "./node_modules/oxlint/configuration_schema.json",
 	"plugins": ["import", "oxc", "unicorn", "jsdoc", "eslint"],
 	"rules": {
+		"import/no-duplicates": "error",
 		"import/no-cycle": "error",
 		"sort-keys": ["error", "asc", { "natural": true }],
 		"oxc/no-map-spread": "error",

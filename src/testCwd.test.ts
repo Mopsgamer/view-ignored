@@ -1,7 +1,9 @@
+import type { PathHandlerOptions } from "./testScan.test.js"
+
 import { describe, test } from "bun:test"
 
 import { Git as target } from "./targets/git.js"
-import { testScan, type PathHandlerOptions } from "./testScan.test.js"
+import { testScan } from "./testScan.test.js"
 
 function testCwd(
 	done: () => void,

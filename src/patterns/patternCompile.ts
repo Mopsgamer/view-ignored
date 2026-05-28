@@ -1,6 +1,8 @@
+import type { PatternCache, PatternList } from "./patternMode.js"
+
 import glob from "micromatch"
 
-import { MatchMode, type PatternCache, type PatternList } from "./patternMode.js"
+import { MatchMode } from "./patternMode.js"
 
 /**
  * Compiles the {@link PatternList}.

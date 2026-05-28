@@ -3,9 +3,11 @@ import type { Dirent } from "node:fs"
 import type { MatcherContext, Total } from "./patterns/matcherContext.js"
 import type { MatcherStream } from "./patterns/matcherStream.js"
 import type { Resource } from "./patterns/resource.js"
+import type { RuleMatch } from "./patterns/rule.js"
+import type { ScanOptions } from "./types.js"
 
-import { isRuleMatchInvalid, type RuleMatch } from "./patterns/rule.js"
-import { ScanFlags, type ScanOptions } from "./types.js"
+import { isRuleMatchInvalid } from "./patterns/rule.js"
+import { ScanFlags } from "./types.js"
 
 export type WalkOptions = {
 	relPath: string

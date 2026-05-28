@@ -1,12 +1,14 @@
+import type { FsAdapter, ScanOptions } from "../types.js"
+import type { WalkResult } from "../walk.js"
 import type { MatcherContext, Total } from "./matcherContext.js"
-import type { EventMap, EventListener, EventListenerObject } from "./matcherStreamTypes.js"
+import type { EventListener, EventListenerObject, EventMap } from "./matcherStreamTypes.js"
 import type { Resource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"
 
 import { scanParallel } from "../scanParallel.js"
-import { ScanFlags, type ScanOptions, type FsAdapter } from "../types.js"
+import { ScanFlags } from "../types.js"
 import { unixify } from "../unixify.js"
-import { walkPatchResult, walkPatchTotal, propagateTotals, type WalkResult } from "../walk.js"
+import { propagateTotals, walkPatchResult, walkPatchTotal } from "../walk.js"
 
 export type { EntryInfo, EntryListener, EndListener, EventMap } from "./matcherStreamTypes.js"
 

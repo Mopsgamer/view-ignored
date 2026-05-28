@@ -1,9 +1,11 @@
-import { expect } from "bun:test"
-import { createFsFromVolume, Volume, type NestedDirectoryJSON } from "memfs"
-import * as process from "node:process"
+import type { NestedDirectoryJSON } from "memfs"
 
 import type { MatcherContext } from "./patterns/matcherContext.js"
-import type { ScanOptions, FsAdapter } from "./types.js"
+import type { FsAdapter, ScanOptions } from "./types.js"
+
+import { expect } from "bun:test"
+import { Volume, createFsFromVolume } from "memfs"
+import * as process from "node:process"
 
 import { scan } from "./browser_scan.js"
 import { scanStream } from "./browser_stream.js"

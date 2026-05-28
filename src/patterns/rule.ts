@@ -1,7 +1,8 @@
 import type { PatternFinderOptions } from "./extractor.js"
+import type { PatternCache, PatternList } from "./patternMode.js"
 import type { Source } from "./source.js"
 
-import { patternCacheTest, type PatternList, type PatternCache, MatchMode } from "./patternMode.js"
+import { MatchMode, patternCacheTest } from "./patternMode.js"
 
 /**
  * Represents a set of include and exclude patterns.

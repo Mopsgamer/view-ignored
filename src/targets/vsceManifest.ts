@@ -1,4 +1,6 @@
-import { npmManifestParse, type PackageJson } from "./npmManifest.js"
+import type { PackageJson } from "./npmManifest.js"
+
+import { npmManifestParse } from "./npmManifest.js"
 
 export interface VsceManifest extends PackageJson {
 	engines: {

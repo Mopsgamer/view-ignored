@@ -1,6 +1,6 @@
 import type { FsAdapter } from "../types.js"
 
-import { patternCompile, MatchMode } from "../patterns/index.js"
+import { MatchMode, patternCompile } from "../patterns/index.js"
 import { dirname, join } from "../unixify.js"
 
 const env = typeof process !== "undefined" ? process.env : {}

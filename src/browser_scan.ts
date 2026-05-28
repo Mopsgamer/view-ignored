@@ -1,5 +1,5 @@
 import type { MatcherContext } from "./patterns/matcherContext.js"
-import type { ScanOptions, FsAdapter } from "./types.js"
+import type { FsAdapter, ScanOptions } from "./types.js"
 
 import { scanCb } from "./scanCb.js"
 export { scanCb } from "./scanCb.js"

@@ -1,7 +1,7 @@
-import stripJsonComments from "strip-json-comments"
-
 import type { Extractor, ExtractorFn } from "./extractor.js"
 import type { Rule } from "./rule.js"
+
+import stripJsonComments from "strip-json-comments"
 
 import { MatchMode } from "./patternMode.js"
 import { ruleCompile } from "./resolveSources.js"

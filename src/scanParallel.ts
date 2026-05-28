@@ -1,10 +1,11 @@
 import type { MatcherStream } from "./patterns/matcherStream.js"
-import type { Resource, InvalidSource } from "./patterns/resource.js"
+import type { InvalidSource, Resource } from "./patterns/resource.js"
 import type { ScanOptions } from "./types.js"
+import type { WalkResult, WalkTotal } from "./walk.js"
 
 import { resolveSources } from "./patterns/resolveSources.js"
 import { join, unixify } from "./unixify.js"
-import { walkIncludes, type WalkResult, type WalkTotal } from "./walk.js"
+import { walkIncludes } from "./walk.js"
 
 export interface ScanParallelOptions {
 	scanOptions: Required<ScanOptions>

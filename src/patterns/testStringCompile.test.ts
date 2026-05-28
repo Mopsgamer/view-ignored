@@ -1,7 +1,7 @@
-import { describe, test, expect } from "bun:test"
+import { describe, expect, test } from "bun:test"
 
 import { patternCompile } from "./patternCompile.js"
-import { patternCacheTest, MatchMode } from "./patternMode.js"
+import { MatchMode, patternCacheTest } from "./patternMode.js"
 
 describe(".gitignore", () => {
 	test("stringCompile .git .git/message", () => {

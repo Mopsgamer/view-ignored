@@ -1,12 +1,11 @@
+import type { Extractor, Rule } from "../patterns/index.js"
 import type { Target } from "./target.js"
 
 import {
-	type Extractor,
-	ruleTest,
-	type Rule,
-	ruleCompile,
-	makePackageJsonExtractor,
 	makeGitignoreExtractor,
+	makePackageJsonExtractor,
+	ruleCompile,
+	ruleTest,
 } from "../patterns/index.js"
 import { unixify } from "../unixify.js"
 import { npmManifestParse } from "./npmManifest.js"

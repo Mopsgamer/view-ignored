@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test"
+import { describe, expect, test } from "bun:test"
 
 import { RuleMatchKind } from "./patterns/rule.js"
 import { Git as target } from "./targets/git.js"

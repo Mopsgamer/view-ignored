@@ -1,9 +1,11 @@
 import type { NestedDirectoryJSON } from "memfs"
 
-import { describe, test, expect } from "bun:test"
+import type { PathHandlerOptions } from "../testScan.test.js"
+
+import { describe, expect, test } from "bun:test"
 
 import { RuleMatchKind } from "../patterns/rule.js"
-import { testScan, type PathHandlerOptions } from "../testScan.test.js"
+import { testScan } from "../testScan.test.js"
 import { Yarn as target } from "./yarn.js"
 
 async function testYarn(

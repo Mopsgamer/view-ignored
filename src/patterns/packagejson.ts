@@ -1,7 +1,8 @@
+import type { PackageJson } from "../targets/npmManifest.js"
 import type { Extractor, ExtractorFn } from "./extractor.js"
 import type { Rule } from "./rule.js"
 
-import { npmManifestParse, type PackageJson } from "../targets/npmManifest.js"
+import { npmManifestParse } from "../targets/npmManifest.js"
 import { MatchMode } from "./patternMode.js"
 import { ruleCompile } from "./resolveSources.js"
 import { resolveNegatable } from "./source.js"

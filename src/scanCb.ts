@@ -1,11 +1,13 @@
 import type { MatcherContext, Total } from "./patterns/matcherContext.js"
 import type { Resource } from "./patterns/resource.js"
 import type { RuleMatch } from "./patterns/rule.js"
+import type { FsAdapter, ScanOptions } from "./types.js"
+import type { WalkResult } from "./walk.js"
 
 import { scanParallel } from "./scanParallel.js"
-import { ScanFlags, type ScanOptions, type FsAdapter } from "./types.js"
+import { ScanFlags } from "./types.js"
 import { unixify } from "./unixify.js"
-import { walkPatchResult, walkPatchTotal, propagateTotals, type WalkResult } from "./walk.js"
+import { propagateTotals, walkPatchResult, walkPatchTotal } from "./walk.js"
 
 /**
  * Scan the directory for included files based on the provided targets.
