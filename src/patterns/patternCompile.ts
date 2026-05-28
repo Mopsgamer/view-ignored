@@ -1,19 +1,25 @@
 import glob from "micromatch"
 
-import type { PatternCache, PatternList } from "./patternList.js"
+import { MatchMode, type PatternCache, type PatternList } from "./patternMode.js"
 
 /**
- * @since 0.8.0
+ * Compiles the {@link PatternList}.
+ *
+ * @see {@link patternCompile}
+ * @see {@link ruleCompile}
+ *
+ * @since 0.6.0
  */
-export type PatternCompileOptions = {
-	/**
-	 * Disables case sensitivity.
-	 *
-	 * @default false
-	 *
-	 * @since 0.8.0
-	 */
-	nocase?: boolean
+export function patternListCompile(
+	list: PatternList,
+	mode: MatchMode = MatchMode.normal,
+): PatternCache[] {
+	const len = list.length
+	const res = Array.from<PatternCache>({ length: len })
+	for (let i = 0; i < len; i++) {
+		res[i] = patternCompile(list[i]!, list, mode)
+	}
+	return res
 }
 
 /**
@@ -26,10 +32,10 @@ export type PatternCompileOptions = {
 export function patternCompile(
 	pattern: string,
 	context: PatternList = [],
-	options?: PatternCompileOptions,
+	mode: MatchMode = MatchMode.normal,
 ): PatternCache {
 	const isRoot = pattern.charCodeAt(0) === 47 // '/'
-	const nocase = !!options?.nocase
+	const nocase = !!(mode & MatchMode.unsensitive)
 
 	let cleaned = pattern
 	if (cleaned.charCodeAt(cleaned.length - 1) === 47) cleaned = cleaned.slice(0, -1)
@@ -48,26 +54,35 @@ export function patternCompile(
 
 	const isMatch = glob.matcher(lowerCleaned, { ...matcherOpts, nocase: false })
 
+	let wildMatch: ((str: string) => boolean) | undefined
+
 	const re = {
-		test: (str: string, lower?: string) =>
-			test(str, lower, isMatch, lowerCleaned, isRoot, nocase, matchBase),
+		test: (str: string, tMode: MatchMode = MatchMode.normal) => {
+			if ((tMode | mode) & MatchMode.wildmatch) {
+				const wm = (wildMatch ||= glob.matcher(lowerCleaned, {
+					...matcherOpts,
+					nocase: false,
+					noextglob: true,
+				}))
+				return test(str, wm, lowerCleaned, isRoot, nocase, matchBase, tMode)
+			}
+			return test(str, isMatch, lowerCleaned, isRoot, nocase, matchBase, tMode)
+		},
 	}
 
-	const cache = { pattern, patternContext: context, re }
-
-	return cache
+	return { mode, pattern, patternContext: context, re }
 }
 
 function test(
 	str: string,
-	lower: string | undefined,
 	isMatch: (str: string) => boolean,
 	cleaned: string,
 	isRoot: boolean,
 	nocase: boolean,
 	matchBase: boolean,
+	mode: MatchMode,
 ): boolean {
-	const normStr = nocase ? lower || str.toLowerCase() : str
+	const normStr = nocase && !(mode & MatchMode.lowered) ? str.toLowerCase() : str
 
 	if (normStr === cleaned || normStr.startsWith(cleaned + "/")) {
 		return true

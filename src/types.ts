@@ -3,6 +3,16 @@ import type * as fs from "node:fs"
 import type { Target } from "./targets/target.js"
 
 /**
+ * @since 0.11.2
+ */
+export const enum ScanFlags {
+	none = 0,
+	invert = 1,
+	fastDepth = 2,
+	fastInternal = 4,
+}
+
+/**
  * Minimal FS implementation needed for `scan`, `scanStream`, and their browser versions.
  *
  * @since 0.6.0
@@ -50,13 +60,13 @@ export type ScanOptions = {
 	within?: string
 
 	/**
-	 * If enabled, the scan will return files that are ignored by the target matcher.
+	 * Flags for scanning.
 	 *
-	 * @default `false`
+	 * @default `ScanFlags.none`
 	 *
-	 * @since 0.6.0
+	 * @since 0.11.2
 	 */
-	invert?: boolean
+	flags?: ScanFlags
 
 	/**
 	 * Starting from depth `0` means you will see
@@ -76,46 +86,6 @@ export type ScanOptions = {
 	 * @since 0.6.0
 	 */
 	signal?: AbortSignal | null
-
-	/**
-	 * Works together with {@link ScanOptions.depth}.
-	 * If enabled, directories will be processed faster
-	 * by skipping files after first match.
-	 *
-	 * This makes the scan faster but affects
-	 * {@link MatcherContext.totalDirs},
-	 * {@link MatcherContext.totalFiles},
-	 * {@link MatcherContext.totalMatchedFiles}
-	 * and {@link MatcherContext.depthPaths} numbers.
-	 *
-	 * It's recommended to use this option unless you
-	 * care about these stats.
-	 *
-	 * @default `false`
-	 *
-	 * @since 0.6.0
-	 */
-	fastDepth?: boolean
-
-	/**
-	 * Enables skipping entire directories for internal matches.
-	 * For example, when scanning a Git repository,
-	 * '.git' directory will be skipped without reading its contents.
-	 *
-	 * This makes the scan faster but affects
-	 * {@link MatcherContext.totalDirs},
-	 * {@link MatcherContext.totalFiles},
-	 * and {@link MatcherContext.depthPaths}.
-	 *
-	 * It's recommended to use this option unless the target
-	 * allows overriding internal patterns and you don't care about these stats.
-	 * This option should never affect {@link MatcherContext.totalMatchedFiles}.
-	 *
-	 * @default `false`
-	 *
-	 * @since 0.6.0
-	 */
-	fastInternal?: boolean
 
 	/**
 	 * File system interface.

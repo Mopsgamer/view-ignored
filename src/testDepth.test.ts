@@ -1,7 +1,8 @@
 import { describe, test } from "bun:test"
 
-import { createGit } from "./targets/git.js"
+import { Git } from "./targets/git.js"
 import { testScan } from "./testScan.test.js"
+import { ScanFlags } from "./types.js"
 
 const dir = {
 	".gitignore": "out\nnode_modules",
@@ -20,32 +21,33 @@ const dir = {
 	},
 }
 
-const fastDepth = true
-
 describe("Git", () => {
 	test("depth 0 should include *", async (done) => {
-		const target = createGit()
+		const target = { ...Git, internalRules: [...Git.internalRules] }
 		await testScan(done, dir, ["src/", ".gitignore", "package.json"], { depth: 0, target })
 		await testScan(done, dir, ["src/", ".gitignore", "package.json"], {
 			depth: 0,
-			fastDepth,
+			flags: ScanFlags.fastDepth,
 			target,
 		})
 	})
 
 	test("depth 0 should include * for inverted", async (done) => {
-		const target = createGit()
-		await testScan(done, dir, ["out/", "node_modules/"], { depth: 0, invert: true, target })
+		const target = { ...Git, internalRules: [...Git.internalRules] }
 		await testScan(done, dir, ["out/", "node_modules/"], {
 			depth: 0,
-			fastDepth,
-			invert: true,
+			flags: ScanFlags.invert,
+			target,
+		})
+		await testScan(done, dir, ["out/", "node_modules/"], {
+			depth: 0,
+			flags: ScanFlags.fastDepth | ScanFlags.invert,
 			target,
 		})
 	})
 
 	test("depth 1 should include */*", async (done) => {
-		const target = createGit()
+		const target = { ...Git, internalRules: [...Git.internalRules] }
 		await testScan(
 			done,
 			dir,
@@ -56,12 +58,12 @@ describe("Git", () => {
 			done,
 			dir,
 			["src/", "src/index.ts", "src/submodule/", ".gitignore", "package.json"],
-			{ depth: 1, fastDepth, target },
+			{ depth: 1, flags: ScanFlags.fastDepth, target },
 		)
 	})
 
 	test("depth 1 should include */* for inverted", async (done) => {
-		const target = createGit()
+		const target = { ...Git, internalRules: [...Git.internalRules] }
 		await testScan(
 			done,
 			dir,
@@ -73,7 +75,7 @@ describe("Git", () => {
 				"node_modules/a/",
 				"node_modules/b/",
 			],
-			{ depth: 1, invert: true, target },
+			{ depth: 1, flags: ScanFlags.invert, target },
 		)
 		await testScan(
 			done,
@@ -86,7 +88,7 @@ describe("Git", () => {
 				"node_modules/a/",
 				"node_modules/b/",
 			],
-			{ depth: 1, fastDepth, invert: true, target },
+			{ depth: 1, flags: ScanFlags.fastDepth | ScanFlags.invert, target },
 		)
 	})
 })

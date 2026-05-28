@@ -6,6 +6,7 @@ import type { ScanOptions } from "./types.js"
 
 import { scan as browserScan } from "./browser_scan.js"
 import { scanCb as browserScanCb } from "./scanCb.js"
+export { ScanFlags } from "./types.js"
 export type * from "./types.js"
 
 /**

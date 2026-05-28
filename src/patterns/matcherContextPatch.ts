@@ -1,9 +1,9 @@
-import type { ScanOptions } from "../types.js"
 import type { MatcherContext } from "./matcherContext.js"
 import type { Resource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"
 
 import { scanParallel } from "../scanParallel.js"
+import { ScanFlags, type ScanOptions } from "../types.js"
 import { dirname } from "../unixify.js"
 import {
 	walkPatchResult,
@@ -46,7 +46,7 @@ export async function matcherContextAddPath(
 	}
 	const parentPath = dirname(direntPath)
 
-	const { target, fs, cwd, signal, depth: maxDepth } = options
+	const { target, fs, cwd, signal, depth: maxDepth, flags = ScanFlags.none } = options
 
 	if (isDir) {
 		// recursive parent population
@@ -77,8 +77,10 @@ export async function matcherContextAddPath(
 				promiseCb(resolve, reject),
 			)
 		})
-		if (!match.ignored) {
-			ctx.paths.set(entry, match)
+		let m = match
+		if (flags & ScanFlags.invert) m = { ...m, ignored: !m.ignored }
+		if (!m.ignored) {
+			ctx.paths.set(entry, m)
 		}
 		updateTotals(ctx, parentPath, 0, 0, 1)
 		if (parentPath !== ".") {
@@ -132,7 +134,7 @@ export async function matcherContextAddPath(
 		)
 	})) as Resource
 
-	const match = await new Promise<RuleMatch>((resolve, reject) => {
+	const match = (await new Promise<RuleMatch>((resolve, reject) => {
 		target.ignores(
 			{
 				cwd,
@@ -145,15 +147,18 @@ export async function matcherContextAddPath(
 			},
 			promiseCb(resolve, reject),
 		)
-	})
+	})) as RuleMatch
 
-	updateTotals(ctx, parentPath, 1, match.ignored ? 0 : 1, 0)
+	let m = match
+	if (flags & ScanFlags.invert) m = { ...m, ignored: !m.ignored }
 
-	if (match.ignored) {
+	updateTotals(ctx, parentPath, 1, m.ignored ? 0 : 1, 0)
+
+	if (m.ignored) {
 		return false
 	}
 
-	ctx.paths.set(entry, match)
+	ctx.paths.set(entry, m)
 	return true
 }
 

@@ -1,9 +1,9 @@
 import type { MatcherContext, Total } from "./patterns/matcherContext.js"
 import type { Resource } from "./patterns/resource.js"
 import type { RuleMatch } from "./patterns/rule.js"
-import type { ScanOptions, FsAdapter } from "./types.js"
 
 import { scanParallel } from "./scanParallel.js"
+import { ScanFlags, type ScanOptions, type FsAdapter } from "./types.js"
 import { unixify } from "./unixify.js"
 import { walkPatchResult, walkPatchTotal, propagateTotals, type WalkResult } from "./walk.js"
 
@@ -25,11 +25,9 @@ export function scanCb(
 		target,
 		cwd,
 		within = ".",
-		invert = false,
+		flags = ScanFlags.none,
 		depth: maxDepth = Infinity,
 		signal = null,
-		fastDepth = false,
-		fastInternal = false,
 		fs,
 	} = options
 
@@ -50,10 +48,8 @@ export function scanCb(
 	const scanOptions: Required<ScanOptions> = {
 		cwd: normalCwd,
 		depth: maxDepth,
-		fastDepth,
-		fastInternal,
+		flags,
 		fs,
-		invert,
 		signal,
 		target,
 		within,

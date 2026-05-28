@@ -5,25 +5,17 @@ import {
 	ruleTest,
 	type Rule,
 	ruleCompile,
-	extractPackageJson,
-	extractGitignore,
+	makePackageJsonExtractor,
+	makeGitignoreExtractor,
+	MatchMode,
 } from "../patterns/index.js"
 import { join, unixify } from "../unixify.js"
 import { npmManifestParse, type PackageJson } from "./npmManifest.js"
 
 const extractors: Extractor[] = [
-	{
-		extract: extractPackageJson,
-		path: "package.json",
-	},
-	{
-		extract: extractGitignore,
-		path: ".npmignore",
-	},
-	{
-		extract: extractGitignore,
-		path: ".gitignore",
-	},
+	makePackageJsonExtractor("package.json"),
+	makeGitignoreExtractor(".npmignore"),
+	makeGitignoreExtractor(".gitignore"),
 ]
 
 const internalInclude: Rule = {
@@ -93,7 +85,7 @@ const internal: Rule[] = [
 				"README.*",
 			],
 		},
-		{ nocase: true },
+		MatchMode.unsensitive,
 	),
 ]
 
@@ -144,7 +136,7 @@ export const Bun: Target = <Target>{
 			// link zig code
 
 			internalInclude.pattern = Array.from(set)
-			ruleCompile(internalInclude, { nocase: true })
+			ruleCompile(internalInclude, MatchMode.unsensitive)
 			cb()
 		})
 	},

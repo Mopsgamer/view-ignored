@@ -5,7 +5,7 @@ import type { MatcherContext, Total } from "./matcherContext.js"
 import type { Resource } from "./resource.js"
 import type { Source } from "./source.js"
 
-import { scan, type ScanOptions } from "../scan.js"
+import { scan, type ScanOptions, ScanFlags } from "../scan.js"
 import { NPM as target } from "../targets/npm.js"
 import { createAdapter } from "../testScan.test.js"
 import { unixify } from "../unixify.js"
@@ -122,10 +122,8 @@ const sourceGitignore: Source = {
 const opt: Required<ScanOptions> = {
 	cwd,
 	depth: Infinity,
-	fastDepth: false,
-	fastInternal: false,
+	flags: ScanFlags.none,
 	fs: adapter,
-	invert: false,
 	signal: null,
 	target,
 	within: ".",
@@ -260,10 +258,8 @@ describe("matcherContext{Add,Remove}Path prepare", () => {
 const optDepth1: Required<ScanOptions> = {
 	cwd,
 	depth: 1,
-	fastDepth: false,
-	fastInternal: false,
+	flags: ScanFlags.none,
 	fs: adapter,
-	invert: false,
 	signal: null,
 	target,
 	within: ".",

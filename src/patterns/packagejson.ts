@@ -1,50 +1,40 @@
-import type { ExtractorFn } from "./extractor.js"
+import type { Extractor, ExtractorFn } from "./extractor.js"
 import type { Rule } from "./rule.js"
 
-import { npmManifestParse } from "../targets/npmManifest.js"
+import { npmManifestParse, type PackageJson } from "../targets/npmManifest.js"
+import { MatchMode } from "./patternMode.js"
 import { ruleCompile } from "./resolveSources.js"
-import { resolveNegatable, type Source } from "./source.js"
+import { resolveNegatable } from "./source.js"
 
 /**
- * Extracts and compiles patterns from the file.
- *
- * @see {@link ruleCompile}
- *
- * @since 0.6.0
+ * @since 0.11.2
  */
-export function extractPackageJson(source: Source, content: Buffer): void | null | Error {
-	const result = extract(source, content)
-	if (result === undefined) {
-		for (const element of source.rules) {
-			ruleCompile(element)
-		}
+export function makePackageJsonExtractor(
+	path: string,
+	mode: MatchMode = MatchMode.normal,
+): Extractor {
+	return {
+		extract: (source, content) => {
+			const result = extract(source, content)
+			if (result === undefined) {
+				const rules = source.rules
+				for (let i = 0, len = rules.length; i < len; i++) {
+					ruleCompile(rules[i]!, mode)
+				}
+				return
+			}
+			return result
+		},
+		path,
 	}
-	return result
 }
 
-/**
- * Extracts and compiles patterns from the file.
- *
- * @see {@link ruleCompile}
- *
- * @since 0.8.0
- */
-export function extractPackageJsonNocase(source: Source, content: Buffer): void | null | Error {
-	const result = extract(source, content)
-	if (result === undefined) {
-		for (const element of source.rules) {
-			ruleCompile(element, { nocase: true })
-		}
-	}
-	return result
-}
-
-function extract(source: Source, content: Buffer): void | null | Error {
+const extract: ExtractorFn = (source, content) => {
 	source.inverted = true
 	const include: Rule = { compiled: null, excludes: false, pattern: [] }
 	const exclude: Rule = { compiled: null, excludes: true, pattern: [] }
 
-	let dist: { files?: string[] }
+	let dist: PackageJson
 
 	try {
 		dist = npmManifestParse(content.toString())
@@ -61,6 +51,5 @@ function extract(source: Source, content: Buffer): void | null | Error {
 	}
 
 	source.rules.push(include, exclude)
+	return
 }
-
-extractPackageJson satisfies ExtractorFn
