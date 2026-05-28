@@ -3,9 +3,9 @@ import type { Dirent } from "node:fs"
 import type { MatcherContext, Total } from "./patterns/matcherContext.js"
 import type { MatcherStream } from "./patterns/matcherStream.js"
 import type { Resource } from "./patterns/resource.js"
-import type { ScanOptions } from "./types.js"
 
 import { isRuleMatchInvalid, type RuleMatch } from "./patterns/rule.js"
+import { ScanFlags, type ScanOptions } from "./types.js"
 
 export type WalkOptions = {
 	relPath: string
@@ -56,7 +56,7 @@ export function walkIncludes(
 		resource,
 		depth,
 	} = options
-	const { target, depth: maxDepth, invert, fastDepth, fastInternal, fs, cwd, signal } = scanOptions
+	const { target, depth: maxDepth, flags = ScanFlags.none, fs, cwd, signal } = scanOptions
 
 	const isDir = entry.isDirectory()
 	const direntPath = isDir ? path + "/" : path
@@ -73,10 +73,10 @@ export function walkIncludes(
 		target,
 	}
 
-	if (fastDepth && depth > maxDepth) {
+	if (flags & ScanFlags.fastDepth && depth > maxDepth) {
 		return target.ignores(testOptions, (err, match) => {
 			if (err) return cb(err, null as any)
-			if (invert) match = { ...match, ignored: !match.ignored }
+			if (flags & ScanFlags.invert) match = { ...match, ignored: !match.ignored }
 			const result: WalkResult = {
 				depth,
 				includeParent: false,
@@ -100,7 +100,7 @@ export function walkIncludes(
 					stream.dispatchEvent(
 						new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
 					)
-				if (isDir && fastInternal) result.next = 1
+				if (isDir && flags & ScanFlags.fastInternal) result.next = 1
 				return cb(null, result)
 			}
 			result.next = isDir ? 0 : 1
@@ -111,7 +111,7 @@ export function walkIncludes(
 	target.ignores(testOptions, (err, match) => {
 		if (err) return cb(err, null as any)
 
-		if (invert) match = { ...match, ignored: !match.ignored }
+		if (flags & ScanFlags.invert) match = { ...match, ignored: !match.ignored }
 
 		const result: WalkResult = {
 			depth,
@@ -137,7 +137,7 @@ export function walkIncludes(
 				stream.dispatchEvent(
 					new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
 				)
-			if (isDir && fastInternal) result.next = 1
+			if (isDir && flags & ScanFlags.fastInternal) result.next = 1
 			return cb(null, result)
 		}
 

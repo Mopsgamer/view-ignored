@@ -1,10 +1,10 @@
-import type { MatcherContext, Total } from "../patterns/matcherContext.js"
-import type { ScanOptions, FsAdapter } from "../types.js"
+import type { MatcherContext, Total } from "./matcherContext.js"
 import type { EventMap, EventListener, EventListenerObject } from "./matcherStreamTypes.js"
 import type { Resource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"
 
 import { scanParallel } from "../scanParallel.js"
+import { ScanFlags, type ScanOptions, type FsAdapter } from "../types.js"
 import { unixify } from "../unixify.js"
 import { walkPatchResult, walkPatchTotal, propagateTotals, type WalkResult } from "../walk.js"
 
@@ -91,11 +91,9 @@ export class MatcherStream extends EventTarget {
 			target,
 			cwd,
 			within = ".",
-			invert = false,
+			flags = ScanFlags.none,
 			depth: maxDepth = Infinity,
 			signal = null,
-			fastDepth = false,
-			fastInternal = false,
 			fs,
 		} = this.#options
 
@@ -111,10 +109,8 @@ export class MatcherStream extends EventTarget {
 		const scanOptions: Required<ScanOptions> = {
 			cwd: normalCwd,
 			depth: maxDepth,
-			fastDepth,
-			fastInternal,
+			flags,
 			fs,
-			invert,
 			signal,
 			target,
 			within,
