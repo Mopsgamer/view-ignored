@@ -1,7 +1,7 @@
 import { run, bench, summary, barplot } from "mitata"
 import * as fs from "node:fs"
 
-import { Git, createGit } from "../out/targets/index.js"
+import { createGit } from "../out/targets/index.js"
 
 const cwd = process.cwd()
 

@@ -159,11 +159,7 @@ export function isRuleMatchInvalid(
 	| RuleMatchBaseInvalidExternal<RuleMatchKind.invalidExternal>
 	| RuleMatchBaseInvalidPattern<RuleMatchKind.invalidInternal> {
 	const k = match.kind
-	return (
-		k === RuleMatchKind.invalidSource ||
-		k === RuleMatchKind.invalidExternal ||
-		k === RuleMatchKind.invalidInternal
-	)
+	return k >= 3 && k <= 5
 }
 
 /**

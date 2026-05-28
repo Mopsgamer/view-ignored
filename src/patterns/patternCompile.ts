@@ -67,7 +67,7 @@ function test(
 	nocase: boolean,
 	matchBase: boolean,
 ): boolean {
-	const normStr = nocase ? (lower || str.toLowerCase()) : str
+	const normStr = nocase ? lower || str.toLowerCase() : str
 
 	if (normStr === cleaned || normStr.startsWith(cleaned + "/")) {
 		return true

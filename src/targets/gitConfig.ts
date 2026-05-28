@@ -1,6 +1,7 @@
-import { dirname, join } from "../unixify.js"
-import { patternCompile } from "../patterns/index.js"
 import type { FsAdapter } from "../types.js"
+
+import { patternCompile } from "../patterns/index.js"
+import { dirname, join } from "../unixify.js"
 
 const env = typeof process !== "undefined" ? process.env : {}
 export const HOME = (env.HOME || env.USERPROFILE || "").replaceAll("\\", "/")
@@ -12,7 +13,9 @@ export const resH = (p: string) =>
 export const resP = (base: string, p: string) => {
 	p = resH(p)
 	const c0 = p.charCodeAt(0)
-	return c0 === 47 || p.includes(":") ? p : join(base, c0 === 46 && p.charCodeAt(1) === 47 ? p.slice(2) : p)
+	return c0 === 47 || p.includes(":")
+		? p
+		: join(base, c0 === 46 && p.charCodeAt(1) === 47 ? p.slice(2) : p)
 }
 
 export function merge(target: any, source: any) {
@@ -51,7 +54,8 @@ export function parseGit(text: string) {
 			const sp = name.indexOf(" ")
 			if (sp !== -1) {
 				let sub = name.slice(sp + 1).trim()
-				if (sub.charCodeAt(0) === 34 && sub.charCodeAt(sub.length - 1) === 34) sub = sub.slice(1, -1)
+				if (sub.charCodeAt(0) === 34 && sub.charCodeAt(sub.length - 1) === 34)
+					sub = sub.slice(1, -1)
 				name = name.slice(0, sp).toLowerCase() + ' "' + sub + '"'
 			} else name = name.toLowerCase()
 			section = obj[name] ||= {}
@@ -74,7 +78,13 @@ export function parseGit(text: string) {
 		i++
 		while (i < len && text.charCodeAt(i) <= 32 && text.charCodeAt(i) !== 10) i++
 		const vS = i
-		while (i < len && text.charCodeAt(i) !== 10 && text.charCodeAt(i) !== 35 && text.charCodeAt(i) !== 59) i++
+		while (
+			i < len &&
+			text.charCodeAt(i) !== 10 &&
+			text.charCodeAt(i) !== 35 &&
+			text.charCodeAt(i) !== 59
+		)
+			i++
 		let vE = i
 		while (vE > vS && text.charCodeAt(vE - 1) <= 32) vE--
 		let val = text.slice(vS, vE)
@@ -175,7 +185,7 @@ export function loadRec(
 		let len = inc.length
 		if (!len) return cb(p)
 		const dir = dirname(path)
-		const vals = new Array(len)
+		const vals = Array.from({ length: len })
 		let pending = len
 		for (let i = 0; i < len; i++) {
 			loadRec(fs, resP(dir, inc[i]!), gitDir, branch, sig, (v) => {

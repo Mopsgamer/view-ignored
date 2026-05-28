@@ -40,20 +40,7 @@ export function relative(base: string, to: string): string {
 }
 
 function strip(path: string): string {
-	let res = path
-	const idx = path.indexOf("\\")
-	if (idx !== -1) {
-		res = ""
-		let start = 0
-		const len = path.length
-		for (let i = 0; i < len; i++) {
-			if (path.charCodeAt(i) === 92) {
-				res += path.slice(start, i) + "/"
-				start = i + 1
-			}
-		}
-		res += path.slice(start)
-	}
+	let res = path.indexOf("\\") !== -1 ? path.replaceAll("\\", "/") : path
 	if (res.length > 1 && res.charCodeAt(1) === 58) res = res.slice(2)
 	return res
 }

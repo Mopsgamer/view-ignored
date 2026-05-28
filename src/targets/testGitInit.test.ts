@@ -99,7 +99,7 @@ describe("Git Init", () => {
 		)
 	})
 
-	test("supports [includeIf \"onbranch:...\"]", async (done) => {
+	test('supports [includeIf "onbranch:..."]', async (done) => {
 		await testGit(
 			done,
 			{
@@ -116,12 +116,13 @@ describe("Git Init", () => {
 		)
 	})
 
-	test("supports [includeIf \"hasconfig:...\"]", async (done) => {
+	test('supports [includeIf "hasconfig:..."]', async (done) => {
 		await testGit(
 			done,
 			{
 				".git": {
-					config: '[user]\nname = Jules\n[includeIf "hasconfig:user.name=Jules"]\npath = jules-config',
+					config:
+						'[user]\nname = Jules\n[includeIf "hasconfig:user.name=Jules"]\npath = jules-config',
 					"jules-config": "[core]\nexcludesfile = jules-ignore",
 					"jules-ignore": "jules-only",
 				},

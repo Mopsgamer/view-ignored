@@ -19,7 +19,9 @@ const extractors: Extractor[] = [
 const gitDirCache = new WeakMap<FsAdapter, Map<string, string | null>>()
 const excludesCache = new WeakMap<FsAdapter, Map<string, Rule[]>>()
 
-const defIntRules = [ruleCompile({ compiled: null, excludes: true, pattern: [".git", ".DS_Store"] })]
+const defIntRules = [
+	ruleCompile({ compiled: null, excludes: true, pattern: [".git", ".DS_Store"] }),
+]
 
 function findGit(fs: FsAdapter, cur: string, cb: (g: string | null) => void) {
 	const cache = getCache(gitDirCache, fs)
@@ -75,7 +77,8 @@ function done(
 		extractGitignore(d, res)
 		const rs = d.rules
 		for (let idx = 0, rl = rs.length; idx < rl; idx++) {
-			const r = rs[idx]!; (r.excludes ? e : i).pattern.push(...r.pattern)
+			const r = rs[idx]!
+			;(r.excludes ? e : i).pattern.push(...r.pattern)
 		}
 		const rules = [ruleCompile(i), ruleCompile(e)]
 		cache.set(p, rules)
@@ -107,14 +110,15 @@ export const Git: Target = <Target>{
 			if (!len) return done(m, gDir, nCwd, fs, target, cb)
 
 			const start = (branch: string | null) => {
-				const vals = new Array(len)
+				const vals = Array.from({ length: len })
 				let pending = len
 				for (let i = 0; i < len; i++) {
 					loadRec(fs, confs[i]!, gDir, branch, signal, (res) => {
 						vals[i] = res
 						if (--pending !== 0) return
 						for (let j = 0; j < len; j++) {
-							const v = vals[j]; if (v) merge(m, v)
+							const v = vals[j]
+							if (v) merge(m, v)
 						}
 						done(m, gDir, nCwd, fs, target, cb)
 					})
