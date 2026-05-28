@@ -2,7 +2,7 @@ import type { ExtractorFn } from "./extractor.js"
 import type { Rule } from "./rule.js"
 
 import { npmManifestParse } from "../targets/npmManifest.js"
-import { MatchMode } from "./patternList.js"
+import { MatchMode } from "./patternMode.js"
 import { ruleCompile } from "./resolveSources.js"
 import { resolveNegatable, type Source } from "./source.js"
 

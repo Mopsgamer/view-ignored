@@ -146,7 +146,8 @@ export function getInc(parsed: any, gitDir: string | null, branch: string | null
 		if (c.startsWith("gitdir:")) ok = testPat(resH(c.slice(7)), gD, MatchMode.wildmatch)
 		else if (c.startsWith("gitdir/i:"))
 			ok = testPat(resH(c.slice(9)), gD, MatchMode.wildmatch | MatchMode.unsensitive)
-		else if (branch && c.startsWith("onbranch:")) ok = testPat(c.slice(9), branch, MatchMode.wildmatch)
+		else if (branch && c.startsWith("onbranch:"))
+			ok = testPat(c.slice(9), branch, MatchMode.wildmatch)
 		else if (c.startsWith("hasconfig:")) ok = hasConf(parsed, c.slice(10))
 
 		if (!ok) continue

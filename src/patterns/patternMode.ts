@@ -1,5 +1,3 @@
-import { patternCompile } from "./patternCompile.js"
-
 /**
  * @since 0.11.2
  */
@@ -60,23 +58,3 @@ export function patternCacheTest(cache: PatternCache, path: string, mode?: Match
  * @since 0.6.0
  */
 export type PatternList = string[]
-
-/**
- * Compiles the {@link PatternList}.
- *
- * @see {@link patternCompile}
- * @see {@link ruleCompile}
- *
- * @since 0.6.0
- */
-export function patternListCompile(
-	list: PatternList,
-	mode: MatchMode = MatchMode.normal,
-): PatternCache[] {
-	const len = list.length
-	const res = Array.from<PatternCache>({ length: len })
-	for (let i = 0; i < len; i++) {
-		res[i] = patternCompile(list[i]!, list, mode)
-	}
-	return res
-}

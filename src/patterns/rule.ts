@@ -1,12 +1,7 @@
 import type { PatternFinderOptions } from "./extractor.js"
 import type { Source } from "./source.js"
 
-import {
-	patternCacheTest,
-	type PatternList,
-	type PatternCache,
-	MatchMode,
-} from "./patternList.js"
+import { patternCacheTest, type PatternList, type PatternCache, MatchMode } from "./patternMode.js"
 
 /**
  * Represents a set of include and exclude patterns.
@@ -196,9 +191,15 @@ function cacheTest(rs: PatternCache[], entry: string, lower?: string): PatternCa
 	const len = rs.length
 	for (let i = 0; i < len; i++) {
 		const r = rs[i]!
-		const useLower = !!((r.mode & MatchMode.unsensitive) && lower)
+		const useLower = !!(r.mode & MatchMode.unsensitive && lower)
 		try {
-			if (patternCacheTest(r, useLower ? lower! : entry, useLower ? MatchMode.lowered : MatchMode.normal)) {
+			if (
+				patternCacheTest(
+					r,
+					useLower ? lower! : entry,
+					useLower ? MatchMode.lowered : MatchMode.normal,
+				)
+			) {
 				return r
 			}
 		} catch (err) {

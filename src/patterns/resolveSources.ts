@@ -2,14 +2,14 @@ import type { Dirent } from "node:fs"
 
 import type { Target } from "../targets/target.js"
 import type { FsAdapter } from "../types.js"
-import { MatchMode } from "./patternList.js"
 import type { Resource } from "./resource.js"
 import type { Rule } from "./rule.js"
 import type { Source } from "./source.js"
 
 import { join } from "../unixify.js"
 import { type PatternFinderOptions, type Extractor } from "./extractor.js"
-import { patternListCompile } from "./patternList.js"
+import { patternListCompile } from "./patternCompile.js"
+import { MatchMode } from "./patternMode.js"
 
 /**
  * Compiles the {@link Rule} (forced).
