@@ -5,21 +5,15 @@ import {
 	ruleTest,
 	type Rule,
 	ruleCompile,
-	extractJsrJson,
-	extractJsrJsonc,
+	makeJsrJsonExtractor,
+	makeJsrJsoncExtractor,
 } from "../patterns/index.js"
 import { unixify } from "../unixify.js"
 import { jsrManifestParse } from "./jsrManifest.js"
 
 const extractors: Extractor[] = [
-	{
-		extract: extractJsrJson,
-		path: "jsr.json",
-	},
-	{
-		extract: extractJsrJsonc,
-		path: "jsr.jsonc",
-	},
+	makeJsrJsonExtractor("jsr.json"),
+	makeJsrJsoncExtractor("jsr.jsonc"),
 ]
 
 const internal: Rule[] = [

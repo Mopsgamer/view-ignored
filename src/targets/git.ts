@@ -6,14 +6,14 @@ import {
 	ruleTest,
 	ruleCompile,
 	type Rule,
-	extractGitignore,
+	makeGitignoreExtractor,
 } from "../patterns/index.js"
 import { dirname, join, unixify } from "../unixify.js"
 import { HOME, XDG, getCache, resP, merge, loadRec } from "./gitConfig.js"
 
 const extractors: Extractor[] = [
-	{ extract: extractGitignore, path: ".gitignore" },
-	{ extract: extractGitignore, path: ".git/info/exclude" },
+	makeGitignoreExtractor(".gitignore"),
+	makeGitignoreExtractor(".git/info/exclude"),
 ]
 
 const gitDirCache = new WeakMap<FsAdapter, Map<string, string | null>>()
@@ -66,6 +66,7 @@ function done(
 
 	const i: Rule = { compiled: null, excludes: false, pattern: [] }
 	const e: Rule = { compiled: null, excludes: true, pattern: [] }
+	const ext = makeGitignoreExtractor("")
 	fs.readFile(p, (err, res) => {
 		if (err || !res) {
 			const rules = [ruleCompile(i), ruleCompile(e)]
@@ -74,7 +75,7 @@ function done(
 			return cb()
 		}
 		const d: any = { rules: [] }
-		extractGitignore(d, res)
+		ext.extract(d, res)
 		const rs = d.rules
 		for (let idx = 0, rl = rs.length; idx < rl; idx++) {
 			const r = rs[idx]!

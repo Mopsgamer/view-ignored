@@ -5,34 +5,19 @@ import {
 	ruleTest,
 	type Rule,
 	ruleCompile,
-	extractJsrJson,
-	extractJsrJsonc,
-	extractPackageJson,
+	makeJsrJsonExtractor,
+	makeJsrJsoncExtractor,
+	makePackageJsonExtractor,
 } from "../patterns/index.js"
 import { unixify } from "../unixify.js"
 import { jsrManifestParse } from "./jsrManifest.js"
 
 const extractors: Extractor[] = [
-	{
-		extract: extractJsrJson,
-		path: "deno.json",
-	},
-	{
-		extract: extractJsrJsonc,
-		path: "deno.jsonc",
-	},
-	{
-		extract: extractJsrJson,
-		path: "jsr.json",
-	},
-	{
-		extract: extractJsrJsonc,
-		path: "jsr.jsonc",
-	},
-	{
-		extract: extractPackageJson,
-		path: "package.json",
-	},
+	makeJsrJsonExtractor("deno.json"),
+	makeJsrJsoncExtractor("deno.jsonc"),
+	makeJsrJsonExtractor("jsr.json"),
+	makeJsrJsoncExtractor("jsr.jsonc"),
+	makePackageJsonExtractor("package.json"),
 ]
 
 const internal: Rule[] = [

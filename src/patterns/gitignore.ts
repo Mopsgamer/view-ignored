@@ -1,41 +1,31 @@
-import type { ExtractorFn } from "./extractor.js"
+import type { Extractor, ExtractorFn } from "./extractor.js"
 import type { Rule } from "./rule.js"
 
 import { MatchMode } from "./patternMode.js"
 import { ruleCompile } from "./resolveSources.js"
-import { resolveNegatable, type Source } from "./source.js"
+import { resolveNegatable } from "./source.js"
 
 /**
- * Extracts and compiles patterns from the file.
- *
- * @see {@link ruleCompile}
- *
- * @since 0.6.0
+ * @since 0.11.2
  */
-export function extractGitignore(source: Source, content: Buffer): void | Error {
-	extract(source, content)
-	for (const element of source.rules) {
-		ruleCompile(element)
+export function makeGitignoreExtractor(
+	path: string,
+	mode: MatchMode = MatchMode.normal,
+): Extractor {
+	return {
+		extract: (source, content) => {
+			const result = extract(source, content)
+			const rules = source.rules
+			for (let i = 0, len = rules.length; i < len; i++) {
+				ruleCompile(rules[i]!, mode)
+			}
+			return result
+		},
+		path,
 	}
 }
 
-/**
- * Extracts and compiles patterns from the file.
- *
- * @see {@link ruleCompile}
- *
- * @since 0.8.0
- */
-export function extractGitignoreNocase(source: Source, content: Buffer): void | Error {
-	extract(source, content)
-	for (const element of source.rules) {
-		ruleCompile(element, MatchMode.unsensitive)
-	}
-}
-
-extractGitignore satisfies ExtractorFn
-
-function extract(source: Source, content: Buffer) {
+const extract: ExtractorFn = (source, content) => {
 	const include: Rule = { compiled: null, excludes: false, pattern: [] }
 	const exclude: Rule = { compiled: null, excludes: true, pattern: [] }
 
@@ -63,4 +53,5 @@ function extract(source: Source, content: Buffer) {
 	}
 
 	source.rules.push(include, exclude)
+	return
 }

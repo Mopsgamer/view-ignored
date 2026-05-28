@@ -2,9 +2,10 @@ import { describe, test, expect } from "bun:test"
 
 import type { Source } from "./source.js"
 
-import { extractJsrJson } from "./jsrjson.js"
+import { makeJsrJsonExtractor } from "./jsrjson.js"
 
 describe("jsr.json", () => {
+	const ext = makeJsrJsonExtractor("jsr.json")
 	test("does not parse 0", () => {
 		const source: Source = {
 			inverted: false,
@@ -12,7 +13,7 @@ describe("jsr.json", () => {
 			rules: [],
 		}
 		// @ts-expect-error for 0
-		expect(extractJsrJson(source, 0)).toBeInstanceOf(Error)
+		expect(ext.extract(source, 0 as any)).toBeInstanceOf(Error)
 	})
 	test("does not parse '{'", () => {
 		const source: Source = {
@@ -20,7 +21,7 @@ describe("jsr.json", () => {
 			path: "jsr.json",
 			rules: [],
 		}
-		expect(extractJsrJson(source, Buffer.from("{", "utf-8"))).toBeInstanceOf(Error)
+		expect(ext.extract(source, Buffer.from("{", "utf-8"))).toBeInstanceOf(Error)
 	})
 	test("parses '{}'", () => {
 		const source: Source = {
@@ -28,6 +29,6 @@ describe("jsr.json", () => {
 			path: "jsr.json",
 			rules: [],
 		}
-		expect(extractJsrJson(source, Buffer.from("{}", "utf-8"))).not.toBeInstanceOf(Error)
+		expect(ext.extract(source, Buffer.from("{}", "utf-8"))).not.toBeInstanceOf(Error)
 	})
 })

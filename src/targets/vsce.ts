@@ -5,25 +5,16 @@ import {
 	ruleTest,
 	type Rule,
 	ruleCompile,
-	extractPackageJson,
-	extractGitignore,
+	makePackageJsonExtractor,
+	makeGitignoreExtractor,
 } from "../patterns/index.js"
 import { unixify } from "../unixify.js"
 import { vsceManifestParse } from "./vsceManifest.js"
 
 const extractors: Extractor[] = [
-	{
-		extract: extractPackageJson,
-		path: "package.json",
-	},
-	{
-		extract: extractGitignore,
-		path: ".vscodeignore",
-	},
-	{
-		extract: extractGitignore,
-		path: ".gitignore",
-	},
+	makePackageJsonExtractor("package.json"),
+	makeGitignoreExtractor(".vscodeignore"),
+	makeGitignoreExtractor(".gitignore"),
 ]
 
 const internal: Rule[] = [

@@ -5,25 +5,16 @@ import {
 	ruleTest,
 	type Rule,
 	ruleCompile,
-	extractPackageJson,
-	extractGitignore,
+	makePackageJsonExtractor,
+	makeGitignoreExtractor,
 } from "../patterns/index.js"
 import { unixify } from "../unixify.js"
 import { npmManifestParse } from "./npmManifest.js"
 
 const extractors: Extractor[] = [
-	{
-		extract: extractPackageJson,
-		path: "package.json",
-	},
-	{
-		extract: extractGitignore,
-		path: ".npmignore",
-	},
-	{
-		extract: extractGitignore,
-		path: ".gitignore",
-	},
+	makePackageJsonExtractor("package.json"),
+	makeGitignoreExtractor(".npmignore"),
+	makeGitignoreExtractor(".gitignore"),
 ]
 
 const internalInclude: Rule = {
