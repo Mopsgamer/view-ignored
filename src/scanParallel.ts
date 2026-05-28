@@ -35,6 +35,20 @@ export function scanParallel(
 	let activeTasks = 0
 	let errorOccurred: Error | null = null
 
+	function handleError(err: Error) {
+		if (!errorOccurred) {
+			errorOccurred = err
+			cb(err, null as any)
+		}
+	}
+
+	function taskDone() {
+		activeTasks--
+		if (activeTasks === 0 && !errorOccurred) {
+			cb(null, results)
+		}
+	}
+
 	function walk(relPath: string, depth: number, resource?: Resource, lowerRelPath?: string) {
 		if (errorOccurred) return
 		activeTasks++
@@ -156,20 +170,6 @@ export function scanParallel(
 				)
 			},
 		)
-	}
-
-	function handleError(err: Error) {
-		if (!errorOccurred) {
-			errorOccurred = err
-			cb(err, null as any)
-		}
-	}
-
-	function taskDone() {
-		activeTasks--
-		if (activeTasks === 0 && !errorOccurred) {
-			cb(null, results)
-		}
 	}
 
 	let initialDepth = 0

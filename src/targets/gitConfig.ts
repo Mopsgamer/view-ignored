@@ -7,15 +7,16 @@ const env = typeof process !== "undefined" ? process.env : {}
 export const HOME = (env.HOME || env.USERPROFILE || "").replaceAll("\\", "/")
 export const XDG = (env.XDG_CONFIG_HOME || (HOME ? HOME + "/.config" : "")).replaceAll("\\", "/")
 
-export const resH = (p: string) =>
-	p.charCodeAt(0) === 126 && p.charCodeAt(1) === 47 ? join(HOME, p.slice(2)) : p
+export const resH = (p: string) => {
+	if (p.charCodeAt(0) === 126 && p.charCodeAt(1) === 47) return join(HOME, p.slice(2))
+	return p
+}
 
 export const resP = (base: string, p: string) => {
 	p = resH(p)
 	const c0 = p.charCodeAt(0)
-	return c0 === 47 || p.includes(":")
-		? p
-		: join(base, c0 === 46 && p.charCodeAt(1) === 47 ? p.slice(2) : p)
+	if (c0 === 47 || p.includes(":")) return p
+	return join(base, c0 === 46 && p.charCodeAt(1) === 47 ? p.slice(2) : p)
 }
 
 export function merge(target: any, source: any) {
@@ -193,7 +194,10 @@ export function loadRec(
 			loadRec(fs, resP(dir, inc[i]!), gitDir, branch, sig, (v) => {
 				vals[i] = v
 				if (--pending !== 0) return
-				for (const v of vals) if (v) merge(p, v)
+				for (let j = 0; j < len; j++) {
+					const v = vals[j]
+					if (v) merge(p, v)
+				}
 				cb(p)
 			})
 		}

@@ -76,7 +76,7 @@ export function walkIncludes(
 	}
 
 	if (flags & ScanFlags.fastDepth && depth > maxDepth) {
-		return target.ignores(testOptions, (err, match) => {
+		target.ignores(testOptions, (err, match) => {
 			if (err) return cb(err, null as any)
 			if (flags & ScanFlags.invert) match = { ...match, ignored: !match.ignored }
 			const result: WalkResult = {
@@ -89,25 +89,20 @@ export function walkIncludes(
 				path: direntPath,
 				tooDeep: true,
 			}
-			if (isRuleMatchInvalid(match)) {
+			const invalid = isRuleMatchInvalid(match)
+			if (invalid || match.ignored) {
 				if (stream) {
 					stream.dispatchEvent(
 						new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
 					)
 				}
-				return cb(null, result)
-			}
-			if (match.ignored) {
-				if (stream)
-					stream.dispatchEvent(
-						new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
-					)
-				if (isDir && flags & ScanFlags.fastInternal) result.next = 1
+				if (!invalid && isDir && flags & ScanFlags.fastInternal) result.next = 1
 				return cb(null, result)
 			}
 			result.next = isDir ? 0 : 1
 			cb(null, result)
 		})
+		return
 	}
 
 	target.ignores(testOptions, (err, match) => {
@@ -126,20 +121,15 @@ export function walkIncludes(
 			tooDeep: false,
 		}
 
-		if (isRuleMatchInvalid(match)) {
-			if (stream)
-				stream.dispatchEvent(
-					new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
-				)
-			return cb(null, result)
-		}
+		const invalid = isRuleMatchInvalid(match)
 
-		if (match.ignored) {
-			if (stream)
+		if (invalid || match.ignored) {
+			if (stream) {
 				stream.dispatchEvent(
 					new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
 				)
-			if (isDir && flags & ScanFlags.fastInternal) result.next = 1
+			}
+			if (!invalid && isDir && flags & ScanFlags.fastInternal) result.next = 1
 			return cb(null, result)
 		}
 
@@ -160,8 +150,7 @@ export function walkIncludes(
 			return cb(null, result)
 		}
 
-		const lastSlash = path.lastIndexOf("/")
-		if (lastSlash >= 0) result.includeParent = true
+		if (path.indexOf("/") !== -1) result.includeParent = true
 
 		if (stream) {
 			if (result.includeParent)
@@ -189,21 +178,23 @@ export function walkPatchResult(ctx: MatcherContext, r: WalkResult): void {
 			if (!tooDeep) ctx.paths.set(path, match)
 		}
 	}
-	if (includeParent && !match.ignored)
-		if (!ctx.paths.has(parentPath + "/")) ctx.paths.set(parentPath + "/", match)
+	if (includeParent && !match.ignored) {
+		const pPath = parentPath + "/"
+		if (!ctx.paths.has(pPath)) ctx.paths.set(pPath, match)
+	}
 }
 
 /**
  * Patches the {@link MatcherContext} with the given total.
  */
 export function walkPatchTotal(ctx: MatcherContext, maxDepth: number, t: WalkTotal): void {
-	const { dir, files, matched, dirs, ignored } = t
+	const { dir, files, matched, dirs, ignored, depth } = t
 	const dirTotal = ctx.total.get(dir)
 	if (dirTotal) {
 		dirTotal.totalFiles += files
 		dirTotal.totalDirs += dirs
 		dirTotal.totalMatchedFiles += matched
-	} else if (t.depth <= maxDepth && !ignored) {
+	} else if (depth <= maxDepth && !ignored) {
 		ctx.total.set(dir, { totalDirs: dirs, totalFiles: files, totalMatchedFiles: matched })
 	}
 }

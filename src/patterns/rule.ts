@@ -210,6 +210,8 @@ function cacheTest(rs: PatternCache[], entry: string, lower?: string): PatternCa
 	return null
 }
 
+const noMatchCache = new WeakMap<Source, RuleMatch>()
+
 /**
  * Synchronous version of {@link ruleTest}.
  *
@@ -250,8 +252,9 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 	const internalRules = options.target.internalRules
 	for (let i = 0, len = internalRules.length; i < len; i++) {
 		const rule = internalRules[i]!
-		if (!rule.compiled) continue
-		const res = cacheTest(rule.compiled, entry, lower)
+		const compiled = rule.compiled
+		if (!compiled) continue
+		const res = cacheTest(compiled, entry, lower)
 		if (res === null) continue
 		if (res instanceof Error) {
 			return {
@@ -272,15 +275,14 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 	if (src === null) return { ignored: false, kind: RuleMatchKind.missingSource }
 	if ("error" in src) return { ...src, ignored: true, kind: RuleMatchKind.invalidSource }
 
-	const cache = ((options.target as any)._noMatchCache ||= new WeakMap())
-	let res = cache.get(src)
+	let res = noMatchCache.get(src)
 	if (!res) {
 		res = {
 			ignored: src.inverted,
 			kind: RuleMatchKind.noMatch,
 			source: src,
 		}
-		cache.set(src, res)
+		noMatchCache.set(src, res)
 	}
 	return res
 }
