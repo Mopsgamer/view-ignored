@@ -7,6 +7,7 @@ import {
 	ruleCompile,
 	extractPackageJsonNocase,
 	extractGitignoreNocase,
+	MatchMode,
 } from "../patterns/index.js"
 import { join, unixify } from "../unixify.js"
 import { npmManifestParse, type PackageJson } from "./npmManifest.js"
@@ -68,7 +69,7 @@ const internal: Rule[] = [
 				"/LICENCE.*",
 			],
 		},
-		{ nocase: true },
+		MatchMode.unsensitive,
 	),
 ]
 
@@ -118,7 +119,7 @@ export const Yarn: Target = <Target>{
 			}
 
 			internalInclude.pattern = Array.from(set)
-			ruleCompile(internalInclude, { nocase: true })
+			ruleCompile(internalInclude, MatchMode.unsensitive)
 			cb()
 		})
 	},

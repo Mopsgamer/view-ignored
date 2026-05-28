@@ -13,9 +13,9 @@ describe(".gitignore", () => {
 	test("stringCompile .git .Git/message nocase true", () => {
 		expect(
 			patternCacheTest(
-				patternCompile(".git", undefined, { nocase: true }),
+				patternCompile(".git", undefined, MatchMode.unsensitive),
 				".git/message",
-				MatchMode.unsensitive,
+				MatchMode.lowered,
 			),
 		).toBeTrue()
 	})
@@ -91,15 +91,16 @@ describe(".gitignore", () => {
 		expect(patternCacheTest(cache, "a", MatchMode.wildmatch)).toBeFalse()
 		expect(patternCacheTest(cache, "A", MatchMode.wildmatch)).toBeTrue()
 
-		const cacheI = patternCompile("A", undefined, { nocase: true })
+		const cacheI = patternCompile("A", undefined, MatchMode.unsensitive)
 		expect(patternCacheTest(cacheI, "a", MatchMode.wildmatch)).toBeTrue()
 		expect(patternCacheTest(cacheI, "A", MatchMode.wildmatch)).toBeTrue()
 	})
 
 	test("unsensitive mode", () => {
-		const cache = patternCompile("a", undefined, { nocase: true })
-		expect(patternCacheTest(cache, "A", MatchMode.unsensitive)).toBeFalse() // "A" is not lowercased
-		expect(patternCacheTest(cache, "a", MatchMode.unsensitive)).toBeTrue()
+		const cache = patternCompile("a", undefined, MatchMode.unsensitive)
+		expect(patternCacheTest(cache, "A", MatchMode.normal)).toBeTrue() // "A" is lowercased because of nocase
+		expect(patternCacheTest(cache, "A", MatchMode.lowered)).toBeFalse() // "A" is NOT lowercased because of MatchMode.lowered
+		expect(patternCacheTest(cache, "a", MatchMode.lowered)).toBeTrue()
 	})
 
 	test("wildmatch mode (nobrace)", () => {

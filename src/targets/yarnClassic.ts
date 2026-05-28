@@ -7,6 +7,7 @@ import {
 	ruleCompile,
 	extractPackageJsonNocase,
 	extractGitignoreNocase,
+	MatchMode,
 } from "../patterns/index.js"
 import { unixify } from "../unixify.js"
 import { npmManifestParse } from "./npmManifest.js"
@@ -68,7 +69,7 @@ const internal: Rule[] = [
 				".DS_Store",
 			],
 		},
-		{ nocase: true },
+		MatchMode.unsensitive,
 	),
 	ruleCompile(
 		{
@@ -85,7 +86,7 @@ const internal: Rule[] = [
 				"/history*",
 			],
 		},
-		{ nocase: true },
+		MatchMode.unsensitive,
 	),
 ]
 

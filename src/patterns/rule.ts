@@ -196,10 +196,9 @@ function cacheTest(rs: PatternCache[], entry: string, lower?: string): PatternCa
 	const len = rs.length
 	for (let i = 0; i < len; i++) {
 		const r = rs[i]!
-		const useLower = !!(r.re.nocase && lower)
-		const mode = useLower ? MatchMode.unsensitive : MatchMode.normal
+		const useLower = !!((r.mode & MatchMode.unsensitive) && lower)
 		try {
-			if (patternCacheTest(r, useLower ? lower! : entry, mode)) {
+			if (patternCacheTest(r, useLower ? lower! : entry, useLower ? MatchMode.lowered : MatchMode.normal)) {
 				return r
 			}
 		} catch (err) {

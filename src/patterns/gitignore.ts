@@ -1,6 +1,7 @@
 import type { ExtractorFn } from "./extractor.js"
 import type { Rule } from "./rule.js"
 
+import { MatchMode } from "./patternList.js"
 import { ruleCompile } from "./resolveSources.js"
 import { resolveNegatable, type Source } from "./source.js"
 
@@ -28,7 +29,7 @@ export function extractGitignore(source: Source, content: Buffer): void | Error 
 export function extractGitignoreNocase(source: Source, content: Buffer): void | Error {
 	extract(source, content)
 	for (const element of source.rules) {
-		ruleCompile(element, { nocase: true })
+		ruleCompile(element, MatchMode.unsensitive)
 	}
 }
 

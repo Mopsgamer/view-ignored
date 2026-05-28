@@ -1,4 +1,4 @@
-import { patternCompile, type PatternCompileOptions } from "./patternCompile.js"
+import { patternCompile } from "./patternCompile.js"
 
 /**
  * @since 0.11.2
@@ -7,6 +7,7 @@ export const enum MatchMode {
 	normal = 0,
 	unsensitive = 1,
 	wildmatch = 2,
+	lowered = 4,
 }
 
 /**
@@ -23,7 +24,13 @@ export type PatternCache = {
 	 *
 	 * @since 0.6.0
 	 */
-	re: { test(string: string, mode?: MatchMode): boolean; nocase?: boolean }
+	re: { test(string: string, mode?: MatchMode): boolean }
+	/**
+	 * The mode this cache was compiled with.
+	 *
+	 * @since 0.11.2
+	 */
+	mode: MatchMode
 	/**
 	 * The original pattern string this cache was compiled from.
 	 *
@@ -64,12 +71,12 @@ export type PatternList = string[]
  */
 export function patternListCompile(
 	list: PatternList,
-	options?: PatternCompileOptions,
+	mode: MatchMode = MatchMode.normal,
 ): PatternCache[] {
 	const len = list.length
 	const res = Array.from<PatternCache>({ length: len })
 	for (let i = 0; i < len; i++) {
-		res[i] = patternCompile(list[i]!, list, options)
+		res[i] = patternCompile(list[i]!, list, mode)
 	}
 	return res
 }

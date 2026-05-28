@@ -2,6 +2,7 @@ import type { ExtractorFn } from "./extractor.js"
 import type { Rule } from "./rule.js"
 
 import { npmManifestParse } from "../targets/npmManifest.js"
+import { MatchMode } from "./patternList.js"
 import { ruleCompile } from "./resolveSources.js"
 import { resolveNegatable, type Source } from "./source.js"
 
@@ -33,7 +34,7 @@ export function extractPackageJsonNocase(source: Source, content: Buffer): void 
 	const result = extract(source, content)
 	if (result === undefined) {
 		for (const element of source.rules) {
-			ruleCompile(element, { nocase: true })
+			ruleCompile(element, MatchMode.unsensitive)
 		}
 	}
 	return result
