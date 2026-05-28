@@ -35,6 +35,8 @@ export type PathHandlerOptionsStream = {
 	options: ScanOptions
 }
 
+const cwd = process.cwd() + "/test"
+
 /**
  * Executes tests within './test'.
  */
@@ -44,7 +46,6 @@ export async function testScan(
 	test: ((o: PathHandlerOptions) => void | Promise<void>) | string[],
 	options: ScanOptions,
 ): Promise<void> {
-	const cwd = process.cwd() + "/test"
 	const vol = Volume.fromNestedJSON(tree, cwd)
 	const adapter = createAdapter(vol)
 	const o = { cwd: cwd, fs: adapter, ...options } as ScanOptions & { fs: FsAdapter; cwd: string }
@@ -133,7 +134,6 @@ export async function testStream(
 	test: (o: PathHandlerOptionsStream) => void | Promise<void>,
 	options: ScanOptions,
 ): Promise<void> {
-	const cwd = process.cwd() + "/test"
 	const vol = Volume.fromNestedJSON(tree, cwd)
 	const adapter = createAdapter(vol)
 	const o = { cwd: cwd, fs: adapter, ...options } as ScanOptions & { fs: FsAdapter; cwd: string }

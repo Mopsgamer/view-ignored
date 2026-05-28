@@ -20,7 +20,7 @@ barplot(() => {
 			bench("scan (fast)", async () => {
 				return scan({
 					cwd,
-					flags: ScanFlags.fastDepth | ScanFlags.fastInternal,
+					flags: ScanFlags.fast,
 					fs,
 					target,
 				})
@@ -29,7 +29,7 @@ barplot(() => {
 			bench("browserScan (fast)", async () => {
 				return browserScan({
 					cwd,
-					flags: ScanFlags.fastDepth | ScanFlags.fastInternal,
+					flags: ScanFlags.fast,
 					fs,
 					target,
 				})

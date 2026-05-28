@@ -2,10 +2,8 @@ import type { MatcherContext, Total } from "./patterns/matcherContext.js"
 import type { Resource } from "./patterns/resource.js"
 import type { RuleMatch } from "./patterns/rule.js"
 import type { FsAdapter, ScanOptions } from "./types.js"
-import type { WalkResult } from "./walk.js"
 
 import { scanParallel } from "./scanParallel.js"
-import { ScanFlags } from "./types.js"
 import { unixify } from "./unixify.js"
 import { propagateTotals, walkPatchResult, walkPatchTotal } from "./walk.js"
 
@@ -27,7 +25,7 @@ export function scanCb(
 		target,
 		cwd,
 		within = ".",
-		flags = ScanFlags.none,
+		flags = 0,
 		depth: maxDepth = Infinity,
 		signal = null,
 		fs,
@@ -66,7 +64,7 @@ export function scanCb(
 					if ("dir" in result) {
 						walkPatchTotal(ctx, scanOptions.depth, result)
 					} else {
-						walkPatchResult(ctx, result as WalkResult)
+						walkPatchResult(ctx, result)
 					}
 				},
 				scanOptions,

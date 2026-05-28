@@ -1,12 +1,10 @@
 import type { FsAdapter, ScanOptions } from "../types.js"
-import type { WalkResult } from "../walk.js"
 import type { MatcherContext, Total } from "./matcherContext.js"
 import type { EventListener, EventListenerObject, EventMap } from "./matcherStreamTypes.js"
 import type { Resource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"
 
 import { scanParallel } from "../scanParallel.js"
-import { ScanFlags } from "../types.js"
 import { unixify } from "../unixify.js"
 import { propagateTotals, walkPatchResult, walkPatchTotal } from "../walk.js"
 
@@ -93,7 +91,7 @@ export class MatcherStream extends EventTarget {
 			target,
 			cwd,
 			within = ".",
-			flags = ScanFlags.none,
+			flags = 0,
 			depth: maxDepth = Infinity,
 			signal = null,
 			fs,
@@ -127,7 +125,7 @@ export class MatcherStream extends EventTarget {
 						if ("dir" in result) {
 							walkPatchTotal(ctx, scanOptions.depth, result as any)
 						} else {
-							walkPatchResult(ctx, result as WalkResult)
+							walkPatchResult(ctx, result)
 						}
 					},
 					scanOptions,

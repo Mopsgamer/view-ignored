@@ -58,7 +58,7 @@ export function walkIncludes(
 		resource,
 		depth,
 	} = options
-	const { target, depth: maxDepth, flags = ScanFlags.none, fs, cwd, signal } = scanOptions
+	const { target, depth: maxDepth, flags, fs, cwd, signal } = scanOptions
 
 	const isDir = entry.isDirectory()
 	const direntPath = isDir ? path + "/" : path

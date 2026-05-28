@@ -86,7 +86,10 @@ function test(
 ): boolean {
 	const normStr = nocase && !(mode & MatchMode.lowered) ? str.toLowerCase() : str
 
-	if (normStr === cleaned || normStr.startsWith(cleaned + "/")) {
+	if (
+		normStr.startsWith(cleaned) &&
+		(normStr.length === cleaned.length || normStr.charCodeAt(cleaned.length) === 47)
+	) {
 		return true
 	}
 

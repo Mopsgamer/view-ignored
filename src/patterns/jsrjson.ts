@@ -28,7 +28,7 @@ export function makeJsrJsonExtractor(path: string, mode: MatchMode = MatchMode.n
 			for (let i = 0, len = rules.length; i < len; i++) {
 				ruleCompile(rules[i]!, mode)
 			}
-			return result || undefined
+			return undefined
 		},
 		path,
 	}

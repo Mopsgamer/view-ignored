@@ -9,7 +9,7 @@ import type { Source } from "./source.js"
 import { describe, expect, test } from "bun:test"
 import { Volume } from "memfs"
 
-import { ScanFlags, scan } from "../scan.js"
+import { scan } from "../scan.js"
 import { NPM as target } from "../targets/npm.js"
 import { createAdapter } from "../testScan.test.js"
 import { unixify } from "../unixify.js"
@@ -126,7 +126,7 @@ const sourceGitignore: Source = {
 const opt: Required<ScanOptions> = {
 	cwd,
 	depth: Infinity,
-	flags: ScanFlags.none,
+	flags: 0,
 	fs: adapter,
 	signal: null,
 	target,
@@ -262,7 +262,7 @@ describe("matcherContext{Add,Remove}Path prepare", () => {
 const optDepth1: Required<ScanOptions> = {
 	cwd,
 	depth: 1,
-	flags: ScanFlags.none,
+	flags: 0,
 	fs: adapter,
 	signal: null,
 	target,

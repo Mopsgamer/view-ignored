@@ -12,7 +12,6 @@ describe("jsr.json", () => {
 			path: "jsr.json",
 			rules: [],
 		}
-		// @ts-expect-error for 0
 		expect(ext.extract(source, 0 as any)).toBeInstanceOf(Error)
 	})
 	test("does not parse '{'", () => {

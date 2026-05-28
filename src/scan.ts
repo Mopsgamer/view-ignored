@@ -9,6 +9,11 @@ import { scanCb as browserScanCb } from "./scanCb.js"
 export { ScanFlags } from "./types.js"
 export type * from "./types.js"
 
+const defaultOptions = {
+	cwd: process.cwd(),
+	fs: { readFile: nodefs.readFile, readdir: nodefs.readdir },
+}
+
 /**
  * Scan the directory for included files based on the provided targets.
  *
@@ -20,7 +25,7 @@ export type * from "./types.js"
  * @since 0.6.0
  */
 export function scan(options: ScanOptions): Promise<MatcherContext> {
-	const { cwd = process.cwd(), fs = nodefs } = options
+	const { cwd = defaultOptions.cwd, fs = defaultOptions.fs } = options
 	return browserScan({ cwd, fs, ...options })
 }
 
@@ -38,6 +43,5 @@ export function scanCb(
 	options: ScanOptions,
 	cb: (err: Error | null, ctx: MatcherContext) => void,
 ): void {
-	const { cwd = process.cwd(), fs = nodefs } = options
-	browserScanCb({ cwd, fs, ...options }, cb)
+	browserScanCb({ ...defaultOptions, ...options }, cb)
 }

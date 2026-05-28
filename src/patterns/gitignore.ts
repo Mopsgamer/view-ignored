@@ -46,7 +46,7 @@ const extract: ExtractorFn = (source, content) => {
 			if (c !== -1) {
 				line = line.slice(0, c).trim()
 			}
-			if (line !== "") resolveNegatable(line, false, include, exclude)
+			if (line.length > 0) resolveNegatable(line, false, include, exclude)
 		}
 
 		start = end + 1

@@ -7,9 +7,10 @@ import type { Target } from "./targets/target.js"
  */
 export const enum ScanFlags {
 	none = 0,
-	invert = 1,
-	fastDepth = 2,
-	fastInternal = 4,
+	invert = 1 << 0,
+	fastDepth = 1 << 1,
+	fastInternal = 1 << 2,
+	fast = fastDepth | fastInternal,
 }
 
 /**
@@ -61,8 +62,9 @@ export type ScanOptions = {
 
 	/**
 	 * Flags for scanning.
+	 * @see {ScanFlags}
 	 *
-	 * @default `ScanFlags.none`
+	 * @default `0`
 	 *
 	 * @since 0.11.2
 	 */

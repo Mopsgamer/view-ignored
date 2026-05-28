@@ -3,9 +3,9 @@
  */
 export const enum MatchMode {
 	normal = 0,
-	unsensitive = 1,
-	wildmatch = 2,
-	lowered = 4,
+	unsensitive = 1 << 0,
+	wildmatch = 1 << 1,
+	lowered = 1 << 2,
 }
 
 /**

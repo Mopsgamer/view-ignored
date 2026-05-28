@@ -1,5 +1,5 @@
 import type { ScanOptions } from "../types.js"
-import type { WalkResult, WalkTotal } from "../walk.js"
+import type { WalkResult } from "../walk.js"
 import type { MatcherContext } from "./matcherContext.js"
 import type { Resource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"
@@ -42,7 +42,7 @@ export async function matcherContextAddPath(
 	}
 	const parentPath = dirname(direntPath)
 
-	const { target, fs, cwd, signal, depth: maxDepth, flags = ScanFlags.none } = options
+	const { target, fs, cwd, signal, depth: maxDepth, flags } = options
 
 	if (isDir) {
 		// recursive parent population
@@ -95,9 +95,9 @@ export async function matcherContextAddPath(
 					failed: ctx.failed,
 					onResult: (result) => {
 						if ("dir" in result) {
-							walkPatchTotal(ctx, maxDepth, result as WalkTotal)
+							walkPatchTotal(ctx, maxDepth, result)
 						} else {
-							walkPatchResult(ctx, result as WalkResult)
+							walkPatchResult(ctx, result)
 						}
 					},
 					scanOptions: options,
@@ -116,7 +116,7 @@ export async function matcherContextAddPath(
 	// 1. recursively populate parents
 	await matcherContextAddPath(ctx, options, parentPath + "/")
 	// 2. if ignored, remove, otherwise add
-	const resource = (await new Promise<Resource>((resolve, reject) => {
+	const resource = await new Promise<Resource>((resolve, reject) => {
 		resolveSources(
 			{
 				cwd,
@@ -128,9 +128,9 @@ export async function matcherContextAddPath(
 			},
 			promiseCb(resolve, reject),
 		)
-	})) as Resource
+	})
 
-	const match = (await new Promise<RuleMatch>((resolve, reject) => {
+	const match = await new Promise<RuleMatch>((resolve, reject) => {
 		target.ignores(
 			{
 				cwd,
@@ -143,7 +143,7 @@ export async function matcherContextAddPath(
 			},
 			promiseCb(resolve, reject),
 		)
-	})) as RuleMatch
+	})
 
 	let m = match
 	if (flags & ScanFlags.invert) m = { ...m, ignored: !m.ignored }
@@ -232,9 +232,9 @@ export async function matcherContextRemovePath(
 					failed: ctx.failed,
 					onResult: (result) => {
 						if ("dir" in result) {
-							walkPatchTotal(ctx, maxDepth, result as WalkTotal)
+							walkPatchTotal(ctx, maxDepth, result)
 						} else {
-							walkPatchResult(ctx, result as WalkResult)
+							walkPatchResult(ctx, result)
 						}
 					},
 					scanOptions: options,
