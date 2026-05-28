@@ -1,7 +1,7 @@
 import type { FsAdapter } from "../types.js"
 
 import { MatchMode, patternCompile } from "../patterns/index.js"
-import { dirname, join } from "../unixify.js"
+import { dirname, join, strip } from "../unixify.js"
 
 const env = typeof process !== "undefined" ? process.env : {}
 export const HOME = (env.HOME || env.USERPROFILE || "").replaceAll("\\", "/")
@@ -143,9 +143,9 @@ export function getInc(parsed: any, gitDir: string | null, branch: string | null
 		if (!s.startsWith('includeif "')) continue
 		const c = s.slice(11, -1)
 		let ok = false
-		if (c.startsWith("gitdir:")) ok = testPat(resH(c.slice(7)), gD, MatchMode.wildmatch)
+		if (c.startsWith("gitdir:")) ok = testPat(strip(resH(c.slice(7))), gD, MatchMode.wildmatch)
 		else if (c.startsWith("gitdir/i:"))
-			ok = testPat(resH(c.slice(9)), gD, MatchMode.wildmatch | MatchMode.unsensitive)
+			ok = testPat(strip(resH(c.slice(9))), gD, MatchMode.wildmatch | MatchMode.unsensitive)
 		else if (branch && c.startsWith("onbranch:"))
 			ok = testPat(c.slice(9), branch, MatchMode.wildmatch)
 		else if (c.startsWith("hasconfig:")) ok = hasConf(parsed, c.slice(10))

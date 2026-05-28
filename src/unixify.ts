@@ -39,7 +39,7 @@ export function relative(base: string, to: string): string {
 	return to.slice(blen)
 }
 
-function strip(path: string): string {
+export function strip(path: string): string {
 	let res = path.replaceAll("\\", "/")
 	if (res.length > 1 && res.charCodeAt(1) === 58) res = res.slice(2)
 	return res
