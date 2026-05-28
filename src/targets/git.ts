@@ -1,39 +1,91 @@
+import type { FsAdapter } from "../types.js"
 import type { Target } from "./target.js"
-import * as ini from "ini"
 
 import {
 	type Extractor,
-	extractGitignore,
 	ruleTest,
 	ruleCompile,
 	type Rule,
+	extractGitignore,
 } from "../patterns/index.js"
+import { dirname, join, unixify } from "../unixify.js"
+import { HOME, XDG, getCache, resP, merge, loadRec } from "./gitConfig.js"
 
 const extractors: Extractor[] = [
-	{
-		extract: extractGitignore,
-		path: ".gitignore",
-	},
-	{
-		extract: extractGitignore,
-		path: ".git/info/exclude",
-	},
+	{ extract: extractGitignore, path: ".gitignore" },
+	{ extract: extractGitignore, path: ".git/info/exclude" },
 ]
 
-const fromConfigs = {
-	compiled: null,
-	excludes: true,
-	pattern: [],
+const gitDirCache = new WeakMap<FsAdapter, Map<string, string | null>>()
+const excludesCache = new WeakMap<FsAdapter, Map<string, Rule[]>>()
+
+const defIntRules = [
+	ruleCompile({ compiled: null, excludes: true, pattern: [".git", ".DS_Store"] }),
+]
+
+function findGit(fs: FsAdapter, cur: string, cb: (g: string | null) => void) {
+	const cache = getCache(gitDirCache, fs)
+	const c = cache.get(cur)
+	if (c !== undefined) return cb(c)
+	fs.readdir(cur, (err, files) => {
+		const g = !err && (files as string[]).includes(".git") ? join(cur, ".git") : null
+		if (g) {
+			cache.set(cur, g)
+			return cb(g)
+		}
+		const p = dirname(cur)
+		if (p === cur || !cur || cur === ".") {
+			cache.set(cur, null)
+			return cb(null)
+		}
+		findGit(fs, p, (res) => {
+			cache.set(cur, res)
+			cb(res)
+		})
+	})
 }
 
-const internal: Rule[] = [
-	ruleCompile({
-		compiled: null,
-		excludes: true,
-		pattern: [".git", ".DS_Store"],
-	}),
-	fromConfigs,
-]
+function done(
+	conf: any,
+	gDir: string | null,
+	cwd: string,
+	fs: FsAdapter,
+	target: Target,
+	cb: () => void,
+) {
+	const core = conf["core"]
+	let ex = core ? core["excludesfile"] : null
+	if (!ex) ex = XDG ? join(XDG, "git/ignore") : join(HOME, ".config/git/ignore")
+	const p = resP(gDir || cwd, ex)
+	const cache = getCache(excludesCache, fs)
+	const cached = cache.get(p)
+	if (cached) {
+		target.internalRules = [...defIntRules, ...cached]
+		return cb()
+	}
+
+	const i: Rule = { compiled: null, excludes: false, pattern: [] }
+	const e: Rule = { compiled: null, excludes: true, pattern: [] }
+	fs.readFile(p, (err, res) => {
+		if (err || !res) {
+			const rules = [ruleCompile(i), ruleCompile(e)]
+			cache.set(p, rules)
+			target.internalRules = [...defIntRules, ...rules]
+			return cb()
+		}
+		const d: any = { rules: [] }
+		extractGitignore(d, res)
+		const rs = d.rules
+		for (let idx = 0, rl = rs.length; idx < rl; idx++) {
+			const r = rs[idx]!
+			;(r.excludes ? e : i).pattern.push(...r.pattern)
+		}
+		const rules = [ruleCompile(i), ruleCompile(e)]
+		cache.set(p, rules)
+		target.internalRules = [...defIntRules, ...rules]
+		cb()
+	})
+}
 
 /**
  * @since 0.6.0
@@ -41,59 +93,55 @@ const internal: Rule[] = [
 export const Git: Target = <Target>{
 	extractors,
 	ignores: ruleTest,
-	init() {
-		// do not delete comments in this function
-		// TODO: Git should read configs
-		// put it into fromConfigs variable
-		// oxlint-disable-next-line no-unused-expressions
-		fromConfigs
-		// use already imported library ini
-		ini.parse("")
-		/* [core] excludesFile
-		Specifies the pathname to the file that contains
-		patterns to describe paths that are not meant to be tracked,
-		in addition to .gitignore (per-directory) and .git/info/exclude.
-		Defaults to $XDG_CONFIG_HOME/git/ignore.
-		If $XDG_CONFIG_HOME is either not set or empty,
-		$HOME/.config/git/ignore is used instead.
-		*/
-		/* [include] path ...
-		 * [includeIf "condition"] path ...
-		[include]
-			path = /path/to/foo.inc ; include by absolute path
-			path = foo.inc ; find "foo.inc" relative to the current file
-			path = ~/foo.inc ; find "foo.inc" in your `$HOME` directory
+	init({ fs, cwd, signal, target }, cb) {
+		const nCwd = unixify(cwd)
+		findGit(fs, nCwd, (gDir) => {
+			if (signal?.aborted) return cb()
+			const m: any = {}
+			const confs: string[] = []
+			if (HOME) confs.push(join(HOME, ".gitconfig"))
+			if (XDG) confs.push(join(XDG, "git/config"))
+			if (gDir) {
+				confs.push(join(gDir, "config"))
+				target.root = dirname(gDir)
+			}
 
-		; include if $GIT_DIR is /path/to/foo/.git
-		[includeIf "gitdir:/path/to/foo/.git"]
-			path = /path/to/foo.inc
+			let len = confs.length
+			if (!len) return done(m, gDir, nCwd, fs, target, cb)
 
-		; include for all repositories inside /path/to/group
-		[includeIf "gitdir:/path/to/group/"]
-			path = /path/to/foo.inc
+			const start = (branch: string | null) => {
+				const vals = Array.from({ length: len })
+				let pending = len
+				for (let i = 0; i < len; i++) {
+					loadRec(fs, confs[i]!, gDir, branch, signal, (res) => {
+						vals[i] = res
+						if (--pending !== 0) return
+						for (let j = 0; j < len; j++) {
+							const v = vals[j]
+							if (v) merge(m, v)
+						}
+						done(m, gDir, nCwd, fs, target, cb)
+					})
+				}
+			}
 
-		; include for all repositories inside $HOME/to/group
-		[includeIf "gitdir:~/to/group/"]
-			path = /path/to/foo.inc
-
-		; relative paths are always relative to the including
-		; file (if the condition is true); their location is not
-		; affected by the condition
-		[includeIf "gitdir:/path/to/group/"]
-			path = foo.inc
-
-		; include only if we are in a worktree where foo-branch is
-		; currently checked out
-		[includeIf "onbranch:foo-branch"]
-			path = foo.inc
-
-		; include only if a remote with the given URL exists (note
-		; that such a URL may be provided later in a file or in a
-		; file read after this file is read, as seen in this example)
-		[includeIf "hasconfig:remote.*.url:https://example.com/**"]
-			path = foo.inc
-		*/
+			if (!gDir) return start(null)
+			fs.readFile(join(gDir, "HEAD"), (err, res) => {
+				if (err || !res) return start(null)
+				const s = res.toString().trim()
+				start(s.startsWith("ref: refs/heads/") ? s.slice(16) : null)
+			})
+		})
 	},
-	internalRules: internal,
+	internalRules: defIntRules,
 	root: "/",
+}
+
+/**
+ * Creates a new Git target.
+ *
+ * @since 0.11.1
+ */
+export function createGit(): Target {
+	return { ...Git, internalRules: [...Git.internalRules] }
 }

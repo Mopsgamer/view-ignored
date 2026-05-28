@@ -159,11 +159,7 @@ export function isRuleMatchInvalid(
 	| RuleMatchBaseInvalidExternal<RuleMatchKind.invalidExternal>
 	| RuleMatchBaseInvalidPattern<RuleMatchKind.invalidInternal> {
 	const k = match.kind
-	return (
-		k === RuleMatchKind.invalidSource ||
-		k === RuleMatchKind.invalidExternal ||
-		k === RuleMatchKind.invalidInternal
-	)
+	return k >= 3 && k <= 5
 }
 
 /**
@@ -191,16 +187,12 @@ export interface RuleTestOptions extends PatternFinderOptions {
 	lowerEntry?: string
 }
 
-function cacheTest(
-	rs: PatternCache[],
-	path: string,
-	matchCtx: { lower?: string },
-): PatternCache | Error | null {
+function cacheTest(rs: PatternCache[], path: string, lower?: string): PatternCache | Error | null {
 	const len = rs.length
 	for (let i = 0; i < len; i++) {
 		const r = rs[i]!
 		try {
-			if (patternCacheTest(r, path, matchCtx)) {
+			if (patternCacheTest(r, path, lower)) {
 				return r
 			}
 		} catch (err) {
@@ -217,26 +209,41 @@ function cacheTest(
  */
 export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 	const src = options.resource
-
-	if (src === undefined) {
-		throw new Error("view-ignored has crashed: no source cached.")
-	}
-
-	if (src === null) {
-		return { ignored: false, kind: RuleMatchKind.missingSource }
-	}
-
-	if ("error" in src) {
-		return { ...src, ignored: true, kind: RuleMatchKind.invalidSource }
-	}
+	if (src === undefined) throw new Error("view-ignored has crashed: no source cached.")
 
 	const entry = options.entry
-	const matchCtx = { lower: options.lowerEntry }
+	const lower = options.lowerEntry
+
+	if (src !== null && !("error" in src)) {
+		const rules = src.rules
+		for (let i = 0, elen = rules.length; i < elen; i++) {
+			const rule = rules[i]!
+			const res = cacheTest(rule.compiled!, entry, lower)
+			if (res === null) continue
+			if (res instanceof Error) {
+				return {
+					error: res,
+					ignored: false,
+					kind: RuleMatchKind.invalidExternal,
+					pattern: "",
+					source: src,
+				}
+			}
+
+			return {
+				ignored: rule.excludes,
+				kind: RuleMatchKind.external,
+				pattern: res.pattern,
+				source: src,
+			}
+		}
+	}
 
 	const internalRules = options.target.internalRules
 	for (let i = 0, len = internalRules.length; i < len; i++) {
 		const rule = internalRules[i]!
-		const res = cacheTest(rule.compiled!, entry, matchCtx)
+		if (!rule.compiled) continue
+		const res = cacheTest(rule.compiled, entry, lower)
 		if (res === null) continue
 		if (res instanceof Error) {
 			return {
@@ -254,46 +261,20 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 		}
 	}
 
-	const rules = src.rules
-	const elen = rules.length
-	if (elen === 0) {
-		return (
-			(src._noMatchCache as any) ??
-			(src._noMatchCache = {
-				ignored: src.inverted,
-				kind: RuleMatchKind.noMatch,
-				source: src,
-			})
-		)
-	}
+	if (src === null) return { ignored: false, kind: RuleMatchKind.missingSource }
+	if ("error" in src) return { ...src, ignored: true, kind: RuleMatchKind.invalidSource }
 
-	for (let i = 0; i < elen; i++) {
-		const rule = rules[i]!
-		const res = cacheTest(rule.compiled!, entry, matchCtx)
-		if (res === null) continue
-		if (res instanceof Error) {
-			return {
-				error: res,
-				ignored: false,
-				kind: RuleMatchKind.invalidExternal,
-				pattern: "",
-				source: src,
-			}
-		}
-
-		return {
-			ignored: rule.excludes,
-			kind: RuleMatchKind.external,
-			pattern: res.pattern,
+	const cache = ((options.target as any)._noMatchCache ||= new WeakMap())
+	let res = cache.get(src)
+	if (!res) {
+		res = {
+			ignored: src.inverted,
+			kind: RuleMatchKind.noMatch,
 			source: src,
 		}
+		cache.set(src, res)
 	}
-
-	return {
-		ignored: src.inverted,
-		kind: RuleMatchKind.noMatch,
-		source: src,
-	}
+	return res
 }
 
 /**

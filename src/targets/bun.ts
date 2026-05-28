@@ -79,7 +79,7 @@ const internal: Rule[] = [
 	ruleCompile(
 		{
 			compiled: null,
-			excludes: true,
+			excludes: false,
 			pattern: [
 				// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L2586
 				"package.json",
@@ -128,7 +128,7 @@ export const Bun: Target = <Target>{
 			const set = new Set<string>()
 
 			function normal(path: string): string {
-				const result = unixify(join(normalCwd, path)).substring(normalCwd.length)
+				const result = unixify(join(normalCwd, path)).slice(normalCwd.length)
 				return result
 			}
 

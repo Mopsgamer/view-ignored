@@ -1,6 +1,6 @@
 import { describe, test } from "bun:test"
 
-import { Git as target } from "./targets/git.js"
+import { createGit } from "./targets/git.js"
 import { testScan } from "./testScan.test.js"
 
 const dir = {
@@ -24,6 +24,7 @@ const fastDepth = true
 
 describe("Git", () => {
 	test("depth 0 should include *", async (done) => {
+		const target = createGit()
 		await testScan(done, dir, ["src/", ".gitignore", "package.json"], { depth: 0, target })
 		await testScan(done, dir, ["src/", ".gitignore", "package.json"], {
 			depth: 0,
@@ -33,6 +34,7 @@ describe("Git", () => {
 	})
 
 	test("depth 0 should include * for inverted", async (done) => {
+		const target = createGit()
 		await testScan(done, dir, ["out/", "node_modules/"], { depth: 0, invert: true, target })
 		await testScan(done, dir, ["out/", "node_modules/"], {
 			depth: 0,
@@ -43,6 +45,7 @@ describe("Git", () => {
 	})
 
 	test("depth 1 should include */*", async (done) => {
+		const target = createGit()
 		await testScan(
 			done,
 			dir,
@@ -58,6 +61,7 @@ describe("Git", () => {
 	})
 
 	test("depth 1 should include */* for inverted", async (done) => {
+		const target = createGit()
 		await testScan(
 			done,
 			dir,

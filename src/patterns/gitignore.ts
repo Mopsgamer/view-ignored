@@ -39,25 +39,26 @@ function extract(source: Source, content: Buffer) {
 	const exclude: Rule = { compiled: null, excludes: true, pattern: [] }
 
 	let start = 0
-	while (start < content.length) {
-		let end = content.indexOf(0x0a, start)
-		if (end === -1) end = content.length
+	const len = content.length
+	while (start < len) {
+		let end = content.indexOf(10, start)
+		if (end === -1) end = len
 
-		// Convert only the current line to a string
-		let line = content.toString("utf8", start, end).trim()
+		let s = start
+		while (s < end && content[s]! <= 32) s++
+		let e = end
+		while (e > s && content[e - 1]! <= 32) e--
+
+		if (s < e && content[s] !== 35) {
+			let line = content.toString("utf8", s, e)
+			const c = line.indexOf("#")
+			if (c !== -1) {
+				line = line.slice(0, c).trim()
+			}
+			if (line !== "") resolveNegatable(line, false, include, exclude)
+		}
+
 		start = end + 1
-
-		if (line === "" || line.startsWith("#")) {
-			continue
-		}
-
-		const cdx = line.indexOf("#")
-		if (cdx >= 0) {
-			line = line.slice(0, cdx).trim()
-			if (line === "") continue
-		}
-
-		resolveNegatable(line, false, include, exclude)
 	}
 
 	source.rules.push(include, exclude)
