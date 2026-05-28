@@ -101,4 +101,21 @@ describe(".gitignore", () => {
 		expect(patternCacheTest(cache, "A", MatchMode.unsensitive)).toBeFalse() // "A" is not lowercased
 		expect(patternCacheTest(cache, "a", MatchMode.unsensitive)).toBeTrue()
 	})
+
+	test("wildmatch mode (nobrace)", () => {
+		const cache = patternCompile("{a,b}")
+		// In micromatch with nobrace: true (which is our default), it should match literal "{a,b}"
+		expect(patternCacheTest(cache, "a")).toBeFalse()
+		expect(patternCacheTest(cache, "{a,b}")).toBeTrue()
+		expect(patternCacheTest(cache, "a", MatchMode.wildmatch)).toBeFalse()
+		expect(patternCacheTest(cache, "{a,b}", MatchMode.wildmatch)).toBeTrue()
+	})
+
+	test("normal mode default", () => {
+		const cache = patternCompile("a")
+		expect(patternCacheTest(cache, "a")).toBeTrue()
+		expect(patternCacheTest(cache, "A")).toBeFalse()
+		expect(patternCacheTest(cache, "a", MatchMode.normal)).toBeTrue()
+		expect(patternCacheTest(cache, "A", MatchMode.normal)).toBeFalse()
+	})
 })
