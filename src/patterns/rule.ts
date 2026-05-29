@@ -198,7 +198,7 @@ function testRule(rule: Rule, entry: string, lower?: string): PatternCache | nul
 	if (rule._literals?.has(target)) {
 		const rs = rule.compiled!
 		for (let i = 0; i < rs.length; i++) {
-			if (rs[i]!._simplePattern === target) return rs[i]!
+			if (rs[i]!.meta.simplePattern === target) return rs[i]!
 		}
 	}
 
@@ -210,7 +210,7 @@ function testRule(rule: Rule, entry: string, lower?: string): PatternCache | nul
 		const useLower = !!(r.mode & MatchMode.unsensitive && lower)
 		const targetStr = useLower ? lower! : entry
 
-		if (r._isSimple && !(r.mode & MatchMode.wildmatch)) {
+		if (r.meta.isSimple && !(r.mode & MatchMode.wildmatch)) {
 			const res = testSimpleRule(rule, r, targetStr)
 			if (res) return res
 		}
@@ -224,50 +224,50 @@ function testRule(rule: Rule, entry: string, lower?: string): PatternCache | nul
  * Optimizes simple rule matching.
  */
 function testSimpleRule(rule: Rule, r: PatternCache, targetStr: string): PatternCache | null {
-	if (r._isLiteral) {
+	if (r.meta.isLiteral) {
 		if (
-			targetStr === r._simplePattern ||
-			(targetStr.startsWith(r._simplePattern) &&
-				targetStr.charCodeAt(r._simplePattern.length) === 47)
+			targetStr === r.meta.simplePattern ||
+			(targetStr.startsWith(r.meta.simplePattern) &&
+				targetStr.charCodeAt(r.meta.simplePattern.length) === 47)
 		) {
 			return r
 		}
 		if (
 			!rule.excludes &&
-			r._simplePattern.startsWith(targetStr) &&
+			r.meta.simplePattern.startsWith(targetStr) &&
 			(targetStr.charCodeAt(targetStr.length - 1) === 47 ||
-				r._simplePattern.charCodeAt(targetStr.length) === 47)
+				r.meta.simplePattern.charCodeAt(targetStr.length) === 47)
 		) {
 			return r
 		}
 		return null
 	}
 
-	if (r._isSuffix) {
-		if (targetStr.endsWith(r._simplePattern)) {
-			if (r._matchBase) return r
-			const pos = targetStr.length - r._simplePattern.length
-			if (pos === 0 || (r._isRoot ? false : targetStr.charCodeAt(pos - 1) === 47)) {
+	if (r.meta.isSuffix) {
+		if (targetStr.endsWith(r.meta.simplePattern)) {
+			if (r.meta.matchBase) return r
+			const pos = targetStr.length - r.meta.simplePattern.length
+			if (pos === 0 || (r.meta.isRoot ? false : targetStr.charCodeAt(pos - 1) === 47)) {
 				return r
 			}
 		}
 		return null
 	}
 
-	if (r._isPrefix) {
-		if (targetStr.startsWith(r._simplePattern)) {
-			if (r._matchBase) return r
+	if (r.meta.isPrefix) {
+		if (targetStr.startsWith(r.meta.simplePattern)) {
+			if (r.meta.matchBase) return r
 			if (
-				targetStr.length === r._simplePattern.length ||
-				targetStr.charCodeAt(r._simplePattern.length) === 47
+				targetStr.length === r.meta.simplePattern.length ||
+				targetStr.charCodeAt(r.meta.simplePattern.length) === 47
 			) {
 				return r
 			}
 		} else if (
 			!rule.excludes &&
-			r._simplePattern.startsWith(targetStr) &&
+			r.meta.simplePattern.startsWith(targetStr) &&
 			(targetStr.charCodeAt(targetStr.length - 1) === 47 ||
-				r._simplePattern.charCodeAt(targetStr.length) === 47)
+				r.meta.simplePattern.charCodeAt(targetStr.length) === 47)
 		) {
 			return r
 		}

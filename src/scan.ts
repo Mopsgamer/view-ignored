@@ -6,7 +6,6 @@ import * as process from "node:process"
 
 import { scan as browserScan } from "./browser_scan.js"
 import { scanCb as browserScanCb } from "./scanCb.js"
-export { ScanFlags } from "./types.js"
 export type * from "./types.js"
 
 const defaultOptions = {
@@ -25,8 +24,9 @@ const defaultOptions = {
  * @since 0.6.0
  */
 export function scan(options: ScanOptions): Promise<MatcherContext> {
-	const { cwd = defaultOptions.cwd, fs = defaultOptions.fs } = options
-	return browserScan({ cwd, fs, ...options })
+	options.cwd ??= defaultOptions.cwd
+	options.fs ??= defaultOptions.fs
+	return browserScan(options as any)
 }
 
 /**
@@ -43,5 +43,7 @@ export function scanCb(
 	options: ScanOptions,
 	cb: (err: Error | null, ctx: MatcherContext) => void,
 ): void {
-	browserScanCb({ ...defaultOptions, ...options }, cb)
+	options.cwd ??= defaultOptions.cwd
+	options.fs ??= defaultOptions.fs
+	return browserScanCb(options as any, cb)
 }

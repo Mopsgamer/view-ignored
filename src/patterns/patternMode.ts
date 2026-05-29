@@ -20,31 +20,7 @@ export type PatternCache = {
 	/**
 	 * @internal
 	 */
-	_isLiteral: boolean
-	/**
-	 * @internal
-	 */
-	_isPrefix: boolean
-	/**
-	 * @internal
-	 */
-	_isRoot: boolean
-	/**
-	 * @internal
-	 */
-	_isSimple: boolean
-	/**
-	 * @internal
-	 */
-	_isSuffix: boolean
-	/**
-	 * @internal
-	 */
-	_matchBase: boolean
-	/**
-	 * @internal
-	 */
-	_simplePattern: string
+	meta: any
 	/**
 	 * The regular expression interface.
 	 *

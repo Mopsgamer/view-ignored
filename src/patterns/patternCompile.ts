@@ -24,24 +24,21 @@ export function patternListCompile(
 /**
  * Checks if a string contains glob magic characters.
  */
-function hasMagic(s: string): boolean {
-	for (let i = 0; i < s.length; i++) {
-		const c = s.charCodeAt(i)
-		// * ? [ { ! @ + (
-		if (
-			c === 42 ||
-			c === 63 ||
-			c === 91 ||
-			c === 123 ||
-			c === 33 ||
-			c === 64 ||
-			c === 43 ||
-			c === 40
-		) {
-			return true
+function findMagicIndex(s: string, startFrom = 0): number {
+	for (let i = startFrom; i < s.length; i++) {
+		switch (s.charCodeAt(i)) {
+			case 42:
+			case 63:
+			case 91:
+			case 123:
+			case 33:
+			case 64:
+			case 43:
+			case 40:
+				return i
 		}
 	}
-	return false
+	return -1
 }
 
 /**
@@ -81,20 +78,22 @@ export function patternCompile(
 	const lowerCleaned = nocase ? cleaned.toLowerCase() : cleaned
 	const matchBase = !isRoot && !cleaned.includes("/")
 
-	let isSimple = !hasMagic(cleaned)
+	const magicIdx = findMagicIndex(lowerCleaned)
+	let isSimple = magicIdx === -1
 	let isSuffix = false
 	let isPrefix = false
 	let simplePattern = lowerCleaned
 
 	if (!isSimple) {
-		if (lowerCleaned.charCodeAt(0) === 42 && !hasMagic(lowerCleaned.slice(1))) {
-			isSimple = true
-			isSuffix = true
-			simplePattern = lowerCleaned.slice(1)
-		} else if (
-			lowerCleaned.charCodeAt(lowerCleaned.length - 1) === 42 &&
-			!hasMagic(lowerCleaned.slice(0, -1))
-		) {
+		if (magicIdx === 0 && lowerCleaned.charCodeAt(0) === 42) {
+			// If the first magic char is at index 0, make sure there isn't a second one
+			if (findMagicIndex(lowerCleaned, 1) === -1) {
+				isSimple = true
+				isSuffix = true
+				simplePattern = lowerCleaned.slice(1)
+			}
+		} else if (magicIdx === lowerCleaned.length - 1 && lowerCleaned.charCodeAt(magicIdx) === 42) {
+			// If the first magic char is at the very end, it's guaranteed to be the only one
 			isSimple = true
 			isPrefix = true
 			simplePattern = lowerCleaned.slice(0, -1)
@@ -114,13 +113,7 @@ export function patternCompile(
 	const testFn = createTestFn(lowerCleaned, meta, mode, nocase)
 
 	return {
-		_isLiteral: meta.isLiteral,
-		_isPrefix: meta.isPrefix,
-		_isRoot: meta.isRoot,
-		_isSimple: meta.isSimple,
-		_isSuffix: meta.isSuffix,
-		_matchBase: meta.matchBase,
-		_simplePattern: meta.simplePattern,
+		meta,
 		mode,
 		pattern,
 		patternContext: context,
@@ -136,15 +129,12 @@ function createTestFn(
 	meta: PatternMetadata,
 	mode: MatchMode,
 	nocase: boolean,
-): (str: string, tMode?: MatchMode) => boolean {
+): (str: string) => boolean {
 	if (meta.isSimple) {
-		return (str: string, tMode: MatchMode = MatchMode.normal) => {
-			const currentMode = tMode | mode
-			if (currentMode & MatchMode.wildmatch) {
-				return testSimpleWildmatch(str, currentMode, tMode, meta)
-			}
-			return testSimpleNormal(str, currentMode, tMode, meta)
+		if (mode & MatchMode.wildmatch) {
+			return (str: string) => testSimpleWildmatch(str, mode, meta)
 		}
+		return (str: string) => testSimpleNormal(str, mode, meta)
 	}
 
 	const matcherOpts: glob.Options = {
@@ -157,29 +147,24 @@ function createTestFn(
 	let isMatch: ((str: string) => boolean) | undefined
 	let wildMatch: ((str: string) => boolean) | undefined
 
-	return (str: string, tMode: MatchMode = MatchMode.normal) => {
-		const currentMode = tMode | mode
-		const normStr = getNormalizedString(str, currentMode, tMode)
-
-		if (currentMode & MatchMode.wildmatch) {
-			const wm = (wildMatch ||= glob.matcher(lowerCleaned, {
-				...matcherOpts,
-				nocase: false,
-				noextglob: true,
-			}))
-			return testInternal(normStr, wm, lowerCleaned, meta)
-		}
-
-		const im = (isMatch ||= glob.matcher(lowerCleaned, { ...matcherOpts, nocase: false }))
-		return testInternal(normStr, im, lowerCleaned, meta)
+	if (mode & MatchMode.wildmatch) {
+		const wm = (wildMatch ||= glob.matcher(lowerCleaned, {
+			...matcherOpts,
+			nocase: false,
+			noextglob: true,
+		}))
+		return (str: string) => testInternal(getNormalizedString(str, mode), wm, lowerCleaned, meta)
 	}
+
+	const im = (isMatch ||= glob.matcher(lowerCleaned, { ...matcherOpts, nocase: false }))
+	return (str: string) => testInternal(getNormalizedString(str, mode), im, lowerCleaned, meta)
 }
 
 /**
  * Normalizes input string based on match mode.
  */
-function getNormalizedString(str: string, currentMode: MatchMode, tMode: MatchMode): string {
-	if (currentMode & MatchMode.unsensitive && !(tMode & MatchMode.lowered)) {
+function getNormalizedString(str: string, mode: MatchMode): string {
+	if (mode & MatchMode.unsensitive && !(mode & MatchMode.lowered)) {
 		return str.toLowerCase()
 	}
 	return str
@@ -188,13 +173,8 @@ function getNormalizedString(str: string, currentMode: MatchMode, tMode: MatchMo
 /**
  * Core matching logic for simple patterns in non-wildmatch mode.
  */
-function testSimpleNormal(
-	str: string,
-	currentMode: MatchMode,
-	tMode: MatchMode,
-	meta: PatternMetadata,
-): boolean {
-	const normStr = getNormalizedString(str, currentMode, tMode)
+function testSimpleNormal(str: string, mode: MatchMode, meta: PatternMetadata): boolean {
+	const normStr = getNormalizedString(str, mode)
 	const { simplePattern, isSuffix, isPrefix, isRoot, matchBase } = meta
 
 	if (isSuffix) {
@@ -244,13 +224,8 @@ function testSimpleNormal(
 /**
  * Core matching logic for simple patterns in wildmatch mode.
  */
-function testSimpleWildmatch(
-	str: string,
-	currentMode: MatchMode,
-	tMode: MatchMode,
-	meta: PatternMetadata,
-): boolean {
-	const normStr = getNormalizedString(str, currentMode, tMode)
+function testSimpleWildmatch(str: string, mode: MatchMode, meta: PatternMetadata): boolean {
+	const normStr = getNormalizedString(str, mode)
 	const { simplePattern, isSuffix, isPrefix, isRoot, matchBase } = meta
 
 	if (isSuffix) {

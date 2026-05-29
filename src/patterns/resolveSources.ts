@@ -28,8 +28,8 @@ export function ruleCompile(rule: Rule, mode: MatchMode = MatchMode.normal): Rul
 
 	for (let i = 0, len = rule.compiled.length; i < len; i++) {
 		const r = rule.compiled[i]!
-		if (r._isLiteral && !r._matchBase && !r._isRoot) {
-			literals.add(r._simplePattern)
+		if (r.meta.isLiteral && !r.meta.matchBase && !r.meta.isRoot) {
+			literals.add(r.meta.simplePattern)
 		} else {
 			hasComplex = true
 		}

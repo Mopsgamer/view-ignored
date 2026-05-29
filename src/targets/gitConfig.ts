@@ -70,27 +70,24 @@ export function parseGit(text: string): any {
 	while (i < len) {
 		const c = text.charCodeAt(i)
 
-		// Whitespace
-		if (c <= 32) {
-			i++
-			continue
+		switch (c) {
+			case 32: // whitespace
+			case 9: // tab
+				i++
+				continue
+			case 35: // comment
+			case 59:
+				// skip line
+				while (++i < len && text.charCodeAt(i) !== 10);
+				continue
+			case 91: // section header
+				const res = parseSectionHeader(text, i, len)
+				i = res.nextIdx
+				section = obj[res.sectionName] ||= {}
+				continue
 		}
 
-		// Comment
-		if (c === 35 || c === 59) {
-			while (++i < len && text.charCodeAt(i) !== 10);
-			continue
-		}
-
-		// Section header [section "subsection"]
-		if (c === 91) {
-			const res = parseSectionHeader(text, i, len)
-			i = res.nextIdx
-			section = obj[res.sectionName] ||= {}
-			continue
-		}
-
-		// Key-value pair
+		// key-value pair
 		if (section) {
 			const res = parseKeyValuePair(text, i, len)
 			i = res.nextIdx
@@ -104,7 +101,7 @@ export function parseGit(text: string): any {
 			continue
 		}
 
-		// Skip junk line
+		// skip line
 		while (++i < len && text.charCodeAt(i) !== 10);
 	}
 

@@ -2,7 +2,7 @@
 <h1>view-ignored</h1>
 
 [![npm-version](https://img.shields.io/npm/v/view-ignored.svg)](https://www.npmjs.com/package/view-ignored)
-[![npm-downloads](https://img.shields.io/npm/dm/view-ignored.svg)](https://www.npmjs.com/package/view-ignored)
+[![npm-downloads](https://img.shields.io/npm/dm/view-ignored.svg?color=orange)](https://www.npmjs.com/package/view-ignored)
 [![coverage](https://codecov.io/gh/Mopsgamer/view-ignored/graph/badge.svg?token=O5I06Y2A86)](https://codecov.io/gh/Mopsgamer/view-ignored)
 ![node-v20-or-later](https://img.shields.io/badge/node->=22-salad?repo=Mopsgamer/view-ignored.svg)
 ![ts-v5-or-later](https://img.shields.io/badge/ts->=5.7-salad?repo=Mopsgamer/view-ignored)
@@ -15,13 +15,11 @@ by Git, NPM, Yarn, JSR, Deno, Bun, VSCode extension CLI and other tools.
 <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/npm/npm-original-wordmark.svg" width="32" height="32" alt="npm" />
 <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/yarn/yarn-original.svg" width="32" height="32" alt="yarn" />
 <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/bun/bun-original.svg" width="32" height="32" alt="bun" />
-<img src="https://unpkg.com/simple-icons@v14/icons/deno.svg" width="32" height="32" alt="deno" />
+<img src="https://docs.deno.com/img/logo.svg" width="32" height="32">
 <img src="https://jsr.io/logo.svg" width="32" height="32" alt="jsr" />
 <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vscode/vscode-original.svg" width="32" height="32" alt="vsce" />
 
-[![github-issues](https://img.shields.io/github/issues/Mopsgamer/view-ignored.svg)](https://github.com/Mopsgamer/view-ignored/issues)
-[![github](https://img.shields.io/github/stars/Mopsgamer/view-ignored)](https://github.com/Mopsgamer/view-ignored)
-[![issues-for-targets](https://img.shields.io/badge/issues-targets-blue)](https://github.com/search?q=repo%3AMopsgamer%2Fview-ignored+label%3Atargets+type%3Aissue&type=issues&query=repo%3AMopsgamer%2Fview-ignored+label%3Atargets)
+[![issues-for-targets](https://img.shields.io/badge/issues-targets-blue)](https://github.com/Mopsgamer/view-ignored/issues?q=is%3Aissue%20state%3Aopen%20label%3Atargets)
 [![suggest](https://img.shields.io/badge/suggest-salad?repo=Mopsgamer/view-ignored)](https://github.com/Mopsgamer/view-ignored/issues/new)
 [![details](https://img.shields.io/badge/details-gray)](#targets)
 
@@ -38,8 +36,7 @@ by Git, NPM, Yarn, JSR, Deno, Bun, VSCode extension CLI and other tools.
 - **Plugins.** Built-in [targets](#targets) for popular tools. Use custom
   targets by implementing/extending the `Target` interface.
 - **Streaming.** Native `scanStream` support for processing massive file trees with minimal memory overhead.
-- **Execution Control.** Use `fastDepth` and `fastInternal` options to fine-tune traversal depth and skip unnecessary directory checks. You can also enable them if you don't care about stats.
-- **Abortable.** Full support for `AbortSignal` to cancel long-running scans instantly.
+- **Execution Control.** Use `fastDepth` and `fastInternal` options to fine-tune traversal depth and skip unnecessary directory checks. You can enable them if you don't care about stats. Full support for `AbortSignal` to cancel long-running scans instantly.
 - **Lightweight.** Minimal dependencies for fast performance and small bundle size.
 - **Browser.** Can be bundled for browser use.
 - **Windows.** Windows paths are converted to Unix paths for compatibility with `memfs` based tests and browsers.
@@ -53,12 +50,13 @@ by Git, NPM, Yarn, JSR, Deno, Bun, VSCode extension CLI and other tools.
 
 ## v1 Roadmap
 
+- [x] Perfect API.
 - [x] Works for common use cases.
-- [ ] Follow `.gitignore` spec. (`ignore` does.)
+- [x] Follow `.gitignore` spec. (`ignore` does.)
 - [x] Handle Git config.
 - [ ] Include node_modules bundled dependencies correctly. Missing: NPM, Yarn + Classic, Bun, Deno, JSR.
-- [ ] \*Move targets into separate packages (or not).
 - [ ] Import and pass upstream source tests.
+- [ ] \*Move targets into separate packages.
 - [ ] \*Make it standard: NPM cli, VS Code file tree, VSCE, GitHub.
 - [ ] \*Upstream to Bun, PNPM and other package managers.
 
