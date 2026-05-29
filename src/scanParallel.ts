@@ -16,93 +16,163 @@ export interface ScanParallelOptions {
 	onResult?: (result: WalkResult | WalkTotal) => void
 }
 
-export function scanParallel(options: ScanParallelOptions, cb: (err: Error | null, results: WalkResult[] | null) => void): void {
-	const { scanOptions, stream, external, failed, onResult } = options
-	const cwd = unixify(scanOptions.cwd)
-	scanOptions.cwd = cwd
+interface ScanState {
+	options: ScanParallelOptions
+	cwd: string
+	results: WalkResult[] | null
+	activeTasks: number
+	errorOccurred: Error | null
+	cb: (err: Error | null, results: WalkResult[] | null) => void
+}
+
+export function scanParallel(
+	options: ScanParallelOptions,
+	cb: (err: Error | null, results: WalkResult[] | null) => void,
+): void {
+	const cwd = unixify(options.scanOptions.cwd)
+	options.scanOptions.cwd = cwd
 	let within = options.within
 	if (within.startsWith("./")) within = within.slice(2)
 
-	const results: WalkResult[] | null = onResult ? null : []
-
-	let activeTasks = 0
-	let errorOccurred: Error | null = null
-
-	function handleError(err: Error) {
-		if (!errorOccurred) {
-			errorOccurred = err
-			cb(err, null as any)
-		}
+	const state: ScanState = {
+		activeTasks: 0,
+		cb,
+		cwd,
+		errorOccurred: null,
+		options,
+		results: options.onResult ? null : [],
 	}
 
-	function taskDone() {
-		if (--activeTasks === 0 && !errorOccurred) cb(null, results)
+	let initialDepth = 0
+	if (within !== "." && within !== "") {
+		for (let i = 0, len = within.length; i < len; i++)
+			if (within.charCodeAt(i) === 47) initialDepth++
 	}
 
-	function walk(relPath: string, depth: number, resource?: Resource, lowerRelPath?: string) {
-		if (errorOccurred) return
-		activeTasks++
+	walk(
+		state,
+		within,
+		initialDepth,
+		undefined,
+		within === "." || within === "" ? "" : within.toLowerCase(),
+	)
+}
 
-		const absPath = join(cwd, relPath)
+function handleError(state: ScanState, err: Error) {
+	if (!state.errorOccurred) {
+		state.errorOccurred = err
+		state.cb(err, null)
+	}
+}
 
-		scanOptions.fs.readdir(absPath, { withFileTypes: true }, (err, entries) => {
-			if (err) return handleError(err)
+function taskDone(state: ScanState) {
+	if (--state.activeTasks === 0 && !state.errorOccurred) {
+		state.cb(null, state.results)
+	}
+}
 
-			const targetExtractors = scanOptions.target.extractors
-			let hasExtractor = false
-			if (targetExtractors.length > 0) {
-				for (let i = 0; i < entries.length; i++) {
-					const entryName = entries[i]!.name
-					for (let j = 0; j < targetExtractors.length; j++) {
-						if (entryName === targetExtractors[j]!.path) {
-							hasExtractor = true; break
-						}
+function walk(
+	state: ScanState,
+	relPath: string,
+	depth: number,
+	resource?: Resource,
+	lowerRelPath?: string,
+) {
+	if (state.errorOccurred) return
+	state.activeTasks++
+
+	const { scanOptions, external, failed } = state.options
+	const absPath = join(state.cwd, relPath)
+
+	scanOptions.fs.readdir(absPath, { withFileTypes: true }, (err, entries) => {
+		if (err) return handleError(state, err)
+
+		const targetExtractors = scanOptions.target.extractors
+		let hasExtractor = false
+		if (targetExtractors.length > 0) {
+			const elen = targetExtractors.length
+			const nlen = entries.length
+			for (let i = 0; i < nlen; i++) {
+				const name = entries[i]!.name
+				for (let j = 0; j < elen; j++) {
+					if (name === targetExtractors[j]!.path) {
+						hasExtractor = true
+						break
 					}
-					if (hasExtractor) break
 				}
+				if (hasExtractor) break
 			}
-
-			if (hasExtractor || !resource) {
-				resolveSources({ ...scanOptions, dir: relPath, external, resource }, (err, res) => {
-					if (err) return handleError(err)
-					if (res && "error" in res && res.error) {
-						if (failed) failed.push(res)
-						else return handleError(res.error)
-					}
-					processEntries(entries, relPath, depth, res, lowerRelPath)
-					taskDone()
-				})
-			} else {
-				processEntries(entries, relPath, depth, resource, lowerRelPath)
-				taskDone()
-			}
-		})
-	}
-
-	function processEntries(entries: any[], relPath: string, depth: number, res: Resource | undefined, lowerRelPath?: string) {
-		const len = entries.length
-		const prefix = relPath === "." || relPath === "" ? "" : relPath + "/"
-		const lowerPrefix = lowerRelPath ? lowerRelPath + "/" : prefix ? prefix.toLowerCase() : ""
-
-		let pendingResults = len
-		let dirFiles = 0
-		let dirMatched = 0
-		let dirDirs = 0
-
-		if (len === 0) {
-			if (onResult) onResult({ depth, dir: relPath, dirs: 0, files: 0, ignored: false, matched: 0, type: "total" })
-			return
 		}
 
-		for (let i = 0; i < len; i++) {
-			const entry = entries[i]!
-			const name = entry.name
-			const currentRelPath = prefix + name
-			const currentLowerRelPath = lowerPrefix + name.toLowerCase()
-			activeTasks++
+		if (hasExtractor || !resource) {
+			resolveSources({ ...scanOptions, dir: relPath, external, resource }, (err, res) => {
+				if (err) return handleError(state, err)
+				if (res && "error" in res && res.error) {
+					if (failed) failed.push(res)
+					else return handleError(state, res.error)
+				}
+				processEntries(state, entries, relPath, depth, res, lowerRelPath)
+				taskDone(state)
+			})
+		} else {
+			processEntries(state, entries, relPath, depth, resource, lowerRelPath)
+			taskDone(state)
+		}
+	})
+}
 
-			walkIncludes({ depth, entry, lowerRelPath: currentLowerRelPath, parentPath: relPath, relPath: currentRelPath, resource: res as any, scanOptions, stream }, (err, self) => {
-				if (err) return handleError(err)
+function processEntries(
+	state: ScanState,
+	entries: any[],
+	relPath: string,
+	depth: number,
+	res: Resource | undefined,
+	lowerRelPath?: string,
+) {
+	const len = entries.length
+	if (len === 0) {
+		if (state.options.onResult)
+			state.options.onResult({
+				depth,
+				dir: relPath,
+				dirs: 0,
+				files: 0,
+				ignored: false,
+				matched: 0,
+				type: "total",
+			})
+		return
+	}
+
+	const prefix = relPath === "." || relPath === "" ? "" : relPath + "/"
+	const lowerPrefix = lowerRelPath ? lowerRelPath + "/" : prefix ? prefix.toLowerCase() : ""
+	const { scanOptions, stream, onResult } = state.options
+
+	let pendingResults = len
+	let dirFiles = 0
+	let dirMatched = 0
+	let dirDirs = 0
+
+	for (let i = 0; i < len; i++) {
+		const entry = entries[i]!
+		const name = entry.name
+		const currentRelPath = prefix + name
+		const currentLowerRelPath = lowerPrefix + name.toLowerCase()
+		state.activeTasks++
+
+		walkIncludes(
+			{
+				depth,
+				entry,
+				lowerRelPath: currentLowerRelPath,
+				parentPath: relPath,
+				relPath: currentRelPath,
+				resource: res as any,
+				scanOptions,
+				stream,
+			},
+			(err, self) => {
+				if (err) return handleError(state, err)
 
 				if (self && self.match) {
 					if (self.isDir) dirDirs++
@@ -112,21 +182,26 @@ export function scanParallel(options: ScanParallelOptions, cb: (err: Error | nul
 					}
 
 					if (onResult) onResult(self)
-					else results!.push(self)
+					else state.results!.push(self)
 
-					if (entry.isDirectory() && self.next === 0) walk(currentRelPath, depth + 1, res, currentLowerRelPath)
+					if (self.isDir && self.next === 0) {
+						walk(state, currentRelPath, depth + 1, res, currentLowerRelPath)
+					}
 				}
-				if (--pendingResults === 0) {
-					if (onResult) onResult({ depth, dir: relPath, dirs: dirDirs, files: dirFiles, ignored: false, matched: dirMatched, type: "total" })
-				}
-				taskDone()
-			})
-		}
-	}
 
-	let initialDepth = 0
-	if (within !== "." && within !== "") {
-		for (let i = 0, len = within.length; i < len; i++) if (within.charCodeAt(i) === 47) initialDepth++
+				if (--pendingResults === 0 && onResult) {
+					onResult({
+						depth,
+						dir: relPath,
+						dirs: dirDirs,
+						files: dirFiles,
+						ignored: false,
+						matched: dirMatched,
+						type: "total",
+					})
+				}
+				taskDone(state)
+			},
+		)
 	}
-	walk(within, initialDepth, undefined, within === "." || within === "" ? "" : within.toLowerCase())
 }

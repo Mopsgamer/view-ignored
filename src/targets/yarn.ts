@@ -9,7 +9,7 @@ import {
 	ruleCompile,
 	ruleTest,
 } from "../patterns/index.js"
-import { join, unixify } from "../unixify.js"
+import { unixify } from "../unixify.js"
 import { npmManifestParse } from "./npmManifest.js"
 
 const extractors: Extractor[] = [
@@ -94,7 +94,10 @@ export const Yarn: Target = <Target>{
 			const set = new Set<string>()
 
 			function normal(path: string): string {
-				return unixify(join(normalCwd, path)).slice(normalCwd.length)
+				let res = unixify(path)
+				if (res.startsWith("./")) res = res.slice(2)
+				if (res.startsWith("/")) res = res.slice(1)
+				return "/" + res
 			}
 
 			if (typeof dist.main === "string") set.add(normal(dist.main))
