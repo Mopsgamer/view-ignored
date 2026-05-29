@@ -3,7 +3,7 @@ import type * as fs from "node:fs"
 import type { Target } from "./targets/target.js"
 
 /**
- * @since 0.11.2
+ * @since 0.12.0
  */
 export const enum ScanFlags {
 	none = 0,
@@ -66,7 +66,7 @@ export type ScanOptions = {
 	 *
 	 * @default `0`
 	 *
-	 * @since 0.11.2
+	 * @since 0.12.0
 	 */
 	flags?: ScanFlags
 

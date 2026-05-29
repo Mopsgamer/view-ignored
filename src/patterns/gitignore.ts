@@ -6,7 +6,7 @@ import { ruleCompile } from "./resolveSources.js"
 import { resolveNegatable } from "./source.js"
 
 /**
- * @since 0.11.2
+ * @since 0.12.0
  */
 export function makeGitignoreExtractor(
 	path: string,

@@ -2,10 +2,15 @@ name: Prerelease
 
 on:
   workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   prerelease:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: write
       id-token: write
@@ -33,14 +38,3 @@ jobs:
       - name: Run prerelease
         run: |
           bun run prerelease
-
-      - name: Generate coverage
-        run: |
-          bun run coverage -- --coverage-reporter=lcov
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/lcov.info
-          fail_ci_if_error: true

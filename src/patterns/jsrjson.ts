@@ -17,7 +17,7 @@ interface JsrManifest {
 }
 
 /**
- * @since 0.11.2
+ * @since 0.12.0
  */
 export function makeJsrJsonExtractor(path: string, mode: MatchMode = MatchMode.normal): Extractor {
 	return {
@@ -35,7 +35,7 @@ export function makeJsrJsonExtractor(path: string, mode: MatchMode = MatchMode.n
 }
 
 /**
- * @since 0.11.2
+ * @since 0.12.0
  */
 export function makeJsrJsoncExtractor(path: string, mode: MatchMode = MatchMode.normal): Extractor {
 	const jsr = makeJsrJsonExtractor(path, mode)

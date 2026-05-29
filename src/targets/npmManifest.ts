@@ -36,7 +36,7 @@ export interface PackageJson {
 /**
  * Parses an NPM manifest (package.json) string into a {@link PackageJson} object.
  *
- * @since 0.11.2
+ * @since 0.12.0
  * @throws Error if parsing fails or required fields are missing.
  */
 export function npmManifestParse(text: string): PackageJson {

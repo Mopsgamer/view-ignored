@@ -1,5 +1,5 @@
 /**
- * @since 0.11.2
+ * @since 0.12.0
  */
 export const enum MatchMode {
 	normal = 0,
@@ -54,7 +54,7 @@ export type PatternCache = {
 	/**
 	 * The mode this cache was compiled with.
 	 *
-	 * @since 0.11.2
+	 * @since 0.12.0
 	 */
 	mode: MatchMode
 	/**

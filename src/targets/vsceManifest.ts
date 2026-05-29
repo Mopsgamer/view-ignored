@@ -20,7 +20,7 @@ export interface VsceManifest extends PackageJson {
 /**
  * Parses a VSCE manifest (package.json) string into a {@link VsceManifest} object.
  *
- * @since 0.11.2
+ * @since 0.12.0
  * @throws Error if parsing fails or extension-specific fields are missing or invalid.
  */
 export function vsceManifestParse(s: string): VsceManifest {

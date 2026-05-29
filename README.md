@@ -100,21 +100,15 @@ import type { Target } from "view-ignored/targets"
 
 import {
 	type Extractor,
-	extractGitignore,
+	makeGitignoreExtractor,
 	ruleTest,
 	ruleCompile,
 	type Rule,
 } from "view-ignored/patterns"
 
 const extractors: Extractor[] = [
-	{
-		extract: extractGitignore,
-		path: ".gitignore",
-	},
-	{
-		extract: extractGitignore,
-		path: ".git/info/exclude",
-	},
+	makeGitignoreExtractor(".gitignore"),
+	makeGitignoreExtractor(".git/info/exclude"),
 ]
 
 const internal: Rule[] = [
@@ -213,8 +207,8 @@ await matcherContextAddPath(ctx, options, "src/file.ts")
 The following built-in scanners are available:
 
 - Git ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/git.ts))
-  - `view-ignored` handles Git-specific ignoring almost identically to Git: does not consider config.
-  - Reads `.gitignore` and `.git/info/exclude`.
+  - `view-ignored` handles Git-specific ignoring identically to Git.
+  - Reads `.gitignore` and `.git/info/exclude` and configurations.
   - Searches from `/`. (system's root)
   - Check this scanner by running `git ls-files --others --exclude-standard --cached`.
 - NPM ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/npm.ts))

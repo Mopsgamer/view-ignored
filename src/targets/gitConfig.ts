@@ -8,14 +8,14 @@ const env = typeof process !== "undefined" ? process.env : {}
 /**
  * The user's home directory path, normalized.
  *
- * @since 0.11.2
+ * @since 0.12.0
  */
 export const HOME = (env.HOME || env.USERPROFILE || "").replaceAll("\\", "/")
 
 /**
  * The XDG configuration home directory path, normalized.
  *
- * @since 0.11.2
+ * @since 0.12.0
  */
 export const XDG = (env.XDG_CONFIG_HOME || (HOME ? HOME + "/.config" : "")).replaceAll("\\", "/")
 
@@ -59,7 +59,7 @@ export function mergeConfig(target: any, source: any): void {
 /**
  * Parses a .gitconfig file text into an object.
  *
- * @since 0.11.2
+ * @since 0.12.0
  */
 export function parseGit(text: string): any {
 	const obj: any = {}
@@ -232,7 +232,8 @@ export function getIncludes(parsed: any, gitDir: string | null, branch: string |
 
 	if (!gitDir) return res
 
-	const gD = gitDir.charCodeAt(0) === 47 ? gitDir.slice(1) : gitDir
+	const sGD = strip(gitDir)
+	const gD = sGD.charCodeAt(0) === 47 ? sGD.slice(1) : sGD
 
 	for (const s in parsed) {
 		if (!s.startsWith('includeif "')) continue
