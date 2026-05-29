@@ -126,8 +126,10 @@ const internal: Rule[] = [
 
 export const Git: Target = <Target>{
 	extractors,
-	// TODO: Git should read configs
 	ignores: ruleTest,
+	init({ fs, cwd, signal, target }, cb) {
+		// ... Git config loading logic ...
+	},
 	internalRules: internal,
 	root: "/",
 }

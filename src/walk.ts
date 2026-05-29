@@ -58,7 +58,7 @@ export function walkIncludes(
 		resource,
 		depth,
 	} = options
-	const { target, depth: maxDepth, flags } = scanOptions
+	const { target, depth: maxDepth, flags, fs, cwd, signal } = scanOptions
 
 	const isDir = entry.isDirectory()
 	const direntPath = isDir ? path + "/" : path
@@ -66,7 +66,15 @@ export function walkIncludes(
 
 	let match: RuleMatch
 	try {
-		match = ruleTestSync(target, resource, path, lowerEntry)
+		match = ruleTestSync({
+			cwd,
+			entry: path,
+			fs,
+			lowerEntry,
+			resource,
+			signal,
+			target,
+		})
 	} catch (err) {
 		return cb(err as Error, null as any)
 	}
