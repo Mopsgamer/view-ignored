@@ -22,6 +22,25 @@ import { MatchMode } from "./patternMode.js"
  */
 export function ruleCompile(rule: Rule, mode: MatchMode = MatchMode.normal): Rule {
 	rule.compiled = patternListCompile(rule.pattern, mode)
+
+	const literals = new Set<string>()
+	let hasComplex = false
+
+	for (let i = 0, len = rule.compiled.length; i < len; i++) {
+		const r = rule.compiled[i]!
+		if (r._isLiteral && !r._matchBase && !r._isRoot) {
+			literals.add(r._simplePattern)
+		} else {
+			hasComplex = true
+		}
+	}
+
+	if (literals.size > 0 && !hasComplex) {
+		rule._literals = literals
+	} else {
+		delete rule._literals
+	}
+
 	return rule
 }
 
@@ -66,106 +85,107 @@ export function resolveSources(
 	options: ResolveSourcesOptions,
 	cb: (err: Error | null, resource: Resource) => void,
 ): void {
-	const { fs, external, cwd, signal, target, resource: parentResource } = options
-	let dir = options.dir
+	const { dir, external, target } = options
 
 	if (target.root === "." && dir !== ".") {
-		resolveSources({ ...options, dir: "." }, (err, res) => {
-			if (err) return cb(err, null as any)
-			external.set(dir, res)
-			cb(null, res)
-		})
-		return
+		return resolveSourcesForRootTarget(options, cb)
 	}
 
 	let source = external.get(dir)
-	if (source !== undefined) {
-		cb(null, source)
-		return
-	}
+	if (source !== undefined) return cb(null, source)
 
 	const noSourceDirList: string[] = [dir]
-
-	if (dir !== ".") {
-		const segments = dir.split("/")
-		for (let i = segments.length - 1; i >= 0; i--) {
-			if (signal?.aborted) {
-				cb(signal.reason, null)
-				return
-			}
-			const d = segments.slice(0, i).join("/") || "."
-			source = external.get(d)
-			if (source !== undefined) {
-				dir = d
-				break
-			}
-			noSourceDirList.push(d)
-			if (d === ".") {
-				dir = "."
-				break
-			}
-		}
+	let currentDir = dir
+	while (currentDir !== ".") {
+		const lastSlash = currentDir.lastIndexOf("/")
+		currentDir = lastSlash === -1 ? "." : currentDir.slice(0, lastSlash)
+		source = external.get(currentDir)
+		if (source !== undefined) break
+		noSourceDirList.push(currentDir)
 	}
-
-	// find non-cwd source [root > cwd) and populate [cwd > ... > dir]
 
 	if (target.root.charCodeAt(0) === 47) {
-		// "/"
-		const segments = cwd.split("/")
-		const preCwdSegments: string[] = []
-		let current = ""
-		for (let i = 0, len = segments.length - 1; i < len; i++) {
-			current += segments[i] + "/"
-			const path = current.length > 1 ? current.slice(0, -1) : "/"
-			if (path.length >= target.root.length) {
-				preCwdSegments.push(path)
-			}
-		}
-
-		findSourceForAbsoluteDirsCb(preCwdSegments, fs, target, signal, (err, source) => {
-			if (err) {
-				cb(err, null)
-				return
-			}
-
-			const absPaths = Array.from<string>({ length: noSourceDirList.length })
-			for (let i = 0, len = noSourceDirList.length; i < len; i++) {
-				absPaths[i] = join(cwd, noSourceDirList[i]!)
-			}
-			findSourceForAbsoluteDirsCb(
-				absPaths,
-				fs,
-				target,
-				signal,
-				(err, s) => {
-					if (err) {
-						cb(err, null)
-						return
-					}
-					const finalSource = s || source || parentResource || null
-					external.set(options.dir, finalSource)
-					cb(null, finalSource)
-				},
-				options.entries,
-			)
-		})
-		return
+		return resolveSourcesAbsolute(options, noSourceDirList, cb)
 	}
 
-	const absPaths = Array.from<string>({ length: noSourceDirList.length })
+	resolveSourcesRelative(options, noSourceDirList, cb)
+}
+
+function resolveSourcesForRootTarget(
+	options: ResolveSourcesOptions,
+	cb: (err: Error | null, resource: Resource) => void,
+): void {
+	const { dir, external } = options
+	const res = external.get(".")
+	if (res !== undefined) {
+		external.set(dir, res)
+		return cb(null, res)
+	}
+	resolveSources({ ...options, dir: "." }, (err, res) => {
+		if (err) return cb(err, null as any)
+		external.set(dir, res)
+		cb(null, res)
+	})
+}
+
+function resolveSourcesAbsolute(
+	options: ResolveSourcesOptions,
+	noSourceDirList: string[],
+	cb: (err: Error | null, resource: Resource) => void,
+): void {
+	const { fs, target, cwd, signal, external, resource: parentResource } = options
+	const segments = cwd.split("/")
+	const preCwdSegments: string[] = []
+	let current = ""
+
+	for (let i = 0, len = segments.length - 1; i < len; i++) {
+		current += segments[i] + "/"
+		const path = current.length > 1 ? current.slice(0, -1) : "/"
+		if (path.length >= target.root.length) {
+			preCwdSegments.push(path)
+		}
+	}
+
+	findSourceForPaths(preCwdSegments, fs, target, signal, (err, source) => {
+		if (err) return cb(err, null)
+
+		const absPaths: string[] = Array.from({ length: noSourceDirList.length })
+		for (let i = 0, len = noSourceDirList.length; i < len; i++) {
+			absPaths[i] = join(cwd, noSourceDirList[i]!)
+		}
+		findSourceForPaths(
+			absPaths,
+			fs,
+			target,
+			signal,
+			(err, s) => {
+				if (err) return cb(err, null)
+				const finalSource = s || source || parentResource || null
+				external.set(options.dir, finalSource)
+				cb(null, finalSource)
+			},
+			options.entries,
+		)
+	})
+}
+
+function resolveSourcesRelative(
+	options: ResolveSourcesOptions,
+	noSourceDirList: string[],
+	cb: (err: Error | null, resource: Resource) => void,
+): void {
+	const { fs, target, cwd, signal, external, resource: parentResource } = options
+	const absPaths: string[] = Array.from({ length: noSourceDirList.length })
 	for (let i = 0, len = noSourceDirList.length; i < len; i++) {
 		absPaths[i] = join(cwd, noSourceDirList[i]!)
 	}
-	findSourceForAbsoluteDirsCb(
+	findSourceForPaths(
 		absPaths,
 		fs,
 		target,
 		signal,
 		(err, source) => {
-			if (err) {
-				cb(err, null)
-				return
-			}
+			if (err) return cb(err, null)
 			const finalSource = source || parentResource || null
 			external.set(options.dir, finalSource)
 			cb(null, finalSource)
@@ -174,7 +194,7 @@ export function resolveSources(
 	)
 }
 
-function findSourceForAbsoluteDirsCb(
+function findSourceForPaths(
 	paths: string[],
 	fs: FsAdapter,
 	target: Target,
@@ -182,10 +202,6 @@ function findSourceForAbsoluteDirsCb(
 	cb: (err: Error | null, resource: Resource) => void,
 	entries?: Dirent[],
 ): void {
-	if (signal?.aborted) {
-		cb(signal.reason, null)
-		return
-	}
 	const extractors = target.extractors
 	const plen = paths.length
 	const elen = extractors.length
@@ -193,10 +209,9 @@ function findSourceForAbsoluteDirsCb(
 	let i = 0
 	let j = 0
 	function next() {
-		if (i >= plen) {
-			cb(null, null)
-			return
-		}
+		if (i >= plen) return cb(null, null)
+		if (signal?.aborted) return cb(signal.reason, null)
+
 		const parent = paths[i]!
 		const extractor = extractors[j]!
 
@@ -224,14 +239,8 @@ function findSourceForAbsoluteDirsCb(
 		}
 
 		tryExtractorCb(parent, fs, extractor, (err, source) => {
-			if (err) {
-				cb(err, null)
-				return
-			}
-			if (source !== null) {
-				cb(null, source)
-				return
-			}
+			if (err) return cb(err, null)
+			if (source !== null) return cb(null, source)
 			next()
 		})
 	}
@@ -249,36 +258,19 @@ function tryExtractorCb(
 	fs.readFile(abs, (err, buff) => {
 		if (err) {
 			const error = err as NodeJS.ErrnoException
-			if (error.code === "ENOENT") {
-				cb(null, null)
-				return
-			}
-			cb(null, {
+			if (error.code === "ENOENT") return cb(null, null)
+			return cb(null, {
 				error,
-				source: {
-					inverted: false,
-					path: extractor.path,
-					rules: [],
-				},
+				source: { inverted: false, path: extractor.path, rules: [] },
 			})
-			return
 		}
 
-		const newSource = <Source>{
-			inverted: false,
-			path: extractor.path,
-			rules: [],
-		}
-
+		const newSource = <Source>{ inverted: false, path: extractor.path, rules: [] }
 		const act = extractor.extract(newSource, buff!)
-		if (act === null) {
-			cb(null, null)
-			return
-		}
-		if (act instanceof Error) {
-			cb(null, { error: act, source: newSource })
-			return
-		}
+
+		if (act === null) return cb(null, null)
+		if (act instanceof Error) return cb(null, { error: act, source: newSource })
+
 		cb(null, newSource)
 	})
 }

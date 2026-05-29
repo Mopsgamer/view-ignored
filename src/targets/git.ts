@@ -4,7 +4,14 @@ import type { Target } from "./target.js"
 
 import { makeGitignoreExtractor, ruleCompile, ruleTest } from "../patterns/index.js"
 import { dirname, join, unixify } from "../unixify.js"
-import { HOME, XDG, getCache, loadRec, merge, resP } from "./gitConfig.js"
+import {
+	HOME,
+	XDG,
+	getCache,
+	loadRec,
+	mergeConfig as merge,
+	resolvePath as resP,
+} from "./gitConfig.js"
 
 const extractors: Extractor[] = [
 	makeGitignoreExtractor(".gitignore"),

@@ -39,6 +39,12 @@ export type Rule = {
 	 * @since 0.6.0
 	 */
 	compiled: null | PatternCache[]
+
+	/**
+	 * Internal cache for O(1) literal matching.
+	 * @internal
+	 */
+	_literals?: Set<string>
 }
 
 /**
@@ -123,14 +129,14 @@ export interface RuleMatchBaseExternal<K extends string | number | symbol>
  * @since 0.11.0
  */
 export const enum RuleMatchKind {
-	"none",
-	"missingSource",
-	"noMatch",
-	"invalidSource",
-	"invalidExternal",
-	"invalidInternal",
-	"external",
-	"internal",
+	none,
+	missingSource,
+	noMatch,
+	invalidSource,
+	invalidExternal,
+	invalidInternal,
+	external,
+	internal,
 }
 
 /**
@@ -153,14 +159,9 @@ export type RuleMatch =
  *
  * @since 0.11.0
  */
-export function isRuleMatchInvalid(
-	match: RuleMatch,
-): match is
-	| RuleMatchBaseInvalidSource<RuleMatchKind.invalidSource>
-	| RuleMatchBaseInvalidExternal<RuleMatchKind.invalidExternal>
-	| RuleMatchBaseInvalidPattern<RuleMatchKind.invalidInternal> {
-	const k = match.kind
-	return k >= 3 && k <= 5
+export function isRuleMatchInvalid(match: RuleMatch): boolean {
+	const k = (match as any).kind
+	return k >= RuleMatchKind.invalidSource && k <= RuleMatchKind.invalidInternal
 }
 
 /**
@@ -188,23 +189,87 @@ export interface RuleTestOptions extends PatternFinderOptions {
 	lowerEntry?: string
 }
 
-function cacheTest(rs: PatternCache[], entry: string, lower?: string): PatternCache | Error | null {
-	const len = rs.length
-	for (let i = 0; i < len; i++) {
+/**
+ * Internal helper to test a single rule against a path.
+ */
+function testRule(rule: Rule, entry: string, lower?: string): PatternCache | null {
+	const target = lower || entry
+
+	if (rule._literals?.has(target)) {
+		const rs = rule.compiled!
+		for (let i = 0; i < rs.length; i++) {
+			if (rs[i]!._simplePattern === target) return rs[i]!
+		}
+	}
+
+	const rs = rule.compiled
+	if (!rs) return null
+
+	for (let i = 0, len = rs.length; i < len; i++) {
 		const r = rs[i]!
 		const useLower = !!(r.mode & MatchMode.unsensitive && lower)
-		try {
+		const targetStr = useLower ? lower! : entry
+
+		if (r._isSimple && !(r.mode & MatchMode.wildmatch)) {
+			const res = testSimpleRule(rule, r, targetStr)
+			if (res) return res
+		}
+
+		if (patternCacheTest(r, targetStr, useLower ? MatchMode.lowered : MatchMode.normal)) return r
+	}
+	return null
+}
+
+/**
+ * Optimizes simple rule matching.
+ */
+function testSimpleRule(rule: Rule, r: PatternCache, targetStr: string): PatternCache | null {
+	if (r._isLiteral) {
+		if (
+			targetStr === r._simplePattern ||
+			(targetStr.startsWith(r._simplePattern) &&
+				targetStr.charCodeAt(r._simplePattern.length) === 47)
+		) {
+			return r
+		}
+		if (
+			!rule.excludes &&
+			r._simplePattern.startsWith(targetStr) &&
+			(targetStr.charCodeAt(targetStr.length - 1) === 47 ||
+				r._simplePattern.charCodeAt(targetStr.length) === 47)
+		) {
+			return r
+		}
+		return null
+	}
+
+	if (r._isSuffix) {
+		if (targetStr.endsWith(r._simplePattern)) {
+			if (r._matchBase) return r
+			const pos = targetStr.length - r._simplePattern.length
+			if (pos === 0 || (r._isRoot ? false : targetStr.charCodeAt(pos - 1) === 47)) {
+				return r
+			}
+		}
+		return null
+	}
+
+	if (r._isPrefix) {
+		if (targetStr.startsWith(r._simplePattern)) {
+			if (r._matchBase) return r
 			if (
-				patternCacheTest(
-					r,
-					useLower ? lower! : entry,
-					useLower ? MatchMode.lowered : MatchMode.normal,
-				)
+				targetStr.length === r._simplePattern.length ||
+				targetStr.charCodeAt(r._simplePattern.length) === 47
 			) {
 				return r
 			}
-		} catch (err) {
-			return err as Error
+		} else if (
+			!rule.excludes &&
+			r._simplePattern.startsWith(targetStr) &&
+			(targetStr.charCodeAt(targetStr.length - 1) === 47 ||
+				r._simplePattern.charCodeAt(targetStr.length) === 47)
+		) {
+			return r
 		}
 	}
 	return null
@@ -223,66 +288,68 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 	const lower = options.lowerEntry
 
 	if (src !== null && !("error" in src)) {
-		const rules = src.rules
-		for (let i = 0, elen = rules.length; i < elen; i++) {
+		const rules = (src as Source).rules
+		for (let i = 0, len = rules.length; i < len; i++) {
 			const rule = rules[i]!
-			const res = cacheTest(rule.compiled!, entry, lower)
-			if (res === null) continue
-			if (res instanceof Error) {
-				return {
-					error: res,
-					ignored: false,
-					kind: RuleMatchKind.invalidExternal,
-					pattern: "",
-					source: src,
-				}
-			}
-
-			return {
-				ignored: rule.excludes,
-				kind: RuleMatchKind.external,
-				pattern: res.pattern,
-				source: src,
-			}
+			const res = testRule(rule, entry, lower)
+			if (res) return getExternalMatch(src as Source, rule, res)
 		}
 	}
 
 	const internalRules = options.target.internalRules
 	for (let i = 0, len = internalRules.length; i < len; i++) {
 		const rule = internalRules[i]!
-		if (!rule.compiled) continue
-		const res = cacheTest(rule.compiled, entry, lower)
-		if (res === null) continue
-		if (res instanceof Error) {
-			return {
-				error: res,
-				ignored: false,
-				kind: RuleMatchKind.invalidInternal,
-				pattern: "",
-			}
-		}
+		const res = testRule(rule, entry, lower)
+		if (res) return getInternalMatch(rule, res)
+	}
 
-		return {
+	if (src === null) return { ignored: false, kind: RuleMatchKind.missingSource }
+	if ("error" in src) {
+		const invalid = src as { error: Error; source: Source }
+		return { ...invalid, ignored: true, kind: RuleMatchKind.invalidSource } as any
+	}
+
+	const source = src as Source
+	return (source._noMatchCache ||= {
+		ignored: source.inverted,
+		kind: RuleMatchKind.noMatch,
+		source,
+	})
+}
+
+/**
+ * Internal helper to create and cache external match results.
+ */
+function getExternalMatch(src: Source, rule: Rule, res: PatternCache): RuleMatch {
+	const cache = ((res as any)._matchCache ||= new Map())
+	let m = cache.get(rule.excludes)
+	if (!m) {
+		m = {
+			ignored: rule.excludes,
+			kind: RuleMatchKind.external,
+			pattern: res.pattern,
+			source: src,
+		}
+		cache.set(rule.excludes, m)
+	}
+	return m
+}
+
+/**
+ * Internal helper to create and cache internal match results.
+ */
+function getInternalMatch(rule: Rule, res: PatternCache): RuleMatch {
+	const cache = ((res as any)._matchCache ||= new Map())
+	let m = cache.get(rule.excludes)
+	if (!m) {
+		m = {
 			ignored: rule.excludes,
 			kind: RuleMatchKind.internal,
 			pattern: res.pattern,
 		}
+		cache.set(rule.excludes, m)
 	}
-
-	if (src === null) return { ignored: false, kind: RuleMatchKind.missingSource }
-	if ("error" in src) return { ...src, ignored: true, kind: RuleMatchKind.invalidSource }
-
-	const cache = ((options.target as any)._noMatchCache ||= new WeakMap())
-	let res = cache.get(src)
-	if (!res) {
-		res = {
-			ignored: src.inverted,
-			kind: RuleMatchKind.noMatch,
-			source: src,
-		}
-		cache.set(src, res)
-	}
-	return res
+	return m
 }
 
 /**

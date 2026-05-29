@@ -7,16 +7,6 @@ import { scanParallel } from "./scanParallel.js"
 import { unixify } from "./unixify.js"
 import { propagateTotals, walkPatchResult, walkPatchTotal } from "./walk.js"
 
-/**
- * Scan the directory for included files based on the provided targets.
- *
- * It also normalizes paths to use forward slashes.
- *
- * @param options Scan options.
- * @param cb Callback function.
- *
- * @since 0.11.0
- */
 export function scanCb(
 	options: ScanOptions & { fs: FsAdapter; cwd: string },
 	cb: (err: Error | null, ctx: MatcherContext) => void,
@@ -31,10 +21,7 @@ export function scanCb(
 		fs,
 	} = options
 
-	if (maxDepth < 0) {
-		cb(new TypeError("Depth must be a non-negative integer"), null as any)
-		return
-	}
+	if (maxDepth < 0) return cb(new TypeError("Depth must be a non-negative integer"), null as any)
 
 	const ctx: MatcherContext = {
 		external: new Map<string, Resource>(),
@@ -61,35 +48,39 @@ export function scanCb(
 				external: ctx.external,
 				failed: ctx.failed,
 				onResult: (result) => {
-					if ("dir" in result) {
-						walkPatchTotal(ctx, scanOptions.depth, result)
-					} else {
-						walkPatchResult(ctx, result)
+					if ((result as any).type === "total")
+						walkPatchTotal(ctx, scanOptions.depth, result as any)
+					else {
+						const res = result as any
+						walkPatchResult(ctx, res)
+						if (res.includeParent && !res.match.ignored) {
+							let parent = res.parentPath
+							while (parent) {
+								const pPath = parent + "/"
+								if (ctx.paths.has(pPath)) break
+								ctx.paths.set(pPath, res.match)
+								const lastSlash = parent.lastIndexOf("/")
+								if (lastSlash === -1) break
+								parent = parent.slice(0, lastSlash)
+							}
+						}
 					}
 				},
 				scanOptions,
 				within,
 			},
 			(err) => {
-				if (err) {
-					cb(err, null as any)
-					return
-				}
+				if (err) return cb(err, null as any)
 				propagateTotals(ctx.total)
 				cb(null, ctx)
 			},
 		)
 	}
 
-	if (target.init) {
+	if (target.init)
 		target.init({ cwd: normalCwd, fs, signal, target }, (err) => {
-			if (err) {
-				cb(err, null as any)
-				return
-			}
+			if (err) return cb(err, null as any)
 			startScan()
 		})
-	} else {
-		startScan()
-	}
+	else startScan()
 }

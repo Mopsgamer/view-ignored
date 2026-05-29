@@ -55,7 +55,7 @@ by Git, NPM, Yarn, JSR, Deno, Bun, VSCode extension CLI and other tools.
 
 - [x] Works for common use cases.
 - [ ] Follow `.gitignore` spec. (`ignore` does.)
-- [ ] Handle Git config.
+- [x] Handle Git config.
 - [ ] Include node_modules bundled dependencies correctly. Missing: NPM, Yarn + Classic, Bun, Deno, JSR.
 - [ ] \*Move targets into separate packages (or not).
 - [ ] Import and pass upstream source tests.
@@ -127,8 +127,10 @@ const internal: Rule[] = [
 
 export const Git: Target = <Target>{
 	extractors,
-	// TODO: Git should read configs
 	ignores: ruleTest,
+	init({ fs, cwd, signal, target }, cb) {
+		// ... Git config loading logic ...
+	},
 	internalRules: internal,
 	root: "/",
 }

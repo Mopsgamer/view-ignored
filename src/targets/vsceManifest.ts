@@ -2,21 +2,29 @@ import type { PackageJson } from "./npmManifest.js"
 
 import { npmManifestParse } from "./npmManifest.js"
 
+/**
+ * Represents the structure of a VSCode extension manifest.
+ */
 export interface VsceManifest extends PackageJson {
+	/**
+	 * Extension engine compatibility.
+	 */
 	engines: {
+		/**
+		 * VSCode version range.
+		 */
 		vscode: string
 	}
 }
 
-// Regex source: https://github.com/microsoft/vscode-vsce/blob/main/src/validation.ts#L52
-const VSCODE_ENGINE_REGEX = /^\*$|^(\^|>=)?((\d+)|x)\.((\d+)|x)\.((\d+)|x)(-.*)?$/
-
+/**
+ * Parses a VSCE manifest (package.json) string into a {@link VsceManifest} object.
+ *
+ * @since 0.11.2
+ * @throws Error if parsing fails or extension-specific fields are missing or invalid.
+ */
 export function vsceManifestParse(s: string): VsceManifest {
 	const parsed = npmManifestParse(s)
-
-	if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-		throw new Error("VSCE manifest must be a JSON object")
-	}
 
 	if (
 		!parsed.engines ||
@@ -26,9 +34,39 @@ export function vsceManifestParse(s: string): VsceManifest {
 		throw new Error("VSCE manifest must include an 'engines.vscode' string")
 	}
 
-	if (!VSCODE_ENGINE_REGEX.test(parsed.engines.vscode)) {
-		throw new Error(`Invalid 'engines.vscode' version format: "${parsed.engines.vscode}"`)
-	}
+	validateVscodeEngine(parsed.engines.vscode)
 
 	return parsed as VsceManifest
+}
+
+/**
+ * Validates the 'engines.vscode' field using manual parsing instead of regex.
+ */
+function validateVscodeEngine(v: string): void {
+	if (v === "*") return
+
+	let version = v
+	if (version.startsWith("^")) version = version.slice(1)
+	else if (version.startsWith(">=")) version = version.slice(2)
+
+	const dashIndex = version.indexOf("-")
+	if (dashIndex !== -1) version = version.slice(0, dashIndex)
+
+	const parts = version.split(".")
+	if (parts.length === 3 && parts.every(validatePart)) return
+
+	throw new Error(`Invalid 'engines.vscode' version format: "${v}"`)
+}
+
+/**
+ * Checks if a version part consists of digits or 'x'.
+ */
+function validatePart(s: string): boolean {
+	if (s.length === 0) return false
+	for (let i = 0; i < s.length; i++) {
+		const c = s.charCodeAt(i)
+		// 0-9, x, X
+		if (!((c >= 48 && c <= 57) || c === 120 || c === 88)) return false
+	}
+	return true
 }
