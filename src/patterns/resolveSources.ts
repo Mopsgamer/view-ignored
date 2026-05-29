@@ -9,6 +9,11 @@ import { join } from "../unixify.js"
 import { patternListCompile } from "./patternCompile.js"
 import { MatchMode } from "./patternMode.js"
 
+/**
+ * Compiles a rule into a list of {@link PatternCache} objects.
+ *
+ * @since 0.11.2
+ */
 export function ruleCompile(rule: Rule, mode: MatchMode = MatchMode.normal): Rule {
 	rule.compiled = patternListCompile(rule.pattern, mode)
 	const literals = new Set<string>()
@@ -23,11 +28,21 @@ export function ruleCompile(rule: Rule, mode: MatchMode = MatchMode.normal): Rul
 	return rule
 }
 
+/**
+ * Options for resolving sources.
+ *
+ * @since 0.11.2
+ */
 export interface ResolveSourcesOptions extends PatternFinderOptions {
 	dir: string
 	external: Map<string, Resource>
 }
 
+/**
+ * Resolves sources for a specific directory.
+ *
+ * @since 0.11.2
+ */
 export function resolveSources(
 	options: ResolveSourcesOptions,
 	cb: (err: Error | null, resource: Resource) => void,

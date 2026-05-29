@@ -35,6 +35,9 @@ export interface RuleMatchBaseInvalidExternal<K extends string | number | symbol
 export interface RuleMatchBaseExternal<K extends string | number | symbol>
 	extends RuleMatchBasePattern<K>, RuleMatchBaseSource<K> {}
 
+/**
+ * @since 0.6.0
+ */
 export const enum RuleMatchKind {
 	none,
 	missingSource,
@@ -46,6 +49,9 @@ export const enum RuleMatchKind {
 	internal,
 }
 
+/**
+ * @since 0.6.0
+ */
 export type RuleMatch =
 	| RuleMatchBase<RuleMatchKind.none>
 	| RuleMatchBase<RuleMatchKind.missingSource>
@@ -56,6 +62,9 @@ export type RuleMatch =
 	| RuleMatchBaseExternal<RuleMatchKind.external>
 	| RuleMatchBasePattern<RuleMatchKind.internal>
 
+/**
+ * @since 0.6.0
+ */
 export interface RuleTestOptions {
 	target: { internalRules: Rule[] }
 	resource: Source | null | { error: Error; source: Source }
@@ -187,11 +196,17 @@ export function ruleTestSync(
 	})
 }
 
+/**
+ * @since 0.11.0
+ */
 export function isRuleMatchInvalid(match: RuleMatch): boolean {
 	const k = (match as any).kind
 	return k >= 3 && k <= 5
 }
 
+/**
+ * @since 0.6.0
+ */
 export function ruleTest(
 	options: RuleTestOptions,
 	cb: (err: Error | null, match: RuleMatch) => void,

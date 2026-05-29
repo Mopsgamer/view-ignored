@@ -103,7 +103,8 @@
 		"ts-compat-6": "bun node_modules/typescript6/bin/tsc -p src/tsconfig.prod.json --noEmit",
 		"release:major": "bun run --bun release-it --increment=major",
 		"release:minor": "bun run --bun release-it --increment=minor",
-		"release:patch": "bun run --bun release-it --increment=patch"
+		"release:patch": "bun run --bun release-it --increment=patch",
+		"coverage": "bun test src --coverage"
 	},
 	"dependencies": {
 		"micromatch": "^4.0.8",
