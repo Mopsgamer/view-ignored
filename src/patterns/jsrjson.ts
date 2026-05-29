@@ -67,18 +67,17 @@ const extract: ExtractorFn = (source, content) => {
 	const target = dist.publish ?? dist
 
 	if (target.exclude && Array.isArray(target.exclude)) {
-		exclude.pattern.push(...target.exclude)
+		for (const pattern of target.exclude) {
+			resolveNegatable(pattern, false, include, exclude)
+		}
 	}
 
 	if (target.include && Array.isArray(target.include)) {
-		include.pattern.push(...target.include)
-	}
-
-	for (const si of [include, exclude]) {
-		for (const pattern of si.pattern) {
+		for (const pattern of target.include) {
 			resolveNegatable(pattern, true, include, exclude)
 		}
 	}
+
 	source.rules.push(include, exclude)
 	return
 }

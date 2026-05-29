@@ -5,3 +5,4 @@ dist
 *.cpuprofile
 CPU.*.*
 HEAP.*.*
+coverage
