@@ -123,6 +123,11 @@ function testRule(rule: Rule, entry: string, lower?: string): PatternCache | nul
 	return null
 }
 
+/**
+ * Synchronously tests a path against rules.
+ *
+ * @since 0.11.2
+ */
 export function ruleTestSync(
 	target: { internalRules: Rule[] },
 	resource: Source | null | { error: Error; source: Source },

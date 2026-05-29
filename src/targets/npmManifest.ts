@@ -9,6 +9,11 @@ export interface PackageJson {
 	[key: string]: any
 }
 
+/**
+ * Parses an NPM manifest (package.json).
+ *
+ * @since 0.11.2
+ */
 export function npmManifestParse(text: string): PackageJson {
 	const parsed = JSON.parse(text)
 	if (typeof parsed !== "object" || parsed === null) throw new Error("Invalid package.json")

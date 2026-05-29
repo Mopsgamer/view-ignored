@@ -4,6 +4,11 @@ import glob from "micromatch"
 
 import { MatchMode } from "./patternMode.js"
 
+/**
+ * Compiles a list of patterns into a list of {@link PatternCache} objects.
+ *
+ * @since 0.11.2
+ */
 export function patternListCompile(
 	list: PatternList,
 	mode: MatchMode = MatchMode.normal,
@@ -32,6 +37,11 @@ function hasMagic(s: string): boolean {
 	return false
 }
 
+/**
+ * Compiles a pattern into a {@link PatternCache} object.
+ *
+ * @since 0.11.2
+ */
 export function patternCompile(
 	pattern: string,
 	context: PatternList = [],

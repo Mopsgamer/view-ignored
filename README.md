@@ -33,7 +33,7 @@ by Git, NPM, Yarn, JSR, Deno, Bun, VSCode extension CLI and other tools.
 - **Reader.** Get a list of included files using configuration file
   readers, not command-line wrappers.
 - **Reasoning.** Understand why certain files are included or excluded.
-- **Fast.** Optimized for performance with minimal memory overhead.
+- **Fast.** Optimized for performance with minimal memory overhead. Replaced all regex usage in hot paths with an optimized custom matcher (~1.3ms overhead for 13k files).
 - **Plugins.** Built-in [targets](#targets) for popular tools. Use custom
   targets by implementing/extending the `Target` interface.
 - **Streaming.** Native `scanStream` support for processing massive file trees with minimal memory overhead.
@@ -54,7 +54,7 @@ by Git, NPM, Yarn, JSR, Deno, Bun, VSCode extension CLI and other tools.
 
 - [x] Works for common use cases.
 - [ ] Follow `.gitignore` spec. (`ignore` does.)
-- [ ] Handle Git config.
+- [x] Handle Git config.
 - [ ] Include node_modules bundled dependencies correctly. Missing: NPM, Yarn + Classic, Bun, Deno, JSR.
 - [ ] \*Move targets into separate packages (or not).
 - [ ] Import and pass upstream source tests.

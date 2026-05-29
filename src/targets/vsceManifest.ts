@@ -20,6 +20,11 @@ function validatePart(s: string): boolean {
 	return true
 }
 
+/**
+ * Parses a VSCE manifest.
+ *
+ * @since 0.11.2
+ */
 export function vsceManifestParse(s: string): VsceManifest {
 	const parsed = npmManifestParse(s)
 
