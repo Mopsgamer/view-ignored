@@ -6,6 +6,13 @@ on:
     paths:
       - "src/**/*.ts"
       - "!src/**/*.test.ts"
+  workflow_dispatch:
+    inputs:
+      print_only:
+        description: "Only print the benchmark results to the log (do not comment on PR)"
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   benchmark:
@@ -45,7 +52,12 @@ jobs:
             bun scripts/bench.js --vign --diff origin/${{ github.event.pull_request.base.ref }} > bench_output.txt
           fi
 
+      - name: Print benchmark results to log
+        if: ${{ inputs.print_only == true && steps.bench.outputs.no_ts_changes != 'true' }}
+        run: cat bench_output.txt
+
       - name: Comment PR
+        if: ${{ inputs.print_only != true }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
