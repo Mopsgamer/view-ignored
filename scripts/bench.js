@@ -280,27 +280,37 @@ const currentResults = await runBenchmarks()
 let baseResults = null
 
 if (values.diff) {
-	const currentBranch = (await $`git branch --show-current`.text()).trim()
-	const isDirty = (await $`git status --porcelain`.text()).trim().length > 0
+	const currentBranch = (await $`git branch --show-current`.quiet().text()).trim()
+	const isDirty = (await $`git status --porcelain`.quiet().text()).trim().length > 0
 
 	if (isDirty) {
-		await $`git stash`
+		await $`git stash`.quiet()
 	}
 
 	try {
-		await $`git checkout ${values.diff}`
-		await $`bun install && bun run prod`
+		await $`git checkout ${values.diff}`.quiet()
+		await $`bun install && bun run prod`.quiet()
 		baseResults = await runBenchmarks()
 	} finally {
 		if (currentBranch) {
-			await $`git checkout ${currentBranch}`
+			await $`git checkout ${currentBranch}`.quiet()
 		} else {
-			await $`git checkout -`
+			await $`git checkout -`.quiet()
 		}
+
 		if (isDirty) {
-			await $`git stash pop`
+			const popResult = await $`git stash pop`.nothrow().quiet()
+
+			if (popResult.exitCode !== 0) {
+				console.error(
+					"\n❌ Conflict detected during git stash pop! Aborting and resetting working directory.",
+				)
+
+				await $`git reset --hard stash@{0}`.quiet()
+				process.exit(1)
+			}
 		}
-		await $`bun install && bun run prod`
+		await $`bun install && bun run prod`.quiet()
 	}
 }
 
