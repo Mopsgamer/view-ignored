@@ -4,7 +4,7 @@
 [![npm-version](https://img.shields.io/npm/v/view-ignored.svg)](https://www.npmjs.com/package/view-ignored)
 [![npm-downloads](https://img.shields.io/npm/dm/view-ignored.svg?color=orange)](https://www.npmjs.com/package/view-ignored)
 [![coverage](https://codecov.io/gh/Mopsgamer/view-ignored/graph/badge.svg?token=O5I06Y2A86)](https://codecov.io/gh/Mopsgamer/view-ignored)
-![node-v20-or-later](https://img.shields.io/badge/node->=22-salad?repo=Mopsgamer/view-ignored.svg)
+![node-v22-or-later](https://img.shields.io/badge/node->=22-salad?repo=Mopsgamer/view-ignored.svg)
 ![ts-v5-or-later](https://img.shields.io/badge/ts->=5.7-salad?repo=Mopsgamer/view-ignored)
 [![speed-fast](https://img.shields.io/badge/speed-fast-salad?repo=Mopsgamer/view-ignored.svg)](https://github.com/Mopsgamer/view-ignored/tree/main/benchmarks)
 
@@ -15,7 +15,7 @@ by Git, NPM, Yarn, JSR, Deno, Bun, VSCode extension CLI and other tools.
 <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/npm/npm-original-wordmark.svg" width="32" height="32" alt="npm" />
 <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/yarn/yarn-original.svg" width="32" height="32" alt="yarn" />
 <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/bun/bun-original.svg" width="32" height="32" alt="bun" />
-<img src="https://docs.deno.com/img/logo.svg" width="32" height="32">
+<img src="https://docs.deno.com/img/logo.svg" width="32" height="32" alt="deno" />
 <img src="https://jsr.io/logo.svg" width="32" height="32" alt="jsr" />
 <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vscode/vscode-original.svg" width="32" height="32" alt="vsce" />
 
@@ -26,8 +26,6 @@ by Git, NPM, Yarn, JSR, Deno, Bun, VSCode extension CLI and other tools.
 </div>
 
 ## Highlights
-
-<!-- - **Faster alternative for `npm-packlist`, `ignore-walk` and `ignore`.** -->
 
 - **Reader.** Get a list of included files using configuration file
   readers, not command-line wrappers.
@@ -64,7 +62,7 @@ by Git, NPM, Yarn, JSR, Deno, Bun, VSCode extension CLI and other tools.
 
 ## Why this library exists?
 
-Incorrect VS Code file tree git status, huge `npm-packlist` package, missing Git's wildmatch algorithm in JS ecosistem, and the fact that there's no lightweight way to get a list of ignored files, which would explain why specific files are being included or excluded.
+Incorrect VS Code file tree git status, huge `npm-packlist` package, missing Git's wildmatch algorithm in JS ecosystem, and the fact that there's no lightweight way to get a list of ignored files, which would explain why specific files are being included or excluded.
 
 ## Usage
 
@@ -141,12 +139,9 @@ stream.addEventListener("dirent", console.log)
 stream.addEventListener(
 	"end",
 	({ detail: ctx }) => {
-		ctx.paths.has(".git/HEAD")
-		// false
-		ctx.paths.has("node_modules/")
-		// false
-		ctx.paths.has("package.json")
-		// true
+		console.log(ctx.paths.has(".git/HEAD")) // false
+		console.log(ctx.paths.has("node_modules/")) // false
+		console.log(ctx.paths.has("package.json")) // true
 	},
 	{ once: true },
 )
