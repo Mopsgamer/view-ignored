@@ -76,7 +76,7 @@ export async function matcherContextAddPath(
 		})
 		let m = match
 		if (flags & ScanFlags.invert) m = { ...m, ignored: !m.ignored }
-		if (!m.ignored) {
+		if (!m.ignored && flags & ScanFlags.dirs) {
 			ctx.paths.set(entry, m)
 		}
 		updateTotals(ctx, parentPath, 0, 0, 1)
@@ -98,7 +98,7 @@ export async function matcherContextAddPath(
 						if ("dir" in result) {
 							walkPatchTotal(ctx, maxDepth, result)
 						} else {
-							walkPatchResult(ctx, result)
+							walkPatchResult(ctx, result, flags)
 						}
 					},
 					scanOptions: options,
@@ -173,6 +173,9 @@ export async function matcherContextRemovePath(
 ): Promise<boolean> {
 	const isDir = entry.endsWith("/")
 	const direntPath = isDir ? entry.slice(0, -1) : entry
+
+	const { target, depth: maxDepth, flags } = options
+
 	if (isDir && direntPath === ".") {
 		ctx.paths.clear()
 		ctx.external.clear()
@@ -222,9 +225,8 @@ export async function matcherContextRemovePath(
 		return true
 	}
 
-	const isSource = options.target.extractors.some((e) => e.path === entry)
+	const isSource = target.extractors.some((e) => e.path === entry)
 	if (isSource) {
-		const maxDepth = options.depth
 		// remove pattern sources
 		// rescan directory and repopulate stats
 		const resultPromise = new Promise<WalkResult[] | null>((resolve, reject) => {
@@ -236,7 +238,7 @@ export async function matcherContextRemovePath(
 						if ("dir" in result) {
 							walkPatchTotal(ctx, maxDepth, result)
 						} else {
-							walkPatchResult(ctx, result)
+							walkPatchResult(ctx, result, flags)
 						}
 					},
 					scanOptions: options,

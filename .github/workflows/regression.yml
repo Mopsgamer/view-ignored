@@ -4,8 +4,8 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
-      - 'src/**/*.ts'
-      - '!src/**/*.test.ts'
+      - "src/**/*.ts"
+      - "!src/**/*.test.ts"
 
 jobs:
   benchmark:

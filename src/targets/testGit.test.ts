@@ -4,6 +4,7 @@ import type { PathHandlerOptions } from "../testScan.test.js"
 
 import { describe, test } from "bun:test"
 
+import { ScanFlags } from "../index.js"
 import { testScan } from "../testScan.test.js"
 import { Git } from "./git.js"
 
@@ -14,7 +15,7 @@ async function testGit(
 ) {
 	try {
 		const target = { ...Git, internalRules: [...Git.internalRules] }
-		await testScan(done, tree, handler, { target })
+		await testScan(done, tree, handler, { flags: ScanFlags.dirs, target })
 	} catch (error) {
 		throw new Error("Error while testing Git", { cause: error })
 	}

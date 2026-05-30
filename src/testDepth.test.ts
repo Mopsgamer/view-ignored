@@ -24,10 +24,14 @@ const dir = {
 describe("Git", () => {
 	test("depth 0 should include *", async (done) => {
 		const target = { ...Git, internalRules: [...Git.internalRules] }
-		await testScan(done, dir, ["src/", ".gitignore", "package.json"], { depth: 0, target })
 		await testScan(done, dir, ["src/", ".gitignore", "package.json"], {
 			depth: 0,
-			flags: ScanFlags.fastDepth,
+			flags: ScanFlags.dirs,
+			target,
+		})
+		await testScan(done, dir, ["src/", ".gitignore", "package.json"], {
+			depth: 0,
+			flags: ScanFlags.fastDepth | ScanFlags.dirs,
 			target,
 		})
 	})
@@ -36,12 +40,12 @@ describe("Git", () => {
 		const target = { ...Git, internalRules: [...Git.internalRules] }
 		await testScan(done, dir, ["out/", "node_modules/"], {
 			depth: 0,
-			flags: ScanFlags.invert,
+			flags: ScanFlags.invert | ScanFlags.dirs,
 			target,
 		})
 		await testScan(done, dir, ["out/", "node_modules/"], {
 			depth: 0,
-			flags: ScanFlags.fastDepth | ScanFlags.invert,
+			flags: ScanFlags.fastDepth | ScanFlags.invert | ScanFlags.dirs,
 			target,
 		})
 	})
@@ -52,13 +56,13 @@ describe("Git", () => {
 			done,
 			dir,
 			["src/", "src/index.ts", "src/submodule/", ".gitignore", "package.json"],
-			{ depth: 1, target },
+			{ depth: 1, flags: ScanFlags.dirs, target },
 		)
 		await testScan(
 			done,
 			dir,
 			["src/", "src/index.ts", "src/submodule/", ".gitignore", "package.json"],
-			{ depth: 1, flags: ScanFlags.fastDepth, target },
+			{ depth: 1, flags: ScanFlags.fastDepth | ScanFlags.dirs, target },
 		)
 	})
 
@@ -75,7 +79,7 @@ describe("Git", () => {
 				"node_modules/a/",
 				"node_modules/b/",
 			],
-			{ depth: 1, flags: ScanFlags.invert, target },
+			{ depth: 1, flags: ScanFlags.invert | ScanFlags.dirs, target },
 		)
 		await testScan(
 			done,
@@ -88,7 +92,7 @@ describe("Git", () => {
 				"node_modules/a/",
 				"node_modules/b/",
 			],
-			{ depth: 1, flags: ScanFlags.fastDepth | ScanFlags.invert, target },
+			{ depth: 1, flags: ScanFlags.fastDepth | ScanFlags.invert | ScanFlags.dirs, target },
 		)
 	})
 })

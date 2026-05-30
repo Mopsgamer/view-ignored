@@ -4,6 +4,7 @@ import { describe, test } from "bun:test"
 
 import { Git as target } from "./targets/git.js"
 import { testScan } from "./testScan.test.js"
+import { ScanFlags } from "./types.js"
 
 function testCwd(
 	done: () => void,
@@ -20,7 +21,7 @@ function testCwd(
 			folder: { nested: "" },
 		},
 		paths,
-		{ cwd, target, within },
+		{ cwd, flags: ScanFlags.dirs, target, within },
 	)
 }
 

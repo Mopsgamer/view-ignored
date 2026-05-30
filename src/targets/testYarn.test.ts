@@ -4,6 +4,7 @@ import type { PathHandlerOptions } from "../testScan.test.js"
 
 import { describe, expect, test } from "bun:test"
 
+import { ScanFlags } from "../index.js"
 import { RuleMatchKind } from "../patterns/rule.js"
 import { testScan } from "../testScan.test.js"
 import { Yarn as target } from "./yarn.js"
@@ -14,7 +15,7 @@ async function testYarn(
 	handler: ((o: PathHandlerOptions) => void | Promise<void>) | string[],
 ) {
 	try {
-		await testScan(done, tree, handler, { target })
+		await testScan(done, tree, handler, { flags: ScanFlags.dirs, target })
 	} catch (error) {
 		throw new Error("Error while testing Yarn", { cause: error })
 	}

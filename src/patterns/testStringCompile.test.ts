@@ -12,10 +12,7 @@ describe(".gitignore", () => {
 	})
 	test("stringCompile .git .Git/message nocase true", () => {
 		expect(
-			patternCacheTest(
-				patternCompile(".git", undefined, MatchMode.unsensitive),
-				".git/message",
-			),
+			patternCacheTest(patternCompile(".git", undefined, MatchMode.unsensitive), ".git/message"),
 		).toBeTrue()
 	})
 	test("stringCompile .git .github/message", () => {

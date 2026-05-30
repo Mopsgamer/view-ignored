@@ -125,7 +125,7 @@ export class MatcherStream extends EventTarget {
 						if ("dir" in result) {
 							walkPatchTotal(ctx, scanOptions.depth, result as any)
 						} else {
-							walkPatchResult(ctx, result)
+							walkPatchResult(ctx, result, flags)
 						}
 					},
 					scanOptions,

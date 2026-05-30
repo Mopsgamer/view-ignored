@@ -6,11 +6,30 @@ import type { Target } from "./targets/target.js"
  * @since 0.12.0
  */
 export const enum ScanFlags {
+	/**
+	 * @since 0.12.0
+	 */
 	none = 0,
+	/**
+	 * @since 0.12.0
+	 */
 	invert = 1 << 0,
+	/**
+	 * @since 0.12.0
+	 */
 	fastDepth = 1 << 1,
+	/**
+	 * @since 0.12.0
+	 */
 	fastInternal = 1 << 2,
+	/**
+	 * @since 0.12.0
+	 */
 	fast = fastDepth | fastInternal,
+	/**
+	 * @since 0.12.0
+	 */
+	dirs = 1 << 3,
 }
 
 /**

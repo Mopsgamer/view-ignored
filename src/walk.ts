@@ -95,7 +95,7 @@ export function walkIncludes(
 	const invalid = isRuleMatchInvalid(match)
 
 	if (invalid || match.ignored) {
-		if (stream) {
+		if (stream && (!isDir || flags & ScanFlags.dirs)) {
 			stream.dispatchEvent(
 				new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
 			)
@@ -106,7 +106,7 @@ export function walkIncludes(
 
 	if (isDir) {
 		if (depth <= maxDepth) {
-			if (stream)
+			if (stream && flags & ScanFlags.dirs)
 				stream.dispatchEvent(
 					new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
 				)
@@ -124,7 +124,7 @@ export function walkIncludes(
 	if (path.indexOf("/") !== -1) result.includeParent = true
 
 	if (stream) {
-		if (result.includeParent)
+		if (result.includeParent && flags & ScanFlags.dirs)
 			stream.dispatchEvent(
 				new CustomEvent("dirent", { detail: { dirent: entry, match, path: parentPath + "/" } }),
 			)
@@ -139,11 +139,11 @@ export function walkIncludes(
 /**
  * Patches the {@link MatcherContext} with the given result.
  */
-export function walkPatchResult(ctx: MatcherContext, r: WalkResult): void {
+export function walkPatchResult(ctx: MatcherContext, r: WalkResult, flags: ScanFlags = 0): void {
 	const { path, parentPath, match, tooDeep, includeParent } = r
 	if (!match.ignored && !tooDeep) {
-		ctx.paths.set(path, match)
-		if (includeParent) {
+		if (!r.isDir || flags & ScanFlags.dirs) ctx.paths.set(path, match)
+		if (includeParent && flags & ScanFlags.dirs) {
 			const pPath = parentPath + "/"
 			if (!ctx.paths.has(pPath)) ctx.paths.set(pPath, match)
 		}
