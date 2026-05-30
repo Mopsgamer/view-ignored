@@ -15,7 +15,6 @@ describe(".gitignore", () => {
 			patternCacheTest(
 				patternCompile(".git", undefined, MatchMode.unsensitive),
 				".git/message",
-				MatchMode.lowered,
 			),
 		).toBeTrue()
 	})
@@ -78,29 +77,28 @@ describe(".gitignore", () => {
 
 	test("wildmatch mode (noextglob)", () => {
 		const cache = patternCompile("+(a|b)")
-		// In normal mode, micromatch handles extglobs
 		expect(patternCacheTest(cache, "a")).toBeTrue()
-		// In wildmatch mode, noextglob is true, so it shouldn't match "a" as an extglob
-		expect(patternCacheTest(cache, "a", MatchMode.wildmatch)).toBeFalse()
-		// But it should match literal "+(a|b)"
-		expect(patternCacheTest(cache, "+(a|b)", MatchMode.wildmatch)).toBeTrue()
+		const cacheW = patternCompile("+(a|b)", undefined, MatchMode.wildmatch)
+		expect(patternCacheTest(cacheW, "a")).toBeFalse()
+		expect(patternCacheTest(cacheW, "+(a|b)")).toBeTrue()
 	})
 
 	test("wildmatch mode case sensitivity", () => {
-		const cache = patternCompile("A")
-		expect(patternCacheTest(cache, "a", MatchMode.wildmatch)).toBeFalse()
-		expect(patternCacheTest(cache, "A", MatchMode.wildmatch)).toBeTrue()
+		const cache = patternCompile("A", undefined, MatchMode.wildmatch)
+		expect(patternCacheTest(cache, "a")).toBeFalse()
+		expect(patternCacheTest(cache, "A")).toBeTrue()
 
-		const cacheI = patternCompile("A", undefined, MatchMode.unsensitive)
-		expect(patternCacheTest(cacheI, "a", MatchMode.wildmatch)).toBeTrue()
-		expect(patternCacheTest(cacheI, "A", MatchMode.wildmatch)).toBeTrue()
+		const cacheI = patternCompile("A", undefined, MatchMode.wildmatch | MatchMode.unsensitive)
+		expect(patternCacheTest(cacheI, "a")).toBeTrue()
+		expect(patternCacheTest(cacheI, "A")).toBeTrue()
 	})
 
 	test("unsensitive mode", () => {
 		const cache = patternCompile("a", undefined, MatchMode.unsensitive)
-		expect(patternCacheTest(cache, "A", MatchMode.normal)).toBeTrue() // "A" is lowercased because of nocase
-		expect(patternCacheTest(cache, "A", MatchMode.lowered)).toBeFalse() // "A" is NOT lowercased because of MatchMode.lowered
-		expect(patternCacheTest(cache, "a", MatchMode.lowered)).toBeTrue()
+		expect(patternCacheTest(cache, "A")).toBeTrue() // "A" is lowercased because of nocase
+		const cacheL = patternCompile("a", undefined, MatchMode.lowered)
+		expect(patternCacheTest(cacheL, "A")).toBeFalse() // "A" is NOT lowercased because of MatchMode.lowered
+		expect(patternCacheTest(cacheL, "a")).toBeTrue()
 	})
 
 	test("wildmatch mode (nobrace)", () => {
@@ -108,15 +106,16 @@ describe(".gitignore", () => {
 		// In micromatch with nobrace: true (which is our default), it should match literal "{a,b}"
 		expect(patternCacheTest(cache, "a")).toBeFalse()
 		expect(patternCacheTest(cache, "{a,b}")).toBeTrue()
-		expect(patternCacheTest(cache, "a", MatchMode.wildmatch)).toBeFalse()
-		expect(patternCacheTest(cache, "{a,b}", MatchMode.wildmatch)).toBeTrue()
+		const cacheW = patternCompile("{a,b}", undefined, MatchMode.wildmatch)
+		expect(patternCacheTest(cacheW, "a")).toBeFalse()
+		expect(patternCacheTest(cacheW, "{a,b}")).toBeTrue()
 	})
 
 	test("normal mode default", () => {
 		const cache = patternCompile("a")
 		expect(patternCacheTest(cache, "a")).toBeTrue()
 		expect(patternCacheTest(cache, "A")).toBeFalse()
-		expect(patternCacheTest(cache, "a", MatchMode.normal)).toBeTrue()
-		expect(patternCacheTest(cache, "A", MatchMode.normal)).toBeFalse()
+		expect(patternCacheTest(cache, "a")).toBeTrue()
+		expect(patternCacheTest(cache, "A")).toBeFalse()
 	})
 })

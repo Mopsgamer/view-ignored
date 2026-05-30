@@ -1,4 +1,6 @@
 /**
+ * Matcher options.
+ *
  * @since 0.12.0
  */
 export const enum MatchMode {
@@ -18,6 +20,8 @@ export const enum MatchMode {
  */
 export type PatternCache = {
 	/**
+	 * @since 0.12.0
+	 *
 	 * @internal
 	 */
 	meta: any
@@ -26,7 +30,7 @@ export type PatternCache = {
 	 *
 	 * @since 0.6.0
 	 */
-	re: { test(string: string, mode?: MatchMode): boolean }
+	re: { test(string: string): boolean }
 	/**
 	 * The mode this cache was compiled with.
 	 *
@@ -52,8 +56,8 @@ export type PatternCache = {
  *
  * @since 0.6.0
  */
-export function patternCacheTest(cache: PatternCache, path: string, mode?: MatchMode): boolean {
-	return cache.re.test(path, mode)
+export function patternCacheTest(cache: PatternCache, path: string): boolean {
+	return cache.re.test(path)
 }
 
 /**

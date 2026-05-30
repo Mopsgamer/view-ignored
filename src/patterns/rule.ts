@@ -215,7 +215,7 @@ function testRule(rule: Rule, entry: string, lower?: string): PatternCache | nul
 			if (res) return res
 		}
 
-		if (patternCacheTest(r, targetStr, useLower ? MatchMode.lowered : MatchMode.normal)) return r
+		if (patternCacheTest(r, targetStr)) return r
 	}
 	return null
 }
