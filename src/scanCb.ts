@@ -4,7 +4,6 @@ import type { RuleMatch } from "./patterns/rule.js"
 import type { FsAdapter, ScanOptions } from "./types.js"
 
 import { scanParallel } from "./scanParallel.js"
-import { ScanFlags } from "./types.js"
 import { unixify } from "./unixify.js"
 import { propagateTotals, walkPatchResult, walkPatchTotal } from "./walk.js"
 
@@ -16,7 +15,10 @@ export function scanCb(
 		target,
 		cwd,
 		within = ".",
-		flags = 0,
+		dirs = false,
+		invert = false,
+		skipDepth = false,
+		skipInternal = false,
 		depth: maxDepth = Infinity,
 		signal = null,
 		fs,
@@ -36,9 +38,12 @@ export function scanCb(
 	const scanOptions: Required<ScanOptions> = {
 		cwd: normalCwd,
 		depth: maxDepth,
-		flags,
+		dirs,
 		fs,
+		invert,
 		signal,
+		skipDepth,
+		skipInternal,
 		target,
 		within,
 	}
@@ -53,8 +58,8 @@ export function scanCb(
 						walkPatchTotal(ctx, scanOptions.depth, result as any)
 					else {
 						const res = result as any
-						walkPatchResult(ctx, res, flags)
-						if (res.includeParent && !res.match.ignored && flags & ScanFlags.dirs) {
+						walkPatchResult(ctx, res, scanOptions.dirs)
+						if (res.includeParent && !res.match.ignored && scanOptions.dirs) {
 							let parent = res.parentPath
 							while (parent) {
 								const pPath = parent + "/"

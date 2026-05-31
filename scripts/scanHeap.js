@@ -20,7 +20,7 @@ function getMemoryReport() {
 const args = process.argv.slice(2)
 const targetFlag = args.find((a) => a.startsWith("--target="))
 const targetName = targetFlag ? targetFlag.split("=")[1] : "Git"
-const fastInternal = args.includes("--fastInternal")
+const skipInternal = args.includes("--skipInternal")
 const printPaths = args.includes("--print")
 const takeSnapshot = args.includes("--snapshot")
 
@@ -41,7 +41,7 @@ const memBefore = getMemoryReport()
 const start = performance.now()
 
 const ctx = await scan({
-	fastInternal,
+	skipInternal,
 	fs,
 	target,
 })

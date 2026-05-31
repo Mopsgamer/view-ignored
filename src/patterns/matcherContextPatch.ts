@@ -5,7 +5,6 @@ import type { Resource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"
 
 import { scanParallel } from "../scanParallel.js"
-import { ScanFlags } from "../types.js"
 import { dirname } from "../unixify.js"
 import { propagateTotals, walkPatchResult, walkPatchTotal } from "../walk.js"
 import { resolveSources } from "./resolveSources.js"
@@ -42,7 +41,7 @@ export async function matcherContextAddPath(
 	}
 	const parentPath = dirname(direntPath)
 
-	const { target, fs, cwd, signal, depth: maxDepth, flags } = options
+	const { target, fs, cwd, signal, depth: maxDepth, invert, dirs } = options
 
 	if (isDir) {
 		// recursive parent population
@@ -75,8 +74,8 @@ export async function matcherContextAddPath(
 			)
 		})
 		let m = match
-		if (flags & ScanFlags.invert) m = { ...m, ignored: !m.ignored }
-		if (!m.ignored && flags & ScanFlags.dirs) {
+		if (invert) m = { ...m, ignored: !m.ignored }
+		if (!m.ignored && dirs) {
 			ctx.paths.set(entry, m)
 		}
 		updateTotals(ctx, parentPath, 0, 0, 1)
@@ -98,7 +97,7 @@ export async function matcherContextAddPath(
 						if ("dir" in result) {
 							walkPatchTotal(ctx, maxDepth, result)
 						} else {
-							walkPatchResult(ctx, result, flags)
+							walkPatchResult(ctx, result, dirs)
 						}
 					},
 					scanOptions: options,
@@ -148,7 +147,7 @@ export async function matcherContextAddPath(
 	})
 
 	let m = match
-	if (flags & ScanFlags.invert) m = { ...m, ignored: !m.ignored }
+	if (invert) m = { ...m, ignored: !m.ignored }
 
 	updateTotals(ctx, parentPath, 1, m.ignored ? 0 : 1, 0)
 
@@ -174,7 +173,7 @@ export async function matcherContextRemovePath(
 	const isDir = entry.endsWith("/")
 	const direntPath = isDir ? entry.slice(0, -1) : entry
 
-	const { target, depth: maxDepth, flags } = options
+	const { target, depth: maxDepth, dirs } = options
 
 	if (isDir && direntPath === ".") {
 		ctx.paths.clear()
@@ -238,7 +237,7 @@ export async function matcherContextRemovePath(
 						if ("dir" in result) {
 							walkPatchTotal(ctx, maxDepth, result)
 						} else {
-							walkPatchResult(ctx, result, flags)
+							walkPatchResult(ctx, result, dirs)
 						}
 					},
 					scanOptions: options,

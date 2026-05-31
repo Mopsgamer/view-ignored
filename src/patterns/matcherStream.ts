@@ -25,7 +25,7 @@ export interface AddEventListenerOptions {
  */
 export class MatcherStream extends EventTarget {
 	#timeout: NodeJS.Timeout | undefined
-	#options: ScanOptions & { fs: FsAdapter; cwd: string } & { captureRejections?: boolean }
+	#options: ScanOptions & { fs: FsAdapter; cwd: string }
 	constructor(options: ScanOptions & { fs: FsAdapter; cwd: string; noTimeout?: boolean }) {
 		super()
 		this.#options = options
@@ -91,10 +91,13 @@ export class MatcherStream extends EventTarget {
 			target,
 			cwd,
 			within = ".",
-			flags = 0,
 			depth: maxDepth = Infinity,
 			signal = null,
 			fs,
+			dirs = false,
+			invert = false,
+			skipDepth = false,
+			skipInternal = false,
 		} = this.#options
 
 		const ctx: MatcherContext = {
@@ -109,9 +112,12 @@ export class MatcherStream extends EventTarget {
 		const scanOptions: Required<ScanOptions> = {
 			cwd: normalCwd,
 			depth: maxDepth,
-			flags,
+			dirs,
 			fs,
+			invert,
 			signal,
+			skipDepth,
+			skipInternal,
 			target,
 			within,
 		}
@@ -125,7 +131,7 @@ export class MatcherStream extends EventTarget {
 						if ("dir" in result) {
 							walkPatchTotal(ctx, scanOptions.depth, result as any)
 						} else {
-							walkPatchResult(ctx, result, flags)
+							walkPatchResult(ctx, result, scanOptions.dirs)
 						}
 					},
 					scanOptions,

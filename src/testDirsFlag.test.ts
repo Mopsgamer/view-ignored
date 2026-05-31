@@ -3,7 +3,6 @@ import { describe, expect, it } from "bun:test"
 import { matcherContextAddPath, matcherContextRemovePath } from "./patterns/matcherContextPatch.js"
 import { Git } from "./targets/git.js"
 import { testScan } from "./testScan.test.js"
-import { ScanFlags } from "./types.js"
 
 describe("ScanFlags.dirs", () => {
 	it("should NOT include directories by default", async () => {
@@ -38,7 +37,7 @@ describe("ScanFlags.dirs", () => {
 				expect(ctx.paths.has("dir/")).toBeTrue()
 				expect(ctx.paths.has("dir/b.txt")).toBeTrue()
 			},
-			{ flags: ScanFlags.dirs, target: Git },
+			{ dirs: true, target: Git },
 		)
 	})
 
@@ -56,7 +55,7 @@ describe("ScanFlags.dirs", () => {
 				expect(ctx.paths.has("newdir/")).toBeFalse()
 
 				// Add dir with flag
-				const optWithDirs = { ...opt, flags: ScanFlags.dirs }
+				const optWithDirs = { ...opt, dirs: true }
 				await matcherContextAddPath(ctx, optWithDirs, "otherdir/")
 				expect(ctx.paths.has("otherdir/")).toBeTrue()
 

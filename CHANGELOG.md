@@ -10,10 +10,8 @@ and this project adheres to
 
 - Performance improvements. Updated benchmark's README
   and made their names more descriptive.
-- Move bool options to `ScanOptions.flags: ScanFlags` bitmask.
-- Skip directories by default.
-  Use the `ScanFlags.dirs` bitmask to bring them back.
-- Add wildmatch compatibility abd config reading for Git.
+- Skip directories by default. Use the `ScanOptions.dirs` to enable.
+- Add wildmatch compatibility and config reading for Git.
 - Fixed `matcherContext { Add | Remove } Path`.
   It makes watching stable enough, but we won't add `watch`.
   Use `chokidar` instead of Node's built-in watching,

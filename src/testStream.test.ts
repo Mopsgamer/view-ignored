@@ -3,7 +3,6 @@ import { describe, expect, test } from "bun:test"
 import { RuleMatchKind } from "./patterns/rule.js"
 import { Git as target } from "./targets/git.js"
 import { testStream } from "./testScan.test.js"
-import { ScanFlags } from "./types.js"
 
 describe("Git", () => {
 	test("scanStream no file", async (done) => {
@@ -30,7 +29,7 @@ describe("Git", () => {
 					{ once: true },
 				)
 			},
-			{ flags: ScanFlags.dirs, target },
+			{ dirs: true, target },
 		)
 	})
 	test("scanStream .gitignore", async (done) => {
@@ -59,7 +58,7 @@ describe("Git", () => {
 					{ once: true },
 				)
 			},
-			{ flags: ScanFlags.dirs, target },
+			{ dirs: true, target },
 		)
 	})
 })

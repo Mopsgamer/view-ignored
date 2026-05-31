@@ -6,7 +6,7 @@ import * as Targets from "../out/targets/index.js"
 const args = process.argv.slice(2)
 const targetFlag = args.find((a) => a.startsWith("--target="))
 const targetName = targetFlag ? targetFlag.split("=")[1] : "Git"
-const fastInternal = args.includes("--fastInternal")
+const skipInternal = args.includes("--skipInternal")
 const printPaths = args.includes("--print")
 
 const target = Targets[targetName]
@@ -23,7 +23,7 @@ console.log(`Scanning "${process.cwd()}" with target: ${targetName}`)
 const start = performance.now()
 const ctx = await scan({
 	cwd: process.cwd(),
-	fastInternal,
+	skipInternal,
 	fs,
 	target,
 })

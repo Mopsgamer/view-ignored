@@ -2,7 +2,6 @@ import { describe, test } from "bun:test"
 
 import { Git } from "./targets/git.js"
 import { testScan } from "./testScan.test.js"
-import { ScanFlags } from "./types.js"
 
 const dir = {
 	".gitignore": "out\nnode_modules",
@@ -26,12 +25,13 @@ describe("Git", () => {
 		const target = { ...Git, internalRules: [...Git.internalRules] }
 		await testScan(done, dir, ["src/", ".gitignore", "package.json"], {
 			depth: 0,
-			flags: ScanFlags.dirs,
+			dirs: true,
 			target,
 		})
 		await testScan(done, dir, ["src/", ".gitignore", "package.json"], {
 			depth: 0,
-			flags: ScanFlags.fastDepth | ScanFlags.dirs,
+			dirs: true,
+			skipDepth: true,
 			target,
 		})
 	})
@@ -40,12 +40,15 @@ describe("Git", () => {
 		const target = { ...Git, internalRules: [...Git.internalRules] }
 		await testScan(done, dir, ["out/", "node_modules/"], {
 			depth: 0,
-			flags: ScanFlags.invert | ScanFlags.dirs,
+			dirs: true,
+			invert: true,
 			target,
 		})
 		await testScan(done, dir, ["out/", "node_modules/"], {
 			depth: 0,
-			flags: ScanFlags.fastDepth | ScanFlags.invert | ScanFlags.dirs,
+			dirs: true,
+			invert: true,
+			skipDepth: true,
 			target,
 		})
 	})
@@ -56,13 +59,13 @@ describe("Git", () => {
 			done,
 			dir,
 			["src/", "src/index.ts", "src/submodule/", ".gitignore", "package.json"],
-			{ depth: 1, flags: ScanFlags.dirs, target },
+			{ depth: 1, dirs: true, target },
 		)
 		await testScan(
 			done,
 			dir,
 			["src/", "src/index.ts", "src/submodule/", ".gitignore", "package.json"],
-			{ depth: 1, flags: ScanFlags.fastDepth | ScanFlags.dirs, target },
+			{ depth: 1, dirs: true, skipDepth: true, target },
 		)
 	})
 
@@ -79,7 +82,7 @@ describe("Git", () => {
 				"node_modules/a/",
 				"node_modules/b/",
 			],
-			{ depth: 1, flags: ScanFlags.invert | ScanFlags.dirs, target },
+			{ depth: 1, dirs: true, invert: true, target },
 		)
 		await testScan(
 			done,
@@ -92,7 +95,7 @@ describe("Git", () => {
 				"node_modules/a/",
 				"node_modules/b/",
 			],
-			{ depth: 1, flags: ScanFlags.fastDepth | ScanFlags.invert | ScanFlags.dirs, target },
+			{ depth: 1, dirs: true, invert: true, skipDepth: true, target },
 		)
 	})
 })
