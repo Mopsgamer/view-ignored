@@ -3,7 +3,7 @@ import { barplot, bench, run, summary } from "mitata"
 import * as fs from "node:fs"
 
 import { scan as browserScan } from "../out/browser.js"
-import { ScanFlags, scan } from "../out/index.js"
+import { scan } from "../out/index.js"
 import { Git as target } from "../out/targets/index.js"
 
 const igw = process.argv.includes("--igw")
@@ -20,7 +20,7 @@ barplot(() => {
 			bench("'view-ignored'.scan(Git, fastInternal)", async () => {
 				return scan({
 					cwd,
-					flags: ScanFlags.fastInternal,
+					fastInternal: true,
 					fs,
 					target,
 				})
@@ -29,7 +29,7 @@ barplot(() => {
 			bench("'view-ignored'.browserScan(Git, fastInternal)", async () => {
 				return browserScan({
 					cwd,
-					flags: ScanFlags.fastInternal,
+					fastInternal: true,
 					fs,
 					target,
 				})
