@@ -230,11 +230,28 @@ function processEntries(
 	let dirFiles = 0
 	let dirMatched = 0
 	let dirDirs = 0
+	let skipped = false
 
 	for (let i = 0; i < len; i++) {
 		const entry = entries[i]!
 		const currentRelPath = prefix + entry.name
 		const currentLowerRelPath = lowerPrefix + entry.name.toLowerCase()
+
+		if (skipped) {
+			if (--pendingResults === 0 && onResult) {
+				onResult({
+					depth,
+					dir: relPath,
+					dirs: dirDirs,
+					files: dirFiles,
+					ignored: false,
+					matched: dirMatched,
+					type: "total",
+				})
+			}
+			continue
+		}
+
 		state.activeTasks++
 
 		walkIncludes(
@@ -252,17 +269,20 @@ function processEntries(
 				if (err) return handleError(state, err)
 
 				if (self && self.match) {
+					const isMatched = !self.match.ignored
 					if (self.isDir) {
 						dirDirs++
 					} else {
 						dirFiles++
-						if (!self.match.ignored) dirMatched++
+						if (isMatched) dirMatched++
 					}
 
 					if (onResult) onResult(self)
 					else state.results!.push(self)
 
-					if (self.isDir && self.next === 0) {
+					if (isMatched && scanOptions.skipDepth && depth >= scanOptions.depth) skipped = true
+
+					if (self.isDir && self.next === 0 && !skipped) {
 						walkDirectory(state, currentRelPath, depth + 1, res, currentLowerRelPath)
 					}
 				}

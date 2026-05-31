@@ -1,6 +1,5 @@
 {
   "lockfileVersion": 1,
-  "configVersion": 1,
   "workspaces": {
     "": {
       "name": "view-ignored",
@@ -26,7 +25,7 @@
         "oxlint-tsgolint": "latest",
         "publint": "latest",
         "release-it": "latest",
-        "typescript5": "npm:typescript@<5.8",
+        "typescript5": "npm:typescript@^5.7.3",
         "typescript6": "npm:typescript@^6.0.3",
       },
     },
