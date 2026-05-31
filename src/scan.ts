@@ -1,5 +1,5 @@
 import type { MatcherContext } from "./patterns/matcherContext.js"
-import type { ScanOptions } from "./types.js"
+import type { ScanBrowserOptions, ScanOptions } from "./types.js"
 
 import * as nodefs from "node:fs"
 import * as process from "node:process"
@@ -26,7 +26,7 @@ const defaultOptions = {
 export function scan(options: ScanOptions): Promise<MatcherContext> {
 	options.cwd ??= defaultOptions.cwd
 	options.fs ??= defaultOptions.fs
-	return browserScan(options as any)
+	return browserScan(options as ScanBrowserOptions)
 }
 
 /**
@@ -45,5 +45,5 @@ export function scanCb(
 ): void {
 	options.cwd ??= defaultOptions.cwd
 	options.fs ??= defaultOptions.fs
-	return browserScanCb(options as any, cb)
+	return browserScanCb(options as ScanBrowserOptions, cb)
 }

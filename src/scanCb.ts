@@ -1,14 +1,14 @@
 import type { MatcherContext, Total } from "./patterns/matcherContext.js"
 import type { Resource } from "./patterns/resource.js"
 import type { RuleMatch } from "./patterns/rule.js"
-import type { FsAdapter, ScanOptions } from "./types.js"
+import type { ScanBrowserOptions, ScanOptions } from "./types.js"
 
 import { scanParallel } from "./scanParallel.js"
 import { unixify } from "./unixify.js"
 import { propagateTotals, walkPatchResult, walkPatchTotal } from "./walk.js"
 
 export function scanCb(
-	options: ScanOptions & { fs: FsAdapter; cwd: string },
+	options: ScanBrowserOptions,
 	cb: (err: Error | null, ctx: MatcherContext) => void,
 ): void {
 	const {

@@ -1,5 +1,5 @@
 import type { MatcherContext } from "./patterns/matcherContext.js"
-import type { FsAdapter, ScanOptions } from "./types.js"
+import type { ScanBrowserOptions } from "./types.js"
 
 import { scanCb } from "./scanCb.js"
 export { scanCb } from "./scanCb.js"
@@ -15,9 +15,7 @@ export type * from "./types.js"
  *
  * @since 0.6.0
  */
-export function scan(
-	options: ScanOptions & { fs: FsAdapter; cwd: string },
-): Promise<MatcherContext> {
+export function scan(options: ScanBrowserOptions): Promise<MatcherContext> {
 	const { promise, resolve, reject } = Promise.withResolvers<MatcherContext>()
 	scanCb(options, (err, ctx) => {
 		if (err) {

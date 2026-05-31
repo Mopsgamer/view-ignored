@@ -1,4 +1,4 @@
-import type { FsAdapter, ScanOptions } from "./types.js"
+import type { ScanBrowserOptions } from "./types.js"
 
 import { MatcherStream } from "./patterns/matcherStream.js"
 export type * from "./types.js"
@@ -13,6 +13,6 @@ export type * from "./types.js"
  *
  * @since 0.6.0
  */
-export function scanStream(options: ScanOptions & { fs: FsAdapter; cwd: string }): MatcherStream {
+export function scanStream(options: ScanBrowserOptions): MatcherStream {
 	return new MatcherStream(options)
 }

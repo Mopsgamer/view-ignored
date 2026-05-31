@@ -8,6 +8,7 @@ and this project adheres to
 
 ## [Unreleased]
 
+- Add `ScanBrowserOptions`.
 - Performance improvements. Updated benchmark's README
   and made their names more descriptive.
 - Skip directories by default. Use the `ScanOptions.dirs` to enable.

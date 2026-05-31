@@ -1,7 +1,7 @@
 import type { NestedDirectoryJSON } from "memfs"
 
 import type { MatcherContext } from "./patterns/matcherContext.js"
-import type { FsAdapter, ScanOptions } from "./types.js"
+import type { FsAdapter, ScanBrowserOptions, ScanOptions } from "./types.js"
 
 import { expect } from "bun:test"
 import { Volume, createFsFromVolume } from "memfs"
@@ -48,7 +48,7 @@ export async function testScan(
 ): Promise<void> {
 	const vol = Volume.fromNestedJSON(tree, cwd)
 	const adapter = createAdapter(vol)
-	const o = { cwd: cwd, fs: adapter, ...options } as ScanOptions & { fs: FsAdapter; cwd: string }
+	const o = { cwd: cwd, fs: adapter, ...options } as ScanBrowserOptions
 
 	if (typeof test === "function") {
 		let ctx: MatcherContext
@@ -136,7 +136,7 @@ export async function testStream(
 ): Promise<void> {
 	const vol = Volume.fromNestedJSON(tree, cwd)
 	const adapter = createAdapter(vol)
-	const o = { cwd: cwd, fs: adapter, ...options } as ScanOptions & { fs: FsAdapter; cwd: string }
+	const o = { cwd: cwd, fs: adapter, ...options } as ScanBrowserOptions
 
 	if (typeof test === "function") {
 		const stream = scanStream(o)
