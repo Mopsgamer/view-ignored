@@ -63,7 +63,7 @@ async function main() {
 	}
 
 	const body = fs.readFileSync(bodyFile, "utf8")
-	const fullBody = `${commentHeader}\n\n${body}`
+	const fullBody = `${commentHeader}\n\n${"```txt\n" + body + "```"}\n`
 
 	if (botComment) {
 		console.log("Updating existing comment...")
