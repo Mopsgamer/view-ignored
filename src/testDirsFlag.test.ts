@@ -4,8 +4,8 @@ import { matcherContextAddPath, matcherContextRemovePath } from "./patterns/matc
 import { Git } from "./targets/git.js"
 import { testScan } from "./testScan.test.js"
 
-describe("ScanFlags.dirs", () => {
-	it("should NOT include directories by default", async () => {
+describe("dirs flag", () => {
+	it("should include directories when dirs is set", async () => {
 		await testScan(
 			() => {},
 			{
@@ -23,7 +23,7 @@ describe("ScanFlags.dirs", () => {
 		)
 	})
 
-	it("should include directories when ScanFlags.dirs is set", async () => {
+	it("should include directories when dirs is set", async () => {
 		await testScan(
 			() => {},
 			{
@@ -41,7 +41,7 @@ describe("ScanFlags.dirs", () => {
 		)
 	})
 
-	it("patchers should respect ScanFlags.dirs", async () => {
+	it("patchers should respect dirs flag", async () => {
 		await testScan(
 			() => {},
 			{
