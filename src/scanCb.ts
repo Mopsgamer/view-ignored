@@ -21,8 +21,9 @@ export function scanCb(
 		skipInternal = false,
 		depth: maxDepth = Infinity,
 		signal = null,
-		fs,
 	} = options
+
+	const fs = { readFile: options.fs.readFile, readdir: options.fs.readdir }
 
 	if (maxDepth < 0) return cb(new TypeError("Depth must be a non-negative integer"), null as any)
 

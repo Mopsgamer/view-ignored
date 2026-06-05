@@ -1,4 +1,3 @@
-import * as fs from "node:fs"
 import v8 from "node:v8"
 
 import { scan } from "../out/scan.js"
@@ -42,7 +41,6 @@ const start = performance.now()
 
 const ctx = await scan({
 	skipInternal,
-	fs,
 	target,
 })
 

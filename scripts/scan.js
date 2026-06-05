@@ -1,5 +1,3 @@
-import * as fs from "node:fs"
-
 import { scan } from "../out/scan.js"
 import * as Targets from "../out/targets/index.js"
 
@@ -22,9 +20,7 @@ if (!target) {
 console.log(`Scanning "${process.cwd()}" with target: ${targetName}`)
 const start = performance.now()
 const ctx = await scan({
-	cwd: process.cwd(),
 	skipInternal,
-	fs,
 	target,
 })
 const end = performance.now()

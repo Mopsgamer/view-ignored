@@ -1,4 +1,4 @@
-import type { FsAdapter, ScanBrowserOptions, ScanOptions } from "../types.js"
+import type { ScanBrowserOptions, ScanOptions } from "../types.js"
 import type { MatcherContext, Total } from "./matcherContext.js"
 import type { EventListener, EventListenerObject, EventMap } from "./matcherStreamTypes.js"
 import type { Resource } from "./resource.js"
