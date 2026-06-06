@@ -1,4 +1,5 @@
 {
+	"exclude": ["../node_modules"],
 	// Visit https://aka.ms/tsconfig to read more about this file
 	"compilerOptions": {
 		// File Layout
@@ -37,7 +38,8 @@
 		"isolatedModules": true,
 		"noUncheckedSideEffectImports": true,
 		"moduleDetection": "force",
-		"skipLibCheck": false,
-		"preserveSymlinks": true
+		"skipLibCheck": true,
+		"preserveSymlinks": true,
+		"maxNodeModuleJsDepth": 0
 	}
 }

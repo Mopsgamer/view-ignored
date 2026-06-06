@@ -16,6 +16,13 @@ export interface FsAdapter {
 }
 
 /**
+ * Same as {@link ScanOptions}, but with required `fs` and `cwd` properties.
+ *
+ * @since 0.11.2
+ */
+export type ScanBrowserOptions = ScanOptions & { fs: FsAdapter; cwd: string }
+
+/**
  * Used in multiple methods, primarily `scan`, `scanStream`, and their browser versions.
  *
  * @since 0.6.0

@@ -1,7 +1,7 @@
 import type { MatcherContext, Total } from "./patterns/matcherContext.js"
 import type { Resource } from "./patterns/resource.js"
 import type { RuleMatch } from "./patterns/rule.js"
-import type { ScanOptions, FsAdapter } from "./types.js"
+import type { ScanOptions, FsAdapter, ScanBrowserOptions } from "./types.js"
 
 import { scanParallel } from "./scanParallel.js"
 import { unixify } from "./unixify.js"
@@ -17,8 +17,8 @@ import { walkPatchResult, walkPatchTotal, propagateTotals, type WalkResult } fro
  *
  * @since 0.11.0
  */
-export function scanCb(
-	options: ScanOptions & { fs: FsAdapter; cwd: string },
+export function browserScanCb(
+	options: ScanBrowserOptions,
 	cb: (err: Error | null, ctx: MatcherContext) => void,
 ): void {
 	const {
@@ -30,8 +30,12 @@ export function scanCb(
 		signal = null,
 		fastDepth = false,
 		fastInternal = false,
-		fs,
 	} = options
+
+	const fs: FsAdapter = {
+		readFile: options.fs.readFile,
+		readdir: options.fs.readdir,
+	}
 
 	if (maxDepth < 0) {
 		cb(new TypeError("Depth must be a non-negative integer"), null as any)

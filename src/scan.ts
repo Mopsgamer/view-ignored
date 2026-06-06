@@ -1,11 +1,11 @@
-import * as nodefs from "node:fs"
-import * as process from "node:process"
-
 import type { MatcherContext } from "./patterns/matcherContext.js"
 import type { ScanOptions } from "./types.js"
 
+import * as nodefs from "node:fs"
+import * as process from "node:process"
+
 import { scan as browserScan } from "./browser_scan.js"
-import { scanCb as browserScanCb } from "./scanCb.js"
+import { browserScanCb } from "./browserScanCb.js"
 export type * from "./types.js"
 
 /**

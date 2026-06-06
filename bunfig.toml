@@ -2,6 +2,7 @@
 pathIgnorePatterns = ["out/**"]
 coveragePathIgnorePatterns = ["src/testSelf*.test.ts"]
 onlyFailures = true
+timeout = 5000
 
 [install]
 minimumReleaseAge = 604800 # 7 days

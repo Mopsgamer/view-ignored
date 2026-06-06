@@ -1,0 +1,69 @@
+name: Speed Regression Reporter
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "src/**/*.ts"
+      - "!src/**/*.test.ts"
+  workflow_dispatch:
+    inputs:
+      print_only:
+        description: "Only print the benchmark results to the log (do not comment on PR)"
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+
+      - name: Bun install
+        run: bun install
+
+      - name: Build current
+        run: bun run prod
+
+      - name: Run benchmark comparison
+        id: bench
+        run: |
+          # Detect if there are TS changes in src/ excluding tests for the entire PR
+          BASE_SHA=${{ github.event.pull_request.base.sha }}
+          HEAD_SHA=${{ github.event.pull_request.head.sha }}
+
+          TS_CHANGES=$(git diff --name-only $BASE_SHA $HEAD_SHA | grep '^src/.*\.ts$' | grep -v '\.test\.ts$' || true)
+
+          if [ -z "$TS_CHANGES" ]; then
+            echo "no_ts_changes=true" >> $GITHUB_OUTPUT
+          else
+            echo "no_ts_changes=false" >> $GITHUB_OUTPUT
+            git fetch origin ${{ github.event.pull_request.base.ref }}
+            bun scripts/bench.js --vign --diff origin/${{ github.event.pull_request.base.ref }} > bench_output.txt
+          fi
+
+      - name: Print benchmark results to log
+        if: ${{ inputs.print_only == true && steps.bench.outputs.no_ts_changes != 'true' }}
+        run: cat bench_output.txt
+
+      - name: Comment PR
+        if: ${{ inputs.print_only != true }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          bun scripts/comment.js \
+            --token $GITHUB_TOKEN \
+            --owner ${{ github.repository_owner }} \
+            --repo ${{ github.event.repository.name }} \
+            --pr ${{ github.event.pull_request.number }} \
+            ${{ steps.bench.outputs.no_ts_changes == 'true' && '--no-ts-changes' || '--body-file bench_output.txt' }}

@@ -1,4 +1,4 @@
 export { scan } from "./browser_scan.js"
-export { scanCb } from "./scanCb.js"
+export { browserScanCb as scanCb } from "./browserScanCb.js"
 export { scanStream as stream } from "./browser_stream.js"
 export type * from "./types.js"

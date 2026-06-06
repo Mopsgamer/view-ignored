@@ -1,9 +1,9 @@
+import type { MatcherContext } from "./patterns/matcherContext.js"
+import type { ScanOptions, FsAdapter, ScanBrowserOptions } from "./types.js"
+
 import { expect } from "bun:test"
 import { createFsFromVolume, Volume, type NestedDirectoryJSON } from "memfs"
 import * as process from "node:process"
-
-import type { MatcherContext } from "./patterns/matcherContext.js"
-import type { ScanOptions, FsAdapter } from "./types.js"
 
 import { scan } from "./browser_scan.js"
 import { scanStream } from "./browser_stream.js"
@@ -45,7 +45,7 @@ export async function testScan(
 	const cwd = process.cwd() + "/test"
 	const vol = Volume.fromNestedJSON(tree, cwd)
 	const adapter = createAdapter(vol)
-	const o = { cwd: cwd, fs: adapter, ...options } as ScanOptions & { fs: FsAdapter; cwd: string }
+	const o = { cwd: cwd, fs: adapter, ...options } as ScanBrowserOptions
 
 	if (typeof test === "function") {
 		let ctx: MatcherContext
@@ -134,7 +134,7 @@ export async function testStream(
 	const cwd = process.cwd() + "/test"
 	const vol = Volume.fromNestedJSON(tree, cwd)
 	const adapter = createAdapter(vol)
-	const o = { cwd: cwd, fs: adapter, ...options } as ScanOptions & { fs: FsAdapter; cwd: string }
+	const o = { cwd: cwd, fs: adapter, ...options } as ScanBrowserOptions
 
 	if (typeof test === "function") {
 		const stream = scanStream(o)

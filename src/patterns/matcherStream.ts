@@ -1,5 +1,5 @@
 import type { MatcherContext, Total } from "../patterns/matcherContext.js"
-import type { ScanOptions, FsAdapter } from "../types.js"
+import type { ScanOptions, ScanBrowserOptions } from "../types.js"
 import type { EventMap, EventListener, EventListenerObject } from "./matcherStreamTypes.js"
 import type { Resource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"
@@ -25,8 +25,8 @@ export interface AddEventListenerOptions {
  */
 export class MatcherStream extends EventTarget {
 	#timeout: NodeJS.Timeout | undefined
-	#options: ScanOptions & { fs: FsAdapter; cwd: string } & { captureRejections?: boolean }
-	constructor(options: ScanOptions & { fs: FsAdapter; cwd: string; noTimeout?: boolean }) {
+	#options: ScanBrowserOptions
+	constructor(options: ScanBrowserOptions & { noTimeout?: boolean }) {
 		super()
 		this.#options = options
 		if (!options.noTimeout) {

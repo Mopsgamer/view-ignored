@@ -1,5 +1,5 @@
 import walk from "ignore-walk"
-import { run, bench, summary, barplot } from "mitata"
+import { barplot, bench, run, summary } from "mitata"
 import * as fs from "node:fs"
 
 import { scan as browserScan } from "../out/browser.js"
@@ -17,26 +17,42 @@ console.log("You can use --vign to test view-ignored separately")
 barplot(() => {
 	summary(async () => {
 		if (!igw)
-			bench("scan (fast)", async () => {
-				return scan({ cwd, fastDepth: true, fastInternal: true, fs, target })
+			bench("'view-ignored'.scan(Git, fastInternal)", async () => {
+				return scan({
+					cwd,
+					fastInternal: true,
+					fs,
+					target,
+				})
 			})
 		if (!igw)
-			bench("browserScan (fast)", async () => {
-				return browserScan({ cwd, fastDepth: true, fastInternal: true, fs, target })
+			bench("'view-ignored'.browserScan(Git, fastInternal)", async () => {
+				return browserScan({
+					cwd,
+					fastInternal: true,
+					fs,
+					target,
+				})
 			})
 		if (!igw)
-			bench("scan", async () => {
+			bench("'view-ignored'.scan(Git)", async () => {
 				return scan({ cwd, fs, target })
 			})
 		if (!igw)
-			bench("browserScan", async () => {
+			bench("'view-ignored'.browserScan(Git)", async () => {
 				return browserScan({ cwd, fs, target })
 			})
 		if (!vign)
-			bench("ignoreWalk", async () => {
+			bench("'ignore-walk'.walk(.gitignore)", async () => {
 				return walk({ ignoreFiles: [".gitignore"] })
 			})
 	})
 })
 
-await run()
+const stats = await run({
+	format: process.argv.includes("--json") ? "json" : "mitata",
+})
+
+if (process.argv.includes("--json")) {
+	process.stdout.write(JSON.stringify(stats))
+}

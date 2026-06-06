@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- Add `ScanBrowserOptions`.
+- Fixed `matcherContext { Add | Remove } Path`.
+  It makes watching stable enough, but we won't add `watch`.
+  Use `chokidar` instead of Node's built-in watching,
+  as the latter is a complete garbage, unless you want to.
+  IDEs can provide their own watching API - you can use them.
+
 ## [0.11.1] - 2026-05-23
 
 - Fix `EventTarget` types. Bun was polluting prod types.

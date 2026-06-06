@@ -2,8 +2,9 @@
 <h1>view-ignored</h1>
 
 [![npm-version](https://img.shields.io/npm/v/view-ignored.svg)](https://www.npmjs.com/package/view-ignored)
-[![npm-downloads](https://img.shields.io/npm/dm/view-ignored.svg)](https://www.npmjs.com/package/view-ignored)
-![node-v20-or-later](https://img.shields.io/badge/node->=22-salad?repo=Mopsgamer/view-ignored.svg)
+[![npm-downloads](https://img.shields.io/npm/dm/view-ignored.svg?color=orange)](https://www.npmjs.com/package/view-ignored)
+[![coverage](https://codecov.io/gh/Mopsgamer/view-ignored/graph/badge.svg?token=O5I06Y2A86)](https://codecov.io/gh/Mopsgamer/view-ignored)
+![node-v22-or-later](https://img.shields.io/badge/node->=22-salad?repo=Mopsgamer/view-ignored.svg)
 ![ts-v5-or-later](https://img.shields.io/badge/ts->=5.7-salad?repo=Mopsgamer/view-ignored)
 [![speed-fast](https://img.shields.io/badge/speed-fast-salad?repo=Mopsgamer/view-ignored.svg)](https://github.com/Mopsgamer/view-ignored/tree/main/benchmarks)
 
@@ -14,21 +15,17 @@ by Git, NPM, Yarn, JSR, Deno, Bun, VSCode extension CLI and other tools.
 <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/npm/npm-original-wordmark.svg" width="32" height="32" alt="npm" />
 <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/yarn/yarn-original.svg" width="32" height="32" alt="yarn" />
 <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/bun/bun-original.svg" width="32" height="32" alt="bun" />
-<img src="https://unpkg.com/simple-icons@v14/icons/deno.svg" width="32" height="32" alt="deno" />
+<img src="https://docs.deno.com/img/logo.svg" width="32" height="32" alt="deno" />
 <img src="https://jsr.io/logo.svg" width="32" height="32" alt="jsr" />
 <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vscode/vscode-original.svg" width="32" height="32" alt="vsce" />
 
-[![github-issues](https://img.shields.io/github/issues/Mopsgamer/view-ignored.svg)](https://github.com/Mopsgamer/view-ignored/issues)
-[![github](https://img.shields.io/github/stars/Mopsgamer/view-ignored)](https://github.com/Mopsgamer/view-ignored)
-[![issues-for-targets](https://img.shields.io/badge/issues-targets-blue)](https://github.com/search?q=repo%3AMopsgamer%2Fview-ignored+label%3Atargets+type%3Aissue&type=issues&query=repo%3AMopsgamer%2Fview-ignored+label%3Atargets)
+[![issues-for-targets](https://img.shields.io/badge/issues-targets-blue)](https://github.com/Mopsgamer/view-ignored/issues?q=is%3Aissue%20state%3Aopen%20label%3Atargets)
 [![suggest](https://img.shields.io/badge/suggest-salad?repo=Mopsgamer/view-ignored)](https://github.com/Mopsgamer/view-ignored/issues/new)
 [![details](https://img.shields.io/badge/details-gray)](#targets)
 
 </div>
 
 ## Highlights
-
-<!-- - **Faster alternative for `npm-packlist`, `ignore-walk` and `ignore`.** -->
 
 - **Reader.** Get a list of included files using configuration file
   readers, not command-line wrappers.
@@ -37,8 +34,7 @@ by Git, NPM, Yarn, JSR, Deno, Bun, VSCode extension CLI and other tools.
 - **Plugins.** Built-in [targets](#targets) for popular tools. Use custom
   targets by implementing/extending the `Target` interface.
 - **Streaming.** Native `scanStream` support for processing massive file trees with minimal memory overhead.
-- **Execution Control.** Use `fastDepth` and `fastInternal` options to fine-tune traversal depth and skip unnecessary directory checks. You can also enable them if you don't care about stats.
-- **Abortable.** Full support for `AbortSignal` to cancel long-running scans instantly.
+- **Execution Control.** Use `fastDepth` and `fastInternal` options to fine-tune traversal depth and skip unnecessary directory checks. You can enable them if you don't care about stats. Full support for `AbortSignal` to cancel long-running scans instantly.
 - **Lightweight.** Minimal dependencies for fast performance and small bundle size.
 - **Browser.** Can be bundled for browser use.
 - **Windows.** Windows paths are converted to Unix paths for compatibility with `memfs` based tests and browsers.
@@ -52,20 +48,19 @@ by Git, NPM, Yarn, JSR, Deno, Bun, VSCode extension CLI and other tools.
 
 ## v1 Roadmap
 
+- [x] Perfect API.
 - [x] Works for common use cases.
 - [ ] Follow `.gitignore` spec. (`ignore` does.)
 - [ ] Handle Git config.
 - [ ] Include node_modules bundled dependencies correctly. Missing: NPM, Yarn + Classic, Bun, Deno, JSR.
-- [ ] \*Move targets into separate packages (or not).
 - [ ] Import and pass upstream source tests.
-- [ ] \*Make it standard: NPM cli, VS Code file tree, VSCE, GitHub.
-- [ ] \*Upstream to Bun, PNPM and other package managers.
+- [ ] \*Move targets into separate packages.
 
 <sub>\* - Optional.</sub>
 
 ## Why this library exists?
 
-Incorrect VS Code file tree git status, huge `npm-packlist` package, missing Git's wildmatch algorithm in JS ecosistem, and the fact that there's no lightweight way to get a list of ignored files, which would explain why specific files are being included or excluded.
+Incorrect VS Code file tree git status, huge `npm-packlist` package, missing Git's wildmatch algorithm in JS ecosystem, and the fact that there's no lightweight way to get a list of ignored files, which would explain why specific files are being included or excluded.
 
 ## Usage
 
@@ -99,21 +94,15 @@ import type { Target } from "view-ignored/targets"
 
 import {
 	type Extractor,
-	extractGitignore,
+	makeGitignoreExtractor,
 	ruleTest,
 	ruleCompile,
 	type Rule,
 } from "view-ignored/patterns"
 
 const extractors: Extractor[] = [
-	{
-		extract: extractGitignore,
-		path: ".gitignore",
-	},
-	{
-		extract: extractGitignore,
-		path: ".git/info/exclude",
-	},
+	makeGitignoreExtractor(".gitignore"),
+	makeGitignoreExtractor(".git/info/exclude"),
 ]
 
 const internal: Rule[] = [
@@ -126,8 +115,10 @@ const internal: Rule[] = [
 
 export const Git: Target = <Target>{
 	extractors,
-	// TODO: Git should read configs
 	ignores: ruleTest,
+	init({ fs, cwd, signal, target }, cb) {
+		// ... Git config loading logic ...
+	},
 	internalRules: internal,
 	root: "/",
 }
@@ -146,12 +137,9 @@ stream.addEventListener("dirent", console.log)
 stream.addEventListener(
 	"end",
 	({ detail: ctx }) => {
-		ctx.paths.has(".git/HEAD")
-		// false
-		ctx.paths.has("node_modules/")
-		// false
-		ctx.paths.has("package.json")
-		// true
+		console.log(ctx.paths.has(".git/HEAD")) // false
+		console.log(ctx.paths.has("node_modules/")) // false
+		console.log(ctx.paths.has("package.json")) // true
 	},
 	{ once: true },
 )
@@ -174,13 +162,44 @@ const customFs = { readFile, readdir }
 await vign.scan({ cwd, fs: customFs, target })
 ```
 
+### Watching for changes
+
+You can use patchers to update the `MatcherContext` without rescanning the entire tree.
+This is useful for implementing file watchers.
+
+> [!IMPORTANT]
+> Directory paths must have a trailing slash.
+
+```ts
+import { matcherContextAddPath, matcherContextRemovePath } from "view-ignored/patterns"
+
+// Handle "created"
+await matcherContextAddPath(ctx, options, "src/new-file.ts")
+
+// Handle "removed"
+await matcherContextRemovePath(ctx, options, "src/old-file.ts")
+
+// Handle "changed"
+// Best approach: remove and re-add
+await matcherContextRemovePath(ctx, options, "src/file.ts")
+await matcherContextAddPath(ctx, options, "src/file.ts")
+```
+
+#### Edge Cases and Limitations
+
+- **Idempotency**: Patcher functions for files are **not idempotent**. Calling `matcherContextAddPath` multiple times for the same path without removing it first will corrupt the `totalFiles` and `totalMatchedFiles` counts in `ctx.total`. Always call `matcherContextRemovePath` before `matcherContextAddPath` if the path might already exist in the context.
+- **Directories**: Directory paths **must end with a slash** (e.g., `src/`). If you omit the slash, it will be treated as a file, and its contents will not be tracked or updated correctly.
+- **Renames**: To handle a file or directory rename, first call `matcherContextRemovePath` on the old path, then `matcherContextAddPath` on the new path.
+- **Source Files**: If a file that acts as an ignore source (like `.gitignore` or `package.json`) is added or changed, the patcher will automatically rescan the directory containing that source file to update the matching rules and state for all affected files.
+- **Depth**: Patchers respect the `depth` option provided in the `ScanOptions`. If you add a path deeper than the specified depth, it might not be fully processed or added to `ctx.paths`.
+
 ## Targets
 
 The following built-in scanners are available:
 
 - Git ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/git.ts))
-  - `view-ignored` handles Git-specific ignoring almost identically to Git: does not consider config.
-  - Reads `.gitignore` and `.git/info/exclude`.
+  - `view-ignored` handles Git-specific ignoring identically to Git.
+  - Reads `.gitignore` and `.git/info/exclude` and configurations.
   - Searches from `/`. (system's root)
   - Check this scanner by running `git ls-files --others --exclude-standard --cached`.
 - NPM ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/npm.ts))

@@ -1,63 +1,47 @@
-const strippedCwd = strip(process.cwd())
-
-export function unixify(path: string): string {
-	const result = strip(path)
-	const c0 = result.charCodeAt(0)
-	if (c0 === 46 && result.charCodeAt(1) === 47) {
-		// "./"
-		return strippedCwd + result.substring(1)
-	}
-	if (c0 !== 47 && c0 !== 92) {
-		// not starts with "/" or "\"
-		return strippedCwd + "/" + result
-	}
-	return result
+/**
+ * Replaces backslashes with forward slashes.
+ *
+ * @since 0.6.0
+ */
+export function unixify(p: string): string {
+	if (!p) return ""
+	return p.replaceAll("\\", "/")
 }
 
-export function join(from: string, p2: string): string {
-	if (p2 === "." || p2 === "./") return from
-
-	const p2startsDotSlash = p2.charCodeAt(0) === 46 && p2.charCodeAt(1) === 47
-	const start = p2startsDotSlash ? 2 : 0
-
-	let res = from
-	if (from.charCodeAt(0) === 46 && from.charCodeAt(1) === 47) {
-		res = from.substring(2)
-	}
-
-	const resLen = res.length
-	if (resLen > 0 && res.charCodeAt(resLen - 1) !== 47) {
-		res += "/"
-	}
-
-	return res + p2.substring(start)
+/**
+ * Joins two path segments with a forward slash.
+ *
+ * @since 0.6.0
+ */
+export function join(a: string, b: string): string {
+	if (!a || a === ".") return b
+	if (!b || b === ".") return a
+	const last = a.charCodeAt(a.length - 1)
+	if (last === 47) return a + b
+	return a + "/" + b
 }
 
-export function relative(base: string, to: string): string {
-	const blen = base.length
-	if (blen > 0 && base.charCodeAt(blen - 1) !== 47) {
-		base += "/"
-	}
-	return to.replace(base, "")
-}
-
-function strip(path: string): string {
-	let res = path.indexOf("\\") === -1 ? path : path.replaceAll("\\", "/")
-	if (res.length > 1 && res.charCodeAt(1) === 58) {
-		// X:
-		res = res.substring(2)
-	}
-	return res
-}
-
-export function dirname(path: string): string {
-	if (path === "/" || path === ".") return path
-	const len = path.length
-	const lastIdx = len - 1
-	const endsWithSlash = path.charCodeAt(lastIdx) === 47
-	const lastSlash = path.lastIndexOf("/", endsWithSlash ? lastIdx - 1 : lastIdx)
-
+/**
+ * Returns the directory name of a path.
+ *
+ * @since 0.6.0
+ */
+export function dirname(p: string): string {
+	const lastSlash = p.lastIndexOf("/")
 	if (lastSlash === -1) return "."
 	if (lastSlash === 0) return "/"
-	return path.substring(0, lastSlash)
+	return p.slice(0, lastSlash)
+}
+
+/**
+ * Strips Windows drive letters and replaces backslashes.
+ *
+ * @since 0.6.0
+ */
+export function strip(p: string): string {
+	const res = unixify(p)
+	if (res.length > 1 && res.charCodeAt(1) === 58) {
+		return res.slice(2)
+	}
+	return res
 }
