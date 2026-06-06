@@ -30,7 +30,6 @@ export type WalkResult = {
 }
 
 export type WalkTotal = {
-	type?: "total"
 	dir: string
 	files: number
 	matched: number
@@ -75,6 +74,7 @@ export function walkIncludes(
 
 	if (fastDepth && depth > maxDepth) {
 		return target.ignores(testOptions, (err, match) => {
+			// oxlint-disable-next-line typescript/no-explicit-any
 			if (err) return cb(err, null as any)
 			if (invert) match.ignored = !match.ignored
 			const result: WalkResult = {
@@ -109,6 +109,7 @@ export function walkIncludes(
 	}
 
 	target.ignores(testOptions, (err, match) => {
+		// oxlint-disable-next-line typescript/no-explicit-any
 		if (err) return cb(err, null as any)
 
 		if (invert) match.ignored = !match.ignored

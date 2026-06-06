@@ -43,6 +43,7 @@ export class MatcherStream extends EventTarget {
 		callback: EventListenerObject<K> | EventListener<K> | null,
 		options?: boolean | AddEventListenerOptions,
 	): void {
+		// oxlint-disable-next-line typescript/no-explicit-any
 		super.addEventListener(type as string, callback as any, options)
 	}
 
@@ -51,6 +52,7 @@ export class MatcherStream extends EventTarget {
 		callback: EventListenerObject<K> | EventListener<K> | null,
 		options?: boolean | EventListenerOptions,
 	): void {
+		// oxlint-disable-next-line typescript/no-explicit-any
 		super.removeEventListener(type as string, callback as any, options)
 	}
 
@@ -127,7 +129,7 @@ export class MatcherStream extends EventTarget {
 					failed: ctx.failed,
 					onResult: (result) => {
 						if ("dir" in result) {
-							walkPatchTotal(ctx, scanOptions.depth, result as any)
+							walkPatchTotal(ctx, scanOptions.depth, result)
 						} else {
 							walkPatchResult(ctx, result as WalkResult)
 						}
@@ -138,6 +140,7 @@ export class MatcherStream extends EventTarget {
 				},
 				(err) => {
 					if (err) {
+						// oxlint-disable-next-line typescript/no-explicit-any
 						cb(err, null as any)
 						return
 					}
@@ -151,6 +154,7 @@ export class MatcherStream extends EventTarget {
 		if (target.init) {
 			target.init({ cwd: normalCwd, fs, signal, target }, (err) => {
 				if (err) {
+					// oxlint-disable-next-line typescript/no-explicit-any
 					cb(err, null as any)
 					return
 				}

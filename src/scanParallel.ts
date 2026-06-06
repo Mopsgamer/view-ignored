@@ -85,7 +85,6 @@ export function scanParallel(
 									files: 0,
 									ignored: false,
 									matched: 0,
-									type: "total",
 								})
 							}
 						}
@@ -142,7 +141,6 @@ export function scanParallel(
 												files: dirFiles,
 												ignored: false,
 												matched: dirMatched,
-												type: "total",
 											})
 										}
 									}
@@ -160,6 +158,7 @@ export function scanParallel(
 	function handleError(err: Error) {
 		if (!errorOccurred) {
 			errorOccurred = err
+			// oxlint-disable-next-line typescript/no-explicit-any
 			cb(err, null as any)
 		}
 	}

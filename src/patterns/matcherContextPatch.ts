@@ -14,8 +14,8 @@ import {
 } from "../walk.js"
 import { resolveSources } from "./resolveSources.js"
 
-function promiseCb(resolve: (value: any) => void, reject: (reason?: any) => void) {
-	return (err: Error | null, res: any) => {
+function promiseCb<T>(resolve: (value: T) => void, reject: (reason?: unknown) => void) {
+	return (err: Error | null, res: T) => {
 		if (err) {
 			reject(err)
 			return

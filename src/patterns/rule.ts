@@ -257,14 +257,11 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 	const rules = src.rules
 	const elen = rules.length
 	if (elen === 0) {
-		return (
-			(src._noMatchCache as any) ??
-			(src._noMatchCache = {
-				ignored: src.inverted,
-				kind: RuleMatchKind.noMatch,
-				source: src,
-			})
-		)
+		return (src._noMatchCache ??= {
+			ignored: src.inverted,
+			kind: RuleMatchKind.noMatch,
+			source: src,
+		})
 	}
 
 	for (let i = 0; i < elen; i++) {
@@ -309,6 +306,7 @@ export function ruleTest(
 	try {
 		cb(null, ruleTestSync(options))
 	} catch (err) {
+		// oxlint-disable-next-line typescript/no-explicit-any
 		cb(err as Error, null as any)
 	}
 }

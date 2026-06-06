@@ -71,6 +71,7 @@ export function resolveSources(
 
 	if (target.root === "." && dir !== ".") {
 		resolveSources({ ...options, dir: "." }, (err, res) => {
+			// oxlint-disable-next-line typescript/no-explicit-any
 			if (err) return cb(err, null as any)
 			external.set(dir, res)
 			cb(null, res)

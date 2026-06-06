@@ -65,7 +65,8 @@ const fsJson = {
 }
 
 const cwd = unixify(process.cwd())
-function patchFS(transformFs: (newFsJson: typeof fsJson) => NestedDirectoryJSON) {
+// oxlint-disable-next-line typescript/no-explicit-any
+function patchFS(transformFs: (newFsJson: any) => NestedDirectoryJSON) {
 	const newFsJson = transformFs(structuredClone(fsJson))
 	const vol = Volume.fromNestedJSON(newFsJson, cwd)
 
@@ -789,7 +790,7 @@ describe("matcherContextRemovePath", () => {
 			const o = {
 				...opt,
 				fs: patchFS((json) => {
-					;(json.src as any)["ignored.js"] = "..."
+					json.src["ignored.js"] = "..."
 					return json
 				}),
 			}
@@ -887,7 +888,7 @@ describe("matcherContextRemovePath", () => {
 			const o = { ...optDepth1 }
 			const c = await scan(o)
 			o.fs = patchFS((f) => {
-				delete (f as any)["package.json"]
+				delete f["package.json"]
 				return f
 			})
 			expect(await matcherContextRemovePath(c, o, "package.json")).toBeTrue()

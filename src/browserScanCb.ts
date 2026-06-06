@@ -38,6 +38,7 @@ export function browserScanCb(
 	}
 
 	if (maxDepth < 0) {
+		// oxlint-disable-next-line typescript/no-explicit-any
 		cb(new TypeError("Depth must be a non-negative integer"), null as any)
 		return
 	}
@@ -80,6 +81,7 @@ export function browserScanCb(
 			},
 			(err) => {
 				if (err) {
+					// oxlint-disable-next-line typescript/no-explicit-any
 					cb(err, null as any)
 					return
 				}
@@ -92,6 +94,7 @@ export function browserScanCb(
 	if (target.init) {
 		target.init({ cwd: normalCwd, fs, signal, target }, (err) => {
 			if (err) {
+				// oxlint-disable-next-line typescript/no-explicit-any
 				cb(err, null as any)
 				return
 			}

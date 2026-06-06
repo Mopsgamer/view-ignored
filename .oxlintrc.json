@@ -1,7 +1,9 @@
 {
 	"$schema": "./node_modules/oxlint/configuration_schema.json",
-	"plugins": ["import", "oxc", "unicorn", "jsdoc", "eslint"],
+	"plugins": ["import", "oxc", "unicorn", "jsdoc", "eslint", "typescript"],
 	"rules": {
+		"typescript/no-explicit-any": "error",
+		"typescript/restrict-template-expressions": "off",
 		"import/no-duplicates": "error",
 		"import/no-cycle": "error",
 		"sort-keys": ["error", "asc", { "natural": true }],

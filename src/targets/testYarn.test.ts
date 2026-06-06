@@ -168,6 +168,7 @@ describe("Yarn", () => {
 				expect(ctx.paths.has("index.js")).toBeFalse()
 				expect(ctx.paths.has("packages/a/index.js")).toBeFalse()
 
+				// oxlint-disable-next-line typescript/no-explicit-any
 				const src = ctx.external.get("packages/a") as any
 				expect(src).toBeObject()
 				expect(src?.path).toBe("package.json")
@@ -207,6 +208,8 @@ describe("Yarn", () => {
 				expect(ctx.paths.get("packages/a/")).toBeUndefined()
 
 				expect(ctx.external.get("packages/a")).toBeUndefined()
+
+				// oxlint-disable-next-line typescript/no-explicit-any
 				const src = ctx.external.get(".") as any
 				expect(src).toBeObject()
 				expect(src?.path).toBe("package.json")
