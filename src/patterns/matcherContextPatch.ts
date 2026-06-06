@@ -5,13 +5,7 @@ import type { RuleMatch } from "./rule.js"
 
 import { scanParallel } from "../scanParallel.js"
 import { dirname } from "../unixify.js"
-import {
-	walkPatchResult,
-	walkPatchTotal,
-	propagateTotals,
-	type WalkResult,
-	type WalkTotal,
-} from "../walk.js"
+import { walkPatchResult, walkPatchTotal, propagateTotals, type WalkResult } from "../walk.js"
 import { resolveSources } from "./resolveSources.js"
 
 function promiseCb<T>(resolve: (value: T) => void, reject: (reason?: unknown) => void) {
@@ -97,10 +91,10 @@ export async function matcherContextAddPath(
 					failed: ctx.failed,
 					onResult: (result) => {
 						if ("dir" in result) {
-							walkPatchTotal(ctx, maxDepth, result as WalkTotal)
-						} else {
-							walkPatchResult(ctx, result as WalkResult)
+							walkPatchTotal(ctx, maxDepth, result)
+							return
 						}
+						walkPatchResult(ctx, result)
 					},
 					scanOptions: options,
 					stream: undefined,
@@ -231,10 +225,10 @@ export async function matcherContextRemovePath(
 					failed: ctx.failed,
 					onResult: (result) => {
 						if ("dir" in result) {
-							walkPatchTotal(ctx, maxDepth, result as WalkTotal)
-						} else {
-							walkPatchResult(ctx, result as WalkResult)
+							walkPatchTotal(ctx, maxDepth, result)
+							return
 						}
+						walkPatchResult(ctx, result)
 					},
 					scanOptions: options,
 					stream: undefined,

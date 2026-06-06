@@ -3,7 +3,7 @@ import type { Resource } from "./patterns/resource.js"
 import type { RuleMatch } from "./patterns/rule.js"
 import type { ScanOptions, FsAdapter, ScanBrowserOptions } from "./types.js"
 
-import { scanParallel } from "./scanParallel.js"
+import { scanParallel, type ScanParallelOptions } from "./scanParallel.js"
 import { unixify } from "./unixify.js"
 import { walkPatchResult, walkPatchTotal, propagateTotals, type WalkResult } from "./walk.js"
 
@@ -64,43 +64,42 @@ export function browserScanCb(
 		within,
 	}
 
-	const startScan = () => {
-		scanParallel(
-			{
-				external: ctx.external,
-				failed: ctx.failed,
-				onResult: (result) => {
-					if ("dir" in result) {
-						walkPatchTotal(ctx, scanOptions.depth, result)
-					} else {
-						walkPatchResult(ctx, result as WalkResult)
-					}
-				},
-				scanOptions,
-				within,
-			},
-			(err) => {
-				if (err) {
-					// oxlint-disable-next-line typescript/no-explicit-any
-					cb(err, null as any)
-					return
-				}
-				propagateTotals(ctx.total)
-				cb(null, ctx)
-			},
-		)
+	const parallelOptions = <ScanParallelOptions>{
+		external: ctx.external,
+		failed: ctx.failed,
+		onResult: (result) => {
+			if ("dir" in result) {
+				walkPatchTotal(ctx, scanOptions.depth, result)
+				return
+			}
+			walkPatchResult(ctx, result)
+		},
+		scanOptions,
+		within,
+	}
+
+	const parallelHandle = (err: Error | null) => {
+		if (err) {
+			// oxlint-disable-next-line typescript/no-explicit-any
+			cb(err, null as any)
+			return
+		}
+		propagateTotals(ctx.total)
+		cb(null, ctx)
+	}
+
+	const scanHandle = (err: Error | null) => {
+		if (err) {
+			// oxlint-disable-next-line typescript/no-explicit-any
+			cb(err, null as any)
+			return
+		}
+		scanParallel(parallelOptions, parallelHandle)
 	}
 
 	if (target.init) {
-		target.init({ cwd: normalCwd, fs, signal, target }, (err) => {
-			if (err) {
-				// oxlint-disable-next-line typescript/no-explicit-any
-				cb(err, null as any)
-				return
-			}
-			startScan()
-		})
-	} else {
-		startScan()
+		target.init({ cwd: normalCwd, fs, signal, target }, scanHandle)
+		return
 	}
+	scanParallel(parallelOptions, parallelHandle)
 }

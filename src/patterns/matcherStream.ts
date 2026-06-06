@@ -1,12 +1,8 @@
-import type { MatcherContext, Total } from "../patterns/matcherContext.js"
-import type { ScanOptions, ScanBrowserOptions } from "../types.js"
+import type { MatcherContext } from "../patterns/matcherContext.js"
+import type { ScanBrowserOptions } from "../types.js"
 import type { EventMap, EventListener, EventListenerObject } from "./matcherStreamTypes.js"
-import type { Resource } from "./resource.js"
-import type { RuleMatch } from "./rule.js"
 
-import { scanParallel } from "../scanParallel.js"
-import { unixify } from "../unixify.js"
-import { walkPatchResult, walkPatchTotal, propagateTotals, type WalkResult } from "../walk.js"
+import { browserScanCb } from "../browserScanCb.js"
 
 export type { EntryInfo, EntryListener, EndListener, EventMap } from "./matcherStreamTypes.js"
 
@@ -66,12 +62,7 @@ export class MatcherStream extends EventTarget {
 	 * @since 0.8.0
 	 */
 	start(): Promise<void> {
-		let resolve!: () => void
-		let reject!: (err: Error) => void
-		const promise = new Promise<void>((res, rej) => {
-			resolve = res
-			reject = rej
-		})
+		const { resolve, reject, promise } = Promise.withResolvers<void>()
 		this.startCb((err) => {
 			if (err) {
 				reject(err)
@@ -89,79 +80,9 @@ export class MatcherStream extends EventTarget {
 	 */
 	startCb(cb: (err: Error | null, ctx: MatcherContext) => void): void {
 		clearTimeout(this.#timeout)
-		const {
-			target,
-			cwd,
-			within = ".",
-			invert = false,
-			depth: maxDepth = Infinity,
-			signal = null,
-			fastDepth = false,
-			fastInternal = false,
-			fs,
-		} = this.#options
-
-		const ctx: MatcherContext = {
-			external: new Map<string, Resource>(),
-			failed: [],
-			paths: new Map<string, RuleMatch>(),
-			total: new Map<string, Total>([[".", { totalDirs: 0, totalFiles: 0, totalMatchedFiles: 0 }]]),
-		}
-
-		const normalCwd = unixify(cwd)
-
-		const scanOptions: Required<ScanOptions> = {
-			cwd: normalCwd,
-			depth: maxDepth,
-			fastDepth,
-			fastInternal,
-			fs,
-			invert,
-			signal,
-			target,
-			within,
-		}
-
-		const startScan = () => {
-			scanParallel(
-				{
-					external: ctx.external,
-					failed: ctx.failed,
-					onResult: (result) => {
-						if ("dir" in result) {
-							walkPatchTotal(ctx, scanOptions.depth, result)
-						} else {
-							walkPatchResult(ctx, result as WalkResult)
-						}
-					},
-					scanOptions,
-					stream: this,
-					within,
-				},
-				(err) => {
-					if (err) {
-						// oxlint-disable-next-line typescript/no-explicit-any
-						cb(err, null as any)
-						return
-					}
-					propagateTotals(ctx.total)
-					cb(null, ctx)
-					this.dispatchEvent(new CustomEvent("end", { detail: ctx }))
-				},
-			)
-		}
-
-		if (target.init) {
-			target.init({ cwd: normalCwd, fs, signal, target }, (err) => {
-				if (err) {
-					// oxlint-disable-next-line typescript/no-explicit-any
-					cb(err, null as any)
-					return
-				}
-				startScan()
-			})
-		} else {
-			startScan()
-		}
+		browserScanCb(this.#options, (err, ctx) => {
+			cb(err, ctx)
+			if (ctx) this.dispatchEvent(new CustomEvent("end", { detail: ctx }))
+		})
 	}
 }

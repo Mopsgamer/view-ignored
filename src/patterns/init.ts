@@ -7,4 +7,4 @@ import type { InitState } from "./initState.js"
  *
  * @since 0.11.0
  */
-export type InitCb = (options: InitState, cb: (err?: Error | null) => void) => void
+export type InitCb = (options: InitState, cb: (err: Error | null) => void) => void
