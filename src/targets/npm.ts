@@ -118,7 +118,7 @@ export const NPM: Target = <Target>{
 
 			// internalInclude.pattern = Array.from(set)
 			// ruleCompile(internalInclude, { nocase: true })
-			cb()
+			cb(null)
 		})
 	},
 	internalRules: internal,

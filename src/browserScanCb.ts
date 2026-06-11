@@ -1,11 +1,12 @@
 import type { MatcherContext, Total } from "./patterns/matcherContext.js"
+import type { MatcherStream } from "./patterns/matcherStream.js"
 import type { Resource } from "./patterns/resource.js"
 import type { RuleMatch } from "./patterns/rule.js"
 import type { ScanOptions, FsAdapter, ScanBrowserOptions } from "./types.js"
 
 import { scanParallel, type ScanParallelOptions } from "./scanParallel.js"
 import { unixify } from "./unixify.js"
-import { walkPatchResult, walkPatchTotal, propagateTotals, type WalkResult } from "./walk.js"
+import { walkPatchResult, walkPatchTotal, propagateTotals } from "./walk.js"
 
 /**
  * Scan the directory for included files based on the provided targets.
@@ -20,6 +21,11 @@ import { walkPatchResult, walkPatchTotal, propagateTotals, type WalkResult } fro
 export function browserScanCb(
 	options: ScanBrowserOptions,
 	cb: (err: Error | null, ctx: MatcherContext) => void,
+): void
+export function browserScanCb(
+	this: MatcherStream | void,
+	options: ScanBrowserOptions,
+	cb: (err: Error | null, ctx: MatcherContext) => void,
 ): void {
 	const {
 		target,
@@ -30,12 +36,10 @@ export function browserScanCb(
 		signal = null,
 		fastDepth = false,
 		fastInternal = false,
+		fs: { readdir, readFile },
 	} = options
 
-	const fs: FsAdapter = {
-		readFile: options.fs.readFile,
-		readdir: options.fs.readdir,
-	}
+	const fs: FsAdapter = { readFile, readdir }
 
 	if (maxDepth < 0) {
 		// oxlint-disable-next-line typescript/no-explicit-any
@@ -75,6 +79,7 @@ export function browserScanCb(
 			walkPatchResult(ctx, result)
 		},
 		scanOptions,
+		stream: this,
 		within,
 	}
 

@@ -109,7 +109,7 @@ export const YarnClassic: Target = <Target>{
 				cb(new Error("Invalid 'package.json'", { cause: error }))
 				return
 			}
-			cb()
+			cb(null)
 		})
 	},
 	internalRules: internal,

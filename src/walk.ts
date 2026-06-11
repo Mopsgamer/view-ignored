@@ -180,16 +180,13 @@ export function walkIncludes(
  * Patches the {@link MatcherContext} with the given result.
  */
 export function walkPatchResult(ctx: MatcherContext, r: WalkResult): void {
-	const { path, parentPath, match, isDir, tooDeep, includeParent } = r
-	if (isDir) {
-		if (!match.ignored && !tooDeep) ctx.paths.set(path, match)
-	} else {
-		if (!match.ignored) {
-			if (!tooDeep) ctx.paths.set(path, match)
-		}
+	const { match } = r
+	if (match.ignored) return
+	const { path, parentPath, tooDeep, includeParent } = r
+	if (!tooDeep) ctx.paths.set(path, match)
+	if (includeParent && !ctx.paths.has(parentPath + "/")) {
+		ctx.paths.set(parentPath + "/", match)
 	}
-	if (includeParent && !match.ignored)
-		if (!ctx.paths.has(parentPath + "/")) ctx.paths.set(parentPath + "/", match)
 }
 
 /**
@@ -202,7 +199,9 @@ export function walkPatchTotal(ctx: MatcherContext, maxDepth: number, t: WalkTot
 		dirTotal.totalFiles += files
 		dirTotal.totalDirs += dirs
 		dirTotal.totalMatchedFiles += matched
-	} else if (t.depth <= maxDepth && !ignored) {
+		return
+	}
+	if (t.depth <= maxDepth && !ignored) {
 		ctx.total.set(dir, { totalDirs: dirs, totalFiles: files, totalMatchedFiles: matched })
 	}
 }
@@ -223,12 +222,12 @@ export function propagateTotals(total: Map<string, Total>): void {
 			parentTotal.totalFiles += dirTotal.totalFiles
 			parentTotal.totalDirs += dirTotal.totalDirs
 			parentTotal.totalMatchedFiles += dirTotal.totalMatchedFiles
-		} else {
-			total.set(parent, {
-				totalDirs: dirTotal.totalDirs,
-				totalFiles: dirTotal.totalFiles,
-				totalMatchedFiles: dirTotal.totalMatchedFiles,
-			})
+			continue
 		}
+		total.set(parent, {
+			totalDirs: dirTotal.totalDirs,
+			totalFiles: dirTotal.totalFiles,
+			totalMatchedFiles: dirTotal.totalMatchedFiles,
+		})
 	}
 }

@@ -70,7 +70,7 @@ export const Deno: Target = <Target>{
 					cb(new Error("Invalid '" + extractor.path + "'", { cause: error }))
 					return
 				}
-				cb()
+				cb(null)
 			})
 		}
 		next()

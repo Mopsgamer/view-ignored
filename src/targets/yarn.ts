@@ -84,7 +84,7 @@ export const Yarn: Target = <Target>{
 			if (err) {
 				const error = err as NodeJS.ErrnoException
 				if (error.code === "ENOENT") {
-					cb()
+					cb(null)
 					return
 				}
 				cb(new Error("Error while initializing Yarn", { cause: error }))
@@ -119,7 +119,7 @@ export const Yarn: Target = <Target>{
 
 			internalInclude.pattern = Array.from(set)
 			ruleCompile(internalInclude, { nocase: true })
-			cb()
+			cb(null)
 		})
 	},
 	internalRules: internal,

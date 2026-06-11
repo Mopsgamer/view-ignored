@@ -210,7 +210,7 @@ function findSourceForAbsoluteDirsCb(
 		if (entries && plen > 0 && parent === paths[0]) {
 			const epath = extractor.path
 			const slashIdx = epath.indexOf("/")
-			const firstSegment = slashIdx === -1 ? epath : epath.substring(0, slashIdx)
+			const firstSegment = slashIdx === -1 ? epath : epath.slice(0, slashIdx)
 			let found = false
 			for (let k = 0, len = entries.length; k < len; k++) {
 				if (entries[k]!.name === firstSegment) {

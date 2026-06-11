@@ -65,7 +65,7 @@ export function resolveNegatable(
 
 	if (pattern.startsWith("!")) {
 		dist = include
-		pattern = pattern.substring(1)
+		pattern = pattern.slice(1)
 	}
 
 	dist.pattern.push(pattern)

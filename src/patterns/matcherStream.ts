@@ -73,6 +73,8 @@ export class MatcherStream extends EventTarget {
 		return promise
 	}
 
+	#scanCb = browserScanCb.bind(this)
+
 	/**
 	 * Resolves when everything is scanned. (Callback version)
 	 *
@@ -80,7 +82,7 @@ export class MatcherStream extends EventTarget {
 	 */
 	startCb(cb: (err: Error | null, ctx: MatcherContext) => void): void {
 		clearTimeout(this.#timeout)
-		browserScanCb(this.#options, (err, ctx) => {
+		this.#scanCb(this.#options, (err, ctx) => {
 			cb(err, ctx)
 			if (ctx) this.dispatchEvent(new CustomEvent("end", { detail: ctx }))
 		})
