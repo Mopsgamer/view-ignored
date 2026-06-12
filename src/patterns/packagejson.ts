@@ -13,54 +13,54 @@ import { resolveNegatable, type Source } from "./source.js"
  * @since 0.6.0
  */
 export function extractPackageJson(source: Source, content: Buffer): void | null | Error {
-	const result = extract(source, content)
-	if (result === undefined) {
-		for (const element of source.rules) {
-			ruleCompile(element)
-		}
+	try {
+		const r = extractPackageJsonRules(source, content)
+		if (r === null) return null
+	} catch (e) {
+		return e as Error
 	}
-	return result
 }
+
+extractPackageJson satisfies ExtractorFn
 
 /**
  * Extracts and compiles patterns from the file.
  *
- * @see {@link ruleCompile}
- *
- * @since 0.8.0
+ * @since 0.11.2
  */
-export function extractPackageJsonNocase(source: Source, content: Buffer): void | null | Error {
-	const result = extract(source, content)
-	if (result === undefined) {
-		for (const element of source.rules) {
-			ruleCompile(element, { nocase: true })
-		}
-	}
-	return result
-}
-
-function extract(source: Source, content: Buffer): void | null | Error {
-	source.inverted = true
-	const include: Rule = { compiled: null, excludes: false, pattern: [] }
-	const exclude: Rule = { compiled: null, excludes: true, pattern: [] }
-
+export function extractPackageJsonRules(
+	source: Source,
+	content: Buffer,
+): { exclude: Rule; include: Rule } | null {
 	let dist: { files?: string[] }
 
 	try {
 		dist = npmManifestParse(content.toString())
 	} catch (err) {
-		return new Error("Invalid '" + source.path + "': Expected '}'", { cause: err })
+		throw new Error("Invalid '" + source.path, { cause: err })
 	}
 
 	if (!dist?.files || !Array.isArray(dist.files)) {
 		return null
 	}
 
+	source.inverted = true
+	const include: Rule = { compiled: null, excludes: false, pattern: [] }
+	const exclude: Rule = { compiled: null, excludes: true, pattern: [] }
+
 	for (const pattern of dist.files) {
 		resolveNegatable(pattern, true, include, exclude)
 	}
 
-	source.rules.push(include, exclude)
-}
+	const options = { nocase: true }
+	if (include.pattern.length > 0) {
+		ruleCompile(include, options)
+		source.rules.push(include)
+	}
+	if (exclude.pattern.length > 0) {
+		ruleCompile(exclude, options)
+		source.rules.push(exclude)
+	}
 
-extractPackageJson satisfies ExtractorFn
+	return { exclude, include }
+}

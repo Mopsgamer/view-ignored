@@ -4,7 +4,7 @@ import * as fs from "node:fs"
 
 import { scan as browserScan } from "../out/browser.js"
 import { scan } from "../out/index.js"
-import { Git as target } from "../out/targets/index.js"
+import { makeGit } from "../out/targets/index.js"
 
 const igw = process.argv.includes("--igw")
 const vign = process.argv.includes("--vign")
@@ -22,7 +22,7 @@ barplot(() => {
 					cwd,
 					fastInternal: true,
 					fs,
-					target,
+					target: makeGit(),
 				})
 			})
 		if (!igw)
@@ -31,16 +31,16 @@ barplot(() => {
 					cwd,
 					fastInternal: true,
 					fs,
-					target,
+					target: makeGit(),
 				})
 			})
 		if (!igw)
 			bench("'view-ignored'.scan(Git)", async () => {
-				return scan({ cwd, fs, target })
+				return scan({ cwd, fs, target: makeGit() })
 			})
 		if (!igw)
 			bench("'view-ignored'.browserScan(Git)", async () => {
-				return browserScan({ cwd, fs, target })
+				return browserScan({ cwd, fs, target: makeGit() })
 			})
 		if (!vign)
 			bench("'ignore-walk'.walk(.gitignore)", async () => {

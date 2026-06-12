@@ -4,6 +4,25 @@ import type { Source } from "./source.js"
 import { patternCacheTest, type PatternList, type PatternCache } from "./patternList.js"
 
 /**
+ * @since 0.11.2
+ */
+export type InternalRules = {
+	/**
+	 * Tested before external (source's) rules.
+	 *
+	 * @since 0.11.2
+	 */
+	before: Rule[]
+	/**
+	 * Tested after external (source's) rules.
+	 * Overridable by external rules.
+	 *
+	 * @since 0.11.2
+	 */
+	after: Rule[]
+}
+
+/**
  * Represents a set of include and exclude patterns.
  * These patterns are positive glob patterns.
  *
@@ -223,10 +242,10 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 	}
 
 	if (src === null) {
-		return { ignored: false, kind: RuleMatchKind.missingSource }
-	}
-
-	if ("error" in src) {
+		if (options.target.needsSource) {
+			return { ignored: false, kind: RuleMatchKind.missingSource }
+		}
+	} else if ("error" in src) {
 		return { ...src, ignored: true, kind: RuleMatchKind.invalidSource }
 	}
 
@@ -234,8 +253,69 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 	const matchCtx = { lower: options.lowerEntry }
 
 	const internalRules = options.target.internalRules
-	for (let i = 0, len = internalRules.length; i < len; i++) {
-		const rule = internalRules[i]!
+	const [beforeInternal, afterInternal] = Array.isArray(internalRules)
+		? [internalRules, []]
+		: [internalRules.before, internalRules.after]
+	if (beforeInternal.length > 0) {
+		const internalMatch = ruleTestInternalSync(beforeInternal, entry, matchCtx)
+		if (internalMatch) return internalMatch
+	}
+
+	if (src !== null) {
+		const rules = src.rules
+		const elen = rules.length
+		if (elen === 0) {
+			return (src._noMatchCache ??= {
+				ignored: src.inverted,
+				kind: RuleMatchKind.noMatch,
+				source: src,
+			})
+		}
+
+		for (let i = 0; i < elen; i++) {
+			const rule = rules[i]!
+			const res = cacheTest(rule.compiled!, entry, matchCtx)
+			if (res === null) continue
+			if (res instanceof Error) {
+				return {
+					error: res,
+					ignored: false,
+					kind: RuleMatchKind.invalidExternal,
+					pattern: "",
+					source: src,
+				}
+			}
+
+			return {
+				ignored: rule.excludes,
+				kind: RuleMatchKind.external,
+				pattern: res.pattern,
+				source: src,
+			}
+		}
+	}
+
+	if (afterInternal.length > 0) {
+		const internalMatch = ruleTestInternalSync(afterInternal, entry, matchCtx)
+		if (internalMatch) return internalMatch
+	}
+
+	if (src === null) return { ignored: false, kind: RuleMatchKind.missingSource }
+
+	return {
+		ignored: src.inverted,
+		kind: RuleMatchKind.noMatch,
+		source: src,
+	}
+}
+
+function ruleTestInternalSync(
+	rules: Rule[],
+	entry: string,
+	matchCtx: { lower?: string },
+): RuleMatch | void {
+	for (let i = 0, len = rules.length; i < len; i++) {
+		const rule = rules[i]!
 		const res = cacheTest(rule.compiled!, entry, matchCtx)
 		if (res === null) continue
 		if (res instanceof Error) {
@@ -252,44 +332,6 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 			kind: RuleMatchKind.internal,
 			pattern: res.pattern,
 		}
-	}
-
-	const rules = src.rules
-	const elen = rules.length
-	if (elen === 0) {
-		return (src._noMatchCache ??= {
-			ignored: src.inverted,
-			kind: RuleMatchKind.noMatch,
-			source: src,
-		})
-	}
-
-	for (let i = 0; i < elen; i++) {
-		const rule = rules[i]!
-		const res = cacheTest(rule.compiled!, entry, matchCtx)
-		if (res === null) continue
-		if (res instanceof Error) {
-			return {
-				error: res,
-				ignored: false,
-				kind: RuleMatchKind.invalidExternal,
-				pattern: "",
-				source: src,
-			}
-		}
-
-		return {
-			ignored: rule.excludes,
-			kind: RuleMatchKind.external,
-			pattern: res.pattern,
-			source: src,
-		}
-	}
-
-	return {
-		ignored: src.inverted,
-		kind: RuleMatchKind.noMatch,
-		source: src,
 	}
 }
 

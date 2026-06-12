@@ -2,7 +2,7 @@ import { describe, test, expect } from "bun:test"
 import { spawn } from "node:child_process"
 
 import { scan } from "./scan.js"
-import { Git as target } from "./targets/git.js"
+import { makeGit } from "./targets/git.js"
 import { sortFirstFolders } from "./testSort.test.js"
 
 describe.skipIf(!!process.env.TEST_NO_SELF)("Git", () => {
@@ -10,7 +10,7 @@ describe.skipIf(!!process.env.TEST_NO_SELF)("Git", () => {
 		"scans self",
 		async () => {
 			const files = gitFiles()
-			const r = await scan({ fastInternal: true, target })
+			const r = await scan({ fastInternal: true, target: makeGit() })
 			// this test uses sortFirstFolders implementation
 			// provided by https://jsr.io/@m234/path/0.1.4/sort-cmp.ts
 			// you can install this jsr package in your project

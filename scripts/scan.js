@@ -7,8 +7,8 @@ const targetName = targetFlag ? targetFlag.split("=")[1] : "Git"
 const skipInternal = args.includes("--skipInternal")
 const printPaths = args.includes("--print")
 
-const target = Targets[targetName]
-if (!target) {
+const targetMaker = Targets["make" + targetName]
+if (!targetMaker) {
 	console.error(
 		`Unknown target: ${targetName}. Available: ${Object.keys(Targets)
 			.filter((k) => k !== "Target")
@@ -21,7 +21,7 @@ console.log(`Scanning "${process.cwd()}" with target: ${targetName}`)
 const start = performance.now()
 const ctx = await scan({
 	skipInternal,
-	target,
+	target: targetMaker(),
 })
 const end = performance.now()
 

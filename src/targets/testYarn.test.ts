@@ -1,22 +1,8 @@
-import type { NestedDirectoryJSON } from "memfs"
-
 import { describe, test, expect } from "bun:test"
 
 import { RuleMatchKind } from "../patterns/rule.js"
-import { testScan, type PathHandlerOptions } from "../testScan.test.js"
-import { Yarn as target } from "./yarn.js"
-
-async function testYarn(
-	done: () => void,
-	tree: NestedDirectoryJSON,
-	handler: ((o: PathHandlerOptions) => void | Promise<void>) | string[],
-) {
-	try {
-		await testScan(done, tree, handler, { target })
-	} catch (error) {
-		throw new Error("Error while testing Yarn", { cause: error })
-	}
-}
+import { testScan } from "../testScan.test.js"
+import { makeYarn } from "./yarn.js"
 
 const packageJsonNoFiles = JSON.stringify({
 	name: "me",
@@ -25,15 +11,22 @@ const packageJsonNoFiles = JSON.stringify({
 
 describe("Yarn", () => {
 	test("empty for empty", async (done) => {
-		await testYarn(done, { ".": null, "package.json": packageJsonNoFiles }, ["package.json"])
+		await testScan(done, { ".": null, "package.json": packageJsonNoFiles }, ["package.json"], {
+			target: makeYarn(),
+		})
 	})
 
 	test("includes for no sources", async (done) => {
-		await testYarn(done, { file: "", "package.json": packageJsonNoFiles }, ["file", "package.json"])
+		await testScan(
+			done,
+			{ file: "", "package.json": packageJsonNoFiles },
+			["file", "package.json"],
+			{ target: makeYarn() },
+		)
 	})
 
 	test("keeps for empty source", async (done) => {
-		await testYarn(
+		await testScan(
 			done,
 			{
 				".npmignore": "",
@@ -41,11 +34,12 @@ describe("Yarn", () => {
 				"package.json": packageJsonNoFiles,
 			},
 			["filekeep", "package.json"],
+			{ target: makeYarn() },
 		)
 	})
 
 	test("ignores file", async (done) => {
-		await testYarn(
+		await testScan(
 			done,
 			{
 				".npmignore": "file",
@@ -53,11 +47,12 @@ describe("Yarn", () => {
 				"package.json": packageJsonNoFiles,
 			},
 			["package.json"],
+			{ target: makeYarn() },
 		)
 	})
 
 	test("ignores file nocase", async (done) => {
-		await testYarn(
+		await testScan(
 			done,
 			{
 				".npmignore": "File",
@@ -65,11 +60,12 @@ describe("Yarn", () => {
 				"package.json": packageJsonNoFiles,
 			},
 			["package.json"],
+			{ target: makeYarn() },
 		)
 	})
 
 	test("ignores multiple files", async (done) => {
-		await testYarn(
+		await testScan(
 			done,
 			{
 				".npmignore": "file1.txt\nfile2.txt",
@@ -78,11 +74,12 @@ describe("Yarn", () => {
 				"package.json": packageJsonNoFiles,
 			},
 			["package.json"],
+			{ target: makeYarn() },
 		)
 	})
 
 	test("ignores files with pattern", async (done) => {
-		await testYarn(
+		await testScan(
 			done,
 			{
 				".npmignore": "*.js",
@@ -91,11 +88,12 @@ describe("Yarn", () => {
 				"package.json": packageJsonNoFiles,
 			},
 			["package.json"],
+			{ target: makeYarn() },
 		)
 	})
 
 	test("ignores files in subdirectory", async (done) => {
-		await testYarn(
+		await testScan(
 			done,
 			{
 				".npmignore": "src/",
@@ -106,11 +104,12 @@ describe("Yarn", () => {
 				},
 			},
 			["package.json"],
+			{ target: makeYarn() },
 		)
 	})
 
 	test("does not ignore files not matching pattern", async (done) => {
-		await testYarn(
+		await testScan(
 			done,
 			{
 				".npmignore": "*.js",
@@ -119,11 +118,12 @@ describe("Yarn", () => {
 				"package.json": packageJsonNoFiles,
 			},
 			["foo.txt", "package.json"],
+			{ target: makeYarn() },
 		)
 	})
 
 	test("negation pattern keeps file", async (done) => {
-		await testYarn(
+		await testScan(
 			done,
 			{
 				".npmignore": "*.js\n!bar.js",
@@ -132,6 +132,7 @@ describe("Yarn", () => {
 				"package.json": packageJsonNoFiles,
 			},
 			["bar.js", "package.json"],
+			{ target: makeYarn() },
 		)
 	})
 
@@ -173,7 +174,7 @@ describe("Yarn", () => {
 				expect(src).toBeObject()
 				expect(src?.path).toBe("package.json")
 			},
-			{ cwd: process.cwd() + "/test", target },
+			{ cwd: process.cwd() + "/test", target: makeYarn() },
 		)
 	})
 	test("monorepo should use packages/a/package.json if cwd is packages/a", async (done) => {
@@ -214,12 +215,12 @@ describe("Yarn", () => {
 				expect(src).toBeObject()
 				expect(src?.path).toBe("package.json")
 			},
-			{ cwd: process.cwd() + "/test/packages/a", target },
+			{ cwd: process.cwd() + "/test/packages/a", target: makeYarn() },
 		)
 	})
 
 	test("bin included using manifest", async (done) => {
-		await testYarn(
+		await testScan(
 			done,
 			{
 				bin: {
@@ -234,10 +235,11 @@ describe("Yarn", () => {
 				}),
 			},
 			["index.js", "package.json", "bin/", "bin/app"],
+			{ target: makeYarn() },
 		)
 	})
 	test("bin included using manifest", async (done) => {
-		await testYarn(
+		await testScan(
 			done,
 			{
 				bin: {
@@ -252,10 +254,11 @@ describe("Yarn", () => {
 				}),
 			},
 			["index.js", "package.json", "bin/", "bin/app"],
+			{ target: makeYarn() },
 		)
 	})
 	test("bin object included using manifest", async (done) => {
-		await testYarn(
+		await testScan(
 			done,
 			{
 				bin: {
@@ -270,13 +273,20 @@ describe("Yarn", () => {
 				}),
 			},
 			["index.js", "package.json", "bin/", "bin/app"],
+			{ target: makeYarn() },
 		)
 	})
 	test("throws an error if package.json is invalid", async (done) => {
-		expect(() => testYarn(done, { "package.json": "{ invalid json }" }, () => {})).toThrow()
-		expect(() => testYarn(done, { "package.json": "{}" }, () => {})).toThrow()
 		expect(() =>
-			testYarn(done, { "package.json": '{ "name": 0, "version": 0 }' }, () => {}),
+			testScan(done, { "package.json": "{ invalid json }" }, () => {}, { target: makeYarn() }),
+		).toThrow()
+		expect(() =>
+			testScan(done, { "package.json": "{}" }, () => {}, { target: makeYarn() }),
+		).toThrow()
+		expect(() =>
+			testScan(done, { "package.json": '{ "name": 0, "version": 0 }' }, () => {}, {
+				target: makeYarn(),
+			}),
 		).toThrow()
 	})
 })

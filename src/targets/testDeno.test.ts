@@ -1,21 +1,7 @@
-import type { NestedDirectoryJSON } from "memfs"
-
 import { describe, test, expect } from "bun:test"
 
-import { testScan, type PathHandlerOptions } from "../testScan.test.js"
-import { Deno as target } from "./deno.js"
-
-async function testDeno(
-	done: () => void,
-	tree: NestedDirectoryJSON,
-	handler: ((o: PathHandlerOptions) => void | Promise<void>) | string[],
-) {
-	try {
-		await testScan(done, tree, handler, { target })
-	} catch (error) {
-		throw new Error("Error while testing Deno", { cause: error })
-	}
-}
+import { testScan } from "../testScan.test.js"
+import { makeDeno } from "./deno.js"
 
 const denoJson = JSON.stringify({
 	exports: ".",
@@ -25,27 +11,42 @@ const denoJson = JSON.stringify({
 
 describe("Deno", () => {
 	test("includes deno.json", async (done) => {
-		await testDeno(done, { "deno.json": denoJson, "main.ts": "" }, ["deno.json", "main.ts"])
+		await testScan(done, { "deno.json": denoJson, "main.ts": "" }, ["deno.json", "main.ts"], {
+			target: makeDeno(),
+		})
 	})
 
 	test("throws an error if package.json is invalid", async (done) => {
-		expect(() => testDeno(done, { "package.json": "{ invalid json }" }, () => {})).toThrow()
-		expect(() => testDeno(done, { "package.json": "{}" }, () => {})).toThrow()
 		expect(() =>
-			testDeno(done, { "package.json": '{ "name": 0, "version": 0 }' }, () => {}),
+			testScan(done, { "package.json": "{ invalid json }" }, () => {}, { target: makeDeno() }),
+		).toThrow()
+		expect(() =>
+			testScan(done, { "package.json": "{}" }, () => {}, { target: makeDeno() }),
+		).toThrow()
+		expect(() =>
+			testScan(done, { "package.json": '{ "name": 0, "version": 0 }' }, () => {}, {
+				target: makeDeno(),
+			}),
 		).toThrow()
 	})
 	test("throws an error if deno.json is invalid", async (done) => {
-		expect(() => testDeno(done, { "deno.json": "{ invalid json }" }, () => {})).toThrow()
-		expect(() => testDeno(done, { "deno.json": "{}" }, () => {})).toThrow()
-		expect(() => testDeno(done, { "deno.json": '{ "name": 0, "version": 0 }' }, () => {})).toThrow()
+		expect(() =>
+			testScan(done, { "deno.json": "{ invalid json }" }, () => {}, { target: makeDeno() }),
+		).toThrow()
+		expect(() => testScan(done, { "deno.json": "{}" }, () => {}, { target: makeDeno() })).toThrow()
+		expect(() =>
+			testScan(done, { "deno.json": '{ "name": 0, "version": 0 }' }, () => {}, {
+				target: makeDeno(),
+			}),
+		).toThrow()
 	})
 	test("ignores package.json if valid deno.json exists", async (done) => {
 		expect(() =>
-			testDeno(
+			testScan(
 				done,
 				{ "deno.json": denoJson, "package.json": '{ "name": 0, "version": 0 }' },
 				() => {},
+				{ target: makeDeno() },
 			),
 		).not.toThrow()
 	})

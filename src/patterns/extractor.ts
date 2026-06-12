@@ -6,10 +6,9 @@ import type { Source } from "./source.js"
 /**
  * Populates the source object from the content of a source file.
  * Results are available in `ctx.external`.
- * If `null` returned or throwed, will skip the extractor.
  *
  * @see {@link Source.rules} for more details.
- * @throws Error if extraction fails. Processing stops.
+ * @returns Error or `null` to stop looking for sources.
  *
  * @since 0.6.0
  */

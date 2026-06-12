@@ -6,7 +6,7 @@ import { describe, test, expect } from "bun:test"
 import { Volume, type NestedDirectoryJSON } from "memfs"
 
 import { scan, type ScanOptions } from "../scan.js"
-import { NPM as target } from "../targets/npm.js"
+import { makeNPM } from "../targets/npm.js"
 import { createAdapter } from "../testScan.test.js"
 import { unixify } from "../unixify.js"
 import { matcherContextAddPath, matcherContextRemovePath } from "./matcherContextPatch.js"
@@ -128,7 +128,7 @@ const opt: Required<ScanOptions> = {
 	fs: adapter,
 	invert: false,
 	signal: null,
-	target,
+	target: makeNPM(),
 	within: ".",
 }
 const ctx = await scan(opt)
@@ -266,7 +266,7 @@ const optDepth1: Required<ScanOptions> = {
 	fs: adapter,
 	invert: false,
 	signal: null,
-	target,
+	target: makeNPM(),
 	within: ".",
 }
 

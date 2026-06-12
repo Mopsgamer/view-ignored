@@ -1,22 +1,8 @@
-import type { NestedDirectoryJSON } from "memfs"
-
 import { describe, test, expect } from "bun:test"
 
-import { testScan, type PathHandlerOptions } from "../testScan.test.js"
-import { JSR as target } from "./jsr.js"
+import { testScan } from "../testScan.test.js"
+import { makeJSR } from "./jsr.js"
 import { jsrManifestParse } from "./jsrManifest.js"
-
-async function testJSR(
-	done: () => void,
-	tree: NestedDirectoryJSON,
-	handler: ((o: PathHandlerOptions) => void | Promise<void>) | string[],
-) {
-	try {
-		await testScan(done, tree, handler, { target })
-	} catch (error) {
-		throw new Error("Error while testing JSR", { cause: error })
-	}
-}
 
 const jsrJson = JSON.stringify({
 	exports: "./mod.ts",
@@ -26,11 +12,12 @@ const jsrJson = JSON.stringify({
 
 describe("JSR", () => {
 	test("includes jsr.json and exports", async (done) => {
-		await testJSR(done, { "jsr.json": jsrJson, "mod.ts": "", "other.ts": "" }, [
-			"jsr.json",
-			"mod.ts",
-			"other.ts",
-		])
+		await testScan(
+			done,
+			{ "jsr.json": jsrJson, "mod.ts": "", "other.ts": "" },
+			["jsr.json", "mod.ts", "other.ts"],
+			{ target: makeJSR() },
+		)
 	})
 	const validJsrJson = JSON.stringify({
 		exports: "./mod.ts",
@@ -40,7 +27,9 @@ describe("JSR", () => {
 	const invalidPackageJson = '{ "name": 0, "version": 0 }'
 	test("ignores package.json if valid jsr.json exists", async (done) => {
 		expect(() =>
-			testJSR(done, { "jsr.json": validJsrJson, "package.json": invalidPackageJson }, () => {}),
+			testScan(done, { "jsr.json": validJsrJson, "package.json": invalidPackageJson }, () => {}, {
+				target: makeJSR(),
+			}),
 		).not.toThrow()
 	})
 

@@ -5,123 +5,132 @@ import {
 	ruleTest,
 	type Rule,
 	ruleCompile,
-	extractPackageJsonNocase,
-	extractGitignoreNocase,
+	extractGitignore,
+	extractPackageJson,
 } from "../patterns/index.js"
 import { join, unixify } from "../unixify.js"
 import { npmManifestParse, type PackageJson } from "./npmManifest.js"
 
-const extractors: Extractor[] = [
-	{
-		extract: extractPackageJsonNocase,
-		path: "package.json",
-	},
-	{
-		extract: extractGitignoreNocase,
-		path: ".npmignore",
-	},
-	{
-		extract: extractGitignoreNocase,
-		path: ".gitignore",
-	},
-]
-
-const internalInclude: Rule = {
-	compiled: [],
-	excludes: false,
-	pattern: [],
-}
-
-const internal: Rule[] = [
-	internalInclude,
-	ruleCompile({
-		compiled: null,
-		excludes: true,
-		pattern: [
-			// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L26
-			"/package.tgz",
-
-			".github",
-			".git",
-			".hg",
-			"node_modules",
-
-			".npmignore",
-			".gitignore",
-
-			".#*",
-			".DS_Store",
-		],
-	}),
-	ruleCompile(
-		{
-			compiled: null,
-			excludes: false,
-			pattern: [
-				// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L10
-				"/package.json",
-				"/README",
-				"/README.*",
-				"/LICENSE",
-				"/LICENSE.*",
-				"/LICENCE",
-				"/LICENCE.*",
-			],
-		},
-		{ nocase: true },
-	),
-]
-
 /**
- * @since 0.6.0
+ * @since 0.11.2
  */
-export const Yarn: Target = <Target>{
-	extractors,
-	ignores: ruleTest,
-	init({ fs, cwd }, cb) {
-		const normalCwd = unixify(cwd)
-		fs.readFile(normalCwd + "/package.json", (err, content) => {
-			if (err) {
-				const error = err as NodeJS.ErrnoException
-				if (error.code === "ENOENT") {
-					cb(null)
+export function makeYarn(): Target {
+	const extractors: Extractor[] = [
+		{
+			extract(source, content) {
+				return extractPackageJson(source, content)
+			},
+			path: "package.json",
+		},
+		{
+			extract(source, content) {
+				return extractGitignore(source, content, { nocase: true })
+			},
+			path: ".npmignore",
+		},
+		{
+			extract(source, content) {
+				return extractGitignore(source, content, { nocase: true })
+			},
+			path: ".gitignore",
+		},
+	]
+
+	const internalInclude: Rule = {
+		compiled: [],
+		excludes: false,
+		pattern: [],
+	}
+
+	const internal: Rule[] = [
+		internalInclude,
+		ruleCompile({
+			compiled: null,
+			excludes: true,
+			pattern: [
+				// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L26
+				"/package.tgz",
+
+				".github",
+				".git",
+				".hg",
+				"node_modules",
+
+				".npmignore",
+				".gitignore",
+
+				".#*",
+				".DS_Store",
+			],
+		}),
+		ruleCompile(
+			{
+				compiled: null,
+				excludes: false,
+				pattern: [
+					// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L10
+					"/package.json",
+					"/README",
+					"/README.*",
+					"/LICENSE",
+					"/LICENSE.*",
+					"/LICENCE",
+					"/LICENCE.*",
+				],
+			},
+			{ nocase: true },
+		),
+	]
+
+	return <Target>{
+		extractors,
+		ignores: ruleTest,
+		init({ fs, cwd }, cb) {
+			const normalCwd = unixify(cwd)
+			fs.readFile(normalCwd + "/package.json", (err, content) => {
+				if (err) {
+					const error = err as NodeJS.ErrnoException
+					if (error.code === "ENOENT") {
+						cb(null)
+						return
+					}
+					cb(new Error("Error while initializing Yarn", { cause: error }))
 					return
 				}
-				cb(new Error("Error while initializing Yarn", { cause: error }))
-				return
-			}
 
-			let dist: PackageJson
-			try {
-				dist = npmManifestParse(content!.toString())
-			} catch (error) {
-				cb(new Error("Invalid 'package.json'", { cause: error }))
-				return
-			}
+				let dist: PackageJson
+				try {
+					dist = npmManifestParse(content!.toString())
+				} catch (error) {
+					cb(new Error("Invalid 'package.json'", { cause: error }))
+					return
+				}
 
-			const set = new Set<string>()
+				const set = new Set<string>()
 
-			function normal(path: string): string {
-				return unixify(join(normalCwd, path)).substring(normalCwd.length)
-			}
+				function normal(path: string): string {
+					return unixify(join(normalCwd, path)).substring(normalCwd.length)
+				}
 
-			if (typeof dist.main === "string") set.add(normal(dist.main))
-			if (typeof dist.module === "string") set.add(normal(dist.module))
-			if (typeof dist.browser === "string") set.add(normal(dist.browser))
+				if (typeof dist.main === "string") set.add(normal(dist.main))
+				if (typeof dist.module === "string") set.add(normal(dist.module))
+				if (typeof dist.browser === "string") set.add(normal(dist.browser))
 
-			if (typeof dist.bin === "string") {
-				set.add(normal(dist.bin))
-			} else if (typeof dist.bin === "object" && dist.bin !== null) {
-				Object.values(dist.bin).forEach((binPath) => {
-					if (typeof binPath === "string") set.add(normal(binPath))
-				})
-			}
+				if (typeof dist.bin === "string") {
+					set.add(normal(dist.bin))
+				} else if (typeof dist.bin === "object" && dist.bin !== null) {
+					Object.values(dist.bin).forEach((binPath) => {
+						if (typeof binPath === "string") set.add(normal(binPath))
+					})
+				}
 
-			internalInclude.pattern = Array.from(set)
-			ruleCompile(internalInclude, { nocase: true })
-			cb(null)
-		})
-	},
-	internalRules: internal,
-	root: ".",
+				internalInclude.pattern = Array.from(set)
+				ruleCompile(internalInclude, { nocase: true })
+				cb(null)
+			})
+		},
+		internalRules: internal,
+		needsSource: true, // package.json without files prop is a valid source
+		root: ".",
+	}
 }

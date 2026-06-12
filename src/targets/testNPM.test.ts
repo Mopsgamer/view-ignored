@@ -1,22 +1,8 @@
-import type { NestedDirectoryJSON } from "memfs"
-
 import { describe, test, expect } from "bun:test"
 
 import { RuleMatchKind } from "../patterns/rule.js"
-import { testScan, type PathHandlerOptions } from "../testScan.test.js"
-import { NPM as target } from "./npm.js"
-
-async function testNPM(
-	done: () => void,
-	tree: NestedDirectoryJSON,
-	handler: ((o: PathHandlerOptions) => void | Promise<void>) | string[],
-) {
-	try {
-		await testScan(done, tree, handler, { target })
-	} catch (error) {
-		throw new Error("Error while testing NPM", { cause: error })
-	}
-}
+import { testScan } from "../testScan.test.js"
+import { makeNPM } from "./npm.js"
 
 const packageJsonNoFiles = JSON.stringify({
 	name: "me",
@@ -25,15 +11,22 @@ const packageJsonNoFiles = JSON.stringify({
 
 describe("NPM", () => {
 	test("empty for empty", async (done) => {
-		await testNPM(done, { ".": null, "package.json": packageJsonNoFiles }, ["package.json"])
+		await testScan(done, { ".": null, "package.json": packageJsonNoFiles }, ["package.json"], {
+			target: makeNPM(),
+		})
 	})
 
 	test("includes for no sources", async (done) => {
-		await testNPM(done, { file: "", "package.json": packageJsonNoFiles }, ["file", "package.json"])
+		await testScan(
+			done,
+			{ file: "", "package.json": packageJsonNoFiles },
+			["file", "package.json"],
+			{ target: makeNPM() },
+		)
 	})
 
 	test("keeps for empty source", async (done) => {
-		await testNPM(
+		await testScan(
 			done,
 			{
 				".npmignore": "",
@@ -41,11 +34,12 @@ describe("NPM", () => {
 				"package.json": packageJsonNoFiles,
 			},
 			["filekeep", "package.json"],
+			{ target: makeNPM() },
 		)
 	})
 
 	test("ignores file", async (done) => {
-		await testNPM(
+		await testScan(
 			done,
 			{
 				".npmignore": "file",
@@ -53,11 +47,12 @@ describe("NPM", () => {
 				"package.json": packageJsonNoFiles,
 			},
 			["package.json"],
+			{ target: makeNPM() },
 		)
 	})
 
 	test("ignores multiple files", async (done) => {
-		await testNPM(
+		await testScan(
 			done,
 			{
 				".npmignore": "file1.txt\nfile2.txt",
@@ -66,11 +61,12 @@ describe("NPM", () => {
 				"package.json": packageJsonNoFiles,
 			},
 			["package.json"],
+			{ target: makeNPM() },
 		)
 	})
 
 	test("ignores files with pattern", async (done) => {
-		await testNPM(
+		await testScan(
 			done,
 			{
 				".npmignore": "*.js",
@@ -79,11 +75,12 @@ describe("NPM", () => {
 				"package.json": packageJsonNoFiles,
 			},
 			["package.json"],
+			{ target: makeNPM() },
 		)
 	})
 
 	test("ignores files in subdirectory", async (done) => {
-		await testNPM(
+		await testScan(
 			done,
 			{
 				".npmignore": "src/",
@@ -94,11 +91,12 @@ describe("NPM", () => {
 				},
 			},
 			["package.json"],
+			{ target: makeNPM() },
 		)
 	})
 
 	test("does not ignore files not matching pattern", async (done) => {
-		await testNPM(
+		await testScan(
 			done,
 			{
 				".npmignore": "*.js",
@@ -107,11 +105,12 @@ describe("NPM", () => {
 				"package.json": packageJsonNoFiles,
 			},
 			["foo.txt", "package.json"],
+			{ target: makeNPM() },
 		)
 	})
 
 	test("negation pattern keeps file", async (done) => {
-		await testNPM(
+		await testScan(
 			done,
 			{
 				".npmignore": "*.js\n!bar.js",
@@ -120,6 +119,7 @@ describe("NPM", () => {
 				"package.json": packageJsonNoFiles,
 			},
 			["bar.js", "package.json"],
+			{ target: makeNPM() },
 		)
 	})
 
@@ -161,7 +161,7 @@ describe("NPM", () => {
 				expect(src).toBeObject()
 				expect(src?.path).toBe("package.json")
 			},
-			{ cwd: process.cwd() + "/test", target },
+			{ cwd: process.cwd() + "/test", target: makeNPM() },
 		)
 	})
 	test("monorepo should use packages/a/package.json if cwd is packages/a", async (done) => {
@@ -202,15 +202,17 @@ describe("NPM", () => {
 				expect(src).toBeObject()
 				expect(src?.path).toBe("package.json")
 			},
-			{ cwd: process.cwd() + "/test/packages/a", target },
+			{ cwd: process.cwd() + "/test/packages/a", target: makeNPM() },
 		)
 	})
 
 	test("throws an error if package.json is invalid", async (done) => {
-		expect(() => testNPM(done, { "package.json": "{ invalid json }" }, () => {})).toThrow()
-		expect(() => testNPM(done, { "package.json": "{}" }, () => {})).toThrow()
 		expect(() =>
-			testNPM(done, { "package.json": '{ "name": 0, "version": 0 }' }, () => {}),
+			testScan(done, { "package.json": "{ invalid json }" }, [], { target: makeNPM() }),
+		).toThrow()
+		expect(() => testScan(done, { "package.json": "{}" }, [], { target: makeNPM() })).toThrow()
+		expect(() =>
+			testScan(done, { "package.json": '{ "name": 0, "version": 0 }' }, [], { target: makeNPM() }),
 		).toThrow()
 	})
 })

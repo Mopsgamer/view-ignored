@@ -1,7 +1,7 @@
 import { describe, test, expect } from "bun:test"
 
 import { RuleMatchKind } from "./patterns/rule.js"
-import { Git as target } from "./targets/git.js"
+import { makeGit } from "./targets/git.js"
 import { testStream } from "./testScan.test.js"
 
 describe("Git", () => {
@@ -29,7 +29,7 @@ describe("Git", () => {
 					{ once: true },
 				)
 			},
-			{ target },
+			{ target: makeGit() },
 		)
 	})
 	test("scanStream .gitignore", async (done) => {
@@ -58,7 +58,7 @@ describe("Git", () => {
 					{ once: true },
 				)
 			},
-			{ target },
+			{ target: makeGit() },
 		)
 	})
 })

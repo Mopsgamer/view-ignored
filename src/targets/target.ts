@@ -1,7 +1,7 @@
 import type { Extractor } from "../patterns/extractor.js"
 import type { IgnoresCb } from "../patterns/ignores.js"
 import type { InitCb } from "../patterns/init.js"
-import type { Rule } from "../patterns/rule.js"
+import type { Rule, InternalRules } from "../patterns/rule.js"
 
 /**
  * Contains the matcher used for scanning.
@@ -10,11 +10,18 @@ import type { Rule } from "../patterns/rule.js"
  */
 export interface Target {
 	/**
-	 * Should be compiled.
+	 * If enabled and no source found (null), will skip internal patterns
+	 * and include files with the `missingSource` match.
+	 *
+	 * @since 0.11.2
+	 */
+	needsSource: boolean
+	/**
+	 * Should be compiled. If an array, it will be treated *high*.
 	 *
 	 * @since 0.10.0
 	 */
-	internalRules: Rule[]
+	internalRules: Rule[] | InternalRules
 	/**
 	 * Initial search directory.
 	 * Relative to the `cwd` path or absolute path.

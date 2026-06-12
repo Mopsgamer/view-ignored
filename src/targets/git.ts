@@ -5,35 +5,64 @@ import {
 	extractGitignore,
 	ruleTest,
 	ruleCompile,
-	type Rule,
+	type InternalRules,
+	type Source,
 } from "../patterns/index.js"
 
-const extractors: Extractor[] = [
-	{
-		extract: extractGitignore,
-		path: ".gitignore",
-	},
-	{
-		extract: extractGitignore,
-		path: ".git/info/exclude",
-	},
-]
-
-const internal: Rule[] = [
-	ruleCompile({
-		compiled: null,
-		excludes: true,
-		pattern: [".git", ".DS_Store"],
-	}),
-]
-
 /**
- * @since 0.6.0
+ * @since 0.11.2
  */
-export const Git: Target = <Target>{
-	extractors,
-	// TODO: Git should read configs
-	ignores: ruleTest,
-	internalRules: internal,
-	root: "/",
+export function makeGit(): Target {
+	const extractors: Extractor[] = [
+		{
+			extract: extractGitignore,
+			path: ".gitignore",
+		},
+	]
+
+	const internal: InternalRules = {
+		after: [],
+		before: [
+			ruleCompile({
+				compiled: null,
+				excludes: true,
+				pattern: [".git", ".DS_Store"],
+			}),
+		],
+	}
+
+	return <Target>{
+		extractors,
+		ignores: ruleTest,
+		init({ fs, cwd }, cb) {
+			const excludePath =
+				cwd + (cwd.charCodeAt(cwd.length - 1) === 47 ? "" : "/") + ".git/info/exclude"
+			fs.readFile(excludePath, (err, content) => {
+				if (err) {
+					if (err.code === "ENOENT") {
+						cb(null)
+						return
+					}
+					cb(err)
+					return
+				}
+
+				const source = <Source>{
+					inverted: false,
+					path: ".git/info/exclude",
+					rules: [],
+				}
+				const errex = extractGitignore(source, content)
+				if (errex) {
+					cb(errex)
+					return
+				}
+				internal.after.push(...source.rules)
+				cb(null)
+			})
+		},
+		internalRules: internal,
+		needsSource: false,
+		root: "/",
+	}
 }

@@ -71,10 +71,10 @@ import * as vign from "view-ignored"
 // also available:
 // "/scan", "/stream"
 // "/browser", "/browser/scan", "/browser/stream"
-import { Git as target } from "view-ignored/targets"
+import { makeGit } from "view-ignored/targets"
 import { RuleMatchKind } from "view-ignored/patterns"
 
-const ctx = await vign.scan({ target })
+const ctx = await vign.scan({ target: makeGit() })
 ctx.paths.has(".git/HEAD") // false
 ctx.paths.has("src") // true
 

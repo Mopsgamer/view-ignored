@@ -8,7 +8,45 @@ and this project adheres to
 
 ## [Unreleased]
 
+- TODO: test .git/info/exclude `ScanOptions.within`.
+- TODO: provide updated custom target example.
+- TODO: rename fast options to skip options.
+- TODO: deslop.
+- TODO: can we bring back simple `**/` and `/**` modificators without sacrificing performance?
+  Ref 0.10.0:
+
+  ```ts
+  export function patternCompile(pattern, context = [], options) {
+  	const original = pattern
+  	if (pattern.endsWith("/")) {
+  		pattern = pattern.substring(0, pattern.length - 1)
+  	}
+  	if (pattern.startsWith("/")) {
+  		pattern = pattern.substring(1)
+  	} else if (!pattern.startsWith("**/")) {
+  		pattern = "**/" + pattern
+  	}
+  	if (!pattern.endsWith("/**")) {
+  		pattern += "/**"
+  	}
+  	const re = makeRe(pattern, {
+  		dot: true,
+  		nonegate: true,
+  		nocomment: true,
+  		nobrace: true,
+  		nocase: options?.nocase ?? false,
+  	})
+  	return { re, pattern: original, patternContext: context }
+  }
+  ```
+
+- TODO: Gitignore compat?
+- Allow comments in Deno and JSR manifests for `json` extension.
 - Add `ScanBrowserOptions`.
+- Fix ".git/info/exclude" by implementing `InternalRules`.
+  Also added `Target.needsSource` option.
+- Removed `extractGitignoreNocase` and similar functions.
+  Added `extractGitignoreRules` and other `Rules` methods.
 - Fixed `matcherContext { Add | Remove } Path`.
   It makes watching stable enough, but we won't add `watch`.
   Use `chokidar` instead of Node's built-in watching,

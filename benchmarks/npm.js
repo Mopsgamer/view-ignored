@@ -4,7 +4,7 @@ import * as fs from "node:fs"
 
 import { scan as browserScan } from "../out/browser.js"
 import { scan } from "../out/index.js"
-import { NPM as target } from "../out/targets/index.js"
+import { makeNPM } from "../out/targets/index.js"
 
 const igw = process.argv.includes("--igw")
 const vign = process.argv.includes("--vign")
@@ -22,7 +22,7 @@ barplot(() => {
 					cwd,
 					fastInternal: true,
 					fs,
-					target,
+					target: makeNPM(),
 				})
 			})
 		if (!igw)
@@ -31,16 +31,16 @@ barplot(() => {
 					cwd,
 					fastInternal: true,
 					fs,
-					target,
+					target: makeNPM(),
 				})
 			})
 		if (!igw)
 			bench("'view-ignored'.scan(NPM)", async () => {
-				return scan({ cwd, fs, target })
+				return scan({ cwd, fs, target: makeNPM() })
 			})
 		if (!igw)
 			bench("'view-ignored'.browserScan(NPM)", async () => {
-				return browserScan({ cwd, fs, target })
+				return browserScan({ cwd, fs, target: makeNPM() })
 			})
 		if (!vign)
 			bench("'ignore-walk'.walk(.gitignore, .npmignore)", async () => {

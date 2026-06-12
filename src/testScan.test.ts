@@ -87,15 +87,21 @@ export async function testScan(
 		return
 	}
 
-	let ctx: MatcherContext
+	const ctx = await scan(o)
+	const { paths, failed } = ctx
 	try {
-		ctx = await scan(o)
+		expect(sortFirstFolders(paths.keys())).toStrictEqual(sortFirstFolders(test))
 	} catch (e) {
-		done()
+		if (ctx.paths.size) {
+			const map = Array.from(ctx.paths.entries()).map(
+				([k, v]) => [k, { ignored: v.ignored, kind: RMK[v.kind] }] as const,
+			)
+			console.error("scan: ctx.paths (debug): " + Bun.inspect(new Map(map), { colors: true }))
+		} else
+			console.error("scan: no paths, ctx.external: " + Bun.inspect(ctx.external, { colors: true }))
+		if (failed.length) console.error("Contains failed sources:", failed)
 		throw e
 	}
-	const { paths } = ctx
-	expect(sortFirstFolders(paths.keys())).toStrictEqual(sortFirstFolders(test))
 
 	const stream = scanStream(o)
 	const results = new Set<string>()
@@ -109,18 +115,38 @@ export async function testScan(
 		() => {
 			try {
 				expect(sortFirstFolders(results)).toStrictEqual(sortFirstFolders(test))
+			} catch (e) {
+				if (ctx.paths.size) {
+					const map = Array.from(ctx.paths.entries()).map(
+						([k, v]) => [k, { ignored: v.ignored, kind: RMK[v.kind] }] as const,
+					)
+					console.error(
+						"scanStream: ctx.paths (debug): " + Bun.inspect(new Map(map), { colors: true }),
+					)
+				} else
+					console.error(
+						"scanStream: no paths, ctx.external: " + Bun.inspect(ctx.external, { colors: true }),
+					)
+				if (failed.length) console.error("Contains failed sources:", failed)
+				throw e
 			} finally {
 				done()
 			}
 		},
 		{ once: true },
 	)
-	try {
-		await stream.start()
-	} catch (e) {
-		done()
-		throw e
-	}
+	await stream.start()
+}
+
+enum RMK {
+	"none",
+	"missingSource",
+	"noMatch",
+	"invalidSource",
+	"invalidExternal",
+	"invalidInternal",
+	"external",
+	"internal",
 }
 
 /**

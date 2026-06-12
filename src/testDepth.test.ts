@@ -1,6 +1,6 @@
 import { describe, test } from "bun:test"
 
-import { Git as target } from "./targets/git.js"
+import { makeGit } from "./targets/git.js"
 import { testScan } from "./testScan.test.js"
 
 const dir = {
@@ -24,21 +24,28 @@ const fastDepth = true
 
 describe("Git", () => {
 	test("depth 0 should include *", async (done) => {
-		await testScan(done, dir, ["src/", ".gitignore", "package.json"], { depth: 0, target })
+		await testScan(done, dir, ["src/", ".gitignore", "package.json"], {
+			depth: 0,
+			target: makeGit(),
+		})
 		await testScan(done, dir, ["src/", ".gitignore", "package.json"], {
 			depth: 0,
 			fastDepth,
-			target,
+			target: makeGit(),
 		})
 	})
 
 	test("depth 0 should include * for inverted", async (done) => {
-		await testScan(done, dir, ["out/", "node_modules/"], { depth: 0, invert: true, target })
+		await testScan(done, dir, ["out/", "node_modules/"], {
+			depth: 0,
+			invert: true,
+			target: makeGit(),
+		})
 		await testScan(done, dir, ["out/", "node_modules/"], {
 			depth: 0,
 			fastDepth,
 			invert: true,
-			target,
+			target: makeGit(),
 		})
 	})
 
@@ -47,13 +54,13 @@ describe("Git", () => {
 			done,
 			dir,
 			["src/", "src/index.ts", "src/submodule/", ".gitignore", "package.json"],
-			{ depth: 1, target },
+			{ depth: 1, target: makeGit() },
 		)
 		await testScan(
 			done,
 			dir,
 			["src/", "src/index.ts", "src/submodule/", ".gitignore", "package.json"],
-			{ depth: 1, fastDepth, target },
+			{ depth: 1, fastDepth, target: makeGit() },
 		)
 	})
 
@@ -69,7 +76,7 @@ describe("Git", () => {
 				"node_modules/a/",
 				"node_modules/b/",
 			],
-			{ depth: 1, invert: true, target },
+			{ depth: 1, invert: true, target: makeGit() },
 		)
 		await testScan(
 			done,
@@ -82,7 +89,7 @@ describe("Git", () => {
 				"node_modules/a/",
 				"node_modules/b/",
 			],
-			{ depth: 1, fastDepth, invert: true, target },
+			{ depth: 1, fastDepth, invert: true, target: makeGit() },
 		)
 	})
 })

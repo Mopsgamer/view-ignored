@@ -1,44 +1,31 @@
-import type { NestedDirectoryJSON } from "memfs"
-
 import { test, describe } from "bun:test"
 
-import { testScan, type PathHandlerOptions } from "../testScan.test.js"
-import { Git as target } from "./git.js"
-
-async function testGit(
-	done: () => void,
-	tree: NestedDirectoryJSON,
-	handler: ((o: PathHandlerOptions) => void | Promise<void>) | string[],
-) {
-	try {
-		await testScan(done, tree, handler, { target })
-	} catch (error) {
-		throw new Error("Error while testing Git", { cause: error })
-	}
-}
+import { testScan } from "../testScan.test.js"
+import { makeGit } from "./git.js"
 
 describe("Git", () => {
 	test("empty for empty", async (done) => {
-		await testGit(done, { ".": null }, [])
+		await testScan(done, { ".": null }, [], { target: makeGit() })
 	})
 
 	test("includes for no sources", async (done) => {
-		await testGit(done, { file: "" }, ["file"])
+		await testScan(done, { file: "" }, ["file"], { target: makeGit() })
 	})
 
 	test("keeps for empty source", async (done) => {
-		await testGit(
+		await testScan(
 			done,
 			{
 				".gitignore": "",
 				file: "",
 			},
 			["file", ".gitignore"],
+			{ target: makeGit() },
 		)
 	})
 
 	test("ignores .git/", async (done) => {
-		await testGit(
+		await testScan(
 			done,
 			{
 				".git/HEAD": "",
@@ -46,11 +33,12 @@ describe("Git", () => {
 				file: "",
 			},
 			["file", ".gitignore"],
+			{ target: makeGit() },
 		)
 	})
 
 	test("ignores filei (.git/info/exclude)", async (done) => {
-		await testGit(
+		await testScan(
 			done,
 			{
 				".git/info/exclude": "filei",
@@ -58,33 +46,36 @@ describe("Git", () => {
 				filei: "",
 			},
 			["file"],
+			{ target: makeGit() },
 		)
 	})
 
 	test("ignores filei", async (done) => {
-		await testGit(
+		await testScan(
 			done,
 			{
 				".gitignore": "filei",
 				filei: "",
 			},
 			[".gitignore"],
+			{ target: makeGit() },
 		)
 	})
 
 	test("includes file (case File no match)", async (done) => {
-		await testGit(
+		await testScan(
 			done,
 			{
 				".gitignore": "File",
 				file: "",
 			},
 			[".gitignore", "file"],
+			{ target: makeGit() },
 		)
 	})
 
 	test("ignores multiple files", async (done) => {
-		await testGit(
+		await testScan(
 			done,
 			{
 				".gitignore": "file1.txt\nfile2.txt",
@@ -92,11 +83,12 @@ describe("Git", () => {
 				"file2.txt": "",
 			},
 			[".gitignore"],
+			{ target: makeGit() },
 		)
 	})
 
 	test("ignores files with pattern", async (done) => {
-		await testGit(
+		await testScan(
 			done,
 			{
 				".gitignore": "*.js",
@@ -104,11 +96,12 @@ describe("Git", () => {
 				"foo.js": "",
 			},
 			[".gitignore"],
+			{ target: makeGit() },
 		)
 	})
 
 	test("ignores files in subdirectory", async (done) => {
-		await testGit(
+		await testScan(
 			done,
 			{
 				".gitignore": "src/",
@@ -122,11 +115,12 @@ describe("Git", () => {
 				},
 			},
 			[".gitignore", "out/", "out/main.js", "out/helper.js"],
+			{ target: makeGit() },
 		)
 	})
 
 	test("does not ignore files not matching pattern", async (done) => {
-		await testGit(
+		await testScan(
 			done,
 			{
 				".gitignore": "*.js",
@@ -134,11 +128,12 @@ describe("Git", () => {
 				"foo.txt": "",
 			},
 			["foo.txt", ".gitignore"],
+			{ target: makeGit() },
 		)
 	})
 
 	test("negation pattern keeps file", async (done) => {
-		await testGit(
+		await testScan(
 			done,
 			{
 				".gitignore": "*.js\n!negkeep.js",
@@ -146,6 +141,35 @@ describe("Git", () => {
 				"negkeep.js": "",
 			},
 			["negkeep.js", ".gitignore"],
+			{ target: makeGit() },
+		)
+	})
+
+	test("exclude works together with .gitignore", async (done) => {
+		await testScan(
+			done,
+			{
+				".git/info/exclude": "file_gitinfoex",
+				".gitignore": "file_gitignore",
+				file_gitignore: "",
+				file_gitinfoex: "",
+				file_keep: "",
+			},
+			[".gitignore", "file_keep"],
+			{ target: makeGit() },
+		)
+	})
+
+	test("gitignore has higher priority than exclude", async (done) => {
+		await testScan(
+			done,
+			{
+				".git/info/exclude": "file\n!file",
+				".gitignore": "file",
+				file: "",
+			},
+			[".gitignore"],
+			{ target: makeGit() },
 		)
 	})
 })
