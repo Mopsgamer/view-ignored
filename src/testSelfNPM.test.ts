@@ -1,5 +1,5 @@
-import { describe, test, expect } from "bun:test"
 import { $ } from "bun"
+import { describe, test, expect } from "bun:test"
 
 import { scan } from "./scan.js"
 import { makeNPM } from "./targets/npm.js"
