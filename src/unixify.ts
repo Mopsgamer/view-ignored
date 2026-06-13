@@ -5,7 +5,10 @@
  */
 export function unixify(p: string): string {
 	if (!p) return ""
-	return p.replaceAll("\\", "/")
+	let res = p.replaceAll("\\", "/")
+	if (res.startsWith("./")) res = res.slice(2)
+	if (res.endsWith("/") && res.length > 1) res = res.slice(0, -1)
+	return res || "."
 }
 
 /**

@@ -172,4 +172,179 @@ describe("Git", () => {
 			{ target: makeGit() },
 		)
 	})
+
+	test("respects .git/info/exclude when scanning with within", async () => {
+		await new Promise<void>((done) =>
+			testScan(
+				done,
+				{
+					".git": {
+						info: {
+							exclude: "ignored_file",
+						},
+					},
+					subdir: {
+						ignored_file: "",
+						kept_file: "",
+					},
+				},
+				["subdir/", "subdir/kept_file"],
+				{ target: makeGit(), within: "subdir" },
+			),
+		)
+	})
+
+	test("respects .git/info/exclude when scanning with within (.)", async () => {
+		await new Promise<void>((done) =>
+			testScan(
+				done,
+				{
+					".git": {
+						info: {
+							exclude: "ignored_file",
+						},
+					},
+					ignored_file: "",
+					kept_file: "",
+				},
+				["kept_file"],
+				{ target: makeGit(), within: "." },
+			),
+		)
+	})
+
+	test("respects .git/info/exclude when scanning with within (./)", async () => {
+		await new Promise<void>((done) =>
+			testScan(
+				done,
+				{
+					".git": {
+						info: {
+							exclude: "ignored_file",
+						},
+					},
+					ignored_file: "",
+					kept_file: "",
+				},
+				["kept_file"],
+				{ target: makeGit(), within: "./" },
+			),
+		)
+	})
+
+	test("respects .git/info/exclude when scanning with within (./subdir)", async () => {
+		await new Promise<void>((done) =>
+			testScan(
+				done,
+				{
+					".git": {
+						info: {
+							exclude: "ignored_file",
+						},
+					},
+					subdir: {
+						ignored_file: "",
+						kept_file: "",
+					},
+				},
+				["subdir/", "subdir/kept_file"],
+				{ target: makeGit(), within: "./subdir" },
+			),
+		)
+	})
+
+	test("respects .git/info/exclude when scanning with within (subdir/)", async () => {
+		await new Promise<void>((done) =>
+			testScan(
+				done,
+				{
+					".git": {
+						info: {
+							exclude: "ignored_file",
+						},
+					},
+					subdir: {
+						ignored_file: "",
+						kept_file: "",
+					},
+				},
+				["subdir/", "subdir/kept_file"],
+				{ target: makeGit(), within: "subdir/" },
+			),
+		)
+	})
+
+	test("respects .git/info/exclude when scanning with within (nested)", async () => {
+		await new Promise<void>((done) =>
+			testScan(
+				done,
+				{
+					".git": {
+						info: {
+							exclude: "ignored_file",
+						},
+					},
+					subdir: {
+						subsubdir: {
+							ignored_file: "",
+							kept_file: "",
+						},
+					},
+				},
+				["subdir/subsubdir/", "subdir/subsubdir/kept_file"],
+				{ target: makeGit(), within: "subdir/subsubdir" },
+			),
+		)
+	})
+
+	test("respects .git/info/exclude when scanning with within (nested, with depth)", async () => {
+		await new Promise<void>((done) =>
+			testScan(
+				done,
+				{
+					".git": {
+						info: {
+							exclude: "ignored_file",
+						},
+					},
+					subdir: {
+						subsubdir: {
+							ignored_file: "",
+							kept_file: "",
+						},
+					},
+				},
+				["subdir/subsubdir/", "subdir/subsubdir/kept_file"],
+				{ depth: 2, target: makeGit(), within: "subdir/subsubdir" },
+			),
+		)
+	})
+
+	test("within depth 0", async (done) => {
+		await testScan(
+			done,
+			{
+				subdir: {
+					file: "",
+				},
+			},
+			["subdir/", "subdir/file"],
+			{ depth: 0, target: makeGit(), within: "subdir" },
+		)
+	})
+
+	test("within nested depth 1", async (done) => {
+		await testScan(
+			done,
+			{
+				a: {
+					b: {
+						file: "",
+					},
+				},
+			},
+			["a/b/", "a/b/file"],
+			{ depth: 1, target: makeGit(), within: "a/b" },
+		)
+	})
 })

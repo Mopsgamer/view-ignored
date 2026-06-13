@@ -3,12 +3,11 @@ import type { Resource, InvalidSource } from "./patterns/resource.js"
 import type { ScanOptions } from "./types.js"
 
 import { resolveSources } from "./patterns/resolveSources.js"
-import { join, unixify } from "./unixify.js"
+import { join } from "./unixify.js"
 import { walkIncludes, type WalkResult, type WalkTotal } from "./walk.js"
 
 export interface ScanParallelOptions {
 	scanOptions: Required<ScanOptions>
-	within: string
 	stream?: MatcherStream
 	external: Map<string, Resource>
 	failed?: InvalidSource[]
@@ -25,9 +24,7 @@ export function scanParallel(
 	cb: (err: Error | null, results: WalkResult[] | null) => void,
 ): void {
 	const { scanOptions, stream, external, failed, onResult } = options
-	scanOptions.cwd = unixify(scanOptions.cwd)
-	let { within } = options
-	if (within.startsWith("./")) within = within.slice(2)
+	const { within } = scanOptions
 
 	const results: WalkResult[] | null = onResult ? null : []
 

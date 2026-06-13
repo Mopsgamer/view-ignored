@@ -4,7 +4,7 @@ import type { Resource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"
 
 import { scanParallel } from "../scanParallel.js"
-import { dirname } from "../unixify.js"
+import { dirname, unixify } from "../unixify.js"
 import { walkPatchResult, walkPatchTotal, propagateTotals, type WalkResult } from "../walk.js"
 import { resolveSources } from "./resolveSources.js"
 
@@ -96,9 +96,8 @@ export async function matcherContextAddPath(
 						}
 						walkPatchResult(ctx, result)
 					},
-					scanOptions: options,
+					scanOptions: { ...options, within: unixify(parentPath) },
 					stream: undefined,
-					within: parentPath,
 				},
 				promiseCb(resolve, reject),
 			)
@@ -230,9 +229,8 @@ export async function matcherContextRemovePath(
 						}
 						walkPatchResult(ctx, result)
 					},
-					scanOptions: options,
+					scanOptions: { ...options, within: unixify(parentPath) },
 					stream: undefined,
-					within: parentPath,
 				},
 				promiseCb(resolve, reject),
 			)

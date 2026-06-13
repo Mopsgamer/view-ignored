@@ -55,6 +55,7 @@ export function browserScanCb(
 	}
 
 	const normalCwd = unixify(cwd)
+	const normalWithin = unixify(within)
 
 	const scanOptions: Required<ScanOptions> = {
 		cwd: normalCwd,
@@ -65,7 +66,7 @@ export function browserScanCb(
 		invert,
 		signal,
 		target,
-		within,
+		within: normalWithin,
 	}
 
 	const parallelOptions = <ScanParallelOptions>{
@@ -80,7 +81,6 @@ export function browserScanCb(
 		},
 		scanOptions,
 		stream: this,
-		within,
 	}
 
 	const parallelHandle = (err: Error | null) => {
