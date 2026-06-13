@@ -211,17 +211,20 @@ function compareBenchmarks(current, base) {
 
 	const rows = []
 	for (const [name, { bench: curr, file }] of currentMap) {
-		const currBench = curr.runs ? curr.runs[0] : curr
-		if (!currBench || !currBench.stats || !currBench.stats.samples) continue
+		// Target the main benchmark stats directly instead of slicing the first raw run array entry
+		const currStats = curr.stats
+			? getStats(curr.stats.samples || [])
+			: getStats(curr.runs?.[0]?.stats?.samples || [])
+		if (currStats.sampleCount === 0) continue
 
-		const currStats = getStats(currBench.stats.samples)
 		const baseBenchWrapper = baseMap.get(name)
 		const baseBench = baseBenchWrapper
-			? baseBenchWrapper.runs
-				? baseBenchWrapper.runs[0]
-				: baseBenchWrapper
+			? baseBenchWrapper.stats
+				? baseBenchWrapper
+				: baseBenchWrapper.runs?.[0]
 			: null
 
+		let baseStats = null
 		let ratioStr = "0%"
 		let emoji = ""
 		let diffPercent = 0
@@ -229,7 +232,7 @@ function compareBenchmarks(current, base) {
 		let isSig = false
 
 		if (baseBench && baseBench.stats && baseBench.stats.samples) {
-			const baseStats = getStats(baseBench.stats.samples)
+			baseStats = getStats(baseBench.stats.samples)
 
 			const n1 = currStats.sampleCount
 			const n2 = baseStats.sampleCount
@@ -244,17 +247,21 @@ function compareBenchmarks(current, base) {
 			diffPercent = ((currStats.mean - baseStats.mean) * 100) / (baseStats.mean || 1)
 
 			isSig =
-				(diffPercent >= 1 && diffPercent - half >= 1) ||
-				(diffPercent <= -1 && diffPercent + half <= -1)
+				(diffPercent >= 5 && diffPercent - half >= 2) ||
+				(diffPercent <= -5 && diffPercent + half <= -2)
 
 			if (diffPercent > 0) {
-				if (isSig && diffPercent >= 5) emoji = "💩"
+				if (isSig && diffPercent >= 10) emoji = "💩"
 				ratioStr = `+${diffPercent.toFixed(1)}% ± ${half.toFixed(1)}%`
 			} else {
-				if (isSig && diffPercent <= -5) emoji = "⚡"
+				if (isSig && diffPercent <= -10) emoji = "⚡"
 				ratioStr = `-${Math.abs(diffPercent).toFixed(1)}% ± ${half.toFixed(1)}%`
 			}
 		}
+
+		const measurementStr = baseStats
+			? `${formatUnit(baseStats.mean)} → ${formatUnit(currStats.mean)} ± ${formatUnit(currStats.stdDev)}`
+			: `${formatUnit(currStats.mean)} ± ${formatUnit(currStats.stdDev)}`
 
 		rows.push({
 			diffPercent,
@@ -262,7 +269,7 @@ function compareBenchmarks(current, base) {
 			file,
 			half,
 			isSig,
-			measurement: `${formatUnit(currStats.mean)} ± ${formatUnit(currStats.stdDev)}`,
+			measurement: measurementStr,
 			name,
 			outliers: `${currStats.outliers.toString().padStart(4)} (${Math.round(
 				(currStats.outliers * 100) / (currStats.sampleCount || 1),
