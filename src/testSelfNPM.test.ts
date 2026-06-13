@@ -34,7 +34,9 @@ describe.skipIf(!!process.env.TEST_NO_SELF)("NPM", async () => {
 })
 
 async function npmTotalFiles(): Promise<{ total: number; files: string[] }> {
-	const { stdout, stderr, exitCode } = await $`npm pack --dry-run`.env({ NO_COLOR: "1" }).quiet()
+	const { stdout, stderr, exitCode } = await $`npm pack --dry-run`
+		.env({ ...process.env, NO_COLOR: "1" })
+		.quiet()
 	const output = stdout.toString() + stderr.toString()
 
 	if (exitCode !== 0) {

@@ -28,7 +28,7 @@ describe.skipIf(!!process.env.TEST_NO_SELF)("Git", () => {
 async function gitFiles(): Promise<string[]> {
 	const command = "git ls-files --others --exclude-standard --cached"
 	const { stdout, stderr, exitCode } = await $`git ls-files --others --exclude-standard --cached`
-		.env({ NO_COLOR: "1" })
+		.env({ ...process.env, NO_COLOR: "1" })
 		.quiet()
 	const output = stdout.toString() + stderr.toString()
 
