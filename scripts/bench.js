@@ -1,7 +1,8 @@
 import { $ } from "bun"
 import fs from "node:fs"
+import os from "node:os"
 import path from "node:path"
-import { parseArgs } from "node:util"
+import { parseArgs, styleText as c } from "node:util"
 
 const { values, positionals } = parseArgs({
 	allowPositionals: true,
@@ -11,19 +12,22 @@ const { values, positionals } = parseArgs({
 		help: { short: "h", type: "boolean" },
 		igw: { type: "boolean" },
 		node: { type: "boolean" },
+		now: { type: "boolean" },
+		out: { type: "string" },
 		vign: { type: "boolean" },
 	},
 })
 
 if (values.help) {
-	console.log(`Usage: bun scripts/bench.js [options] [files...]
+	console.log(`${c("bold", "Usage:")} ${c("yellow", "bun scripts/bench.js [options] [files...]")}
 
-Options:
-  -h, --help     Show this help
-  --diff <ref>   Compare current branch with <ref>
-  --vign         Benchmark view-ignored only
-  --igw          Benchmark ignore-walk only
-  --node         Run benchmarks using Node.js
+${c("bold", "Options:")}
+  -h, --help     ${c("dim", "Show this help")}
+  --diff <ref>   ${c("dim", "Compare current branch with <ref>")}
+  --out <file>   ${c("dim", "Write results to <file>")}
+  --now          ${c("dim", "Use synthetic data for table testing")}
+  --igw          ${c("dim", "Benchmark ignore-walk only")}
+  --node         ${c("dim", "Run benchmarks using Node.js")}
 `)
 	process.exit(0)
 }
@@ -33,7 +37,7 @@ const benchmarkFiles =
 		? positionals
 		: fs
 				.readdirSync("benchmarks")
-				.filter((f) => f.endsWith(".js") && !f.includes("Init"))
+				.filter((f) => f.endsWith(".js"))
 				.map((f) => path.join("benchmarks", f))
 
 async function runBenchmarks() {
@@ -46,8 +50,8 @@ async function runBenchmarks() {
 		process.stderr.write(`Running ${file}...\n`)
 		try {
 			const cmd = values.node
-				? $`node --expose-gc ${file} ${extraArgs}`
-				: $`bun ${file} ${extraArgs}`
+				? $`node --expose-gc ${file} ${extraArgs}`.quiet()
+				: $`bun --expose-gc ${file} ${extraArgs}`.quiet()
 
 			// oxlint-disable-next-line no-await-in-loop
 			const out = await cmd.text()
@@ -61,6 +65,7 @@ async function runBenchmarks() {
 					indices.push(match.index)
 				}
 
+				const fileResults = []
 				for (let i = 0; i < indices.length; i++) {
 					const start = indices[i]
 					const end = i + 1 < indices.length ? indices[i + 1] : jsonContent.length
@@ -83,16 +88,17 @@ async function runBenchmarks() {
 						try {
 							const obj = JSON.parse(chunk.substring(0, actualEnd + 1))
 							if (obj.benchmarks) {
-								results.push(obj)
+								fileResults.push(obj)
 							}
 						} catch {
 							// Skip
 						}
 					}
 				}
+				results.push({ file, results: fileResults })
 			}
 
-			if (results.length === 0) {
+			if (results.length === 0 || results[results.length - 1].results.length === 0) {
 				process.stderr.write(`No JSON found in output of ${file}\n`)
 			}
 		} catch (e) {
@@ -153,25 +159,29 @@ function getStatScore95(df) {
 
 function compareBenchmarks(current, base) {
 	const currentMap = new Map()
-	for (const res of current) {
-		if (!res.benchmarks) continue
-		for (const b of res.benchmarks) {
-			currentMap.set(b.name || b.alias, b)
+	for (const group of current) {
+		for (const res of group.results) {
+			if (!res.benchmarks) continue
+			for (const b of res.benchmarks) {
+				currentMap.set(b.name || b.alias, { bench: b, file: group.file })
+			}
 		}
 	}
 
 	const baseMap = new Map()
 	if (base) {
-		for (const res of base) {
-			if (!res.benchmarks) continue
-			for (const b of res.benchmarks) {
-				baseMap.set(b.name || b.alias, b)
+		for (const group of base) {
+			for (const res of group.results) {
+				if (!res.benchmarks) continue
+				for (const b of res.benchmarks) {
+					baseMap.set(b.name || b.alias, b)
+				}
 			}
 		}
 	}
 
 	const rows = []
-	for (const [name, curr] of currentMap) {
+	for (const [name, { bench: curr, file }] of currentMap) {
 		const currBench = curr.runs ? curr.runs[0] : curr
 		if (!currBench || !currBench.stats || !currBench.stats.samples) continue
 
@@ -184,7 +194,10 @@ function compareBenchmarks(current, base) {
 			: null
 
 		let ratioStr = "0%"
-		let emoji = "  "
+		let emoji = ""
+		let diffPercent = 0
+		let half = 0
+		let isSig = false
 
 		if (baseBench && baseBench.stats && baseBench.stats.samples) {
 			const baseStats = getStats(baseBench.stats.samples)
@@ -197,11 +210,11 @@ function compareBenchmarks(current, base) {
 			const sp = Math.sqrt(
 				((n1 - 1) * currStats.stdDev ** 2 + (n2 - 1) * baseStats.stdDev ** 2) / Math.max(1, df),
 			)
-			const half = (z * sp * normer * 100) / (baseStats.mean || 1)
+			half = (z * sp * normer * 100) / (baseStats.mean || 1)
 
-			const diffPercent = ((currStats.mean - baseStats.mean) * 100) / (baseStats.mean || 1)
+			diffPercent = ((currStats.mean - baseStats.mean) * 100) / (baseStats.mean || 1)
 
-			const isSig =
+			isSig =
 				(diffPercent >= 1 && diffPercent - half >= 1) ||
 				(diffPercent <= -1 && diffPercent + half <= -1)
 
@@ -215,6 +228,11 @@ function compareBenchmarks(current, base) {
 		}
 
 		rows.push({
+			diffPercent,
+			emoji,
+			file,
+			half,
+			isSig,
 			measurement: `${formatUnit(currStats.mean)} ± ${formatUnit(currStats.stdDev)}`,
 			name,
 			outliers: `${currStats.outliers.toString().padStart(4)} (${Math.round(
@@ -223,19 +241,20 @@ function compareBenchmarks(current, base) {
 				.toString()
 				.padStart(2)}%)`,
 			range: `${formatUnit(currStats.min)} … ${formatUnit(currStats.max)}`,
-			ratio: `${emoji} ${ratioStr}`,
+			ratioStr,
 		})
 	}
 	return rows
 }
 
 function getVisualLength(str) {
+	// Strip ANSI escape codes
+	// eslint-disable-next-line no-control-regex
+	const stripped = str.replace(/\x1b\[\d+m/g, "")
 	let length = 0
-	for (const char of str) {
+	for (const char of stripped) {
 		const codePoint = char.codePointAt(0)
-		if (codePoint && codePoint > 0xffff) {
-			length += 2
-		} else if (char === "⚡") {
+		if (codePoint && (codePoint > 0xffff || codePoint === 0x26a1)) {
 			length += 2
 		} else {
 			length += 1
@@ -244,7 +263,20 @@ function getVisualLength(str) {
 	return length
 }
 
-function getTable(rows) {
+function getStringLength(str) {
+	let length = 0
+	for (const char of str) {
+		const codePoint = char.codePointAt(0)
+		if (codePoint && (codePoint > 0xffff || codePoint === 0x26a1)) {
+			length += 2
+		} else {
+			length += 1
+		}
+	}
+	return length
+}
+
+function getTable(rows, isTerminal) {
 	if (rows.length === 0) return ""
 	const headers = [
 		"Benchmark",
@@ -253,44 +285,80 @@ function getTable(rows) {
 		"Outliers",
 		"Ratio",
 	]
-	const colWidths = [
-		headers[0].length,
-		headers[1].length,
-		headers[2].length,
-		headers[3].length,
-		headers[4].length,
-	]
+
+	const lengthFn = isTerminal ? getVisualLength : getStringLength
+
+	const colWidths = headers.map((h) => lengthFn(h))
 
 	for (const row of rows) {
-		colWidths[0] = Math.max(colWidths[0], getVisualLength(row.name))
-		colWidths[1] = Math.max(colWidths[1], getVisualLength(row.measurement))
-		colWidths[2] = Math.max(colWidths[2], getVisualLength(row.range))
-		colWidths[3] = Math.max(colWidths[3], getVisualLength(row.outliers))
-		colWidths[4] = Math.max(colWidths[4], getVisualLength(row.ratio))
+		colWidths[0] = Math.max(colWidths[0], lengthFn(row.name))
+		colWidths[1] = Math.max(colWidths[1], lengthFn(row.measurement))
+		colWidths[2] = Math.max(colWidths[2], lengthFn(row.range))
+		colWidths[3] = Math.max(colWidths[3], lengthFn(row.outliers))
+		colWidths[4] = Math.max(colWidths[4], lengthFn(`${row.emoji}${row.ratioStr}`))
 	}
 
-	const pad = (str, width) => str + " ".repeat(Math.max(0, width - getVisualLength(str)))
-	const padLeft = (str, width) => " ".repeat(Math.max(0, width - getVisualLength(str))) + str
+	const pad = (str, width) => str + " ".repeat(Math.max(0, width - lengthFn(str)))
+	const padLeft = (str, width) => " ".repeat(Math.max(0, width - lengthFn(str))) + str
 
 	let out = ""
 
-	const headerLine = headers.map((h, i) => pad(h, colWidths[i])).join("  ") + "\n"
-	const separatorLine = colWidths.map((w) => "-".repeat(w)).join("  ") + "\n"
+	const headerLine =
+		(
+			pad(headers[0], colWidths[0]) +
+			"  " +
+			padLeft(headers[1], colWidths[1]) +
+			"  " +
+			padLeft(headers[2], colWidths[2]) +
+			"  " +
+			padLeft(headers[3], colWidths[3]) +
+			"  " +
+			padLeft(headers[4], colWidths[4])
+		).trimEnd() + "\n"
+	const separatorLine =
+		(
+			"-".repeat(colWidths[0]) +
+			"  " +
+			"-".repeat(colWidths[1]) +
+			"  " +
+			"-".repeat(colWidths[2]) +
+			"  " +
+			"-".repeat(colWidths[3]) +
+			"  " +
+			"-".repeat(colWidths[4])
+		).trimEnd() + "\n"
 
-	out += headerLine + separatorLine
+	out += isTerminal ? c("bold", headerLine) : headerLine
+	out += separatorLine
 
+	let lastFile = null
 	for (const row of rows) {
+		if (lastFile && lastFile !== row.file) {
+			out += "\n"
+		}
+		lastFile = row.file
+
+		let ratio = `${row.emoji}${row.ratioStr}`
+		if (isTerminal && row.isSig) {
+			if (row.diffPercent >= 5) {
+				ratio = c("red", ratio)
+			} else if (row.diffPercent <= -5) {
+				ratio = c("green", ratio)
+			}
+		}
+
 		const rowLine =
-			pad(row.name, colWidths[0]) +
-			"  " +
-			padLeft(row.measurement, colWidths[1]) +
-			"  " +
-			padLeft(row.range, colWidths[2]) +
-			"  " +
-			padLeft(row.outliers, colWidths[3]) +
-			"  " +
-			pad(row.ratio, colWidths[4]) +
-			"\n"
+			(
+				pad(row.name, colWidths[0]) +
+				"  " +
+				padLeft(row.measurement, colWidths[1]) +
+				"  " +
+				padLeft(row.range, colWidths[2]) +
+				"  " +
+				padLeft(row.outliers, colWidths[3]) +
+				"  " +
+				padLeft(ratio, colWidths[4])
+			).trimEnd() + "\n"
 
 		out += rowLine
 	}
@@ -298,11 +366,76 @@ function getTable(rows) {
 	return out
 }
 
-const currentResults = await runBenchmarks()
-let baseResults = null
+if (values.diff && !values.now) {
+	try {
+		process.stderr.write(`Building current branch...\n`)
+		const build = await $`bun install && bun run prod`.nothrow().quiet()
+		if (build.exitCode !== 0) {
+			process.stderr.write(`Failed to build current branch\n`)
+			process.exit(1)
+		}
+	} catch (e) {
+		process.stderr.write(`Failed to build current branch: ${e}\n`)
+		process.exit(1)
+	}
+}
 
-if (values.diff) {
-	const tmpDir = path.join(process.cwd(), `.bench-worktree-${Date.now()}`)
+let currentResults
+if (values.now) {
+	currentResults = [
+		{
+			file: "benchmarks/git.js",
+			results: [
+				{
+					benchmarks: [
+						{
+							name: "test1",
+							runs: [{ stats: { samples: [100, 110, 120] } }],
+						},
+						{
+							name: "test-speedup",
+							runs: [{ stats: { samples: [50, 55, 60] } }],
+						},
+						{
+							name: "test-slowdown",
+							runs: [{ stats: { samples: [200, 210, 220] } }],
+						},
+					],
+				},
+			],
+		},
+	]
+} else {
+	currentResults = await runBenchmarks()
+}
+
+let baseResults = null
+if (values.now) {
+	baseResults = [
+		{
+			file: "benchmarks/git.js",
+			results: [
+				{
+					benchmarks: [
+						{
+							name: "test1",
+							runs: [{ stats: { samples: [100, 110, 120] } }],
+						},
+						{
+							name: "test-speedup",
+							runs: [{ stats: { samples: [100, 110, 120] } }],
+						},
+						{
+							name: "test-slowdown",
+							runs: [{ stats: { samples: [100, 110, 120] } }],
+						},
+					],
+				},
+			],
+		},
+	]
+} else if (values.diff) {
+	const tmpDir = path.join(os.tmpdir(), `view-ignored-bench-${Date.now()}`)
 
 	try {
 		process.stderr.write(`Creating local worktree for ${values.diff}...\n`)
@@ -310,23 +443,26 @@ if (values.diff) {
 			.nothrow()
 			.quiet()
 
-		if (worktreeAdd.exitCode === 0) {
-			await $`cd ${tmpDir} && bun install && bun run prod`.quiet()
-
-			const originalFiles = [...benchmarkFiles]
-			benchmarkFiles.length = 0
-			benchmarkFiles.push(...originalFiles.map((f) => path.join(tmpDir, f)))
-
-			baseResults = await runBenchmarks()
-
-			benchmarkFiles.length = 0
-			benchmarkFiles.push(...originalFiles)
-		} else {
-			process.stderr.write(`Failed to create worktree for ${values.diff}\n`)
-			process.exitCode = 1
+		if (worktreeAdd.exitCode !== 0) {
+			throw new Error(`Failed to create worktree for ${values.diff}`)
 		}
+
+		const worktreeBuild = await $`cd ${tmpDir} && bun install && bun run prod`.nothrow().quiet()
+
+		if (worktreeBuild.exitCode !== 0) {
+			throw new Error(`Failed to build worktree for ${values.diff}`)
+		}
+
+		const originalFiles = [...benchmarkFiles]
+		benchmarkFiles.length = 0
+		benchmarkFiles.push(...originalFiles.map((f) => path.join(tmpDir, f)))
+
+		baseResults = await runBenchmarks()
+
+		benchmarkFiles.length = 0
+		benchmarkFiles.push(...originalFiles)
 	} catch (e) {
-		process.stderr.write(`Failed during base benchmark run: ${e}\n`)
+		process.stderr.write(`${e.message || e}\n`)
 		process.exitCode = 1
 	} finally {
 		process.stderr.write(`Cleaning up local worktree...\n`)
@@ -335,7 +471,11 @@ if (values.diff) {
 }
 
 const tableRows = compareBenchmarks(currentResults, baseResults)
-const table = getTable(tableRows)
 
-process.stdout.write(table)
-process.stderr.write(table)
+if (values.out) {
+	const fileTable = getTable(tableRows, false)
+	fs.writeFileSync(values.out, fileTable)
+}
+
+const terminalTable = getTable(tableRows, true)
+process.stdout.write(terminalTable)

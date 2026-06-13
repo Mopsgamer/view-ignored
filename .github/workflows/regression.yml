@@ -49,7 +49,7 @@ jobs:
           else
             echo "no_ts_changes=false" >> $GITHUB_OUTPUT
             git fetch origin ${{ github.event.pull_request.base.ref }} || exit 1
-            bun scripts/bench.js --vign --diff origin/${{ github.event.pull_request.base.ref }} > bench_output.txt || exit 1
+            bun scripts/bench.js --vign --diff origin/${{ github.event.pull_request.base.ref }} --out bench_output.txt || exit 1
           fi
 
       - name: Print benchmark results to log
