@@ -87,40 +87,46 @@ if (match.kind === RuleMatchKind.external) {
 
 ### Using custom target
 
-This is the internal implementation for the Git target:
+You can create custom targets by implementing the `Target` interface.
+This is an example for a Docker-like target:
 
 ```ts
 import type { Target } from "view-ignored/targets"
 
 import {
 	type Extractor,
-	makeGitignoreExtractor,
+	extractGitignore,
 	ruleTest,
 	ruleCompile,
-	type Rule,
+	type InternalRules,
 } from "view-ignored/patterns"
 
-const extractors: Extractor[] = [
-	makeGitignoreExtractor(".gitignore"),
-	makeGitignoreExtractor(".git/info/exclude"),
-]
+export function makeDocker(): Target {
+	const extractors: Extractor[] = [
+		{
+			extract: extractGitignore,
+			path: ".dockerignore",
+		},
+	]
 
-const internal: Rule[] = [
-	ruleCompile({
-		compiled: null,
-		excludes: true,
-		pattern: [".git", ".DS_Store"],
-	}),
-]
+	const internal: InternalRules = {
+		before: [
+			ruleCompile({
+				compiled: null,
+				excludes: true,
+				pattern: [".git/", "node_modules/", ".DS_Store"],
+			}),
+		],
+		after: [],
+	}
 
-export const Git: Target = <Target>{
-	extractors,
-	ignores: ruleTest,
-	init({ fs, cwd, signal, target }, cb) {
-		// ... Git config loading logic ...
-	},
-	internalRules: internal,
-	root: "/",
+	return {
+		extractors,
+		ignores: ruleTest,
+		internalRules: internal,
+		needsSource: false, // .dockerignore is optional
+		root: ".",
+	}
 }
 ```
 
@@ -129,9 +135,9 @@ export const Git: Target = <Target>{
 ```ts
 import * as vign from "view-ignored"
 // or import * as vign from "view-ignored/stream"
-import { NPM as target } from "view-ignored/targets"
+import { makeNPM } from "view-ignored/targets"
 
-const stream = vign.scanStream({ target })
+const stream = vign.scanStream({ target: makeNPM() })
 
 stream.addEventListener("dirent", console.log)
 stream.addEventListener(
@@ -154,12 +160,12 @@ use the browser submodule, which requires some additional options.
 ```ts
 import * as vign from "view-ignored/browser"
 // or "/browser/scan"
-import { Git as target } from "view-ignored/targets"
+import { makeGit } from "view-ignored/targets"
 import { readFile, readdir } from "original-fs"
 
 export const cwd = process.cwd()
 const customFs = { readFile, readdir }
-await vign.scan({ cwd, fs: customFs, target })
+await vign.scan({ cwd, fs: customFs, target: makeGit() })
 ```
 
 ### Watching for changes

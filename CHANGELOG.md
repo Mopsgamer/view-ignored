@@ -8,7 +8,6 @@ and this project adheres to
 
 ## [Unreleased]
 
-- TODO: provide updated custom target example.
 - TODO: rename fast options to skip options.
 - TODO: deslop.
 - TODO: can we bring back simple `**/` and `/**` modificators without sacrificing performance?
