@@ -38,26 +38,29 @@ jobs:
       - name: Run benchmark comparison
         id: bench
         run: |
-          # Detect if there are TS changes in src/ excluding tests for the entire PR
-          BASE_SHA=${{ github.event.pull_request.base.sha }}
-          HEAD_SHA=${{ github.event.pull_request.head.sha }}
-
-          TS_CHANGES=$(git diff --name-only $BASE_SHA $HEAD_SHA | grep '^src/.*\.ts$' | grep -v '\.test\.ts$' || true)
-
-          if [ -z "$TS_CHANGES" ]; then
-            echo "no_ts_changes=true" >> $GITHUB_OUTPUT
-          else
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "no_ts_changes=false" >> $GITHUB_OUTPUT
-            git fetch origin ${{ github.event.pull_request.base.ref }} || exit 1
-            bun scripts/bench.js --vign --diff origin/${{ github.event.pull_request.base.ref }} --out bench_output.txt || exit 1
+            bun scripts/bench.js --vign --diff HEAD --out bench_output.txt || exit 1
+          else
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+            TS_CHANGES=$(git diff --name-only $BASE_SHA $HEAD_SHA | grep '^src/.*\.ts$' | grep -v '\.test\.ts$' || true)
+
+            if [ -z "$TS_CHANGES" ]; then
+              echo "no_ts_changes=true" >> $GITHUB_OUTPUT
+            else
+              echo "no_ts_changes=false" >> $GITHUB_OUTPUT
+              git fetch origin ${{ github.event.pull_request.base.ref }} || exit 1
+              bun scripts/bench.js --vign --diff origin/${{ github.event.pull_request.base.ref }} --out bench_output.txt || exit 1
+            fi
           fi
 
       - name: Print benchmark results to log
-        if: ${{ inputs.print_only == true && steps.bench.outputs.no_ts_changes != 'true' }}
+        if: ${{ inputs.print_only == true || github.event_name == 'workflow_dispatch' }}
         run: cat bench_output.txt
 
       - name: Comment PR
-        if: ${{ inputs.print_only != true }}
+        if: ${{ github.event_name == 'pull_request' && inputs.print_only != true && steps.bench.outputs.no_ts_changes != 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -66,4 +69,4 @@ jobs:
             --owner ${{ github.repository_owner }} \
             --repo ${{ github.event.repository.name }} \
             --pr ${{ github.event.pull_request.number }} \
-            ${{ steps.bench.outputs.no_ts_changes == 'true' && '--no-ts-changes' || '--body-file bench_output.txt' }}
+            --body-file bench_output.txt

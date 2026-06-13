@@ -5,7 +5,6 @@ const { values } = parseArgs({
 	args: Bun.argv.slice(2),
 	options: {
 		"body-file": { type: "string" },
-		"no-ts-changes": { type: "boolean" },
 		owner: { type: "string" },
 		pr: { type: "string" },
 		repo: { type: "string" },
@@ -13,7 +12,7 @@ const { values } = parseArgs({
 	},
 })
 
-const { token, pr, owner, repo, "no-ts-changes": noTsChanges, "body-file": bodyFile } = values
+const { token, pr, owner, repo, "body-file": bodyFile } = values
 
 if (!token || !pr || !owner || !repo) {
 	console.error("Missing required arguments")
