@@ -97,6 +97,8 @@ async function runBenchmarks() {
 			}
 		} catch (e) {
 			process.stderr.write(`Failed to run ${file}: ${e}\n`)
+			process.exitCode = 1
+			return results
 		}
 	}
 	return results
@@ -321,9 +323,11 @@ if (values.diff) {
 			benchmarkFiles.push(...originalFiles)
 		} else {
 			process.stderr.write(`Failed to create worktree for ${values.diff}\n`)
+			process.exitCode = 1
 		}
 	} catch (e) {
 		process.stderr.write(`Failed during base benchmark run: ${e}\n`)
+		process.exitCode = 1
 	} finally {
 		process.stderr.write(`Cleaning up local worktree...\n`)
 		await $`git worktree remove --force ${tmpDir}`.nothrow().quiet()

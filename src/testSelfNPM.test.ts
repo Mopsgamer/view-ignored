@@ -1,5 +1,5 @@
+import { $ } from "bun"
 import { describe, test, expect } from "bun:test"
-import { spawn } from "node:child_process"
 
 import { scan } from "./scan.js"
 import { makeNPM } from "./targets/npm.js"
@@ -33,50 +33,42 @@ describe.skipIf(!!process.env.TEST_NO_SELF)("NPM", async () => {
 	)
 })
 
-function npmTotalFiles(): Promise<{ total: number; files: string[] }> {
-	const npm = spawn("npm", ["pack", "--dry-run"], { env: { ...process.env, NO_COLOR: "1" } })
-	const { promise, resolve, reject } = Promise.withResolvers<{ total: number; files: string[] }>()
-	let output = ""
-	npm.stdout.on("data", (data) => {
-		output += data.toString()
-	})
-	npm.stderr.on("data", (data) => {
-		output += data.toString()
-	})
-	npm.on("close", (code) => {
-		if (code !== 0) {
-			reject(new Error(`'npm pack --dry-run' exited with code ${code}\n${output}`))
-			return
+async function npmTotalFiles(): Promise<{ total: number; files: string[] }> {
+	const { stdout, stderr, exitCode } = await $`npm pack --dry-run`
+		.env({ ...process.env, NO_COLOR: "1" })
+		.quiet()
+	const output = stdout.toString() + stderr.toString()
+
+	if (exitCode !== 0) {
+		throw new Error(`'npm pack --dry-run' exited with code ${exitCode}\n${output}`)
+	}
+
+	const match = output.match(/total files:\s+(\d+)/)
+	const files: string[] = []
+	const lines = output.split(/\r?\n/)
+	let inContents = false
+	for (const line of lines) {
+		if (line.startsWith("npm notice Tarball Contents")) {
+			inContents = true
+			continue
 		}
-		const match = output.match(/total files:\s+(\d+)/)
-		const files: string[] = []
-		const lines = output.split(/\r?\n/)
-		let inContents = false
-		for (const line of lines) {
-			if (line.startsWith("npm notice Tarball Contents")) {
-				inContents = true
-				continue
-			}
-			if (!inContents) {
-				continue
-			}
-			if (line.startsWith("npm notice Tarball Details")) {
-				break
-			}
-			const fileMatch = line.match(/npm notice\s+\S+\s+(.+)/)
-			if (fileMatch && fileMatch[1]) {
-				const file = fileMatch[1].trim()
-				files.push(file)
-			}
+		if (!inContents) {
+			continue
 		}
-		if (!match || !match[1]) {
-			reject(new Error("Could not find total files in npm pack output"))
-			return
+		if (line.startsWith("npm notice Tarball Details")) {
+			break
 		}
-		resolve({
-			files,
-			total: parseInt(match[1], 10),
-		})
-	})
-	return promise
+		const fileMatch = line.match(/npm notice\s+\S+\s+(.+)/)
+		if (fileMatch && fileMatch[1]) {
+			const file = fileMatch[1].trim()
+			files.push(file)
+		}
+	}
+	if (!match || !match[1]) {
+		throw new Error("Could not find total files in npm pack output")
+	}
+	return {
+		files,
+		total: parseInt(match[1], 10),
+	}
 }

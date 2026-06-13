@@ -1,5 +1,5 @@
+import { $ } from "bun"
 import { describe, test, expect } from "bun:test"
-import { spawn } from "node:child_process"
 
 import { scan } from "./scan.js"
 import { makeGit } from "./targets/git.js"
@@ -25,26 +25,16 @@ describe.skipIf(!!process.env.TEST_NO_SELF)("Git", () => {
 	)
 })
 
-function gitFiles(): Promise<string[]> {
-	const git = spawn("git", ["ls-files", "--others", "--exclude-standard", "--cached"], {
-		env: { ...process.env, NO_COLOR: "1" },
-	})
-	const { promise, resolve, reject } = Promise.withResolvers<string[]>()
-	let output = ""
-	git.stdout.on("data", (data) => {
-		output += data.toString()
-	})
-	git.stderr.on("data", (data) => {
-		output += data.toString()
-	})
-	git.on("close", (code) => {
-		if (code !== 0) {
-			const command = "git ls-files --others --exclude-standard --cached"
-			reject(new Error(`'${command}' exited with code ${code}\n${output}`))
-			return
-		}
-		const files = output.trim().split("\n")
-		resolve(files)
-	})
-	return promise
+async function gitFiles(): Promise<string[]> {
+	const command = "git ls-files --others --exclude-standard --cached"
+	const { stdout, stderr, exitCode } = await $`git ls-files --others --exclude-standard --cached`
+		.env({ ...process.env, NO_COLOR: "1" })
+		.quiet()
+	const output = stdout.toString() + stderr.toString()
+
+	if (exitCode !== 0) {
+		throw new Error(`'${command}' exited with code ${exitCode}\n${output}`)
+	}
+	const files = output.trim().split("\n")
+	return files
 }
