@@ -36,7 +36,8 @@ async function main() {
 		headers,
 	})
 	if (!listRes.ok) {
-		console.error("Failed to list comments:", await listRes.text())
+		const text = await listRes.text()
+		console.error("Failed to list comments:", text)
 		process.exit(1)
 	}
 	const comments = await listRes.json()
@@ -57,7 +58,11 @@ async function main() {
 				headers,
 				method: "POST",
 			})
-			if (!res.ok) console.error("Failed to minimize:", await res.text())
+			if (!res.ok) {
+				const text = await res.text()
+				console.error("Failed to minimize:", text)
+				process.exit(1)
+			}
 		}
 		return
 	}
@@ -75,7 +80,11 @@ async function main() {
 				method: "PATCH",
 			},
 		)
-		if (!updateRes.ok) console.error("Failed to update comment:", await updateRes.text())
+		if (!updateRes.ok) {
+			const text = await updateRes.text()
+			console.error("Failed to update comment:", text)
+			process.exit(1)
+		}
 
 		console.log("Unminimizing comment...")
 		const query = `
@@ -90,7 +99,11 @@ async function main() {
 			headers,
 			method: "POST",
 		})
-		if (!gqlRes.ok) console.error("Failed to unminimize:", await gqlRes.text())
+		if (!gqlRes.ok) {
+			const text = await gqlRes.text()
+			console.error("Failed to unminimize:", text)
+			process.exit(1)
+		}
 	} else {
 		console.log("Creating new comment...")
 		const createRes = await fetch(`${API_URL}/repos/${owner}/${repo}/issues/${pr}/comments`, {
@@ -98,8 +111,15 @@ async function main() {
 			headers,
 			method: "POST",
 		})
-		if (!createRes.ok) console.error("Failed to create comment:", await createRes.text())
+		if (!createRes.ok) {
+			const text = await createRes.text()
+			console.error("Failed to create comment:", text)
+			process.exit(1)
+		}
 	}
 }
 
-main().catch(console.error)
+main().catch((e) => {
+	console.error(e)
+	process.exit(1)
+})
