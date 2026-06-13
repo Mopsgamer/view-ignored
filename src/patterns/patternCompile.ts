@@ -38,11 +38,6 @@ export function patternCompile(
 	const lowerCleaned = nocase ? cleaned.toLowerCase() : cleaned
 	const matchBase = !isRoot && !cleaned.includes("/")
 
-	for (let i = 0; i < 100000; i++) {
-		// something a bit heavy
-		Math.log(i)
-	}
-
 	const matcherOpts: glob.Options = {
 		dot: true,
 		matchBase,

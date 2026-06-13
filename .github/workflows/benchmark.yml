@@ -36,7 +36,7 @@ jobs:
 
       - name: Benchmark Node
         run: |
-          bun run bench:node
+          bun run bench --node
 
       - name: Benchmark Bun
         run: |

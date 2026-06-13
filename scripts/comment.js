@@ -42,30 +42,6 @@ async function main() {
 	const comments = await listRes.json()
 	const botComment = comments.find((c) => c.body.includes(commentHeader))
 
-	if (noTsChanges) {
-		if (botComment) {
-			console.log("No TS changes, minimizing existing comment...")
-			const query = `
-				mutation($id: ID!) {
-					minimizeComment(input: { subjectId: $id, classifier: OFF_TOPIC }) {
-						minimizedComment { isMinimized }
-					}
-				}
-			`
-			const res = await fetch(GRAPHQL_URL, {
-				body: JSON.stringify({ query, variables: { id: botComment.node_id } }),
-				headers,
-				method: "POST",
-			})
-			if (!res.ok) {
-				const text = await res.text()
-				console.error("Failed to minimize:", text)
-				process.exit(1)
-			}
-		}
-		return
-	}
-
 	const body = fs.readFileSync(bodyFile, "utf8")
 	const fullBody = `${commentHeader}\n\n${"```txt\n" + body + "```"}\n`
 

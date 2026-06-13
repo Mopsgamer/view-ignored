@@ -2,6 +2,7 @@
 	"$schema": "./node_modules/oxlint/configuration_schema.json",
 	"plugins": ["import", "oxc", "unicorn", "jsdoc", "eslint", "typescript"],
 	"rules": {
+		"no-control-regex": "off",
 		"typescript/no-explicit-any": "error",
 		"typescript/restrict-template-expressions": "off",
 		"import/no-duplicates": "error",

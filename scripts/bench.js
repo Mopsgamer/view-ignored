@@ -27,14 +27,28 @@ ${c("bold", "Options:")}
   --out <file>   ${c("dim", "Write results to <file>")}
   --now          ${c("dim", "Use synthetic data for table testing")}
   --igw          ${c("dim", "Benchmark ignore-walk only")}
+  --vign          ${c("dim", "Benchmark view-ignored only")}
   --node         ${c("dim", "Run benchmarks using Node.js")}
 `)
 	process.exit(0)
 }
 
+const forwardArgs = Bun.argv.slice(2).filter((arg) => {
+	if (arg.startsWith("--diff=") || arg === "--diff") return false
+	if (arg.startsWith("--out=") || arg === "--out") return false
+	if (arg === "-h" || arg === "--help" || arg === "--node" || arg === "--now") return false
+	if (positionals.includes(arg)) return false
+	return true
+})
+
 const benchmarkFiles =
 	positionals.length > 0
-		? positionals
+		? positionals.map((f) => {
+				if (f.endsWith(".js") && fs.existsSync(f)) return f
+				const withPath = path.join("benchmarks", f.endsWith(".js") ? f : `${f}.js`)
+				if (fs.existsSync(withPath)) return withPath
+				return f
+			})
 		: fs
 				.readdirSync("benchmarks")
 				.filter((f) => f.endsWith(".js"))
@@ -42,12 +56,27 @@ const benchmarkFiles =
 
 async function runBenchmarks() {
 	const results = []
-	const extraArgs = ["--json"]
-	if (values.vign) extraArgs.push("--vign")
-	if (values.igw) extraArgs.push("--igw")
+	const needsTable = values.diff || values.out || values.now
 
+	if (!needsTable) {
+		for (const file of benchmarkFiles) {
+			console.log(`\nRunning ${file} ${forwardArgs.join(" ")}`)
+			try {
+				const cmd = values.node
+					? $`node --expose-gc ${file} ${forwardArgs}`
+					: $`bun --expose-gc ${file} ${forwardArgs}`
+				// oxlint-disable-next-line no-await-in-loop
+				await cmd
+			} catch {
+				process.exitCode = 1
+			}
+		}
+		return results
+	}
+
+	const extraArgs = ["--json", ...forwardArgs]
 	for (const file of benchmarkFiles) {
-		process.stderr.write(`Running ${file}...\n`)
+		process.stderr.write(`Running ${file} ${extraArgs.join(" ")}...\n`)
 		try {
 			const cmd = values.node
 				? $`node --expose-gc ${file} ${extraArgs}`.quiet()
@@ -248,8 +277,6 @@ function compareBenchmarks(current, base) {
 }
 
 function getVisualLength(str) {
-	// Strip ANSI escape codes
-	// eslint-disable-next-line no-control-regex
 	const stripped = str.replace(/\x1b\[\d+m/g, "")
 	let length = 0
 	for (const char of stripped) {
@@ -477,5 +504,7 @@ if (values.out) {
 	fs.writeFileSync(values.out, fileTable)
 }
 
-const terminalTable = getTable(tableRows, true)
-process.stdout.write(terminalTable)
+if (values.diff || values.out || values.now) {
+	const terminalTable = getTable(tableRows, true)
+	process.stdout.write(terminalTable)
+}
