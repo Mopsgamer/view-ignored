@@ -213,13 +213,13 @@ export interface RuleTestOptions extends PatternFinderOptions {
 function cacheTest(
 	rs: PatternCache[],
 	path: string,
-	matchCtx: { lower?: string },
+	lowerPath?: string,
 ): PatternCache | Error | null {
 	const len = rs.length
 	for (let i = 0; i < len; i++) {
 		const r = rs[i]!
 		try {
-			if (patternCacheTest(r, path, matchCtx)) {
+			if (patternCacheTest(r, path, lowerPath)) {
 				return r
 			}
 		} catch (err) {
@@ -250,14 +250,14 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 	}
 
 	const entry = options.entry
-	const matchCtx = { lower: options.lowerEntry }
+	const lowerPath = options.lowerEntry || entry.toLowerCase()
 
 	const internalRules = options.target.internalRules
 	const [beforeInternal, afterInternal] = Array.isArray(internalRules)
 		? [internalRules, []]
 		: [internalRules.before, internalRules.after]
 	if (beforeInternal.length > 0) {
-		const internalMatch = ruleTestInternalSync(beforeInternal, entry, matchCtx)
+		const internalMatch = ruleTestInternalSync(beforeInternal, entry, lowerPath)
 		if (internalMatch) return internalMatch
 	}
 
@@ -274,7 +274,7 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 
 		for (let i = 0; i < elen; i++) {
 			const rule = rules[i]!
-			const res = cacheTest(rule.compiled!, entry, matchCtx)
+			const res = cacheTest(rule.compiled!, entry, lowerPath)
 			if (res === null) continue
 			if (res instanceof Error) {
 				return {
@@ -296,7 +296,7 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 	}
 
 	if (afterInternal.length > 0) {
-		const internalMatch = ruleTestInternalSync(afterInternal, entry, matchCtx)
+		const internalMatch = ruleTestInternalSync(afterInternal, entry, lowerPath)
 		if (internalMatch) return internalMatch
 	}
 
@@ -309,14 +309,10 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 	}
 }
 
-function ruleTestInternalSync(
-	rules: Rule[],
-	entry: string,
-	matchCtx: { lower?: string },
-): RuleMatch | void {
+function ruleTestInternalSync(rules: Rule[], entry: string, lowerPath?: string): RuleMatch | void {
 	for (let i = 0, len = rules.length; i < len; i++) {
 		const rule = rules[i]!
-		const res = cacheTest(rule.compiled!, entry, matchCtx)
+		const res = cacheTest(rule.compiled!, entry, lowerPath)
 		if (res === null) continue
 		if (res instanceof Error) {
 			return {

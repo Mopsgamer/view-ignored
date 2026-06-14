@@ -8,7 +8,6 @@ import {
 	extractPackageJson,
 	extractGitignore,
 } from "../patterns/index.js"
-import { unixify } from "../unixify.js"
 import { npmManifestParse } from "./npmManifest.js"
 
 /**
@@ -95,8 +94,7 @@ export function makeNPM(): Target {
 		extractors,
 		ignores: ruleTest,
 		init({ fs, cwd }, cb) {
-			const normalCwd = unixify(cwd)
-			fs.readFile(normalCwd + "/package.json", (err, content) => {
+			fs.readFile(cwd + "/package.json", (err, content) => {
 				if (err) {
 					const error = err as NodeJS.ErrnoException
 					if (error.code === "ENOENT") {
