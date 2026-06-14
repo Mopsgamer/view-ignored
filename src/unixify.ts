@@ -5,10 +5,17 @@
  */
 export function unixify(p: string): string {
 	if (!p) return ""
-	let res = p.replaceAll("\\", "/")
-	if (res.startsWith("./")) res = res.slice(2)
-	if (res.endsWith("/") && res.length > 1) res = res.slice(0, -1)
-	return res || "."
+	const res = p.indexOf("\\") === -1 ? p : p.replaceAll("\\", "/")
+	let start = 0
+	let end = res.length
+	if (end >= 2 && res.charCodeAt(0) === 46 && res.charCodeAt(1) === 47) {
+		start = 2
+	}
+	if (end > start + 1 && res.charCodeAt(end - 1) === 47) {
+		end--
+	}
+	if (start === 0 && end === res.length) return res || "."
+	return res.slice(start, end) || "."
 }
 
 /**
@@ -19,8 +26,7 @@ export function unixify(p: string): string {
 export function join(a: string, b: string): string {
 	if (!a || a === ".") return b
 	if (!b || b === ".") return a
-	const last = a.charCodeAt(a.length - 1)
-	if (last === 47) return a + b
+	if (a.charCodeAt(a.length - 1) === 47) return a + b
 	return a + "/" + b
 }
 

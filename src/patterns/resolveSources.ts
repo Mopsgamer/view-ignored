@@ -88,23 +88,25 @@ export function resolveSources(
 	const noSourceDirList: string[] = [dir]
 
 	if (dir !== ".") {
-		const segments = dir.split("/")
-		for (let i = segments.length - 1; i >= 0; i--) {
+		let current = dir
+		while (true) {
 			if (signal?.aborted) {
 				cb(signal.reason, null)
 				return
 			}
-			const d = segments.slice(0, i).join("/") || "."
-			source = external.get(d)
+			const lastSlash = current.lastIndexOf("/")
+			const parent = lastSlash === -1 ? "." : current.slice(0, lastSlash) || "/"
+			source = external.get(parent)
 			if (source !== undefined) {
-				dir = d
+				dir = parent
 				break
 			}
-			noSourceDirList.push(d)
-			if (d === ".") {
-				dir = "."
+			noSourceDirList.push(parent)
+			if (parent === "." || parent === "/") {
+				dir = parent
 				break
 			}
+			current = parent
 		}
 	}
 
@@ -112,15 +114,16 @@ export function resolveSources(
 
 	if (target.root.charCodeAt(0) === 47) {
 		// "/"
-		const segments = cwd.split("/")
 		const preCwdSegments: string[] = []
-		let current = ""
-		for (let i = 0, len = segments.length - 1; i < len; i++) {
-			current += segments[i] + "/"
-			const path = current.length > 1 ? current.slice(0, -1) : "/"
+		let current = 0
+		while (true) {
+			const nextSlash = cwd.indexOf("/", current + 1)
+			if (nextSlash === -1) break
+			const path = cwd.slice(0, nextSlash) || "/"
 			if (path.length >= target.root.length) {
 				preCwdSegments.push(path)
 			}
+			current = nextSlash
 		}
 
 		findSourceForAbsoluteDirsCb(preCwdSegments, fs, target, signal, (err, source) => {

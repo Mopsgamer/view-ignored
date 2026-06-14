@@ -63,7 +63,7 @@ export function resolveNegatable(
 
 	let dist = exclude
 
-	if (pattern.startsWith("!")) {
+	if (pattern.charCodeAt(0) === 33) {
 		dist = include
 		pattern = pattern.slice(1)
 	}

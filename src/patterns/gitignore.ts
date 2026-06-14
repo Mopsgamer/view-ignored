@@ -40,25 +40,49 @@ export function extractGitignoreRules(
 	const exclude: Rule = { compiled: null, excludes: true, pattern: [] }
 
 	let start = 0
-	while (start < content.length) {
+	const len = content.length
+	while (start < len) {
 		let end = content.indexOf(0x0a, start)
-		if (end === -1) end = content.length
+		if (end === -1) end = len
 
-		// Convert only the current line to a string
-		let line = content.toString("utf8", start, end).trim()
+		let lineStart = start
+		let lineEnd = end
+
+		// Skip leading whitespace
+		while (lineStart < lineEnd) {
+			const c = content[lineStart]
+			if (c !== 32 && c !== 9 && c !== 13) break
+			lineStart++
+		}
+
+		// Skip trailing whitespace
+		while (lineEnd > lineStart) {
+			const c = content[lineEnd - 1]
+			if (c !== 32 && c !== 9 && c !== 13) break
+			lineEnd--
+		}
+
+		if (lineStart < lineEnd && content[lineStart] !== 35) {
+			// Not empty and not a comment
+			let line = content.toString("utf8", lineStart, lineEnd)
+			const cdx = line.indexOf("#")
+			if (cdx >= 0) {
+				line = line.slice(0, cdx)
+				// Re-trim if it was trimmed before
+				let lineEnd2 = line.length
+				while (lineEnd2 > 0) {
+					const c = line.charCodeAt(lineEnd2 - 1)
+					if (c !== 32 && c !== 9 && c !== 13) break
+					lineEnd2--
+				}
+				line = line.slice(0, lineEnd2)
+			}
+			if (line !== "") {
+				resolveNegatable(line, false, include, exclude)
+			}
+		}
+
 		start = end + 1
-
-		if (line === "" || line.startsWith("#")) {
-			continue
-		}
-
-		const cdx = line.indexOf("#")
-		if (cdx >= 0) {
-			line = line.slice(0, cdx).trim()
-			if (line === "") continue
-		}
-
-		resolveNegatable(line, false, include, exclude)
 	}
 
 	if (include.pattern.length > 0) {

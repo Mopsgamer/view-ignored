@@ -28,73 +28,109 @@ export function patternCompile(
 	context: PatternList = [],
 	options?: PatternCompileOptions,
 ): PatternCache {
-	const isRoot = pattern.charCodeAt(0) === 47 // '/'
 	const nocase = !!options?.nocase
+	const isRoot = pattern.charCodeAt(0) === 47 // '/'
 
 	let cleaned = pattern
 	if (cleaned.charCodeAt(cleaned.length - 1) === 47) cleaned = cleaned.slice(0, -1)
 	if (isRoot) cleaned = cleaned.slice(1)
 
 	const lowerCleaned = nocase ? cleaned.toLowerCase() : cleaned
-	const matchBase = !isRoot && !cleaned.includes("/")
 
-	const matcherOpts: glob.Options = {
+	const hasSlash = cleaned.includes("/")
+
+	const matchBase = !isRoot && !hasSlash
+	const cleanedWithSlash = lowerCleaned + "/"
+
+	const isMatch = glob.matcher(lowerCleaned, {
 		dot: true,
 		matchBase,
 		nobrace: true,
 		nocase,
 		nonegate: true,
-	}
-
-	const isMatch = glob.matcher(lowerCleaned, { ...matcherOpts, nocase: false })
+	})
 
 	const re = {
-		test: (str: string, matchCtx: { lower?: string }) =>
-			test(str, matchCtx, isMatch, lowerCleaned, isRoot, nocase, matchBase),
+		test: selectTest(lowerCleaned, cleanedWithSlash, isRoot, nocase, matchBase, isMatch),
 	}
 
-	const cache = { pattern, patternContext: context, re }
-
-	return cache
+	return { pattern, patternContext: context, re }
 }
 
-function test(
-	str: string,
-	matchCtx: { lower?: string },
-	isMatch: (str: string) => boolean,
+function selectTest(
 	cleaned: string,
+	cleanedWithSlash: string,
 	isRoot: boolean,
 	nocase: boolean,
 	matchBase: boolean,
-): boolean {
-	const normStr = nocase ? (matchCtx.lower ?? (matchCtx.lower = str.toLowerCase())) : str
-
-	if (normStr === cleaned || normStr.startsWith(cleaned + "/")) {
-		return true
+	isMatch: (s: string) => boolean,
+) {
+	let isGlob = false
+	const len = cleaned.length
+	for (let i = 0; i < len; i++) {
+		const c = cleaned.charCodeAt(i)
+		if (c === 42 || c === 63 || c === 91 || c === 40 || c === 41 || c === 33) {
+			isGlob = true
+			break
+		}
 	}
 
-	if (matchBase) {
-		const len = cleaned.length
-		let pos = normStr.indexOf(cleaned)
-		while (pos !== -1) {
-			if (
-				(pos === 0 || normStr.charCodeAt(pos - 1) === 47) &&
-				(pos + len === normStr.length || normStr.charCodeAt(pos + len) === 47)
-			) {
-				return true
+	if (!isGlob) {
+		if (nocase) {
+			return (str: string, lowerPath?: string) => {
+				const n = lowerPath || str.toLowerCase()
+				return (
+					n === cleaned ||
+					n.startsWith(cleanedWithSlash) ||
+					(matchBase && testMatchBase(n, cleaned))
+				)
 			}
-			pos = normStr.indexOf(cleaned, pos + 1)
+		}
+		return (str: string) => {
+			return (
+				str === cleaned ||
+				str.startsWith(cleanedWithSlash) ||
+				(matchBase && testMatchBase(str, cleaned))
+			)
 		}
 	}
 
-	if (isMatch(normStr)) return true
-	if (!isRoot) {
-		let lastSlash = normStr.lastIndexOf("/")
-		while (lastSlash !== -1) {
-			if (isMatch(normStr.slice(0, lastSlash))) return true
-			lastSlash = normStr.lastIndexOf("/", lastSlash - 1)
-		}
-	}
+	return function test(str: string, lowerPath?: string) {
+		const n = nocase ? lowerPath || str.toLowerCase() : str
 
+		if (
+			n === cleaned ||
+			n.startsWith(cleanedWithSlash) ||
+			(matchBase && testMatchBase(n, cleaned))
+		) {
+			return true
+		}
+
+		if (isMatch(n)) return true
+
+		if (!isRoot) {
+			let lastSlash = n.lastIndexOf("/")
+			while (lastSlash !== -1) {
+				if (isMatch(n.slice(0, lastSlash))) return true
+				lastSlash = n.lastIndexOf("/", lastSlash - 1)
+			}
+		}
+
+		return false
+	}
+}
+
+function testMatchBase(str: string, cleaned: string): boolean {
+	const len = cleaned.length
+	let pos = str.indexOf(cleaned)
+	while (pos !== -1) {
+		if (
+			(pos === 0 || str.charCodeAt(pos - 1) === 47) &&
+			(pos + len === str.length || str.charCodeAt(pos + len) === 47)
+		) {
+			return true
+		}
+		pos = str.indexOf(cleaned, pos + 1)
+	}
 	return false
 }

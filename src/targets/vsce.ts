@@ -8,7 +8,6 @@ import {
 	extractPackageJson,
 	extractGitignore,
 } from "../patterns/index.js"
-import { unixify } from "../unixify.js"
 import { vsceManifestParse } from "./vsceManifest.js"
 
 /**
@@ -75,8 +74,7 @@ export function makeVSCE(): Target {
 		extractors,
 		ignores: ruleTest,
 		init({ fs, cwd }, cb) {
-			const normalCwd = unixify(cwd)
-			fs.readFile(normalCwd + "/package.json", (err, content) => {
+			fs.readFile(cwd + "/package.json", (err, content) => {
 				if (err) {
 					cb(new Error("Error while initializing VSCE", { cause: err }))
 					return

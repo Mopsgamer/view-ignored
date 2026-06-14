@@ -8,7 +8,6 @@ import {
 	extractJsrJson,
 	extractPackageJson,
 } from "../patterns/index.js"
-import { unixify } from "../unixify.js"
 import { jsrManifestParse } from "./jsrManifest.js"
 
 /**
@@ -58,8 +57,6 @@ export function makeDeno(): Target {
 		extractors,
 		ignores: ruleTest,
 		init({ fs, cwd }, cb) {
-			const normalCwd = unixify(cwd)
-
 			let i = 0
 			function next() {
 				if (i >= extractors.length) {
@@ -67,7 +64,7 @@ export function makeDeno(): Target {
 					return
 				}
 				const extractor = extractors[i++]!
-				fs.readFile(normalCwd + "/" + extractor.path, (err, data) => {
+				fs.readFile(cwd + "/" + extractor.path, (err, data) => {
 					if (err) {
 						next()
 						return
