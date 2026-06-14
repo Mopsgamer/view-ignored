@@ -7,7 +7,7 @@ import type { Resource } from "./resource.js"
 import type { Rule } from "./rule.js"
 import type { Source } from "./source.js"
 
-import { join } from "../unixify.js"
+import { dirname, join } from "../unixify.js"
 import { type PatternFinderOptions, type Extractor } from "./extractor.js"
 import { patternListCompile } from "./patternList.js"
 
@@ -71,8 +71,7 @@ export function resolveSources(
 
 	if (target.root === "." && dir !== ".") {
 		resolveSources({ ...options, dir: "." }, (err, res) => {
-			// oxlint-disable-next-line typescript/no-explicit-any
-			if (err) return cb(err, null as any)
+			if (err) return cb(err, null)
 			external.set(dir, res)
 			cb(null, res)
 		})
@@ -94,8 +93,7 @@ export function resolveSources(
 				cb(signal.reason, null)
 				return
 			}
-			const lastSlash = current.lastIndexOf("/")
-			const parent = lastSlash === -1 ? "." : current.slice(0, lastSlash) || "/"
+			const parent = dirname(current)
 			source = external.get(parent)
 			if (source !== undefined) {
 				dir = parent
@@ -110,43 +108,31 @@ export function resolveSources(
 		}
 	}
 
-	// find non-cwd source [root > cwd) and populate [cwd > ... > dir]
+	const absPaths = noSourceDirList.map((p) => join(cwd, p))
 
-	if (target.root.charCodeAt(0) === 47) {
+	// find non-cwd source [root > cwd) and populate [cwd > ... > dir]
+	if (target.root.startsWith("/")) {
 		// "/"
 		const preCwdSegments: string[] = []
-		let current = 0
-		while (true) {
-			const nextSlash = cwd.indexOf("/", current + 1)
+		let current = target.root
+		while (current.length < cwd.length && cwd.startsWith(current)) {
+			preCwdSegments.push(current)
+			const nextSlash = cwd.indexOf("/", current.length + 1)
 			if (nextSlash === -1) break
-			const path = cwd.slice(0, nextSlash) || "/"
-			if (path.length >= target.root.length) {
-				preCwdSegments.push(path)
-			}
-			current = nextSlash
+			current = cwd.slice(0, nextSlash)
 		}
 
-		findSourceForAbsoluteDirsCb(preCwdSegments, fs, target, signal, (err, source) => {
-			if (err) {
-				cb(err, null)
-				return
-			}
+		findSourceForAbsoluteDirsCb(preCwdSegments, fs, target, signal, (err, s1) => {
+			if (err) return cb(err, null)
 
-			const absPaths = Array.from<string>({ length: noSourceDirList.length })
-			for (let i = 0, len = noSourceDirList.length; i < len; i++) {
-				absPaths[i] = join(cwd, noSourceDirList[i]!)
-			}
 			findSourceForAbsoluteDirsCb(
 				absPaths,
 				fs,
 				target,
 				signal,
-				(err, s) => {
-					if (err) {
-						cb(err, null)
-						return
-					}
-					const finalSource = s || source || parentResource || null
+				(err, s2) => {
+					if (err) return cb(err, null)
+					const finalSource = s2 || s1 || parentResource || null
 					external.set(options.dir, finalSource)
 					cb(null, finalSource)
 				},
@@ -156,20 +142,13 @@ export function resolveSources(
 		return
 	}
 
-	const absPaths = Array.from<string>({ length: noSourceDirList.length })
-	for (let i = 0, len = noSourceDirList.length; i < len; i++) {
-		absPaths[i] = join(cwd, noSourceDirList[i]!)
-	}
 	findSourceForAbsoluteDirsCb(
 		absPaths,
 		fs,
 		target,
 		signal,
 		(err, source) => {
-			if (err) {
-				cb(err, null)
-				return
-			}
+			if (err) return cb(err, null)
 			const finalSource = source || parentResource || null
 			external.set(options.dir, finalSource)
 			cb(null, finalSource)
@@ -210,7 +189,7 @@ function findSourceForAbsoluteDirsCb(
 			j = 0
 		}
 
-		if (entries && plen > 0 && parent === paths[0]) {
+		if (entries && parent === paths[0]) {
 			const epath = extractor.path
 			const slashIdx = epath.indexOf("/")
 			const firstSegment = slashIdx === -1 ? epath : epath.slice(0, slashIdx)
@@ -252,13 +231,12 @@ function tryExtractorCb(
 
 	fs.readFile(abs, (err, buff) => {
 		if (err) {
-			const error = err as NodeJS.ErrnoException
-			if (error.code === "ENOENT") {
+			if (err.code === "ENOENT") {
 				cb(null, null)
 				return
 			}
 			cb(null, {
-				error,
+				error: err,
 				source: {
 					inverted: false,
 					path: extractor.path,
@@ -268,7 +246,7 @@ function tryExtractorCb(
 			return
 		}
 
-		const newSource = <Source>{
+		const newSource: Source = {
 			inverted: false,
 			path: extractor.path,
 			rules: [],

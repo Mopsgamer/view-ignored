@@ -16,27 +16,19 @@ import { jsrManifestParse } from "./jsrManifest.js"
 export function makeDeno(): Target {
 	const extractors: Extractor[] = [
 		{
-			extract(source, content) {
-				return extractJsrJson(source, content)
-			},
+			extract: extractJsrJson,
 			path: "deno.json",
 		},
 		{
-			extract(source, content) {
-				return extractJsrJson(source, content)
-			},
+			extract: extractJsrJson,
 			path: "deno.jsonc",
 		},
 		{
-			extract(source, content) {
-				return extractJsrJson(source, content)
-			},
+			extract: extractJsrJson,
 			path: "jsr.json",
 		},
 		{
-			extract(source, content) {
-				return extractJsrJson(source, content)
-			},
+			extract: extractJsrJson,
 			path: "jsr.jsonc",
 		},
 		{

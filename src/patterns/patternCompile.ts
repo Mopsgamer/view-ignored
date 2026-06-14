@@ -29,7 +29,7 @@ export function patternCompile(
 	options?: PatternCompileOptions,
 ): PatternCache {
 	const nocase = !!options?.nocase
-	const isRoot = pattern.charCodeAt(0) === 47 // '/'
+	const isRoot = pattern.startsWith("/")
 
 	let cleaned = pattern
 	if (cleaned.charCodeAt(cleaned.length - 1) === 47) cleaned = cleaned.slice(0, -1)

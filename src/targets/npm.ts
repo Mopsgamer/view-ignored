@@ -48,10 +48,6 @@ export function makeNPM(): Target {
 				".svn",
 				".hg",
 				"CVS",
-				".git",
-				".svn",
-				".hg",
-				"CVS",
 				"/.lock-wscript",
 				"/.wafpickle-*",
 				"/build/config.gypi",
@@ -96,12 +92,11 @@ export function makeNPM(): Target {
 		init({ fs, cwd }, cb) {
 			fs.readFile(cwd + "/package.json", (err, content) => {
 				if (err) {
-					const error = err as NodeJS.ErrnoException
-					if (error.code === "ENOENT") {
-						cb(new Error("'package.json' not found", { cause: error }))
+					if (err.code === "ENOENT") {
+						cb(new Error("'package.json' not found", { cause: err }))
 						return
 					}
-					cb(new Error("Error while initializing NPM", { cause: error }))
+					cb(new Error("Error while initializing NPM", { cause: err }))
 					return
 				}
 

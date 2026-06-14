@@ -105,7 +105,7 @@ export function makeBun(): Target {
 		extractors,
 		ignores: ruleTest,
 		init({ fs, cwd }, cb) {
-			fs.readFile(cwd + "/" + "package.json", (err, content) => {
+			fs.readFile(cwd + "/package.json", (err, content) => {
 				if (err) {
 					cb(new Error("Error while initializing Bun", { cause: err }))
 					return
@@ -129,7 +129,7 @@ export function makeBun(): Target {
 
 				function normal(path: string): string {
 					let res = unixify(path)
-					if (res.charCodeAt(0) === 47) res = res.slice(1)
+					if (res.startsWith("/")) res = res.slice(1)
 					return res
 				}
 
