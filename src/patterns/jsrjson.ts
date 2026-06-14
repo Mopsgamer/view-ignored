@@ -44,12 +44,12 @@ export function extractJsrJsonRules(
 	try {
 		dist = JSON.parse(stripJsonComments(content.toString()))
 	} catch (e) {
-		throw new Error("Invalid JSON in " + source.path, { cause: e })
+		throw new Error("Invalid JSON in '" + source.path + "'", { cause: e })
 	}
 
 	// Basic runtime check to ensure dist is an object
 	if (!dist || typeof dist !== "object" || Array.isArray(dist)) {
-		throw new Error("Invalid " + source.path + ": Root must be an object")
+		throw new Error("Invalid '" + source.path + "': Root must be an object")
 	}
 
 	const include: Rule = { compiled: null, excludes: false, pattern: [] }

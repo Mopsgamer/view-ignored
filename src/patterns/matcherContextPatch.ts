@@ -35,8 +35,8 @@ export async function matcherContextAddPath(
 
 	const isDir = entry.endsWith("/")
 	const direntPath = isDir ? entry.slice(0, -1) : entry
-	if (isDir && (direntPath === "." || ctx.paths.has(entry))) {
-		return isDir && direntPath === "."
+	if (isDir && direntPath === ".") {
+		return true
 	}
 	const parentPath = dirname(direntPath)
 
@@ -44,39 +44,48 @@ export async function matcherContextAddPath(
 
 	if (isDir) {
 		// recursive parent population
-		const resource = await new Promise<Resource>((resolve, reject) => {
-			resolveSources(
-				{
-					cwd,
-					dir: direntPath,
-					external: ctx.external,
-					fs,
-					signal,
-					target,
-				},
-				promiseCb(resolve, reject),
-			)
-		})
-		const match = await new Promise<RuleMatch>((resolve, reject) => {
-			target.ignores(
-				{
-					cwd,
-					entry: direntPath,
-					fs,
-					parentPath,
-					resource,
-					signal,
-					target,
-				},
-				promiseCb(resolve, reject),
-			)
-		})
+		const {
+			promise: resourcePromise,
+			resolve: resResolve,
+			reject: resReject,
+		} = Promise.withResolvers<Resource>()
+		resolveSources(
+			{
+				cwd,
+				dir: direntPath,
+				external: ctx.external,
+				fs,
+				signal,
+				target,
+			},
+			promiseCb(resResolve, resReject),
+		)
+		const resource = await resourcePromise
+
+		const {
+			promise: matchPromise,
+			resolve: matchResolve,
+			reject: matchReject,
+		} = Promise.withResolvers<RuleMatch>()
+		target.ignores(
+			{
+				cwd,
+				entry: direntPath,
+				fs,
+				parentPath,
+				resource,
+				signal,
+				target,
+			},
+			promiseCb(matchResolve, matchReject),
+		)
+		const match = await matchPromise
 		if (!match.ignored) {
 			ctx.paths.set(entry, match)
 		}
 		updateTotals(ctx, parentPath, 0, 0, 1)
 		if (parentPath !== ".") {
-			void (await matcherContextAddPath(ctx, options, parentPath + "/"))
+			await matcherContextAddPath(ctx, options, parentPath + "/")
 		}
 		return true
 	}
@@ -84,24 +93,23 @@ export async function matcherContextAddPath(
 	const isSource = target.extractors.some((e) => e.path === entry)
 	if (isSource) {
 		// add pattern sources
-		const resultPromise = new Promise<WalkResult[] | null>((resolve, reject) => {
-			scanParallel(
-				{
-					external: ctx.external,
-					failed: ctx.failed,
-					onResult: (result) => {
-						if ("dir" in result) {
-							walkPatchTotal(ctx, maxDepth, result)
-							return
-						}
-						walkPatchResult(ctx, result)
-					},
-					scanOptions: { ...options, within: unixify(parentPath) },
-					stream: undefined,
+		const { promise: resultPromise, resolve, reject } = Promise.withResolvers<WalkResult[] | null>()
+		scanParallel(
+			{
+				external: ctx.external,
+				failed: ctx.failed,
+				onResult: (result) => {
+					if ("dir" in result) {
+						walkPatchTotal(ctx, maxDepth, result)
+						return
+					}
+					walkPatchResult(ctx, result)
 				},
-				promiseCb(resolve, reject),
-			)
-		})
+				scanOptions: { ...options, within: unixify(parentPath) },
+				stream: undefined,
+			},
+			promiseCb(resolve, reject),
+		)
 		await matcherContextRemovePath(ctx, options, parentPath + "/")
 		await resultPromise
 		propagateTotals(ctx.total)
@@ -111,34 +119,34 @@ export async function matcherContextAddPath(
 	// 1. recursively populate parents
 	await matcherContextAddPath(ctx, options, parentPath + "/")
 	// 2. if ignored, remove, otherwise add
-	const resource = (await new Promise<Resource>((resolve, reject) => {
-		resolveSources(
-			{
-				cwd,
-				dir: parentPath,
-				external: ctx.external,
-				fs,
-				signal,
-				target,
-			},
-			promiseCb(resolve, reject),
-		)
-	})) as Resource
+	const { promise: resPromise, resolve: resRes, reject: resRej } = Promise.withResolvers<Resource>()
+	resolveSources(
+		{
+			cwd,
+			dir: parentPath,
+			external: ctx.external,
+			fs,
+			signal,
+			target,
+		},
+		promiseCb(resRes, resRej),
+	)
+	const resource = await resPromise
 
-	const match = await new Promise<RuleMatch>((resolve, reject) => {
-		target.ignores(
-			{
-				cwd,
-				entry,
-				fs,
-				parentPath,
-				resource,
-				signal,
-				target,
-			},
-			promiseCb(resolve, reject),
-		)
-	})
+	const { promise: mPromise, resolve: mRes, reject: mRej } = Promise.withResolvers<RuleMatch>()
+	target.ignores(
+		{
+			cwd,
+			entry,
+			fs,
+			parentPath,
+			resource,
+			signal,
+			target,
+		},
+		promiseCb(mRes, mRej),
+	)
+	const match = await mPromise
 
 	updateTotals(ctx, parentPath, 1, match.ignored ? 0 : 1, 0)
 
@@ -217,24 +225,23 @@ export async function matcherContextRemovePath(
 		const maxDepth = options.depth
 		// remove pattern sources
 		// rescan directory and repopulate stats
-		const resultPromise = new Promise<WalkResult[] | null>((resolve, reject) => {
-			scanParallel(
-				{
-					external: ctx.external,
-					failed: ctx.failed,
-					onResult: (result) => {
-						if ("dir" in result) {
-							walkPatchTotal(ctx, maxDepth, result)
-							return
-						}
-						walkPatchResult(ctx, result)
-					},
-					scanOptions: { ...options, within: unixify(parentPath) },
-					stream: undefined,
+		const { promise: resultPromise, resolve, reject } = Promise.withResolvers<WalkResult[] | null>()
+		scanParallel(
+			{
+				external: ctx.external,
+				failed: ctx.failed,
+				onResult: (result) => {
+					if ("dir" in result) {
+						walkPatchTotal(ctx, maxDepth, result)
+						return
+					}
+					walkPatchResult(ctx, result)
 				},
-				promiseCb(resolve, reject),
-			)
-		})
+				scanOptions: { ...options, within: unixify(parentPath) },
+				stream: undefined,
+			},
+			promiseCb(resolve, reject),
+		)
 		await matcherContextRemovePath(ctx, options, parentPathDir)
 		await resultPromise
 		propagateTotals(ctx.total)

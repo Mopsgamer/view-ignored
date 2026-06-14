@@ -16,9 +16,7 @@ import { npmManifestParse } from "./npmManifest.js"
 export function makeYarnClassic(): Target {
 	const extractors: Extractor[] = [
 		{
-			extract(source, content) {
-				return extractPackageJson(source, content)
-			},
+			extract: extractPackageJson,
 			path: "package.json",
 		},
 		{
