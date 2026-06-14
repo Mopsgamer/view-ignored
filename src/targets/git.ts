@@ -35,8 +35,7 @@ export function makeGit(): Target {
 		extractors,
 		ignores: ruleTest,
 		init({ fs, cwd }, cb) {
-			const excludePath =
-				cwd + (cwd.charCodeAt(cwd.length - 1) === 47 ? "" : "/") + ".git/info/exclude"
+			const excludePath = cwd + "/.git/info/exclude"
 			fs.readFile(excludePath, (err, content) => {
 				if (err) {
 					if (err.code === "ENOENT") {

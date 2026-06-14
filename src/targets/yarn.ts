@@ -17,9 +17,7 @@ import { npmManifestParse, type PackageJson } from "./npmManifest.js"
 export function makeYarn(): Target {
 	const extractors: Extractor[] = [
 		{
-			extract(source, content) {
-				return extractPackageJson(source, content)
-			},
+			extract: extractPackageJson,
 			path: "package.json",
 		},
 		{
@@ -88,12 +86,11 @@ export function makeYarn(): Target {
 		init({ fs, cwd }, cb) {
 			fs.readFile(cwd + "/package.json", (err, content) => {
 				if (err) {
-					const error = err as NodeJS.ErrnoException
-					if (error.code === "ENOENT") {
+					if (err.code === "ENOENT") {
 						cb(null)
 						return
 					}
-					cb(new Error("Error while initializing Yarn", { cause: error }))
+					cb(new Error("Error while initializing Yarn", { cause: err }))
 					return
 				}
 
@@ -109,7 +106,7 @@ export function makeYarn(): Target {
 
 				function normal(path: string): string {
 					let res = unixify(path)
-					if (res.charCodeAt(0) === 47) res = res.slice(1)
+					if (res.startsWith("/")) res = res.slice(1)
 					return res
 				}
 

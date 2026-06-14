@@ -15,15 +15,11 @@ import { jsrManifestParse } from "./jsrManifest.js"
 export function makeJSR(): Target {
 	const extractors: Extractor[] = [
 		{
-			extract(source, content) {
-				return extractJsrJson(source, content)
-			},
+			extract: extractJsrJson,
 			path: "jsr.json",
 		},
 		{
-			extract(source, content) {
-				return extractJsrJson(source, content)
-			},
+			extract: extractJsrJson,
 			path: "jsr.jsonc",
 		},
 	]

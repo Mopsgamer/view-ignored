@@ -40,7 +40,7 @@ export class MatcherStream extends EventTarget {
 		options?: boolean | AddEventListenerOptions,
 	): void {
 		// oxlint-disable-next-line typescript/no-explicit-any
-		super.addEventListener(type as string, callback as any, options)
+		super.addEventListener(type, callback as any, options)
 	}
 
 	override removeEventListener<K extends keyof EventMap>(
@@ -49,7 +49,7 @@ export class MatcherStream extends EventTarget {
 		options?: boolean | EventListenerOptions,
 	): void {
 		// oxlint-disable-next-line typescript/no-explicit-any
-		super.removeEventListener(type as string, callback as any, options)
+		super.removeEventListener(type, callback as any, options)
 	}
 
 	override dispatchEvent(event: EventMap[keyof EventMap]): boolean {

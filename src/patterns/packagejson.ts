@@ -37,7 +37,7 @@ export function extractPackageJsonRules(
 	try {
 		dist = npmManifestParse(content.toString())
 	} catch (err) {
-		throw new Error("Invalid '" + source.path, { cause: err })
+		throw new Error("Invalid '" + source.path + "'", { cause: err })
 	}
 
 	if (!dist?.files || !Array.isArray(dist.files)) {

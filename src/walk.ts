@@ -6,6 +6,7 @@ import type { Resource } from "./patterns/resource.js"
 import type { ScanOptions } from "./types.js"
 
 import { isRuleMatchInvalid, type RuleMatch } from "./patterns/rule.js"
+import { dirname } from "./unixify.js"
 
 export type WalkOptions = {
 	relPath: string
@@ -207,8 +208,7 @@ export function propagateTotals(total: Map<string, Total>): void {
 		const dir = dirs[i]!
 		if (dir === "." || dir === "/") continue
 		const dirTotal = total.get(dir)!
-		const lastSlash = dir.lastIndexOf("/")
-		const parent = lastSlash === -1 ? "." : dir.slice(0, lastSlash) || "/"
+		const parent = dirname(dir)
 		const parentTotal = total.get(parent)
 		if (parentTotal) {
 			parentTotal.totalFiles += dirTotal.totalFiles

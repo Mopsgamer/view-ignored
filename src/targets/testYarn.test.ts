@@ -169,10 +169,11 @@ describe("Yarn", () => {
 				expect(ctx.paths.has("index.js")).toBeFalse()
 				expect(ctx.paths.has("packages/a/index.js")).toBeFalse()
 
-				// oxlint-disable-next-line typescript/no-explicit-any
-				const src = ctx.external.get("packages/a") as any
+				const src = ctx.external.get("packages/a")
 				expect(src).toBeObject()
-				expect(src?.path).toBe("package.json")
+				if (src && "path" in src) {
+					expect(src.path).toBe("package.json")
+				}
 			},
 			{ cwd: process.cwd() + "/test", target: makeYarn() },
 		)
@@ -210,10 +211,11 @@ describe("Yarn", () => {
 
 				expect(ctx.external.get("packages/a")).toBeUndefined()
 
-				// oxlint-disable-next-line typescript/no-explicit-any
-				const src = ctx.external.get(".") as any
+				const src = ctx.external.get(".")
 				expect(src).toBeObject()
-				expect(src?.path).toBe("package.json")
+				if (src && "path" in src) {
+					expect(src.path).toBe("package.json")
+				}
 			},
 			{ cwd: process.cwd() + "/test/packages/a", target: makeYarn() },
 		)
