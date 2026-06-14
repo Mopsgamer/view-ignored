@@ -9,7 +9,6 @@ import { isRuleMatchInvalid, type RuleMatch } from "./patterns/rule.js"
 
 export type WalkOptions = {
 	relPath: string
-	lowerRelPath?: string
 	parentPath: string
 	entry: Dirent
 	resource: Resource
@@ -45,27 +44,16 @@ export function walkIncludes(
 	options: WalkOptions,
 	cb: (err: Error | null, result: WalkResult) => void,
 ): void {
-	const {
-		entry,
-		stream,
-		scanOptions,
-		relPath: path,
-		lowerRelPath,
-		parentPath,
-		resource,
-		depth,
-	} = options
+	const { entry, stream, scanOptions, relPath: path, parentPath, resource, depth } = options
 	const { target, depth: maxDepth, invert, fastDepth, fastInternal, fs, cwd, signal } = scanOptions
 
 	const isDir = entry.isDirectory()
-	const direntPath = isDir ? path + "/" : path
-	const lowerEntry = lowerRelPath || path.toLowerCase()
 
 	const testOptions = {
 		cwd,
 		entry: path,
 		fs,
-		lowerEntry,
+		lowerEntry: undefined,
 		parentPath,
 		resource,
 		signal,
@@ -76,7 +64,10 @@ export function walkIncludes(
 		return target.ignores(testOptions, (err, match) => {
 			// oxlint-disable-next-line typescript/no-explicit-any
 			if (err) return cb(err, null as any)
-			if (invert) match.ignored = !match.ignored
+			if (invert) match = { ...match, ignored: !match.ignored }
+
+			const direntPath = isDir ? path + "/" : path
+
 			const result: WalkResult = {
 				depth,
 				includeParent: false,
@@ -112,7 +103,9 @@ export function walkIncludes(
 		// oxlint-disable-next-line typescript/no-explicit-any
 		if (err) return cb(err, null as any)
 
-		if (invert) match.ignored = !match.ignored
+		if (invert) match = { ...match, ignored: !match.ignored }
+
+		const direntPath = isDir ? path + "/" : path
 
 		const result: WalkResult = {
 			depth,
@@ -159,8 +152,7 @@ export function walkIncludes(
 			return cb(null, result)
 		}
 
-		const lastSlash = path.lastIndexOf("/")
-		if (lastSlash >= 0) result.includeParent = true
+		if (parentPath !== "" && parentPath !== ".") result.includeParent = true
 
 		if (stream) {
 			if (result.includeParent)

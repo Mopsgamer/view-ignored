@@ -1,0 +1,7 @@
+Benchmark                                           Measurement (mean ± std.dev)              Min … Max    Outliers             Ratio
+---------------------------------------------  ---------------------------------  ---------------------  ----------  ----------------
+'view-ignored'.scan(Git, fastInternal)             2.70 ms → 1.82 ms ± 537.57 µs      1.27 ms … 4.08 ms    42 (11%)   ⚡-32.8% ± 3.2%
+'view-ignored'.browserScan(Git, fastInternal)      2.49 ms → 1.76 ms ± 465.07 µs      1.25 ms … 3.52 ms    44 (11%)   ⚡-29.4% ± 2.9%
+'view-ignored'.scan(Git)                        408.46 ms → 200.74 ms ± 62.55 ms  147.54 ms … 325.81 ms     0 ( 0%)  ⚡-50.9% ± 13.3%
+'view-ignored'.browserScan(Git)                 413.83 ms → 164.79 ms ± 27.10 ms  148.39 ms … 235.29 ms     0 ( 0%)  ⚡-60.2% ± 10.0%
+'ignore-walk'.walk(.gitignore)                 687.88 ms → 796.73 ms ± 132.10 ms     640.58 ms … 1.17 s     1 ( 8%)  💩+15.8% ± 12.0%

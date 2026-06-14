@@ -8,7 +8,7 @@ import {
 	extractGitignore,
 	extractPackageJson,
 } from "../patterns/index.js"
-import { join, unixify } from "../unixify.js"
+import { unixify } from "../unixify.js"
 import { npmManifestParse, type PackageJson } from "./npmManifest.js"
 
 /**
@@ -86,8 +86,7 @@ export function makeYarn(): Target {
 		extractors,
 		ignores: ruleTest,
 		init({ fs, cwd }, cb) {
-			const normalCwd = unixify(cwd)
-			fs.readFile(normalCwd + "/package.json", (err, content) => {
+			fs.readFile(cwd + "/package.json", (err, content) => {
 				if (err) {
 					const error = err as NodeJS.ErrnoException
 					if (error.code === "ENOENT") {
@@ -109,7 +108,9 @@ export function makeYarn(): Target {
 				const set = new Set<string>()
 
 				function normal(path: string): string {
-					return unixify(join(normalCwd, path)).substring(normalCwd.length)
+					let res = unixify(path)
+					if (res.charCodeAt(0) === 47) res = res.slice(1)
+					return res
 				}
 
 				if (typeof dist.main === "string") set.add(normal(dist.main))

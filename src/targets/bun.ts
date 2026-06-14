@@ -8,7 +8,7 @@ import {
 	extractPackageJson,
 	extractGitignore,
 } from "../patterns/index.js"
-import { join, unixify } from "../unixify.js"
+import { unixify } from "../unixify.js"
 import { npmManifestParse, type PackageJson } from "./npmManifest.js"
 
 /**
@@ -105,8 +105,7 @@ export function makeBun(): Target {
 		extractors,
 		ignores: ruleTest,
 		init({ fs, cwd }, cb) {
-			const normalCwd = unixify(cwd)
-			fs.readFile(normalCwd + "/" + "package.json", (err, content) => {
+			fs.readFile(cwd + "/" + "package.json", (err, content) => {
 				if (err) {
 					cb(new Error("Error while initializing Bun", { cause: err }))
 					return
@@ -129,8 +128,9 @@ export function makeBun(): Target {
 				const set = new Set<string>()
 
 				function normal(path: string): string {
-					const result = unixify(join(normalCwd, path)).slice(normalCwd.length)
-					return result
+					let res = unixify(path)
+					if (res.charCodeAt(0) === 47) res = res.slice(1)
+					return res
 				}
 
 				// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L1440

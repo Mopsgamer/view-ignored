@@ -8,7 +8,6 @@ import {
 	extractPackageJson,
 	extractGitignore,
 } from "../patterns/index.js"
-import { unixify } from "../unixify.js"
 import { npmManifestParse } from "./npmManifest.js"
 
 /**
@@ -105,8 +104,7 @@ export function makeYarnClassic(): Target {
 		extractors,
 		ignores: ruleTest,
 		init({ fs, cwd }, cb) {
-			const normalCwd = unixify(cwd)
-			fs.readFile(normalCwd + "/package.json", (err, content) => {
+			fs.readFile(cwd + "/package.json", (err, content) => {
 				if (err) {
 					cb(new Error("Error while initializing Yarn classic", { cause: err }))
 					return

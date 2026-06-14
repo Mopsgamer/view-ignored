@@ -31,7 +31,7 @@ export function scanParallel(
 	let activeTasks = 0
 	let errorOccurred: Error | null = null
 
-	function walk(relPath: string, depth: number, resource?: Resource, lowerRelPath?: string) {
+	function walk(relPath: string, depth: number, resource?: Resource) {
 		if (errorOccurred) return
 		activeTasks++
 
@@ -62,11 +62,6 @@ export function scanParallel(
 
 						const len = entries.length
 						const prefix = relPath === "." || relPath === "" ? "" : relPath + "/"
-						const lowerPrefix = lowerRelPath
-							? lowerRelPath + "/"
-							: prefix
-								? prefix.toLowerCase()
-								: ""
 
 						let pendingResults = len
 						let dirFiles = 0
@@ -91,13 +86,11 @@ export function scanParallel(
 							activeTasks++
 							const name = entry.name
 							const currentRelPath = prefix + name
-							const currentLowerRelPath = lowerPrefix + name.toLowerCase()
 
 							walkIncludes(
 								{
 									depth,
 									entry,
-									lowerRelPath: currentLowerRelPath,
 									parentPath: relPath,
 									relPath: currentRelPath,
 									resource: res,
@@ -125,7 +118,7 @@ export function scanParallel(
 										}
 
 										if (entry.isDirectory() && self.next === 0) {
-											walk(currentRelPath, depth + 1, res, currentLowerRelPath)
+											walk(currentRelPath, depth + 1, res)
 										}
 									}
 									pendingResults--
@@ -174,5 +167,5 @@ export function scanParallel(
 			if (within.charCodeAt(i) === 47) initialDepth++
 		}
 	}
-	walk(within, initialDepth, undefined, within === "." || within === "" ? "" : within.toLowerCase())
+	walk(within, initialDepth, undefined)
 }
