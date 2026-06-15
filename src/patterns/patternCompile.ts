@@ -42,13 +42,20 @@ export function patternCompile(
 	const matchBase = !isRoot && !hasSlash
 	const cleanedWithSlash = lowerCleaned + "/"
 
-	const isMatch = glob.matcher(lowerCleaned, {
+	const isMatchRe = glob.makeRe(lowerCleaned, {
 		dot: true,
-		matchBase,
+		matchBase: false,
 		nobrace: true,
 		nocase,
 		nonegate: true,
 	})
+
+	const combinedSource =
+		(isRoot ? "^" : "(?:^|\\/)") +
+		isMatchRe.source.substring(1, isMatchRe.source.length - 1) +
+		"(?:\\/|$)"
+	const isMatchCombined = new RegExp(combinedSource, isMatchRe.flags)
+	const isMatch = isMatchCombined.test.bind(isMatchCombined)
 
 	const re = {
 		test: selectTest(lowerCleaned, cleanedWithSlash, isRoot, nocase, matchBase, isMatch),
@@ -60,7 +67,7 @@ export function patternCompile(
 function selectTest(
 	cleaned: string,
 	cleanedWithSlash: string,
-	isRoot: boolean,
+	_isRoot: boolean,
 	nocase: boolean,
 	matchBase: boolean,
 	isMatch: (s: string) => boolean,
@@ -79,54 +86,34 @@ function selectTest(
 		if (nocase) {
 			return (str: string, lowerPath?: string) => {
 				const n = lowerPath || str.toLowerCase()
-				return (
-					n === cleaned ||
-					n.startsWith(cleanedWithSlash) ||
-					(matchBase && testMatchBase(n, cleaned))
-				)
+				if (n === cleaned || n.startsWith(cleanedWithSlash)) return true
+				return matchBase && testMatchBase(n, cleaned)
 			}
 		}
 		return (str: string) => {
-			return (
-				str === cleaned ||
-				str.startsWith(cleanedWithSlash) ||
-				(matchBase && testMatchBase(str, cleaned))
-			)
+			if (str === cleaned || str.startsWith(cleanedWithSlash)) return true
+			if (!matchBase) return false
+			return testMatchBase(str, cleaned)
 		}
 	}
 
 	return function test(str: string, lowerPath?: string) {
 		const n = nocase ? lowerPath || str.toLowerCase() : str
 
-		if (
-			n === cleaned ||
-			n.startsWith(cleanedWithSlash) ||
-			(matchBase && testMatchBase(n, cleaned))
-		) {
-			return true
-		}
-
-		if (isMatch(n)) return true
-
-		if (!isRoot) {
-			let lastSlash = n.lastIndexOf("/")
-			while (lastSlash !== -1) {
-				if (isMatch(n.slice(0, lastSlash))) return true
-				lastSlash = n.lastIndexOf("/", lastSlash - 1)
-			}
-		}
-
-		return false
+		return isMatch(n)
 	}
 }
 
 function testMatchBase(str: string, cleaned: string): boolean {
 	const len = cleaned.length
+	const slen = str.length
+	if (len > slen) return false
+
 	let pos = str.indexOf(cleaned)
 	while (pos !== -1) {
 		if (
 			(pos === 0 || str.charCodeAt(pos - 1) === 47) &&
-			(pos + len === str.length || str.charCodeAt(pos + len) === 47)
+			(pos + len === slen || str.charCodeAt(pos + len) === 47)
 		) {
 			return true
 		}
