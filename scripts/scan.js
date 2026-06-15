@@ -5,6 +5,7 @@ const args = process.argv.slice(2)
 const targetFlag = args.find((a) => a.startsWith("--target="))
 const targetName = targetFlag ? targetFlag.split("=")[1] : "Git"
 const skipInternal = args.includes("--skipInternal")
+const fastInternal = args.includes("--fastInternal")
 const printPaths = args.includes("--print")
 
 const targetMaker = Targets["make" + targetName]
@@ -20,6 +21,7 @@ if (!targetMaker) {
 console.log(`Scanning "${process.cwd()}" with target: ${targetName}`)
 const start = performance.now()
 const ctx = await scan({
+	fastInternal,
 	skipInternal,
 	target: targetMaker(),
 })

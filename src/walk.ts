@@ -10,6 +10,7 @@ import { dirname } from "./unixify.js"
 
 export type WalkOptions = {
 	relPath: string
+	lowerEntry?: string
 	parentPath: string
 	entry: Dirent
 	resource: Resource
@@ -45,7 +46,16 @@ export function walkIncludes(
 	options: WalkOptions,
 	cb: (err: Error | null, result: WalkResult) => void,
 ): void {
-	const { entry, stream, scanOptions, relPath: path, parentPath, resource, depth } = options
+	const {
+		entry,
+		stream,
+		scanOptions,
+		relPath: path,
+		lowerEntry,
+		parentPath,
+		resource,
+		depth,
+	} = options
 	const { target, depth: maxDepth, invert, fastDepth, fastInternal, fs, cwd, signal } = scanOptions
 
 	const isDir = entry.isDirectory()
@@ -54,7 +64,7 @@ export function walkIncludes(
 		cwd,
 		entry: path,
 		fs,
-		lowerEntry: undefined,
+		lowerEntry: lowerEntry || path.toLowerCase(),
 		parentPath,
 		resource,
 		signal,
@@ -177,8 +187,11 @@ export function walkPatchResult(ctx: MatcherContext, r: WalkResult): void {
 	if (match.ignored) return
 	const { path, parentPath, tooDeep, includeParent } = r
 	if (!tooDeep) ctx.paths.set(path, match)
-	if (includeParent && !ctx.paths.has(parentPath + "/")) {
-		ctx.paths.set(parentPath + "/", match)
+	if (includeParent) {
+		const parent = parentPath + "/"
+		if (!ctx.paths.has(parent)) {
+			ctx.paths.set(parent, match)
+		}
 	}
 }
 
@@ -203,6 +216,7 @@ export function walkPatchTotal(ctx: MatcherContext, maxDepth: number, t: WalkTot
  * Propagates totals from child directories to their parents.
  */
 export function propagateTotals(total: Map<string, Total>): void {
+	if (total.size <= 1) return
 	const dirs = Array.from(total.keys()).sort((a, b) => b.length - a.length)
 	for (let i = 0, len = dirs.length; i < len; i++) {
 		const dir = dirs[i]!

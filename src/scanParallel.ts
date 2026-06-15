@@ -86,11 +86,13 @@ export function scanParallel(
 							activeTasks++
 							const name = entry.name
 							const currentRelPath = prefix + name
+							const lowerEntry = currentRelPath.toLowerCase()
 
 							walkIncludes(
 								{
 									depth,
 									entry,
+									lowerEntry,
 									parentPath: relPath,
 									relPath: currentRelPath,
 									resource: res,
