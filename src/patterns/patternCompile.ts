@@ -55,19 +55,21 @@ export function patternCompile(
 		isMatchRe.source.substring(1, isMatchRe.source.length - 1) +
 		"(?:\\/|$)"
 	const isMatchCombined = new RegExp(combinedSource, isMatchRe.flags)
-	const isMatch = isMatchCombined.test.bind(isMatchCombined)
+	const isMatch = (s: string) => isMatchCombined.test(s)
 
 	const re = {
-		test: selectTest(lowerCleaned, cleanedWithSlash, isRoot, nocase, matchBase, isMatch),
+		test: selectTest(lowerCleaned, cleanedWithSlash, nocase, matchBase, isMatch),
 	}
 
 	return { pattern, patternContext: context, re }
 }
 
+// @ts-ignore
+const isBun = typeof Bun !== "undefined"
+
 function selectTest(
 	cleaned: string,
 	cleanedWithSlash: string,
-	_isRoot: boolean,
 	nocase: boolean,
 	matchBase: boolean,
 	isMatch: (s: string) => boolean,
@@ -90,6 +92,7 @@ function selectTest(
 				return matchBase && testMatchBase(n, cleaned)
 			}
 		}
+
 		return (str: string) => {
 			if (str === cleaned || str.startsWith(cleanedWithSlash)) return true
 			if (!matchBase) return false
