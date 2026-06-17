@@ -36,6 +36,9 @@
 		"type": "git",
 		"url": "git+https://github.com/Mopsgamer/view-ignored.git"
 	},
+	"bin": {
+		"vign-diff": "./out/cli/vign-diff.js"
+	},
 	"directories": {
 		"lib": "out"
 	},
@@ -81,7 +84,7 @@
 		"access": "public"
 	},
 	"scripts": {
-		"prerelease": "bun run test && bun run prod && bun run lint && bun run fmt --check && bun run ts-compat && bun publint --pack bun --strict",
+		"prerelease": "bun run test && bun run prod && bun run lint && bun run fmt --check && bun run ts-compat && bun run node-compat && bun publint --pack bun --strict",
 		"heap": "bun scripts/scanHeap.js --snapshot",
 		"heap:node": "node scripts/scanHeap.js --snapshot",
 		"cpu": "bun run --expose-gc --cpu-prof --cpu-prof-md --cpu-prof-name CPU.me scripts/scan.js --skipInternal",

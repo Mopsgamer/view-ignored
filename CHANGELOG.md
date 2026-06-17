@@ -8,6 +8,7 @@ and this project adheres to
 
 ## [Unreleased]
 
+- Add `vign-diff` CLI utility for hunting bugs.
 - Renamed `fastInternal` and `fastDepth` to `skipInternal` and `skipDepth`.
 - Allow comments in Deno and JSR manifests for the `json` extension.
 - Add `ScanBrowserOptions`.
