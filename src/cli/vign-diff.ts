@@ -25,20 +25,44 @@ import type { MatcherContext } from "../patterns/matcherContext.js";
  */
 
 interface TargetDefinition {
-    make: () => Target;
     cmd: string;
-    parse: (out: string) => string[];
+    make: () => Target;
+    parse: (stdout: string) => string[];
 }
 
 const SUPPORTED_TARGETS: Record<string, TargetDefinition> = {
+	bun: {
+		cmd: "bun pm pack --dry-run",
+		make: makeBun,
+		parse: (out) => {
+			const files: string[] = [];
+			for (const line of out.split(/\r?\n/)) {
+				const match = line.match(/^packed\s+\S+\s+(.+)$/);
+				if (match?.[1]) files.push(match[1].trim());
+			}
+			return files;
+		},
+	},
+	deno: {
+		cmd: "deno publish --dry-run",
+		make: makeDeno,
+		parse: (out) => out.trim().split(/\r?\n/).filter(line =>
+            !line.startsWith("DRY RUN") && !line.startsWith("Publishing")
+        ).map(line => line.trim()).filter(Boolean),
+	},
 	git: {
-		make: makeGit,
 		cmd: "git ls-files --others --exclude-standard --cached",
+		make: makeGit,
+		parse: (out) => out.trim().split(/\r?\n/).filter(Boolean),
+	},
+	jsr: {
+		cmd: "jsr publish --dry-run",
+		make: makeJSR,
 		parse: (out) => out.trim().split(/\r?\n/).filter(Boolean),
 	},
 	npm: {
-		make: makeNPM,
 		cmd: "npm pack --dry-run",
+		make: makeNPM,
 		parse: (out) => {
 			const files: string[] = [];
 			let inContents = false;
@@ -53,40 +77,16 @@ const SUPPORTED_TARGETS: Record<string, TargetDefinition> = {
 			return files;
 		},
 	},
-	bun: {
-		make: makeBun,
-		cmd: "bun pm pack --dry-run",
-		parse: (out) => {
-			const files: string[] = [];
-			for (const line of out.split(/\r?\n/)) {
-				const match = line.match(/^packed\s+\S+\s+(.+)$/);
-				if (match?.[1]) files.push(match[1].trim());
-			}
-			return files;
-		},
-	},
 	vsce: {
-		make: makeVSCE,
 		cmd: "vsce ls",
+		make: makeVSCE,
 		parse: (out) => out.trim().split(/\r?\n/).filter(line =>
             line && !line.startsWith("npm notice") && !line.includes("DeprecationWarning") && !line.startsWith("ERROR")
         ).filter(Boolean),
 	},
-	deno: {
-		make: makeDeno,
-		cmd: "deno publish --dry-run",
-		parse: (out) => out.trim().split(/\r?\n/).filter(line =>
-            !line.startsWith("DRY RUN") && !line.startsWith("Publishing")
-        ).map(line => line.trim()).filter(Boolean),
-	},
-	jsr: {
-		make: makeJSR,
-		cmd: "jsr publish --dry-run",
-		parse: (out) => out.trim().split(/\r?\n/).filter(Boolean),
-	},
 	yarn: {
-		make: makeYarn,
 		cmd: "yarn pack --dry-run",
+		make: makeYarn,
 		parse: (out) => {
 			const files: string[] = [];
 			for (const line of out.split(/\r?\n/)) {
@@ -97,8 +97,8 @@ const SUPPORTED_TARGETS: Record<string, TargetDefinition> = {
 		},
 	},
 	"yarn-classic": {
-		make: makeYarnClassic,
 		cmd: "yarn pack --dry-run",
+		make: makeYarnClassic,
 		parse: (out) => out.trim().split(/\r?\n/).filter(Boolean),
 	},
 };
@@ -174,14 +174,15 @@ function getSystemFiles(name: string, info: TargetDefinition, verbose: boolean):
     try {
         // Many tools like npm and deno output to stderr for dry-runs/metadata
         const output = execSync(`${info.cmd} 2>&1`, {
-            stdio: ["ignore", "pipe", "pipe"],
-            env: { ...process.env, NO_COLOR: "1" }
+            env: { ...process.env, NO_COLOR: "1" },
+            stdio: ["ignore", "pipe", "pipe"]
         }).toString();
         return info.parse(output);
-    } catch (err: any) {
+    } catch (err: unknown) {
         process.stdout.write(`\n${styleText(["yellow", "bold"], "⚠ Warning:")} Command "${info.cmd}" failed for target ${styleText("blue", name)}.\n`);
         if (verbose) {
-            console.error(styleText("dim", err.stderr?.toString() || err.message));
+            const message = err instanceof Error ? err.message : String(err);
+            console.error(styleText("dim", message));
         }
         return [];
     }
@@ -197,7 +198,6 @@ function findDiscrepancies(systemFiles: string[], vignCtx: MatcherContext): Disc
         .sort();
 
     const vignSet = new Set(vignFiles);
-    const systemSet = new Set(systemFiles);
     const result: Discrepancy[] = [];
 
     for (const file of systemFiles) {
@@ -205,13 +205,13 @@ function findDiscrepancies(systemFiles: string[], vignCtx: MatcherContext): Disc
             result.push({
                 file,
                 issue: "Missing in view-ignored",
-                match: vignCtx.paths.get(file) || { kind: RuleMatchKind.none, ignored: true },
+                match: vignCtx.paths.get(file) || { ignored: true, kind: RuleMatchKind.none },
             });
         }
     }
 
     for (const file of vignFiles) {
-        if (!systemSet.has(file)) {
+        if (!new Set(systemFiles).has(file)) {
             result.push({
                 file,
                 issue: "Unexpectedly included by view-ignored",
@@ -226,7 +226,7 @@ function findDiscrepancies(systemFiles: string[], vignCtx: MatcherContext): Disc
 /**
  * Main execution logic for a single target.
  */
-async function runTarget(name: string, options: { verbose: boolean; list: boolean; issue: boolean }): Promise<boolean> {
+async function runTarget(name: string, options: { issue: boolean; list: boolean; verbose: boolean }): Promise<boolean> {
     const info = SUPPORTED_TARGETS[name];
     if (!info) {
         if (name !== "all" && name) process.stdout.write(styleText("yellow", `! Warning: Target "${name}" is not supported.\n`));
@@ -237,9 +237,10 @@ async function runTarget(name: string, options: { verbose: boolean; list: boolea
     const start = performance.now();
     let vignCtx: MatcherContext;
     try {
-        vignCtx = await scan({ target: info.make(), fastInternal: true });
-    } catch (err: any) {
-        console.error(styleText("red", `✖ Error: Scan failed for "${name}": ${err.message}`));
+        vignCtx = await scan({ fastInternal: true, target: info.make() });
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error(styleText("red", `✖ Error: Scan failed for "${name}": ${message}`));
         return false;
     }
     const duration = performance.now() - start;
@@ -258,10 +259,10 @@ async function runTarget(name: string, options: { verbose: boolean; list: boolea
     if (discrepancies.length > 0) {
         console.log(`\n${styleText(["red", "bold"], "✖ Discrepancies found")} for target ${styleText("blue", name)} (${formatDuration(duration)}):`);
         const reports = discrepancies.map(d => ({
-            path: d.file,
             issue: d.issue,
-            pattern: (d.match.kind === RuleMatchKind.external || d.match.kind === RuleMatchKind.internal) ? d.match.pattern : undefined,
             origin: d.match.kind === RuleMatchKind.external ? d.match.source.path : (d.match.kind === RuleMatchKind.internal ? "internal" : "none"),
+            path: d.file,
+            pattern: (d.match.kind === RuleMatchKind.external || d.match.kind === RuleMatchKind.internal) ? d.match.pattern : undefined,
             ruleMatch: d.match,
         }));
         console.log(JSON.stringify(reports, null, 2));
@@ -289,15 +290,16 @@ async function main() {
     let args;
     try {
         args = parseArgs({
-            options: {
-                verbose: { type: "boolean", short: "V" },
-                help: { type: "boolean", short: "h" },
-                issue: { type: "boolean", short: "i" },
-            },
             allowPositionals: true,
+            options: {
+                help: { short: "h", type: "boolean" },
+                issue: { short: "i", type: "boolean" },
+                verbose: { short: "V", type: "boolean" },
+            },
         });
-    } catch (err: any) {
-        console.error(styleText("red", `✖ ${err.message}`));
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error(styleText("red", `✖ ${message}`));
         showHelp();
         process.exit(1);
     }
@@ -311,16 +313,16 @@ async function main() {
     if (!targetArg) { showHelp(); process.exit(1); }
 
     const options = {
-        verbose: !!values.verbose,
-        list: isList,
         issue: !!values.issue,
+        list: isList,
+        verbose: !!values.verbose,
     };
 
     let hasDiff = false;
     if (targetArg === "all") {
-        for (const target of Object.keys(SUPPORTED_TARGETS)) {
-            if (await runTarget(target, options)) hasDiff = true;
-        }
+        const targets = Object.keys(SUPPORTED_TARGETS);
+        const results = await Promise.all(targets.map(name => runTarget(name, options)));
+        hasDiff = results.some(r => r);
     } else {
         hasDiff = await runTarget(targetArg, options);
     }
