@@ -20,7 +20,7 @@ const dir = {
 	},
 }
 
-const fastDepth = true
+const skipDepth = true
 
 describe("Git", () => {
 	test("depth 0 should include *", async (done) => {
@@ -30,7 +30,7 @@ describe("Git", () => {
 		})
 		await testScan(done, dir, ["src/", ".gitignore", "package.json"], {
 			depth: 0,
-			fastDepth,
+			skipDepth,
 			target: makeGit(),
 		})
 	})
@@ -43,7 +43,7 @@ describe("Git", () => {
 		})
 		await testScan(done, dir, ["out/", "node_modules/"], {
 			depth: 0,
-			fastDepth,
+			skipDepth,
 			invert: true,
 			target: makeGit(),
 		})
@@ -60,7 +60,7 @@ describe("Git", () => {
 			done,
 			dir,
 			["src/", "src/index.ts", "src/submodule/", ".gitignore", "package.json"],
-			{ depth: 1, fastDepth, target: makeGit() },
+			{ depth: 1, skipDepth, target: makeGit() },
 		)
 	})
 
@@ -89,7 +89,7 @@ describe("Git", () => {
 				"node_modules/a/",
 				"node_modules/b/",
 			],
-			{ depth: 1, fastDepth, invert: true, target: makeGit() },
+			{ depth: 1, skipDepth, invert: true, target: makeGit() },
 		)
 	})
 })

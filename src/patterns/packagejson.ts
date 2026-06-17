@@ -26,7 +26,7 @@ extractPackageJson satisfies ExtractorFn
 /**
  * Extracts and compiles patterns from the file.
  *
- * @since 0.11.2
+ * @since 0.12.0
  */
 export function extractPackageJsonRules(
 	source: Source,

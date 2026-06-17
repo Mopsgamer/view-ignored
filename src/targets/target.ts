@@ -13,7 +13,7 @@ export interface Target {
 	 * If enabled and no source found (null), will skip internal patterns
 	 * and include files with the `missingSource` match.
 	 *
-	 * @since 0.11.2
+	 * @since 0.12.0
 	 */
 	needsSource: boolean
 	/**

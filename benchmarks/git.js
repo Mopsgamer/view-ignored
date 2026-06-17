@@ -17,19 +17,19 @@ console.log("You can use --vign to test view-ignored separately")
 barplot(() => {
 	summary(async () => {
 		if (!igw)
-			bench("'view-ignored'.scan(Git, fastInternal)", async () => {
+			bench("'view-ignored'.scan(Git, skipInternal)", async () => {
 				return scan({
 					cwd,
-					fastInternal: true,
+					skipInternal: true,
 					fs,
 					target: makeGit(),
 				})
 			})
 		if (!igw)
-			bench("'view-ignored'.browserScan(Git, fastInternal)", async () => {
+			bench("'view-ignored'.browserScan(Git, skipInternal)", async () => {
 				return browserScan({
 					cwd,
-					fastInternal: true,
+					skipInternal: true,
 					fs,
 					target: makeGit(),
 				})

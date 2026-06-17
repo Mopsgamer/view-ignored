@@ -12,7 +12,7 @@ import { unixify } from "../unixify.js"
 import { npmManifestParse, type PackageJson } from "./npmManifest.js"
 
 /**
- * @since 0.11.2
+ * @since 0.12.0
  */
 export function makeYarn(): Target {
 	const extractors: Extractor[] = [

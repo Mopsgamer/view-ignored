@@ -238,6 +238,25 @@ The following built-in scanners are available:
   - Requires `jsr.json` or `jsr.jsonc` or `deno.json` or `deno.jsonc`.
   - Validates `publish.include` and `publish.exclude` or `include` and `exclude` fields.
 
+## CLI Utility (`vign-diff`)
+
+A diagnostic utility to hunt for bugs by comparing `view-ignored` results against real system CLIs.
+
+```bash
+vign-diff [diff|list] [target] [-i] [-V]
+```
+
+- **`diff`**: Compare against system CLI (e.g., `git`, `npm`, `bun`, `vsce`, `deno`, `jsr`, `yarn`).
+- **`list`**: List all files included by `view-ignored` with high-precision timing.
+- **`-i, --issue`**: Automatically open a prefilled GitHub issue on discrepancy.
+- **`all`**: Run diagnostics against every supported tool on your system.
+
+```bash
+vign-diff git          # Compare against git
+vign-diff list npm     # List files for npm package
+vign-diff all -i       # Scan all and open issues for any bugs found
+```
+
 ## See also
 
 - There are references in our implementations.

@@ -34,8 +34,8 @@ export function browserScanCb(
 		invert = false,
 		depth: maxDepth = Infinity,
 		signal = null,
-		fastDepth = false,
-		fastInternal = false,
+		skipDepth = false,
+		skipInternal = false,
 		fs: { readdir, readFile },
 	} = options
 
@@ -60,8 +60,8 @@ export function browserScanCb(
 	const scanOptions: Required<ScanOptions> = {
 		cwd: normalCwd,
 		depth: maxDepth,
-		fastDepth,
-		fastInternal,
+		skipDepth,
+		skipInternal,
 		fs,
 		invert,
 		signal,

@@ -10,7 +10,7 @@ import {
 } from "../patterns/index.js"
 
 /**
- * @since 0.11.2
+ * @since 0.12.0
  */
 export function makeGit(): Target {
 	const extractors: Extractor[] = [

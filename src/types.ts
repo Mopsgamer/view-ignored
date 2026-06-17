@@ -18,7 +18,7 @@ export interface FsAdapter {
 /**
  * Same as {@link ScanOptions}, but with required `fs` and `cwd` properties.
  *
- * @since 0.11.2
+ * @since 0.12.0
  */
 export type ScanBrowserOptions = ScanOptions & { fs: FsAdapter; cwd: string }
 
@@ -102,7 +102,7 @@ export type ScanOptions = {
 	 *
 	 * @since 0.6.0
 	 */
-	fastDepth?: boolean
+	skipDepth?: boolean
 
 	/**
 	 * Enables skipping entire directories for internal matches.
@@ -122,7 +122,7 @@ export type ScanOptions = {
 	 *
 	 * @since 0.6.0
 	 */
-	fastInternal?: boolean
+	skipInternal?: boolean
 
 	/**
 	 * File system interface.

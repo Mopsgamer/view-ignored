@@ -11,7 +11,7 @@ import {
 import { jsrManifestParse } from "./jsrManifest.js"
 
 /**
- * @since 0.11.2
+ * @since 0.12.0
  */
 export function makeDeno(): Target {
 	const extractors: Extractor[] = [

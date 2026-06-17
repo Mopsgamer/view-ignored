@@ -11,7 +11,7 @@ import {
 import { npmManifestParse } from "./npmManifest.js"
 
 /**
- * @since 0.11.2
+ * @since 0.12.0
  */
 export function makeNPM(): Target {
 	const extractors: Extractor[] = [

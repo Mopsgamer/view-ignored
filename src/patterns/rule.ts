@@ -4,20 +4,20 @@ import type { Source } from "./source.js"
 import { patternCacheTest, type PatternList, type PatternCache } from "./patternList.js"
 
 /**
- * @since 0.11.2
+ * @since 0.12.0
  */
 export type InternalRules = {
 	/**
 	 * Tested before external (source's) rules.
 	 *
-	 * @since 0.11.2
+	 * @since 0.12.0
 	 */
 	before: Rule[]
 	/**
 	 * Tested after external (source's) rules.
 	 * Overridable by external rules.
 	 *
-	 * @since 0.11.2
+	 * @since 0.12.0
 	 */
 	after: Rule[]
 }

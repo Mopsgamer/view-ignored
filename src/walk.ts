@@ -56,7 +56,7 @@ export function walkIncludes(
 		resource,
 		depth,
 	} = options
-	const { target, depth: maxDepth, invert, fastDepth, fastInternal, fs, cwd, signal } = scanOptions
+	const { target, depth: maxDepth, invert, skipDepth, skipInternal, fs, cwd, signal } = scanOptions
 
 	const isDir = entry.isDirectory()
 
@@ -71,7 +71,7 @@ export function walkIncludes(
 		target,
 	}
 
-	if (fastDepth && depth > maxDepth) {
+	if (skipDepth && depth > maxDepth) {
 		return target.ignores(testOptions, (err, match) => {
 			// oxlint-disable-next-line typescript/no-explicit-any
 			if (err) return cb(err, null as any)
@@ -102,7 +102,7 @@ export function walkIncludes(
 					stream.dispatchEvent(
 						new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
 					)
-				if (isDir && fastInternal) result.next = 1
+				if (isDir && skipInternal) result.next = 1
 				return cb(null, result)
 			}
 			result.next = isDir ? 0 : 1
@@ -142,7 +142,7 @@ export function walkIncludes(
 				stream.dispatchEvent(
 					new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
 				)
-			if (isDir && fastInternal) result.next = 1
+			if (isDir && skipInternal) result.next = 1
 			return cb(null, result)
 		}
 
