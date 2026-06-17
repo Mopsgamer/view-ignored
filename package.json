@@ -36,6 +36,9 @@
 		"type": "git",
 		"url": "git+https://github.com/Mopsgamer/view-ignored.git"
 	},
+	"bin": {
+		"vign-diff": "./out/cli/vign-diff.js"
+	},
 	"directories": {
 		"lib": "out"
 	},

@@ -8,6 +8,7 @@ and this project adheres to
 
 ## [Unreleased]
 
+- Add `vign-diff` CLI utility for hunting bugs against real-world system CLIs.
 - TODO: rename fast options to skip options.
 - TODO: deslop.
 - TODO: can we bring back simple `**/` and `/**` modificators without sacrificing performance?
