@@ -3,10 +3,12 @@ import type { MatcherContext } from "../patterns/matcherContext.js"
 import type { Target } from "../targets/target.js"
 
 import { execSync } from "node:child_process"
+import { readFileSync } from "node:fs"
+import { join } from "node:path"
 import { performance } from "node:perf_hooks"
+import { fileURLToPath } from "node:url"
 import { parseArgs, styleText } from "node:util"
 
-import pkg from "../../package.json" with { type: "json" }
 import { RuleMatchKind, type RuleMatch } from "../patterns/rule.js"
 import { scan } from "../scan.js"
 import {
@@ -19,6 +21,9 @@ import {
 	makeYarn,
 	makeYarnClassic,
 } from "../targets/index.js"
+
+const __dirname = fileURLToPath(new URL(".", import.meta.url))
+const pkg = JSON.parse(readFileSync(join(__dirname, "../../package.json"), "utf8"))
 
 /**
  * Design Philosophy:
@@ -326,7 +331,7 @@ async function runTarget(
 
 	if (!options.list) {
 		process.stdout.write(
-			`${styleText(["green", "bold"], "✔")} No discrepancies found for ${styleText("blue", name)} (${formatDuration(duration)})\n`,
+			`${styleText(["green", "bold"], "✔")} Matches system behavior for ${styleText("blue", name)} (${formatDuration(duration)})\n`,
 		)
 	}
 	return false
