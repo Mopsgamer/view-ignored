@@ -21,7 +21,6 @@ console.log(`Scanning "${process.cwd()}" with target: ${targetName}`)
 const start = performance.now()
 const ctx = await scan({
 	skipInternal,
-	skipInternal,
 	target: targetMaker(),
 })
 const end = performance.now()

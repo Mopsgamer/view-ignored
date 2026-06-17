@@ -123,11 +123,11 @@ const sourceGitignore: Source = {
 const opt: Required<ScanOptions> = {
 	cwd,
 	depth: Infinity,
-	skipDepth: false,
-	skipInternal: false,
 	fs: adapter,
 	invert: false,
 	signal: null,
+	skipDepth: false,
+	skipInternal: false,
 	target: makeNPM(),
 	within: ".",
 }
@@ -261,11 +261,11 @@ describe("matcherContext{Add,Remove}Path prepare", () => {
 const optDepth1: Required<ScanOptions> = {
 	cwd,
 	depth: 1,
-	skipDepth: false,
-	skipInternal: false,
 	fs: adapter,
 	invert: false,
 	signal: null,
+	skipDepth: false,
+	skipInternal: false,
 	target: makeNPM(),
 	within: ".",
 }

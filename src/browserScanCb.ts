@@ -60,11 +60,11 @@ export function browserScanCb(
 	const scanOptions: Required<ScanOptions> = {
 		cwd: normalCwd,
 		depth: maxDepth,
-		skipDepth,
-		skipInternal,
 		fs,
 		invert,
 		signal,
+		skipDepth,
+		skipInternal,
 		target,
 		within: normalWithin,
 	}

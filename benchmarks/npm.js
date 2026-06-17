@@ -20,8 +20,8 @@ barplot(() => {
 			bench("'view-ignored'.scan(NPM, skipInternal)", async () => {
 				return scan({
 					cwd,
-					skipInternal: true,
 					fs,
+					skipInternal: true,
 					target: makeNPM(),
 				})
 			})
@@ -29,8 +29,8 @@ barplot(() => {
 			bench("'view-ignored'.browserScan(NPM, skipInternal)", async () => {
 				return browserScan({
 					cwd,
-					skipInternal: true,
 					fs,
+					skipInternal: true,
 					target: makeNPM(),
 				})
 			})

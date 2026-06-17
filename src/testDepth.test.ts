@@ -43,8 +43,8 @@ describe("Git", () => {
 		})
 		await testScan(done, dir, ["out/", "node_modules/"], {
 			depth: 0,
-			skipDepth,
 			invert: true,
+			skipDepth,
 			target: makeGit(),
 		})
 	})
@@ -89,7 +89,7 @@ describe("Git", () => {
 				"node_modules/a/",
 				"node_modules/b/",
 			],
-			{ depth: 1, skipDepth, invert: true, target: makeGit() },
+			{ depth: 1, invert: true, skipDepth, target: makeGit() },
 		)
 	})
 })
