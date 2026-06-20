@@ -3,7 +3,8 @@ import type { MatcherContext } from "../patterns/matcherContext.js"
 import type { Target } from "../targets/target.js"
 
 import { execSync, spawn } from "node:child_process"
-import { readFileSync, unlinkSync } from "node:fs"
+import { readFileSync, unlinkSync, existsSync } from "node:fs"
+import { join } from "node:path"
 import { performance } from "node:perf_hooks"
 import { parseArgs, styleText, stripVTControlCharacters } from "node:util"
 import { gunzipSync } from "node:zlib"
@@ -250,6 +251,7 @@ function showHelp() {
 }
 
 function hasBin(bin: string): boolean {
+	if (existsSync(join(process.cwd(), "node_modules", ".bin", bin))) return true
 	try {
 		const cmd = process.platform === "win32" ? `where ${bin}` : `command -v ${bin}`
 		execSync(cmd, { stdio: "ignore" })
@@ -325,8 +327,15 @@ async function run(
 
 	let systemFiles: string[] = []
 	try {
+		const binPath = join(process.cwd(), "node_modules", ".bin")
+		const env: Record<string, string | undefined> = { ...process.env, NO_COLOR: "1" }
+		if (existsSync(binPath)) {
+			const sep = process.platform === "win32" ? ";" : ":"
+			env.PATH = `${binPath}${sep}${process.env.PATH || ""}`
+		}
+
 		const out = execSync(`${info.cmd} 2>&1`, {
-			env: { ...process.env, NO_COLOR: "1" },
+			env,
 			stdio: ["ignore", "pipe", "pipe"],
 		}).toString()
 		systemFiles = info.parse(out)
