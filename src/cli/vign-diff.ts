@@ -2,9 +2,11 @@
 import type { MatcherContext } from "../patterns/matcherContext.js"
 import type { Target } from "../targets/target.js"
 
-import { execSync } from "node:child_process"
+import { execSync, spawn } from "node:child_process"
+import { readFileSync, unlinkSync } from "node:fs"
 import { performance } from "node:perf_hooks"
-import { parseArgs, styleText } from "node:util"
+import { parseArgs, styleText, stripVTControlCharacters } from "node:util"
+import { gunzipSync } from "node:zlib"
 
 import pkg from "../../package.json" with { type: "json" }
 import { RuleMatchKind, type RuleMatch } from "../patterns/rule.js"
@@ -43,15 +45,27 @@ const TARGETS: Record<string, TargetDef> = {
 	},
 	deno: {
 		bin: "deno",
-		cmd: "deno publish --dry-run",
+		cmd: "deno publish --dry-run --allow-dirty --allow-slow-types",
 		make: makeDeno,
-		parse: (out) =>
-			out
-				.trim()
-				.split(/\r?\n/)
-				.filter((line) => !line.startsWith("DRY RUN") && !line.startsWith("Publishing"))
-				.map((line) => line.trim())
-				.filter(Boolean),
+		parse: (out) => {
+			const files: string[] = []
+			let inFiles = false
+			for (const line of out.split(/\r?\n/)) {
+				if (line.includes("Simulating publish") && line.includes("with files:")) {
+					inFiles = true
+					continue
+				}
+				if (inFiles && !line.startsWith("   file:///")) {
+					if (line.trim() === "") continue
+					break
+				}
+				if (inFiles) {
+					const match = line.match(/   file:\/\/\/\S+\/([^\s()]+)/)
+					if (match?.[1]) files.push(match[1])
+				}
+			}
+			return files
+		},
 	},
 	git: {
 		bin: "git",
@@ -61,9 +75,27 @@ const TARGETS: Record<string, TargetDef> = {
 	},
 	jsr: {
 		bin: "jsr",
-		cmd: "jsr publish --dry-run",
+		cmd: "jsr publish --dry-run --allow-dirty --allow-slow-types",
 		make: makeJSR,
-		parse: (out) => out.trim().split(/\r?\n/).filter(Boolean),
+		parse: (out) => {
+			const files: string[] = []
+			let inFiles = false
+			for (const line of out.split(/\r?\n/)) {
+				if (line.includes("Simulating publish") && line.includes("with files:")) {
+					inFiles = true
+					continue
+				}
+				if (inFiles && !line.startsWith("   file:///")) {
+					if (line.trim() === "") continue
+					break
+				}
+				if (inFiles) {
+					const match = line.match(/   file:\/\/\/\S+\/([^\s()]+)/)
+					if (match?.[1]) files.push(match[1])
+				}
+			}
+			return files
+		},
 	},
 	npm: {
 		bin: "npm",
@@ -118,9 +150,42 @@ const TARGETS: Record<string, TargetDef> = {
 	},
 	"yarn-classic": {
 		bin: "yarn",
-		cmd: "yarn pack --dry-run",
+		cmd: "yarn pack --filename .vign-diff.tgz",
 		make: makeYarnClassic,
-		parse: (out) => out.trim().split(/\r?\n/).filter(Boolean),
+		parse: () => {
+			const files: string[] = []
+			try {
+				const data = readFileSync(".vign-diff.tgz")
+				const buffer = gunzipSync(data)
+				let offset = 0
+				while (offset + 512 <= buffer.length) {
+					const name = buffer
+						.subarray(offset, offset + 100)
+						.toString()
+						.replace(/\0/g, "")
+					if (!name) break
+					const typeflag = buffer[offset + 156]
+					offset += 512
+					const sizeStr = buffer.subarray(offset - 512 + 124, offset - 512 + 124 + 12).toString()
+					const size = parseInt(sizeStr, 8)
+					// typeflag '5' (0x35) is directory
+					if (
+						typeflag !== 0x35 &&
+						name !== "package/" &&
+						name !== "package" &&
+						!name.endsWith("/")
+					) {
+						files.push(name.replace(/^package\//, ""))
+					}
+					offset += Math.ceil(size / 512) * 512
+				}
+			} finally {
+				try {
+					unlinkSync(".vign-diff.tgz")
+				} catch {}
+			}
+			return files
+		},
 	},
 }
 
@@ -139,12 +204,26 @@ function fmtTime(ms: number): string {
 }
 
 function openUrl(url: string) {
-	const cmd =
-		process.platform === "win32" ? "start" : process.platform === "darwin" ? "open" : "xdg-open"
-	const args = process.platform === "win32" ? `"" "${url}"` : `"${url}"`
-	try {
-		execSync(`${cmd} ${args}`, { stdio: "ignore" })
-	} catch {}
+	const platform = process.platform
+
+	if (platform === "win32") {
+		spawn("cmd.exe", ["/c", "start", '""', url], { detached: true, stdio: "ignore" }).unref()
+		return
+	}
+
+	if (platform === "darwin") {
+		spawn("open", [url], { detached: true, stdio: "ignore" }).unref()
+		return
+	}
+
+	if (process.env.TERMUX_VERSION || hasBin("termux-open")) {
+		spawn("termux-open", [url], { detached: true, stdio: "ignore" }).unref()
+		return
+	}
+
+	if (hasBin("xdg-open")) {
+		spawn("xdg-open", [url], { detached: true, stdio: "ignore" }).unref()
+	}
 }
 
 function showHelp() {
@@ -180,15 +259,55 @@ function hasBin(bin: string): boolean {
 	}
 }
 
+let cachedYarnVersion: string | null | undefined
+function getYarnVersion(): string | null {
+	if (cachedYarnVersion !== undefined) return cachedYarnVersion
+	try {
+		cachedYarnVersion = execSync("yarn --version", {
+			stdio: ["ignore", "pipe", "ignore"],
+		})
+			.toString()
+			.trim()
+	} catch {
+		cachedYarnVersion = null
+	}
+	return cachedYarnVersion
+}
+
 async function run(
 	name: string,
 	opt: { issue: boolean; list: boolean; verbose: boolean },
 	isExplicit: boolean,
 ): Promise<boolean> {
+	if (name === "yarn" || name === "yarn-classic") {
+		const version = getYarnVersion()
+		if (version) {
+			const isV1 = version.startsWith("1.")
+			if (name === "yarn" && isV1) {
+				if (isExplicit) {
+					process.stdout.write(
+						`${styleText("yellow", "⚠")} ${styleText("bold", "Warning:")} Skipping ${styleText("blue", "yarn")} (detected Yarn Classic v${version}). Use ${styleText("blue", "yarn-classic")} instead.\n`,
+					)
+				}
+				return false
+			}
+			if (name === "yarn-classic" && !isV1) {
+				if (isExplicit) {
+					process.stdout.write(
+						`${styleText("yellow", "⚠")} ${styleText("bold", "Warning:")} Skipping ${styleText("blue", "yarn-classic")} (detected Yarn Berry v${version}). Use ${styleText("blue", "yarn")} instead.\n`,
+					)
+				}
+				return false
+			}
+		}
+	}
+
 	const info = TARGETS[name]
 	if (!info) {
 		if (isExplicit) {
-			process.stdout.write(styleText("red", `✖ Error: Target "${name}" is not supported.\n`))
+			process.stderr.write(
+				`${styleText("red", "✖")} ${styleText("bold", "Error:")} Target "${name}" is not supported.\n`,
+			)
 			process.exit(1)
 		}
 		return false
@@ -196,14 +315,15 @@ async function run(
 
 	if (!hasBin(info.bin)) {
 		if (isExplicit) {
-			process.stderr.write(styleText("red", `✖ Error: Binary "${info.bin}" not found.\n`))
+			process.stderr.write(
+				`${styleText("red", "✖")} ${styleText("bold", "Error:")} Binary "${info.bin}" not found.\n`,
+			)
 			process.exit(1)
 		}
 		return false
 	}
 
 	let systemFiles: string[] = []
-	let systemError: unknown = null
 	try {
 		const out = execSync(`${info.cmd} 2>&1`, {
 			env: { ...process.env, NO_COLOR: "1" },
@@ -211,45 +331,53 @@ async function run(
 		}).toString()
 		systemFiles = info.parse(out)
 	} catch (err: unknown) {
-		systemError = err
+		let msg = err instanceof Error ? err.message : String(err)
+		if (err && typeof err === "object" && "stdout" in err && err.stdout) {
+			msg =
+				Buffer.isBuffer(err.stdout) || typeof err.stdout === "string"
+					? err.stdout.toString()
+					: String(err.stdout)
+		}
+		msg = stripVTControlCharacters(msg)
+
+		const isMissingConfig =
+			msg.includes("Couldn't find a deno.json") ||
+			msg.includes("jsr.json configuration file") ||
+			msg.includes("No valid manifest found")
+
+		if (isMissingConfig) {
+			if (isExplicit) {
+				process.stderr.write(
+					`${styleText("red", "✖")} ${styleText("bold", "Error:")} Target "${name}" is not applicable here.\n`,
+				)
+				process.stderr.write(`      ${styleText("dim", msg.split(/\r?\n/)[0] || msg)}\n`)
+				process.exit(1)
+			}
+			return false
+		}
+
+		if (isExplicit) {
+			process.stderr.write(
+				`${styleText("red", "✖")} ${styleText("bold", "Error:")} System command failed for target "${name}":\n`,
+			)
+			process.stderr.write(`      ${styleText("dim", msg)}\n`)
+			process.exit(1)
+		}
+		return false
 	}
 
 	const start = performance.now()
 	let ctx: MatcherContext
-	let vignError: unknown = null
 	try {
 		ctx = await scan({ skipInternal: true, target: info.make() })
 	} catch (err: unknown) {
-		vignError = err
+		const msg = err instanceof Error ? err.message : `unknown error ${JSON.stringify(err)}`
+		process.stderr.write(
+			`${styleText("red", "✖")} ${styleText("bold", "Error:")} Scan failed for "${name}": ${msg}\n`,
+		)
+		return false
 	}
 	const dur = performance.now() - start
-
-	if (systemError && vignError) {
-		process.stdout.write(
-			`${styleText(["green", "bold"], "✔")} Matches system behavior for ${styleText("blue", name)} (both failed, ${fmtTime(dur)})\n`,
-		)
-		return false
-	}
-
-	if (vignError) {
-		const msg =
-			vignError instanceof Error ? vignError.message : `unknown error ${JSON.stringify(vignError)}`
-		process.stderr.write(styleText("red", `✖ Error: Scan failed for "${name}": ${msg}\n`))
-		return false
-	}
-
-	if (systemError) {
-		process.stdout.write(
-			`${styleText(["yellow", "bold"], "⚠ Warning:")} Command "${info.cmd}" failed for ${styleText("blue", name)}, but scanned anyway.\n`,
-		)
-		if (opt.verbose) {
-			const msg =
-				systemError instanceof Error
-					? systemError.message
-					: `unknown error ${JSON.stringify(systemError)}`
-			console.error(styleText("dim", msg))
-		}
-	}
 
 	if (opt.list) {
 		process.stdout.write(
@@ -270,34 +398,26 @@ async function run(
 	const sysSet = new Set(systemFiles)
 	const diffs: Diff[] = []
 
-	if (!systemError) {
-		for (const f of systemFiles)
-			if (!vignSet.has(f))
-				diffs.push({
-					file: f,
-					issue: "Missing in view-ignored",
-					match: ctx!.paths.get(f) || { ignored: true, kind: RuleMatchKind.none },
-				})
-		for (const f of vignFiles)
-			if (!sysSet.has(f))
-				diffs.push({
-					file: f,
-					issue: "Unexpectedly included by view-ignored",
-					match: ctx!.paths.get(f)!,
-				})
-	} else if (vignFiles.length > 0) {
-		for (const f of vignFiles)
+	for (const f of systemFiles)
+		if (!vignSet.has(f))
 			diffs.push({
 				file: f,
-				issue: "Unexpectedly included by view-ignored (system tool failed to list any)",
+				issue: "Missing in view-ignored",
+				match: ctx!.paths.get(f) || { ignored: true, kind: RuleMatchKind.none },
+			})
+	for (const f of vignFiles)
+		if (!sysSet.has(f))
+			diffs.push({
+				file: f,
+				issue: "Unexpectedly included by view-ignored",
 				match: ctx!.paths.get(f)!,
 			})
-	}
 
 	if (diffs.length > 0) {
 		process.stdout.write(
-			`${styleText(["red", "bold"], "✖ Discrepancies found")} for target ${styleText("blue", name)} (${fmtTime(dur)}):\n`,
+			`${styleText("red", "✖")} ${styleText("bold", "Discrepancies found")} for target ${styleText("blue", name)} (${fmtTime(dur)}):\n`,
 		)
+
 		const reports = diffs.map((d) => {
 			const m = d.match as RuleMatch
 			const origin =
@@ -310,14 +430,49 @@ async function run(
 				m.kind === RuleMatchKind.external || m.kind === RuleMatchKind.internal
 					? m.pattern
 					: undefined
-			const icon = d.issue.startsWith("Missing")
+			return { ...d, origin, pattern }
+		})
+
+		const groups: Record<string, typeof reports> = {}
+		for (const r of reports) {
+			const key = `${r.issue}|${r.pattern || ""}|${r.origin}`
+			if (!groups[key]) groups[key] = []
+			groups[key].push(r)
+		}
+
+		const sortedGroups = Object.values(groups).sort((a, b) => {
+			const aIsUnexpected = a[0]?.issue.startsWith("Unexpectedly")
+			const bIsUnexpected = b[0]?.issue.startsWith("Unexpectedly")
+			if (aIsUnexpected && !bIsUnexpected) return -1
+			if (!aIsUnexpected && bIsUnexpected) return 1
+			return 0
+		})
+
+		for (const group of sortedGroups) {
+			const first = group[0]
+			if (!first) continue
+			const icon = first.issue.startsWith("Missing")
 				? styleText("yellow", "[-] ")
 				: styleText("red", "[+] ")
-			console.log(
-				`  ${icon}${styleText("bold", d.file)}\n      ${styleText("dim", "Issue:")}  ${d.issue}${pattern ? `\n      ${styleText("dim", "Pattern:")} ${styleText("blue", pattern)} (${styleText("dim", origin)})` : ""}`,
-			)
-			return { issue: d.issue, origin, path: d.file, pattern, ruleMatch: d.match }
-		})
+
+			const limit = 5
+			const shown = group.slice(0, limit)
+			const hidden = group.length - limit
+
+			for (const r of shown) {
+				console.log(
+					`  ${icon}${styleText("bold", r.file)}\n      ${styleText("dim", "Issue:")}  ${r.issue}${r.pattern ? `\n      ${styleText("dim", "Pattern:")} ${styleText("blue", r.pattern)} (${styleText("dim", r.origin)})` : ""}`,
+				)
+			}
+			if (hidden > 0) {
+				console.log(`      ${styleText("dim", `... and ${hidden} more items`)}`)
+			}
+		}
+
+		process.stdout.write(
+			`  ${styleText("red", "✖")} Total ${styleText("bold", diffs.length.toString())} discrepancies found.\n`,
+		)
+
 		if (opt.verbose) {
 			process.stdout.write(styleText("dim", "--- RAW REPORT ---\n"))
 			console.log(JSON.stringify(reports, null, 2))
@@ -334,9 +489,9 @@ async function run(
 		return true
 	}
 
-	if (!opt.list && !systemError)
+	if (!opt.list)
 		process.stdout.write(
-			`${styleText(["green", "bold"], "✔")} Matches system behavior for ${styleText("blue", name)} (${fmtTime(dur)})\n`,
+			`${styleText(["green", "bold"], "✔")} ${styleText("bold", "Matches system behavior")} for ${styleText("blue", name)} (${fmtTime(dur)})\n`,
 		)
 	return false
 }
