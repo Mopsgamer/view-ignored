@@ -63,4 +63,10 @@ barplot(() => {
 	})
 })
 
-await run()
+const stats = await run({
+	format: process.argv.includes("--json") ? "json" : "mitata",
+})
+
+if (process.argv.includes("--json")) {
+	process.stdout.write(JSON.stringify(stats))
+}
