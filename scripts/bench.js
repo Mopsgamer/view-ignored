@@ -52,6 +52,7 @@ const benchmarkFiles =
 		: fs
 				.readdirSync("benchmarks")
 				.filter((f) => f.endsWith(".js"))
+				.sort()
 				.map((f) => path.join("benchmarks", f))
 
 async function runBenchmarks() {
