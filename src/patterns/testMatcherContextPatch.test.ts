@@ -357,20 +357,20 @@ describe("matcherContextAddPath", () => {
 	describe("no max depth", () => {
 		test("early return if path already exists", async () => {
 			const c = await scan(opt)
-			expect(await matcherContextAddPath(c, opt, "out/index.js")).toBeFalse()
+			expect(await matcherContextAddPath(c, opt, "out/index.js")).toEqual([])
 		})
 		test("early return for root directory", async () => {
 			const c = await scan(opt)
-			expect(await matcherContextAddPath(c, opt, "./")).toBeTrue()
+			expect(await matcherContextAddPath(c, opt, "./")).toEqual([])
 		})
-		test("ignored dir is added (internal behavior)", async () => {
+		test("ignored dir is not added to paths (internal behavior)", async () => {
 			const c = await scan(opt)
-			expect(await matcherContextAddPath(c, opt, "test/")).toBeTrue()
+			expect(await matcherContextAddPath(c, opt, "test/")).toEqual([])
 		})
 		test("ignored file is not added to paths, but added to totals", async () => {
 			const c = await scan(opt)
 			const initialTotal = { ...c.total.get(".")! }
-			expect(await matcherContextAddPath(c, opt, "test")).toBeFalse()
+			expect(await matcherContextAddPath(c, opt, "test")).toEqual([])
 			expect(c.paths.has("test")).toBeFalse()
 			expect(c.total.get(".")!.totalFiles).toBe(initialTotal.totalFiles + 1)
 			expect(c.total.get(".")!.totalMatchedFiles).toBe(initialTotal.totalMatchedFiles)
@@ -388,7 +388,7 @@ describe("matcherContextAddPath", () => {
 				}),
 			}
 			const c = await scan(o)
-			expect(await matcherContextAddPath(c, o, "package.json")).toBeFalse()
+			expect(await matcherContextAddPath(c, o, "package.json")).toEqual([])
 
 			// NPM will use gitignore
 			const newc = <MatcherContext>{
@@ -470,8 +470,12 @@ describe("matcherContextAddPath", () => {
 		})
 		test("included file is added", async () => {
 			const c = await scan(opt)
-			expect(await matcherContextAddPath(c, opt, "out/test")).toBeTrue()
-			expect(await matcherContextAddPath(c, opt, "out/testdir/testsubdir/test")).toBeTrue()
+			expect(await matcherContextAddPath(c, opt, "out/test")).toEqual(["out/test"])
+			expect(await matcherContextAddPath(c, opt, "out/testdir/testsubdir/test")).toEqual([
+				"out/testdir/testsubdir/",
+				"out/testdir/",
+				"out/testdir/testsubdir/test",
+			])
 			expect(c).toMatchObject({
 				external: new Map<string, Resource>([
 					[".", sourcePackageJson],
@@ -635,7 +639,9 @@ describe("matcherContextRemovePath", () => {
 	describe("no max depth", () => {
 		test("root directory removal clears everything", async () => {
 			const c = await scan(opt)
-			expect(await matcherContextRemovePath(c, opt, "./")).toBeTrue()
+			const res = await matcherContextRemovePath(c, opt, "./")
+			expect(res).toBeArray()
+			expect(res.length).toBeGreaterThan(0)
 			expect(c.paths.size).toBe(0)
 			expect(c.external.size).toBe(0)
 			expect(c.failed.length).toBe(0)
@@ -643,20 +649,20 @@ describe("matcherContextRemovePath", () => {
 		})
 		test("ignored dir is removed", async () => {
 			const c = await scan(opt)
-			expect(await matcherContextRemovePath(c, opt, "test/")).toBeTrue()
+			expect(await matcherContextRemovePath(c, opt, "test/")).toEqual([])
 		})
 		test("ignored file is removed", async () => {
 			const c = await scan(opt)
-			expect(await matcherContextRemovePath(c, opt, "test")).toBeTrue()
+			expect(await matcherContextRemovePath(c, opt, "test")).toEqual([])
 		})
 		test("foreign file is removed", async () => {
 			const c = await scan(opt)
-			expect(await matcherContextRemovePath(c, opt, "out/test")).toBeTrue()
-			expect(await matcherContextRemovePath(c, opt, "out/testdir/testsubdir/test")).toBeTrue()
+			expect(await matcherContextRemovePath(c, opt, "out/test")).toEqual([])
+			expect(await matcherContextRemovePath(c, opt, "out/testdir/testsubdir/test")).toEqual([])
 		})
 		test("included file is removed", async () => {
 			const c = await scan(opt)
-			expect(await matcherContextRemovePath(c, opt, "out/index.js")).toBeTrue()
+			expect(await matcherContextRemovePath(c, opt, "out/index.js")).toEqual(["out/index.js"])
 			expect(c).toMatchObject({
 				external: new Map<string, Resource>([
 					[".", sourcePackageJson],
@@ -768,7 +774,9 @@ describe("matcherContextRemovePath", () => {
 		})
 		test("included dir is removed", async () => {
 			const c = await scan(opt)
-			expect(await matcherContextRemovePath(c, opt, "out/")).toBeTrue()
+			const res = await matcherContextRemovePath(c, opt, "out/")
+			expect(res).toContain("out/")
+			expect(res).toContain("out/index.js")
 			expect(c).toMatchObject({
 				external: new Map<string, Resource>([
 					[".", sourcePackageJson],
@@ -856,7 +864,7 @@ describe("matcherContextRemovePath", () => {
 	describe("max depth 1", () => {
 		test("should change ctx.total", async () => {
 			const c = await scan(optDepth1)
-			expect(await matcherContextRemovePath(c, optDepth1, "out/targets/index.js")).toBeTrue()
+			expect(await matcherContextRemovePath(c, optDepth1, "out/targets/index.js")).toEqual([])
 			expect(c).toMatchObject(<MatcherContext>{
 				external: new Map<string, Resource>([
 					[".", sourcePackageJson],
@@ -935,7 +943,8 @@ describe("matcherContextRemovePath", () => {
 				delete f["package.json"]
 				return f
 			})
-			expect(await matcherContextRemovePath(c, o, "package.json")).toBeTrue()
+			const res = await matcherContextRemovePath(c, o, "package.json")
+			expect(res).toBeArray()
 
 			// NPM will use gitignore
 			const newc = <MatcherContext>{
