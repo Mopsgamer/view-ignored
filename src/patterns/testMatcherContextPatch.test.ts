@@ -123,6 +123,7 @@ const sourceGitignore: Source = {
 const opt: Required<ScanOptions> = {
 	cwd,
 	depth: Infinity,
+	dirs: true,
 	fs: adapter,
 	invert: false,
 	signal: null,
@@ -261,6 +262,7 @@ describe("matcherContext{Add,Remove}Path prepare", () => {
 const optDepth1: Required<ScanOptions> = {
 	cwd,
 	depth: 1,
+	dirs: true,
 	fs: adapter,
 	invert: false,
 	signal: null,

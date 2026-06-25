@@ -80,7 +80,7 @@ export async function matcherContextAddPath(
 			promiseCb(matchResolve, matchReject),
 		)
 		const match = await matchPromise
-		if (!match.ignored) {
+		if (!match.ignored && (options.dirs || !isDir)) {
 			ctx.paths.set(entry, match)
 		}
 		updateTotals(ctx, parentPath, 0, 0, 1)
@@ -103,7 +103,7 @@ export async function matcherContextAddPath(
 						walkPatchTotal(ctx, maxDepth, result)
 						return
 					}
-					walkPatchResult(ctx, result)
+					walkPatchResult(ctx, result, options)
 				},
 				scanOptions: { ...options, within: unixify(parentPath) },
 				stream: undefined,
@@ -154,7 +154,9 @@ export async function matcherContextAddPath(
 		return false
 	}
 
-	ctx.paths.set(entry, match)
+	if (options.dirs || !isDir) {
+		ctx.paths.set(entry, match)
+	}
 	return true
 }
 
@@ -235,7 +237,7 @@ export async function matcherContextRemovePath(
 						walkPatchTotal(ctx, maxDepth, result)
 						return
 					}
-					walkPatchResult(ctx, result)
+					walkPatchResult(ctx, result, options)
 				},
 				scanOptions: { ...options, within: unixify(parentPath) },
 				stream: undefined,
