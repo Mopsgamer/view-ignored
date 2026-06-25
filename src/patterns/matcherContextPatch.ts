@@ -28,15 +28,16 @@ export async function matcherContextAddPath(
 	ctx: MatcherContext,
 	options: Required<ScanOptions>,
 	entry: string,
-): Promise<boolean> {
+): Promise<string[]> {
+	const added: string[] = []
 	if (ctx.paths.has(entry)) {
-		return false
+		return added
 	}
 
 	const isDir = entry.endsWith("/")
 	const direntPath = isDir ? entry.slice(0, -1) : entry
 	if (isDir && direntPath === ".") {
-		return true
+		return added
 	}
 	const parentPath = dirname(direntPath)
 
@@ -81,13 +82,16 @@ export async function matcherContextAddPath(
 		)
 		const match = await matchPromise
 		if (!match.ignored && (options.dirs || !isDir)) {
-			ctx.paths.set(entry, match)
+			if (!ctx.paths.has(entry)) {
+				ctx.paths.set(entry, match)
+				added.push(entry)
+			}
 		}
 		updateTotals(ctx, parentPath, 0, 0, 1)
 		if (parentPath !== ".") {
-			await matcherContextAddPath(ctx, options, parentPath + "/")
+			added.push(...(await matcherContextAddPath(ctx, options, parentPath + "/")))
 		}
-		return true
+		return added
 	}
 
 	const isSource = target.extractors.some((e) => e.path === entry)
@@ -103,6 +107,13 @@ export async function matcherContextAddPath(
 						walkPatchTotal(ctx, maxDepth, result)
 						return
 					}
+					const { path, parentPath: rParentPath, includeParent } = result
+					if (!ctx.paths.has(path)) {
+						added.push(path)
+					}
+					if (includeParent && !ctx.paths.has(rParentPath + "/")) {
+						added.push(rParentPath + "/")
+					}
 					walkPatchResult(ctx, result, options)
 				},
 				scanOptions: { ...options, within: unixify(parentPath) },
@@ -117,7 +128,7 @@ export async function matcherContextAddPath(
 
 	// add paths
 	// 1. recursively populate parents
-	await matcherContextAddPath(ctx, options, parentPath + "/")
+	added.push(...(await matcherContextAddPath(ctx, options, parentPath + "/")))
 	// 2. if ignored, remove, otherwise add
 	const { promise: resPromise, resolve: resRes, reject: resRej } = Promise.withResolvers<Resource>()
 	resolveSources(
@@ -151,13 +162,16 @@ export async function matcherContextAddPath(
 	updateTotals(ctx, parentPath, 1, match.ignored ? 0 : 1, 0)
 
 	if (match.ignored) {
-		return false
+		return added
 	}
 
 	if (options.dirs || !isDir) {
-		ctx.paths.set(entry, match)
+		if (!ctx.paths.has(entry)) {
+			ctx.paths.set(entry, match)
+			added.push(entry)
+		}
 	}
-	return true
+	return added
 }
 
 /**
@@ -170,15 +184,19 @@ export async function matcherContextRemovePath(
 	ctx: MatcherContext,
 	options: Required<ScanOptions>,
 	entry: string,
-): Promise<boolean> {
+): Promise<string[]> {
+	const removed: string[] = []
 	const isDir = entry.endsWith("/")
 	const direntPath = isDir ? entry.slice(0, -1) : entry
 	if (isDir && direntPath === ".") {
+		for (const [path] of ctx.paths) {
+			removed.push(path)
+		}
 		ctx.paths.clear()
 		ctx.external.clear()
 		ctx.failed.length = 0
 		ctx.total.set(direntPath, { totalDirs: 0, totalFiles: 0, totalMatchedFiles: 0 })
-		return true
+		return removed
 	}
 	const parentPath = dirname(direntPath)
 	const parentPathDir = parentPath + "/"
@@ -203,6 +221,7 @@ export async function matcherContextRemovePath(
 		for (const [element] of ctx.paths) {
 			if (element.startsWith(entry)) {
 				ctx.paths.delete(element)
+				removed.push(element)
 			}
 		}
 
@@ -219,7 +238,7 @@ export async function matcherContextRemovePath(
 				ctx.failed.splice(failedEntryIndex, 1)
 			}
 		}
-		return true
+		return removed
 	}
 
 	const isSource = options.target.extractors.some((e) => e.path === entry)
@@ -244,18 +263,21 @@ export async function matcherContextRemovePath(
 			},
 			promiseCb(resolve, reject),
 		)
-		await matcherContextRemovePath(ctx, options, parentPathDir)
+		removed.push(...(await matcherContextRemovePath(ctx, options, parentPathDir)))
 		await resultPromise
 		propagateTotals(ctx.total)
-		return true
+		return removed
 	}
 	// remove path
 	// 1. change stats
 	updateTotals(ctx, parentPath, -1, ctx.paths.has(entry) ? -1 : 0, 0)
 
 	// 2. remove from paths
-	ctx.paths.delete(entry)
-	return true
+	if (ctx.paths.has(entry)) {
+		ctx.paths.delete(entry)
+		removed.push(entry)
+	}
+	return removed
 }
 
 function updateTotals(
