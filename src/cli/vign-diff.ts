@@ -345,7 +345,7 @@ async function run(
 			msg =
 				Buffer.isBuffer(err.stdout) || typeof err.stdout === "string"
 					? err.stdout.toString()
-					: String(err.stdout)
+					: (JSON.stringify(err.stdout) ?? "")
 		}
 		msg = stripVTControlCharacters(msg)
 
