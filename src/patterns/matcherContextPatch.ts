@@ -196,9 +196,14 @@ export async function matcherContextRemovePath(
 
 		const direntPathLen = direntPath.length
 		for (const [element] of ctx.external) {
-			if (element.length >= direntPathLen && (element === direntPath || element.startsWith(direntPath + "/"))) {
+			if (
+				element.length >= direntPathLen &&
+				(element === direntPath || element.startsWith(direntPath + "/"))
+			) {
 				if (ctx.external.delete(element) && ctx.failed.length) {
-					const failedEntryIndex = ctx.failed.findIndex((fail) => dirname(fail.source.path) === element)
+					const failedEntryIndex = ctx.failed.findIndex(
+						(fail) => dirname(fail.source.path) === element,
+					)
 					if (failedEntryIndex >= 0) {
 						ctx.failed.splice(failedEntryIndex, 1)
 					}
