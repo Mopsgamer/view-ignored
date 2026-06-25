@@ -5,6 +5,7 @@ import type { MatcherStream } from "./patterns/matcherStream.js"
 import type { Resource } from "./patterns/resource.js"
 import type { ScanOptions } from "./types.js"
 
+import { getOrInsertComputed } from "./mapUtils.js"
 import { isRuleMatchInvalid, type RuleMatch } from "./patterns/rule.js"
 import { dirname } from "./unixify.js"
 
@@ -215,15 +216,15 @@ export function walkPatchResult(
  */
 export function walkPatchTotal(ctx: MatcherContext, maxDepth: number, t: WalkTotal): void {
 	const { dir, files, matched, dirs, ignored } = t
-	const dirTotal = ctx.total.get(dir)
-	if (dirTotal) {
+	if (t.depth <= maxDepth && !ignored) {
+		const dirTotal = getOrInsertComputed(ctx.total, dir, () => ({
+			totalDirs: 0,
+			totalFiles: 0,
+			totalMatchedFiles: 0,
+		}))
 		dirTotal.totalFiles += files
 		dirTotal.totalDirs += dirs
 		dirTotal.totalMatchedFiles += matched
-		return
-	}
-	if (t.depth <= maxDepth && !ignored) {
-		ctx.total.set(dir, { totalDirs: dirs, totalFiles: files, totalMatchedFiles: matched })
 	}
 }
 
@@ -238,17 +239,13 @@ export function propagateTotals(total: Map<string, Total>): void {
 		if (dir === "." || dir === "/") continue
 		const dirTotal = total.get(dir)!
 		const parent = dirname(dir)
-		const parentTotal = total.get(parent)
-		if (parentTotal) {
-			parentTotal.totalFiles += dirTotal.totalFiles
-			parentTotal.totalDirs += dirTotal.totalDirs
-			parentTotal.totalMatchedFiles += dirTotal.totalMatchedFiles
-			continue
-		}
-		total.set(parent, {
-			totalDirs: dirTotal.totalDirs,
-			totalFiles: dirTotal.totalFiles,
-			totalMatchedFiles: dirTotal.totalMatchedFiles,
-		})
+		const parentTotal = getOrInsertComputed(total, parent, () => ({
+			totalDirs: 0,
+			totalFiles: 0,
+			totalMatchedFiles: 0,
+		}))
+		parentTotal.totalFiles += dirTotal.totalFiles
+		parentTotal.totalDirs += dirTotal.totalDirs
+		parentTotal.totalMatchedFiles += dirTotal.totalMatchedFiles
 	}
 }
