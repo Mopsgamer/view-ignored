@@ -55,29 +55,44 @@ export function extractGitignoreRules(
 			lineStart++
 		}
 
-		// Skip trailing whitespace
+		// Skip trailing whitespace, unless it's escaped
 		while (lineEnd > lineStart) {
 			const c = content[lineEnd - 1]
 			if (c !== 32 && c !== 9 && c !== 13) break
+			if (lineEnd > lineStart + 1 && content[lineEnd - 2] === 92) break
 			lineEnd--
 		}
 
-		if (lineStart < lineEnd && content[lineStart] !== 35) {
+		if (lineStart < len && content[lineStart] === 35) {
+			// skip comment line
+		} else if (lineStart < lineEnd) {
 			// Not empty and not a comment
-			let line = content.toString("utf8", lineStart, lineEnd)
-			const cdx = line.indexOf("#")
-			if (cdx >= 0) {
-				line = line.slice(0, cdx)
-				// Re-trim if it was trimmed before
-				let lineEnd2 = line.length
-				while (lineEnd2 > 0) {
-					const c = line.charCodeAt(lineEnd2 - 1)
-					if (c !== 32 && c !== 9 && c !== 13) break
-					lineEnd2--
+			let isEscaped = false
+			let lineBuff = Buffer.allocUnsafe(lineEnd - lineStart)
+			let lineBuffIdx = 0
+			let lastRealCharIdx = -1
+
+			for (let i = lineStart; i < lineEnd; i++) {
+				const c = content[i] as number
+				if (isEscaped) {
+					lineBuff[lineBuffIdx++] = c
+					isEscaped = false
+					lastRealCharIdx = lineBuffIdx
+				} else if (c === 92) {
+					isEscaped = true
+				} else if (c === 35) {
+					// unescaped hash starts a comment
+					break
+				} else {
+					lineBuff[lineBuffIdx++] = c
+					if (c !== 32 && c !== 9 && c !== 13) {
+						lastRealCharIdx = lineBuffIdx
+					}
 				}
-				line = line.slice(0, lineEnd2)
 			}
-			if (line !== "") {
+
+			if (lastRealCharIdx !== -1) {
+				const line = lineBuff.toString("utf8", 0, lastRealCharIdx)
 				resolveNegatable(line, false, include, exclude)
 			}
 		}
