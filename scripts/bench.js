@@ -76,6 +76,10 @@ async function runBenchmarks() {
 
 	const extraArgs = ["--json", ...forwardArgs]
 	for (const file of benchmarkFiles) {
+		if (!fs.existsSync(file)) {
+			process.stderr.write(`Skipping ${file} (not found)\n`)
+			continue
+		}
 		process.stderr.write(`Running ${file} ${extraArgs.join(" ")}...\n`)
 		try {
 			const cmd = values.node
