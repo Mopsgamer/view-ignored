@@ -36,6 +36,7 @@ export function browserScanCb(
 		signal = null,
 		skipDepth = false,
 		skipInternal = false,
+		dirs = true,
 		fs: { readdir, readFile },
 	} = options
 
@@ -60,6 +61,7 @@ export function browserScanCb(
 	const scanOptions: Required<ScanOptions> = {
 		cwd: normalCwd,
 		depth: maxDepth,
+		dirs,
 		fs,
 		invert,
 		signal,
@@ -77,7 +79,7 @@ export function browserScanCb(
 				walkPatchTotal(ctx, scanOptions.depth, result)
 				return
 			}
-			walkPatchResult(ctx, result)
+			walkPatchResult(ctx, result, scanOptions)
 		},
 		scanOptions,
 		stream: this,

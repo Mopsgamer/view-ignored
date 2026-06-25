@@ -378,7 +378,7 @@ async function run(
 	const start = performance.now()
 	let ctx: MatcherContext
 	try {
-		ctx = await scan({ skipInternal: true, target: info.make() })
+		ctx = await scan({ dirs: false, skipInternal: true, target: info.make() })
 	} catch (err: unknown) {
 		const msg = err instanceof Error ? err.message : `unknown error ${JSON.stringify(err)}`
 		process.stderr.write(
@@ -393,14 +393,14 @@ async function run(
 			`${styleText(["blue", "bold"], "→")} ${styleText("bold", "Included files")} for ${styleText("blue", name)} (${fmtTime(dur)}):\n`,
 		)
 		Array.from(ctx!.paths.entries())
-			.filter(([p, m]) => !p.endsWith("/") && !m.ignored)
+			.filter(([, m]) => !m.ignored)
 			.map(([p]) => p)
 			.sort()
 			.forEach((f) => console.log(`  ${styleText("dim", "•")} ${f}`))
 	}
 
 	const vignFiles = Array.from(ctx!.paths.entries())
-		.filter(([p, m]) => !p.endsWith("/") && !m.ignored)
+		.filter(([, m]) => !m.ignored)
 		.map(([p]) => p)
 		.sort()
 	const vignSet = new Set(vignFiles)

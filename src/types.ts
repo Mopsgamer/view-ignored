@@ -125,6 +125,15 @@ export type ScanOptions = {
 	skipInternal?: boolean
 
 	/**
+	 * If disabled, the scan will not return directories.
+	 *
+	 * @default `true`
+	 *
+	 * @since 0.12.0
+	 */
+	dirs?: boolean
+
+	/**
 	 * File system interface.
 	 *
 	 * @default `await import("node:fs")`

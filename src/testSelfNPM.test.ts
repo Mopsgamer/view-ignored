@@ -7,7 +7,7 @@ import { sortFirstFolders } from "./testSort.test.js"
 
 describe.skipIf(!!process.env.TEST_NO_SELF)("NPM", async () => {
 	const npm = npmTotalFiles()
-	const r = await scan({ skipInternal: true, target: makeNPM() })
+	const r = await scan({ dirs: false, skipInternal: true, target: makeNPM() })
 	// this test uses sortFirstFolders implementation
 	// provided by https://jsr.io/@m234/path/0.1.4/sort-cmp.ts
 	// you can install this jsr package in your project
@@ -17,7 +17,7 @@ describe.skipIf(!!process.env.TEST_NO_SELF)("NPM", async () => {
 	test(
 		"scans self",
 		async () => {
-			expect(sortFirstFolders(r.paths.keys()).filter((path) => !path.endsWith("/"))).toEqual(
+			expect(sortFirstFolders(r.paths.keys())).toEqual(
 				expect.arrayContaining(sortFirstFolders((await npm).files)),
 			)
 		},
