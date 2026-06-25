@@ -1,13 +1,6 @@
-/* oxlint-disable typescript/unbound-method */
-const nativeGetOrInsert = Map.prototype.getOrInsert
-const nativeGetOrInsertComputed = Map.prototype.getOrInsertComputed
-
-declare global {
-	interface Map<K, V> {
-		getOrInsert(key: K, value: V): V
-		getOrInsertComputed(key: K, callback: (key: K, map: Map<K, V>) => V): V
-	}
-}
+const proto = Map.prototype as any
+const nativeGetOrInsert = proto.getOrInsert
+const nativeGetOrInsertComputed = proto.getOrInsertComputed
 
 export function getOrInsert<K, V>(map: Map<K, V>, key: K, value: V): V {
 	if (typeof nativeGetOrInsert === "function") {

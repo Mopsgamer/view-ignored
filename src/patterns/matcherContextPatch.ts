@@ -65,11 +65,9 @@ export async function matcherContextAddPath(
 			}
 		}
 
-		if (!ctx.total.has(direntPath)) {
-			updateTotals(ctx, parentPath, 0, 0, 1)
-			if (parentPath !== ".") {
-				added.push(...(await matcherContextAddPath(ctx, options, parentPath + "/")))
-			}
+		updateTotals(ctx, parentPath, 0, 0, 1)
+		if (parentPath !== ".") {
+			added.push(...(await matcherContextAddPath(ctx, options, parentPath + "/")))
 		}
 
 		return added
@@ -108,10 +106,7 @@ export async function matcherContextAddPath(
 	}
 
 	if (parentPath !== ".") {
-		const parentPathDir = parentPath + "/"
-		if (!ctx.total.has(parentPath)) {
-			added.push(...(await matcherContextAddPath(ctx, options, parentPathDir)))
-		}
+		added.push(...(await matcherContextAddPath(ctx, options, parentPath + "/")))
 	}
 
 	const resource = await new Promise<Resource>((resolve, reject) =>
@@ -145,8 +140,10 @@ export async function matcherContextAddPath(
 
 	updateTotals(ctx, parentPath, 1, match.ignored ? 0 : 1, 0)
 	if (!match.ignored) {
-		ctx.paths.set(entry, match)
-		added.push(entry)
+		if (!ctx.paths.has(entry)) {
+			ctx.paths.set(entry, match)
+			added.push(entry)
+		}
 	}
 
 	return added
@@ -199,14 +196,9 @@ export async function matcherContextRemovePath(
 
 		const direntPathLen = direntPath.length
 		for (const [element] of ctx.external) {
-			if (
-				element.length >= direntPathLen &&
-				(element === direntPath || element.startsWith(direntPath + "/"))
-			) {
+			if (element.length >= direntPathLen && (element === direntPath || element.startsWith(direntPath + "/"))) {
 				if (ctx.external.delete(element) && ctx.failed.length) {
-					const failedEntryIndex = ctx.failed.findIndex(
-						(fail) => dirname(fail.source.path) === element,
-					)
+					const failedEntryIndex = ctx.failed.findIndex((fail) => dirname(fail.source.path) === element)
 					if (failedEntryIndex >= 0) {
 						ctx.failed.splice(failedEntryIndex, 1)
 					}
