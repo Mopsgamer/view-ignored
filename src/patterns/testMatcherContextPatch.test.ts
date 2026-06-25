@@ -353,6 +353,14 @@ describe("matcherContext{Add,Remove}Path prepare", () => {
 
 describe("matcherContextAddPath", () => {
 	describe("no max depth", () => {
+		test("early return if path already exists", async () => {
+			const c = await scan(opt)
+			expect(await matcherContextAddPath(c, opt, "out/index.js")).toBeFalse()
+		})
+		test("early return for root directory", async () => {
+			const c = await scan(opt)
+			expect(await matcherContextAddPath(c, opt, "./")).toBeTrue()
+		})
 		test("ignored dir is added (internal behavior)", async () => {
 			const c = await scan(opt)
 			expect(await matcherContextAddPath(c, opt, "test/")).toBeTrue()
@@ -623,6 +631,14 @@ describe("matcherContextAddPath", () => {
 
 describe("matcherContextRemovePath", () => {
 	describe("no max depth", () => {
+		test("root directory removal clears everything", async () => {
+			const c = await scan(opt)
+			expect(await matcherContextRemovePath(c, opt, "./")).toBeTrue()
+			expect(c.paths.size).toBe(0)
+			expect(c.external.size).toBe(0)
+			expect(c.failed.length).toBe(0)
+			expect(c.total.get(".")).toEqual({ totalDirs: 0, totalFiles: 0, totalMatchedFiles: 0 })
+		})
 		test("ignored dir is removed", async () => {
 			const c = await scan(opt)
 			expect(await matcherContextRemovePath(c, opt, "test/")).toBeTrue()
@@ -775,6 +791,32 @@ describe("matcherContextRemovePath", () => {
 					[".", { totalDirs: 8, totalFiles: 15, totalMatchedFiles: 2 }],
 				]),
 			})
+		})
+		test("source file update: remove and add back", async () => {
+			const o = {
+				...opt,
+				fs: patchFS((json) => json),
+			}
+			const c = await scan(o)
+
+			// Remove package.json (a source file)
+			// Need to actually remove it from the filesystem for it to disappear during rescan
+			o.fs = patchFS((json) => {
+				delete json["package.json"]
+				return json
+			})
+			await matcherContextRemovePath(c, o, "package.json")
+
+			// The state should be different now.
+			// Without package.json, NPM target falls back to gitignore which ignores "out"
+			expect(c.paths.has("out/")).toBeFalse()
+
+			// Add it back
+			o.fs = patchFS((json) => json)
+			await matcherContextAddPath(c, o, "package.json")
+
+			// Should be back to state where out/ is included
+			expect(c.paths.has("out/")).toBeTrue()
 		})
 	})
 	describe("stat consistency", () => {
