@@ -50,7 +50,8 @@ function updateBadge() {
 	const beforeMarkerLine = readmeContent.substring(0, markerLineEnd + 1)
 	const afterMarkerLine = readmeContent.substring(markerLineEnd + 1).trimStart()
 
-	// Replace the badge and ensure exactly one newline after marker and exactly one newline after badge
+	// Replace the badge and ensure exactly two newlines after marker (one empty line)
+	// and exactly one newline after badge before any subsequent content.
 	const badgeRegex = /\[!\[npm-packlist-tests\].*?\]\(.*?\)/
 
 	let finalAfterMarker: string
@@ -60,7 +61,8 @@ function updateBadge() {
 		finalAfterMarker = newBadge + "\n\n" + afterMarkerLine
 	}
 
-	writeFileSync(README_PATH, beforeMarkerLine + finalAfterMarker)
+	// We use \n\n here to ensure an empty line between marker and badge, which oxfmt prefers.
+	writeFileSync(README_PATH, beforeMarkerLine + "\n" + finalAfterMarker)
 	console.log(`Successfully updated ${README_PATH} with badge value ${badgeValue}`)
 }
 
