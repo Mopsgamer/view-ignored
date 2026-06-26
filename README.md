@@ -7,8 +7,9 @@
 ![node-v22-or-later](https://img.shields.io/badge/node->=22-salad?repo=Mopsgamer/view-ignored.svg)
 ![ts-v5-or-later](https://img.shields.io/badge/ts->=5.7-salad?repo=Mopsgamer/view-ignored)
 [![speed-fast](https://img.shields.io/badge/speed-fast-salad?repo=Mopsgamer/view-ignored.svg)](https://github.com/Mopsgamer/view-ignored/tree/main/benchmarks)
+
 <!-- marker: npm-packlist tests -->
-[![npm-packlist-tests](https://img.shields.io/badge/npm--packlist-0/68-blue)](src/test-npm-packlist/)
+[![npm-packlist-tests](https://img.shields.io/badge/npm--packlist-0%2F68-blue)](src/test-npm-packlist/)
 
 Retrieve list of files ignored/included
 by Git, NPM, Yarn, JSR, Deno, Bun, VSCode extension CLI and other tools.
