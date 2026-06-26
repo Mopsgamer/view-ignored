@@ -255,18 +255,25 @@ function compareBenchmarks(current, base) {
 				(diffPercent >= 5 && diffPercent - half >= 2) ||
 				(diffPercent <= -5 && diffPercent + half <= -2)
 
+			const low = diffPercent - half
+			const high = diffPercent + half
+
 			if (diffPercent > 0) {
 				if (isSig && diffPercent >= 10) emoji = "💩"
-				ratioStr = `+${diffPercent.toFixed(1)}% ± ${half.toFixed(1)}%`
+				ratioStr = `+${diffPercent.toFixed(1)}% (${low.toFixed(1)}% … ${high.toFixed(1)}%)`
 			} else {
 				if (isSig && diffPercent <= -10) emoji = "⚡"
-				ratioStr = `-${Math.abs(diffPercent).toFixed(1)}% ± ${half.toFixed(1)}%`
+				ratioStr = `-${Math.abs(diffPercent).toFixed(1)}% (${low.toFixed(1)}% … ${high.toFixed(1)}%)`
 			}
 		}
 
+		const mLow = currStats.mean - currStats.stdDev
+		const mHigh = currStats.mean + currStats.stdDev
 		const measurementStr = baseStats
-			? `${formatUnit(baseStats.mean)} → ${formatUnit(currStats.mean)} ± ${formatUnit(currStats.stdDev)}`
-			: `${formatUnit(currStats.mean)} ± ${formatUnit(currStats.stdDev)}`
+			? `${formatUnit(baseStats.mean)} → ${formatUnit(currStats.mean)} (${formatUnit(mLow)} … ${formatUnit(
+					mHigh,
+				)})`
+			: `${formatUnit(currStats.mean)} (${formatUnit(mLow)} … ${formatUnit(mHigh)})`
 
 		rows.push({
 			diffPercent,
@@ -319,10 +326,10 @@ function getTable(rows, isTerminal) {
 	if (rows.length === 0) return ""
 	const headers = [
 		"Benchmark",
-		"Measurement (mean \u00b1 std.dev)",
+		"Measurement (mean [std.dev range])",
 		"Min \u2026 Max",
 		"Outliers",
-		"Ratio",
+		"Ratio (delta [confidence interval])",
 	]
 
 	const lengthFn = isTerminal ? getVisualLength : getStringLength
