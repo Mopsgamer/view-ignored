@@ -19,5 +19,13 @@
 	},
 	"categories": {
 		"perf": "error"
-	}
+	},
+	"overrides": [
+		{
+			"files": ["src/test-npm-packlist/**/*.ts"],
+			"rules": {
+				"sort-keys": "off"
+			}
+		}
+	]
 }

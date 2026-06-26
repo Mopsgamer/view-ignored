@@ -98,6 +98,7 @@
 		"test:self": "bun test --timeout 5000 src/testSelf*.test.ts",
 		"test:self:git": "bun test --timeout 5000 src/testSelfGit.test.ts",
 		"test:self:npm": "bun test --timeout 5000 src/testSelfNPM.test.ts",
+		"test:npm-packlist": "TEST_PACKLIST=1 bun test src/test-npm-packlist/",
 		"test:npm-packlist:update-badge": "bun scripts/update-npm-packlist-badge.ts",
 		"lint": "bun run oxlint --type-aware",
 		"fmt": "bun run oxfmt",
