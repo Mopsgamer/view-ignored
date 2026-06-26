@@ -84,7 +84,7 @@
 		"access": "public"
 	},
 	"scripts": {
-		"prerelease": "bun run test && bun run prod && bun run lint && bun run fmt --check && bun run ts-compat && bun run node-compat && bun publint --pack bun --strict",
+		"prerelease": "bun check && bun run test && bun run prod && bun run lint && bun run fmt --check && bun run ts-compat && bun run node-compat && bun publint --pack bun --strict && bun run badges --check",
 		"heap": "bun scripts/scanHeap.js --snapshot",
 		"heap:node": "node scripts/scanHeap.js --snapshot",
 		"cpu": "bun run --expose-gc --cpu-prof --cpu-prof-md --cpu-prof-name CPU.me scripts/scan.js --skipInternal",
@@ -99,7 +99,7 @@
 		"test:self:git": "bun test --timeout 5000 src/testSelfGit.test.ts",
 		"test:self:npm": "bun test --timeout 5000 src/testSelfNPM.test.ts",
 		"test:npm-packlist": "TEST_PACKLIST=1 bun test src/test-npm-packlist/",
-		"test:npm-packlist:update-badge": "bun scripts/update-npm-packlist-badge.ts",
+		"badges": "bun scripts/badges.js",
 		"lint": "bun run oxlint --type-aware",
 		"fmt": "bun run oxfmt",
 		"check": "bun tsgo -p src --noEmit",

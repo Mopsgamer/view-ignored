@@ -1,3 +1,5 @@
+import type { FsAdapter } from "../types.js"
+
 import { expect, test } from "bun:test"
 
 import { parseGit, getIncludes, loadRec } from "./gitConfig.js"
@@ -26,12 +28,12 @@ test("Include Ordering Discrepancy", () => {
 
 test("Cache Bypass with gitDir", (done) => {
 	let readCount = 0
-	const fs = {
+	const fs = <FsAdapter>{
 		readFile: (_path: string, cb: (err: Error | null, res?: Buffer) => void) => {
 			readCount++
 			cb(null, Buffer.from("[core]\n\tbare = true"))
 		},
-	} as unknown
+	}
 
 	loadRec(fs, "/config", "gitdir", null, null, (_res1) => {
 		expect(readCount).toBe(1)

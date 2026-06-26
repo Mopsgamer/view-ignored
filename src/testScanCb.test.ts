@@ -18,7 +18,6 @@ describe("scanCb", () => {
 	})
 
 	test("scanCb handles error (invalid depth)", (done) => {
-		// @ts-expect-error testing invalid input
 		scanCb({ depth: -1, target: makeGit() }, (err, ctx) => {
 			try {
 				expect(err).toBeInstanceOf(TypeError)

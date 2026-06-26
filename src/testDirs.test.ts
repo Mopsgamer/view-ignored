@@ -1,4 +1,4 @@
-import type { ScanOptions } from "./types.js"
+import type { FsAdapter, ScanOptions } from "./types.js"
 
 import { describe, test, expect } from "bun:test"
 import * as nodefs from "node:fs"
@@ -101,15 +101,15 @@ describe("dirs option", () => {
 			depth: Infinity,
 			dirs: false,
 			fs: {
-				...nodefs,
-				readFile: (
+				readFile: ((
 					_path: string,
 					cb: (err: NodeJS.ErrnoException | null, data?: Buffer) => void,
 				) => {
 					const err = new Error("ENOENT") as NodeJS.ErrnoException
 					err.code = "ENOENT"
 					cb(err)
-				},
+				}) as FsAdapter["readFile"],
+				readdir: nodefs.readdir,
 			},
 			invert: false,
 			signal: null,
@@ -118,6 +118,7 @@ describe("dirs option", () => {
 			target: {
 				...makeGit(),
 				ignores: (_opts, cb) => {
+					//@ts-expect-error noMatch requires source, but we don't care
 					cb(null, { ignored: false, kind: RuleMatchKind.noMatch })
 				},
 			},
