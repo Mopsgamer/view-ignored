@@ -41,9 +41,17 @@ export async function testScan(
 	tree: NestedDirectoryJSON,
 	test: ((o: PathHandlerOptions) => void | Promise<void>) | string[],
 	options: ScanOptions,
+	symlinks?: Record<string, string>,
 ): Promise<void> {
 	const cwd = process.cwd() + "/test"
 	const vol = Volume.fromNestedJSON(tree, cwd)
+
+	if (symlinks) {
+		for (const [path, target] of Object.entries(symlinks)) {
+			vol.symlinkSync(target, cwd + "/" + path)
+		}
+	}
+
 	const adapter = createAdapter(vol)
 	const o = { cwd: cwd, fs: adapter, ...options } as ScanBrowserOptions
 
