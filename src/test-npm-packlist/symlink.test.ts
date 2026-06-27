@@ -75,7 +75,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist symlink", () => {
 				"package.json",
 				"test/resolver/multirepo/packages/a/node_modules/some_dep/package.json",
 			],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 			{
 				"link.js": "elf.js",
 				"test/resolver/multirepo/packages/a/node_modules/@scope/b": "../../../b",

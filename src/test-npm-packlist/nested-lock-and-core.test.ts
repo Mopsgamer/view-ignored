@@ -60,7 +60,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist nested-lock-and-core",
 				"lib/bun.lockb",
 				"core/include-me.txt",
 			],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })

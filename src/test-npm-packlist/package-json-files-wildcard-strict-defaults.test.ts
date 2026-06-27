@@ -33,7 +33,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)(
 					},
 				},
 				["src/.hidden.js", "src/index.js", "package.json", "README.md"],
-				{ target: makeNPM() },
+				{ target: makeNPM(), dirs: false },
 			)
 		})
 	},

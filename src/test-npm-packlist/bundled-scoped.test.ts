@@ -43,7 +43,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist bundled-scoped", () =>
 				"node_modules/@npmwombat/history/package.json",
 				"package.json",
 			],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })

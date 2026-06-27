@@ -51,7 +51,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist bundled-cycle", () => 
 				"node_modules/b/package.json",
 				"package.json",
 			],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })

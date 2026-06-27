@@ -47,7 +47,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist include-gitignore", ()
 				},
 			},
 			["z/.gitignore", "deps/foo/config/config.gypi", "elf.js", "package.json"],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })

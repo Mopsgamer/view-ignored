@@ -18,7 +18,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist patched-dependencies",
 				patches: { "abbrev@2.0.0.patch": "the patch" },
 			},
 			["lib/index.js", "package.json"],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 
@@ -34,7 +34,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist patched-dependencies",
 				src: { "abbrev@2.0.0.patch": "the patch", "index.js": "code" },
 			},
 			["src/index.js", "package.json"],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 
@@ -60,7 +60,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist patched-dependencies",
 				patches: { "abbrev@2.0.0.patch": "the patch" },
 			},
 			["index.js", "package.json"],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 
@@ -94,7 +94,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist patched-dependencies",
 				"node_modules/dep/patches/x@1.0.0.patch",
 				"package.json",
 			],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })

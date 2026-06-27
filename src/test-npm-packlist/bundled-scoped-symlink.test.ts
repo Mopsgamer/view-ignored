@@ -47,7 +47,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist bundled-scoped-symlink
 				"node_modules/@npmwombat/history/package.json",
 				"package.json",
 			],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 			{
 				"node_modules/@npmwombat/history": "../../history",
 				"history/lib/linky": "../tests",

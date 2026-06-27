@@ -60,7 +60,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist package-json-nested-re
 				"lib/a/b/file.txt",
 				"lib/a/file.txt",
 			],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })

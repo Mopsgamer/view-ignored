@@ -46,7 +46,7 @@ module.exports = elf =>
 				}),
 			},
 			["deps/foo/config/config.gypi", "__main.js", "browser.js", "elf.js", "package.json"],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })

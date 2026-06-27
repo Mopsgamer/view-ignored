@@ -39,7 +39,7 @@ module.exports = elf =>
 				}),
 			},
 			["elf.js", "node_modules/@npmwombat/scoped/index.js", "package.json"],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })

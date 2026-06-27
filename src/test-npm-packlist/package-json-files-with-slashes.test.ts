@@ -25,7 +25,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist package-json-files-wit
 				}),
 			},
 			["fiv.js", "lib/for.js", "lib/one.js", "lib/tre.js", "package.json"],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })

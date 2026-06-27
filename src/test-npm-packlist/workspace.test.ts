@@ -35,7 +35,8 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist workspace", () => {
 		// When packing workspace foo
 		await testScan(done, tree, ["child.js", "package.json"], {
 			target: makeNPM(),
-			within: "workspaces/foo",
+			dirs: false,
+			within: process.cwd() + "/test/workspaces/foo",
 		})
 	})
 
@@ -69,6 +70,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist workspace", () => {
 
 		await testScan(done, tree, ["root.js", "package.json"], {
 			target: makeNPM(),
+			dirs: false,
 		})
 	})
 
@@ -113,7 +115,8 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist workspace", () => {
 			["dont-ignore-me", "dont-ignore-me-either", "child.js", "package.json"],
 			{
 				target: makeNPM(),
-				within: "workspaces/foo",
+				dirs: false,
+				cwd: process.cwd() + "/test/workspaces/foo",
 			},
 		)
 	})

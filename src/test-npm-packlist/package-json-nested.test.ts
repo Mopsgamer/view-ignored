@@ -23,7 +23,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist package-json-nested", 
 				}),
 			},
 			["nest/foo.js", "nest/index.js", "nest/package.json", "package.json"],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })

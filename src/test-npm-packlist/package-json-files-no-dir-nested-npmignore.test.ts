@@ -25,7 +25,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)(
 					}),
 				},
 				["lib/for.js", "lib/one.js", "lib/tre.js", "package.json"],
-				{ target: makeNPM() },
+				{ target: makeNPM(), dirs: false },
 			)
 		})
 	},

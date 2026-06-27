@@ -55,7 +55,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist empty-npmignore", () =
 				"lib/node_modules/foo/package.json",
 				"package.json",
 			],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })

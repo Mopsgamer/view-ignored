@@ -42,7 +42,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)(
 					"node_modules/bundled/package.json",
 					"package.json",
 				],
-				{ target: makeNPM() },
+				{ target: makeNPM(), dirs: false },
 			)
 		})
 	},

@@ -55,7 +55,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)(
 					"dist/foo/foo.result",
 					"dist/baz/boo.src",
 				],
-				{ target: makeNPM() },
+				{ target: makeNPM(), dirs: false },
 			)
 		})
 	},

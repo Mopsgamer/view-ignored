@@ -44,7 +44,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist package-json", () => {
 				}),
 			},
 			["deps/foo/config/config.gypi", "elf.js", "package.json"],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })

@@ -60,7 +60,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist package-json-roots-and
 				"inc/package.json",
 				"package.json",
 			],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })

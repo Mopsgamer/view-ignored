@@ -32,7 +32,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist bundled-file-in-worksp
 				}),
 			},
 			["index.js", "package.json", "docs/bar.txt", "docs/foo.txt"],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 
@@ -74,7 +74,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist bundled-file-in-worksp
 				},
 			},
 			["index.js", "package.json", "docs/bar.txt", "docs/baz.txt", "docs/foo.txt"],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })

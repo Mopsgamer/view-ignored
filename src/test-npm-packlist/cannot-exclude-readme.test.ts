@@ -22,7 +22,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist cannot-exclude-readme"
 				"readme.md": "hello",
 			},
 			[".npmignore", "package.json", "license.md", "readme.md"],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })

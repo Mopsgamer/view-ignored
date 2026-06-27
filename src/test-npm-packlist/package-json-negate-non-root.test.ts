@@ -61,7 +61,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist package-json-negate-no
 				"lib/a/b/file.txt",
 				"lib/a/file.txt",
 			],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })

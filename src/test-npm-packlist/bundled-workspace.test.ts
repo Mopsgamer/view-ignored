@@ -43,7 +43,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist bundled-workspace", ()
 				"node_modules/foo/package.json",
 				"package.json",
 			],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 			{
 				"node_modules/bar": "../workspaces/bar",
 				"node_modules/foo": "../workspaces/foo",

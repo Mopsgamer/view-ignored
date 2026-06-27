@@ -42,7 +42,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist bundled-files", () => 
 				"node_modules/history/package.json",
 				"package.json",
 			],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 
@@ -79,7 +79,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist bundled-files", () => 
 				"node_modules/history/package.json",
 				"package.json",
 			],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })

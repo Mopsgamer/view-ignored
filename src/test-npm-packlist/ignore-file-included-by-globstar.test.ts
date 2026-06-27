@@ -34,7 +34,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist ignore-file-included-b
 				"yarn.lock": "{}",
 			},
 			["index.js", "subdir/other.js", "package.json", "glorp.txt"],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 
@@ -54,7 +54,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist ignore-file-included-b
 				}),
 			},
 			["bar.js", "bar/bar.js", "package.json"],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })

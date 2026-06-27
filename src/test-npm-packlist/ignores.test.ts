@@ -80,7 +80,7 @@ readme.md
 				},
 			},
 			["core", "deps/foo/config/config.gypi", "elf.js", "package.json", "readme.md"],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })

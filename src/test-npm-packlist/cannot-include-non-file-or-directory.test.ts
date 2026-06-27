@@ -23,7 +23,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)(
 					}),
 				},
 				["index.js", "package.json"],
-				{ target: makeNPM() },
+				{ target: makeNPM(), dirs: false },
 			)
 		})
 	},

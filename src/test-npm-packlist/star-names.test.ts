@@ -44,7 +44,7 @@ module.exports = elf =>
 				this: { dir: { is: { empty: { and: { ignored: {} } } } } },
 			},
 			["deps/foo/config/config.gypi", "elf.js", "package.json"],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })

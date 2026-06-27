@@ -16,7 +16,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist cannot-exclude-package
 				}),
 			},
 			[".npmignore", "package.json"],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })

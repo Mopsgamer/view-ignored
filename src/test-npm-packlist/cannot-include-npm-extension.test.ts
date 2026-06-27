@@ -18,7 +18,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist cannot-include-npm-ext
 				}),
 			},
 			["lib/index.js", "package.json"],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })

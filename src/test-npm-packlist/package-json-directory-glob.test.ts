@@ -28,7 +28,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist package-json-directory
 				done,
 				createTree([files]),
 				["folder/one/file", "folder/two/file", "package.json"],
-				{ target: makeNPM() },
+				{ target: makeNPM(), dirs: false },
 			)
 		})
 	}
@@ -38,7 +38,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist package-json-directory
 			done,
 			createTree(["folder/*"]),
 			["folder/one/file", "folder/two/file", "package.json"],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 
@@ -59,7 +59,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist package-json-directory
 				}),
 			},
 			["dist/sub/deep.js", "dist/top.js", "package.json"],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 
@@ -77,7 +77,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist package-json-directory
 				}),
 			},
 			["dist-cjs/index.js", "dist-es/index.js", "dist-other.js", "package.json"],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 
@@ -102,7 +102,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist package-json-directory
 				}),
 			},
 			["lib/foo.js", "lib/main.js", "lib/utils/foo-util.js", "package.json"],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 
@@ -119,7 +119,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist package-json-directory
 				}),
 			},
 			["a.js", "package.json"],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })

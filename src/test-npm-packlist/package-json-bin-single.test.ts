@@ -30,7 +30,7 @@ module.exports = elf =>
 				}),
 			},
 			["__bin", "lib/elf.js", "package.json"],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })

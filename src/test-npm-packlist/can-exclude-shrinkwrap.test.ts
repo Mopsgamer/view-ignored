@@ -17,7 +17,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist can-exclude-shrinkwrap
 				}),
 			},
 			[".npmignore", "package.json"],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })

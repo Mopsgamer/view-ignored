@@ -23,7 +23,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist package-json-negated-f
 				}),
 			},
 			["lib/for", "lib/tre", "package.json"],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })

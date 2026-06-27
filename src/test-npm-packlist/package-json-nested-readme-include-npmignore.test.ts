@@ -52,7 +52,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)(
 					},
 				},
 				["lib/a/a.js", "lib/a/b/b.js", "lib/a/b/c/c.js", "package.json"],
-				{ target: makeNPM() },
+				{ target: makeNPM(), dirs: false },
 			)
 		})
 	},

@@ -27,7 +27,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist bundle-missing-dep", (
 				}),
 			},
 			["index.js", "package.json"],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })

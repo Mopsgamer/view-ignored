@@ -45,7 +45,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist bundled-missing-option
 				"node_modules/history/package.json",
 				"package.json",
 			],
-			{ target: makeNPM() },
+			{ target: makeNPM(), dirs: false },
 		)
 	})
 })
