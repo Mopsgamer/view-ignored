@@ -12,23 +12,15 @@ import {
 import { unixify, join, dirname } from "../unixify.js"
 import { HOME, XDG, resolvePath, loadRec, mergeConfig, getCache } from "./gitConfig.js"
 
-const findGCache = new WeakMap<FsAdapter, Map<string, string | null>>()
-const branchCache = new WeakMap<FsAdapter, Map<string, string | null>>()
-
-const DEFAULT_INTERNAL_BEFORE = [
-	ruleCompile({
-		compiled: null,
-		excludes: true,
-		pattern: [".git", ".DS_Store"],
-	}),
-]
-
-const DEFAULT_GLOBAL_IGNORE = XDG ? join(XDG, "git/ignore") : join(HOME, ".config/git/ignore")
-
 /**
  * @since 0.12.0
  */
 export function makeGit(): Target {
+	const findGCache = new WeakMap<FsAdapter, Map<string, string | null>>()
+	const branchCache = new WeakMap<FsAdapter, Map<string, string | null>>()
+
+	const globalIgnore = XDG ? join(XDG, "git/ignore") : join(HOME, ".config/git/ignore")
+
 	const extractors: Extractor[] = [
 		{
 			extract: extractGitignore,
@@ -38,7 +30,13 @@ export function makeGit(): Target {
 
 	const internal: InternalRules = {
 		after: [],
-		before: DEFAULT_INTERNAL_BEFORE,
+		before: [
+			ruleCompile({
+				compiled: null,
+				excludes: true,
+				pattern: [".git", ".DS_Store"],
+			}),
+		],
 	}
 
 	return <Target>{
@@ -54,9 +52,7 @@ export function makeGit(): Target {
 			) => {
 				const core = conf["core"]
 				const ex = core ? core["excludesfile"] : null
-				const p = ex
-					? resolvePath(gDir || nCwd, ex)
-					: resolvePath(gDir || nCwd, DEFAULT_GLOBAL_IGNORE)
+				const p = ex ? resolvePath(gDir || nCwd, ex) : resolvePath(gDir || nCwd, globalIgnore)
 
 				const excludePath = gDir ? join(gDir, "info/exclude") : null
 				let pending = excludePath ? 2 : 1

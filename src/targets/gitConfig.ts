@@ -314,7 +314,7 @@ export function loadRec(
 
 		const dir = dirname(path)
 		// oxlint-disable-next-line typescript/no-explicit-any
-		const results: any[] = Array.from({ length: len })
+		const results: any[] = new Array(len)
 		let pending = len
 
 		// oxlint-disable-next-line typescript/no-explicit-any

@@ -104,65 +104,111 @@ export function resolveSources(
 
 	const elen = extractors.length
 	const plen = paths.length
-	let pi = 0
-	let ei = 0
 
-	function next(): void {
-		if (signal?.aborted) return cb(signal.reason as Error, null)
+	let pending = plen * elen
+	let resolved = false
 
-		if (pi >= plen) {
+	const entrySet = entries ? new Set(entries.map((e) => e.name)) : null
+
+	if (pending === 0) {
+		const res = resource ?? null
+		external.set(dir, res)
+		return cb(null, res)
+	}
+
+	// oxlint-disable-next-line typescript/no-explicit-any
+	const results: any[] = new Array(plen)
+
+	const check = () => {
+		if (resolved) return
+		for (let i = 0; i < plen; i++) {
+			const res = results[i]
+			if (res === undefined) break
+			if (res !== null) {
+				resolved = true
+				external.set(dir, res)
+				return cb(null, res)
+			}
+		}
+		if (pending === 0 && !resolved) {
+			resolved = true
 			const res = resource ?? null
 			external.set(dir, res)
 			return cb(null, res)
 		}
-
-		const parent = paths[pi]!
-		const extractor = extractors[ei]!
-		const { path: epath, extract } = extractor
-
-		if (++ei >= elen) {
-			pi++
-			ei = 0
-		}
-
-		if (entries && parent === paths[0]) {
-			const slashIdx = epath.indexOf("/")
-			const firstSegment = slashIdx === -1 ? epath : epath.slice(0, slashIdx)
-			let found = false
-			for (let k = 0, len = entries.length; k < len; k++) {
-				if (entries[k]!.name === firstSegment) {
-					found = true
-					break
-				}
-			}
-			if (!found) return next()
-		}
-
-		fs.readFile(join(parent, epath), (err, buff) => {
-			if (err) {
-				if (err.code === "ENOENT") return next()
-				const res: Resource = {
-					error: err,
-					source: { inverted: false, path: epath, rules: [] },
-				}
-				external.set(dir, res)
-				return cb(null, res)
-			}
-
-			const source: Source = { inverted: false, path: epath, rules: [] }
-			const act = extract(source, buff!)
-
-			if (act === null) return next()
-			if (act instanceof Error) {
-				const res: Resource = { error: act, source }
-				external.set(dir, res)
-				return cb(null, res)
-			}
-
-			external.set(dir, source)
-			return cb(null, source)
-		})
 	}
 
-	next()
+	for (let i = 0; i < plen; i++) {
+		const parent = paths[i]!
+		let pPending = elen
+		results[i] = undefined
+
+		for (let j = 0; j < elen; j++) {
+			if (resolved) return
+
+			const extractor = extractors[j]!
+			const { path: epath, extract } = extractor
+
+			if (entrySet && i === 0) {
+				const slashIdx = epath.indexOf("/")
+				const firstSegment = slashIdx === -1 ? epath : epath.slice(0, slashIdx)
+				if (!entrySet.has(firstSegment)) {
+					pending--
+					if (--pPending === 0) {
+						results[i] = null
+						check()
+					}
+					continue
+				}
+			}
+
+			fs.readFile(join(parent, epath), (err, buff) => {
+				if (resolved) return
+				if (signal?.aborted) {
+					resolved = true
+					return cb(signal.reason as Error, null)
+				}
+
+				if (err) {
+					pending--
+					if (err.code === "ENOENT") {
+						if (--pPending === 0) {
+							results[i] = null
+							check()
+						}
+						return
+					}
+					resolved = true
+					const res: Resource = {
+						error: err,
+						source: { inverted: false, path: epath, rules: [] },
+					}
+					external.set(dir, res)
+					return cb(null, res)
+				}
+
+				const source: Source = { inverted: false, path: epath, rules: [] }
+				const act = extract(source, buff!)
+
+				pending--
+				if (act === null) {
+					if (--pPending === 0) {
+						results[i] = null
+						check()
+					}
+					return
+				}
+
+				if (act instanceof Error) {
+					resolved = true
+					const res: Resource = { error: act, source }
+					external.set(dir, res)
+					return cb(null, res)
+				}
+
+				results[i] = source
+				check()
+			})
+		}
+	}
 }

@@ -13,6 +13,7 @@
 		"typescript/require-array-sort-compare": "off",
 		"unicorn/prefer-array-index-of": "error",
 		"unicorn/no-useless-iterator-to-array": "error",
+		"unicorn/no-new-array": "off",
 		"eslint/func-names": ["error", "always"],
 
 		"check-access": "warn"
