@@ -1,3 +1,4 @@
+import type { FsAdapter } from "../types.js"
 import type { Target } from "./target.js"
 
 import {
@@ -10,6 +11,8 @@ import {
 } from "../patterns/index.js"
 import { unixify, join, dirname } from "../unixify.js"
 import { HOME, XDG, resolvePath, loadRec, mergeConfig } from "./gitConfig.js"
+
+const findGCache = new WeakMap<FsAdapter, Map<string, string | null>>()
 
 /**
  * @since 0.12.0
@@ -38,7 +41,6 @@ export function makeGit(): Target {
 		ignores: ruleTest,
 		init({ fs, cwd, signal, target }, cb) {
 			const nCwd = unixify(cwd)
-			const excludePath = nCwd + "/.git/info/exclude"
 
 			const finalize = (
 				// oxlint-disable-next-line typescript/no-explicit-any
@@ -50,6 +52,12 @@ export function makeGit(): Target {
 				if (!ex) ex = XDG ? join(XDG, "git/ignore") : join(HOME, ".config/git/ignore")
 				const p = resolvePath(gDir || nCwd, ex)
 
+				const excludePath = gDir ? join(gDir, "info/exclude") : null
+				let pending = excludePath ? 2 : 1
+				const done = () => {
+					if (--pending === 0) cb(null)
+				}
+
 				fs.readFile(p, (err, res) => {
 					if (!err && res) {
 						const source = <Source>{
@@ -60,7 +68,10 @@ export function makeGit(): Target {
 						extractGitignore(source, res)
 						internal.after.push(...source.rules)
 					}
+					done()
+				})
 
+				if (excludePath) {
 					fs.readFile(excludePath, (err2, content) => {
 						if (!err2 && content) {
 							const source = <Source>{
@@ -71,20 +82,43 @@ export function makeGit(): Target {
 							extractGitignore(source, content)
 							internal.after.push(...source.rules)
 						}
-						cb(null)
+						done()
 					})
-				})
+				}
 			}
 
 			const findG = (cur: string, callback: (g: string | null) => void) => {
-				fs.readdir(cur, (err, files) => {
-					if (!err && (files as string[]).includes(".git")) {
-						return callback(join(cur, ".git"))
+				let m = findGCache.get(fs)
+				if (!m) findGCache.set(fs, (m = new Map()))
+				const cached = m.get(cur)
+				if (cached !== undefined) return callback(cached)
+
+				const onDone = (found: boolean) => {
+					if (found) {
+						const res = join(cur, ".git")
+						m!.set(cur, res)
+						return callback(res)
 					}
 					const p = dirname(cur)
-					if (p === cur || !cur || cur === ".") return callback(null)
-					findG(p, callback)
-				})
+					if (p === cur || !cur || cur === ".") {
+						m!.set(cur, null)
+						return callback(null)
+					}
+					findG(p, (res) => {
+						m!.set(cur, res)
+						callback(res)
+					})
+				}
+
+				if (fs.stat) {
+					fs.stat(join(cur, ".git"), (err, st) => {
+						onDone(!err && !!st)
+					})
+				} else {
+					fs.readdir(cur, (err, files) => {
+						onDone(!err && (files as string[]).includes(".git"))
+					})
+				}
 			}
 
 			findG(nCwd, (gDir) => {
