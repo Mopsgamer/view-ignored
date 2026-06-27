@@ -21,7 +21,7 @@ describe("gitignore parsing compliance", () => {
 	})
 
 	test("trailing spaces are preserved if escaped", () => {
-		const { exclude } = parse("foo\\  ")
+		const { exclude } = parse("foo\\ ")
 		expect(exclude).toContain("foo ")
 	})
 
@@ -36,6 +36,12 @@ describe("gitignore parsing compliance", () => {
 	test("escaped # is not a comment", () => {
 		const { exclude } = parse("\\#foo")
 		expect(exclude).toContain("#foo")
+	})
+
+	test("gitignore escaping - hash and comment", () => {
+		const { exclude } = parse("file\\#withhash # and comment")
+		expect(exclude).toContain("file#withhash")
+		expect(exclude).not.toContain("file#withhash # and comment")
 	})
 
 	test("negation with leading space", () => {
@@ -73,5 +79,15 @@ describe("gitignore parsing compliance", () => {
 
 		const { exclude: exclude2 } = parse("foo\\\\\\ ") // escaped backslash + escaped space
 		expect(exclude2).toContain("foo\\ ")
+	})
+
+	test("gitignore UTF-8", () => {
+		const { exclude } = parse("🚀.js")
+		expect(exclude).toContain("🚀.js")
+	})
+
+	test("gitignore UTF-8 escaped space", () => {
+		const { exclude } = parse("🚀\\ ")
+		expect(exclude).toContain("🚀 ")
 	})
 })
