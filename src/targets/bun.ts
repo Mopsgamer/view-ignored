@@ -114,12 +114,6 @@ export function makeBun(): Target {
 				let dist: PackageJson
 				try {
 					dist = npmManifestParse(content!.toString())
-					// const set = new Set<string>()
-
-					// TODO: NPM should include bundled deps
-
-					// internalInclude.pattern = Array.from(set)
-					// ruleCompile(internalInclude, { nocase: true })
 				} catch (error) {
 					cb(new Error("Invalid 'package.json'", { cause: error }))
 					return
@@ -133,16 +127,20 @@ export function makeBun(): Target {
 					return res
 				}
 
+				if (typeof dist.main === "string") set.add(normal(dist.main))
+				if (typeof dist.module === "string") set.add(normal(dist.module))
+				if (typeof dist.browser === "string") set.add(normal(dist.browser))
+
 				// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L1440
 				if (typeof dist.bin === "string") {
 					set.add(normal(dist.bin))
-				} else if (typeof dist.bin === "object") {
-					Object.values<string>(dist.bin).forEach((binPath) => set.add(normal(binPath)))
+				} else if (typeof dist.bin === "object" && dist.bin !== null) {
+					Object.values(dist.bin).forEach((binPath) => {
+						if (typeof binPath === "string") set.add(normal(binPath))
+					})
 				}
 
 				// TODO: Bun should include bundled deps
-				// nothing else
-				// link zig code
 
 				internalInclude.pattern = Array.from(set)
 				ruleCompile(internalInclude, { nocase: true })

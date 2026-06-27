@@ -122,6 +122,8 @@ export function makeYarn(): Target {
 					})
 				}
 
+				// TODO: Yarn should include bundled deps
+
 				internalInclude.pattern = Array.from(set)
 				ruleCompile(internalInclude, { nocase: true })
 				cb(null)
