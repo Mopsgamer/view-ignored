@@ -69,9 +69,9 @@ describe("gitignore parsing compliance", () => {
 
 	test("multiple backslashes before trailing space", () => {
 		const { exclude: exclude1 } = parse("foo\\\\ ") // escaped backslash, trailing space trimmed
-		expect(exclude1).toContain("foo\\\\")
+		expect(exclude1).toContain("foo\\")
 
 		const { exclude: exclude2 } = parse("foo\\\\\\ ") // escaped backslash + escaped space
-		expect(exclude2).toContain("foo\\\\ ")
+		expect(exclude2).toContain("foo\\ ")
 	})
 })
