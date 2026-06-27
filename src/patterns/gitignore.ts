@@ -45,55 +45,106 @@ export function extractGitignoreRules(
 		let end = content.indexOf(0x0a, start)
 		if (end === -1) end = len
 
-		let lineStart = start
-		let lineEnd = end
+		const lineEnd = end > start && content[end - 1] === 0x0d ? end - 1 : end
 
-		// Skip leading whitespace
-		while (lineStart < lineEnd) {
-			const c = content[lineStart]
-			if (c !== 32 && c !== 9 && c !== 13) break
-			lineStart++
-		}
+		if (start < lineEnd) {
+			if (content[start] === 35) {
+				// skip comment line
+			} else {
+				let isEscaped = false
+				let lineBuff = Buffer.allocUnsafe(lineEnd - start)
+				let lineBuffIdx = 0
 
-		// Skip trailing whitespace, unless it's escaped
-		while (lineEnd > lineStart) {
-			const c = content[lineEnd - 1]
-			if (c !== 32 && c !== 9 && c !== 13) break
-			if (lineEnd > lineStart + 1 && content[lineEnd - 2] === 92) break
-			lineEnd--
-		}
+				for (let i = start; i < lineEnd; i++) {
+					const c = content[i] as number
+					if (isEscaped) {
+						lineBuff[lineBuffIdx++] = c
+						isEscaped = false
+					} else if (c === 92) {
+						isEscaped = true
+						lineBuff[lineBuffIdx++] = c
+					} else if (c === 35) {
+						// unescaped hash
+						let isComment = false
+						if (i > start && content[i - 1] === 32) {
+							// Check if there was any NON-SPACE char before this space
+							let hasNonSpaceBefore = false
+							for (let j = start; j < i - 1; j++) {
+								if (content[j] !== 32 && content[j] !== 9 && content[j] !== 13) {
+									hasNonSpaceBefore = true
+									break
+								}
+							}
 
-		if (lineStart < len && content[lineStart] === 35) {
-			// skip comment line
-		} else if (lineStart < lineEnd) {
-			// Not empty and not a comment
-			let isEscaped = false
-			let lineBuff = Buffer.allocUnsafe(lineEnd - lineStart)
-			let lineBuffIdx = 0
-			let lastRealCharIdx = -1
+							if (hasNonSpaceBefore) {
+								let backslashCount = 0
+								for (let j = i - 2; j >= start; j--) {
+									if (content[j] === 92) backslashCount++
+									else break
+								}
+								if (backslashCount % 2 === 0) {
+									isComment = true
+								}
+							}
+						}
 
-			for (let i = lineStart; i < lineEnd; i++) {
-				const c = content[i] as number
-				if (isEscaped) {
-					lineBuff[lineBuffIdx++] = c
-					isEscaped = false
-					lastRealCharIdx = lineBuffIdx
-				} else if (c === 92) {
-					isEscaped = true
-				} else if (c === 35) {
-					// unescaped hash starts a comment
-					break
-				} else {
-					lineBuff[lineBuffIdx++] = c
-					if (c !== 32 && c !== 9 && c !== 13) {
-						lastRealCharIdx = lineBuffIdx
+						if (isComment) {
+							if (i > start && lineBuffIdx > 0 && lineBuff[lineBuffIdx - 1] === 32) {
+								lineBuffIdx--
+							}
+							break
+						} else {
+							lineBuff[lineBuffIdx++] = c
+						}
+					} else {
+						lineBuff[lineBuffIdx++] = c
 					}
 				}
-			}
 
-			if (lastRealCharIdx !== -1) {
-				const line = lineBuff.toString("utf8", 0, lastRealCharIdx)
-				resolveNegatable(line, false, include, exclude)
+				if (lineBuffIdx > 0) {
+					let actualLastRealCharIdx = -1
+					let tempIsEscaped = false
+					for (let k = 0; k < lineBuffIdx; k++) {
+						const c = lineBuff[k]
+						if (tempIsEscaped) {
+							actualLastRealCharIdx = k + 1
+							tempIsEscaped = false
+						} else if (c === 92) {
+							tempIsEscaped = true
+						} else if (c !== 32 && c !== 9 && c !== 13) {
+							actualLastRealCharIdx = k + 1
+						}
+					}
+
+					if (tempIsEscaped) {
+						actualLastRealCharIdx = lineBuffIdx
+					}
+
+					if (actualLastRealCharIdx !== -1) {
+						const rawLine = lineBuff.toString("utf8", 0, actualLastRealCharIdx)
+
+						let resolvedLine = ""
+						let resolvedIsEscaped = false
+						for (let m = 0; m < rawLine.length; m++) {
+							const rc = rawLine[m]
+							if (resolvedIsEscaped) {
+								resolvedLine += rc
+								resolvedIsEscaped = false
+							} else if (rc === "\\") {
+								resolvedIsEscaped = true
+							} else {
+								resolvedLine += rc
+							}
+						}
+						if (resolvedIsEscaped) {
+							resolvedLine += "\\"
+						}
+
+						if (resolvedLine.length > 0) {
+							resolveNegatable(resolvedLine, false, include, exclude)
+						}
+					}
+				}
 			}
 		}
 
