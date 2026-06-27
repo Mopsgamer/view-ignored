@@ -37,10 +37,10 @@ export function browserScanCb(
 		skipDepth = false,
 		skipInternal = false,
 		dirs = true,
-		fs: { readdir, readFile },
+		fs: { readdir, readFile, stat },
 	} = options
 
-	const fs: FsAdapter = { readFile, readdir }
+	const fs: FsAdapter = { readFile, readdir, stat }
 
 	if (maxDepth < 0) {
 		// oxlint-disable-next-line typescript/no-explicit-any

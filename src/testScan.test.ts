@@ -16,7 +16,7 @@ export function createAdapter(vol: Volume): FsAdapter {
 	const adapter: FsAdapter = {
 		readFile: fs.readFile.bind(fs),
 		readdir: fs.readdir.bind(fs),
-		stat: fs.stat?.bind(fs),
+		stat: fs.stat.bind(fs),
 	}
 	return adapter
 }

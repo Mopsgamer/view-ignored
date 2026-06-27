@@ -279,7 +279,7 @@ const configCacheMap = new WeakMap<FsAdapter, Map<string, any>>()
 const mergedConfigCacheMap = new WeakMap<FsAdapter, Map<string, any>>()
 
 // oxlint-disable-next-line typescript/no-explicit-any
-function getCache<K, V>(wm: WeakMap<FsAdapter, Map<K, V>>, fs: FsAdapter): Map<K, V> {
+export function getCache<K, V>(wm: WeakMap<FsAdapter, Map<K, V>>, fs: FsAdapter): Map<K, V> {
 	let m = wm.get(fs)
 	if (!m) {
 		m = new Map()
@@ -308,8 +308,7 @@ export function loadRec(
 	const cached = cache.get(path)
 
 	// oxlint-disable-next-line typescript/no-explicit-any
-	const processParsed = (parsed: any) => {
-		const includes = getIncludes(parsed, gitDir, branch)
+	const processParsed = (parsed: any, includes: string[]) => {
 		const len = includes.length
 		if (len === 0) return cb(parsed)
 
@@ -336,7 +335,7 @@ export function loadRec(
 		}
 	}
 
-	if (cached) return processParsed(cached)
+	if (cached) return processParsed(cached, getIncludes(cached, gitDir, branch))
 
 	fs.readFile(path, (err, res) => {
 		if (err) {
@@ -352,6 +351,6 @@ export function loadRec(
 			mCache.set(mKey, parsed)
 		}
 
-		processParsed(parsed)
+		processParsed(parsed, includes)
 	})
 }

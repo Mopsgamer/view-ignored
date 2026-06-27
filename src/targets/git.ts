@@ -10,9 +10,20 @@ import {
 	type Source,
 } from "../patterns/index.js"
 import { unixify, join, dirname } from "../unixify.js"
-import { HOME, XDG, resolvePath, loadRec, mergeConfig } from "./gitConfig.js"
+import { HOME, XDG, resolvePath, loadRec, mergeConfig, getCache } from "./gitConfig.js"
 
 const findGCache = new WeakMap<FsAdapter, Map<string, string | null>>()
+const branchCache = new WeakMap<FsAdapter, Map<string, string | null>>()
+
+const DEFAULT_INTERNAL_BEFORE = [
+	ruleCompile({
+		compiled: null,
+		excludes: true,
+		pattern: [".git", ".DS_Store"],
+	}),
+]
+
+const DEFAULT_GLOBAL_IGNORE = XDG ? join(XDG, "git/ignore") : join(HOME, ".config/git/ignore")
 
 /**
  * @since 0.12.0
@@ -27,13 +38,7 @@ export function makeGit(): Target {
 
 	const internal: InternalRules = {
 		after: [],
-		before: [
-			ruleCompile({
-				compiled: null,
-				excludes: true,
-				pattern: [".git", ".DS_Store"],
-			}),
-		],
+		before: DEFAULT_INTERNAL_BEFORE,
 	}
 
 	return <Target>{
@@ -48,9 +53,10 @@ export function makeGit(): Target {
 				gDir: string | null,
 			) => {
 				const core = conf["core"]
-				let ex = core ? core["excludesfile"] : null
-				if (!ex) ex = XDG ? join(XDG, "git/ignore") : join(HOME, ".config/git/ignore")
-				const p = resolvePath(gDir || nCwd, ex)
+				const ex = core ? core["excludesfile"] : null
+				const p = ex
+					? resolvePath(gDir || nCwd, ex)
+					: resolvePath(gDir || nCwd, DEFAULT_GLOBAL_IGNORE)
 
 				const excludePath = gDir ? join(gDir, "info/exclude") : null
 				let pending = excludePath ? 2 : 1
@@ -93,8 +99,8 @@ export function makeGit(): Target {
 				const cached = m.get(cur)
 				if (cached !== undefined) return callback(cached)
 
-				const onDone = (found: boolean) => {
-					if (found) {
+				fs.stat(join(cur, ".git"), (err, st) => {
+					if (!err && st) {
 						const res = join(cur, ".git")
 						m!.set(cur, res)
 						return callback(res)
@@ -108,17 +114,7 @@ export function makeGit(): Target {
 						m!.set(cur, res)
 						callback(res)
 					})
-				}
-
-				if (fs.stat) {
-					fs.stat(join(cur, ".git"), (err, st) => {
-						onDone(!err && !!st)
-					})
-				} else {
-					fs.readdir(cur, (err, files) => {
-						onDone(!err && (files as string[]).includes(".git"))
-					})
-				}
+				})
 			}
 
 			findG(nCwd, (gDir) => {
@@ -146,10 +142,21 @@ export function makeGit(): Target {
 				}
 
 				if (!gDir) return start(null)
-				fs.readFile(join(gDir, "HEAD"), (err, res) => {
-					if (err || !res) return start(null)
+
+				const bCache = getCache(branchCache, fs)
+				const headPath = join(gDir, "HEAD")
+				const bCached = bCache.get(headPath)
+				if (bCached !== undefined) return start(bCached)
+
+				fs.readFile(headPath, (err, res) => {
+					if (err || !res) {
+						bCache.set(headPath, null)
+						return start(null)
+					}
 					const s = res.toString().trim()
-					start(s.startsWith("ref: refs/heads/") ? s.slice(16) : null)
+					const branch = s.startsWith("ref: refs/heads/") ? s.slice(16) : null
+					bCache.set(headPath, branch)
+					start(branch)
 				})
 			})
 		},
