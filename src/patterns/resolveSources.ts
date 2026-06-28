@@ -127,53 +127,33 @@ export function resolveSources(
 		for (let i = 0, len = results.length; i < len; i++) {
 			const res = results[i]
 			if (res === undefined) return
-			if (res !== null) {
-				resolved = true
-				const pi = (i / elen) | 0
-				for (let j = 0; j <= pi; j++) {
-					const d = relDirs[j]
-					if (d !== undefined) external.set(d, res)
-				}
-				return cb(null, res)
+			if (res === null) continue
+			resolved = true
+			const pi = (i / elen) | 0
+			for (let j = 0; j <= pi; j++) {
+				const d = relDirs[j]
+				if (d !== undefined) external.set(d, res)
 			}
+			return cb(null, res)
 		}
 
-		if (activeTasks === 0) {
-			resolved = true
-			for (let i = 0; i < plen; i++) {
-				external.set(relDirs[i]!, baseResource)
-			}
-			cb(null, baseResource)
+		if (activeTasks > 0) return
+		resolved = true
+		for (let i = 0; i < plen; i++) {
+			external.set(relDirs[i]!, baseResource)
 		}
+		cb(null, baseResource)
 	}
 
 	for (let pi = 0; pi < plen; pi++) {
 		const parent = searchDirs[pi]!
 
-		const launch = (err: Error | null, entries_?: Dirent[]): void => {
+		const launch = (entries_?: Dirent[]): void => {
 			if (resolved) return
-			if (err) {
-				for (let ei = 0; ei < elen; ei++) {
-					// oxlint-disable-next-line typescript/no-explicit-any
-					if ((err as any).code === "ENOENT") {
-						results[pi * elen + ei] = null
-					} else {
-						const extractor = extractors[ei]!
-						results[pi * elen + ei] = {
-							error: err,
-							source: { inverted: false, path: extractor.path, rules: [] },
-						}
-					}
-				}
-				check()
-				return
-			}
-
 			let directoryTasks = elen
 			for (let ei = 0; ei < elen; ei++) {
 				const extractor = extractors[ei]!
 				const { path: epath, extract } = extractor
-
 				if (entries_) {
 					const slashIdx = epath.indexOf("/")
 					const firstSegment = slashIdx === -1 ? epath : epath.slice(0, slashIdx)
@@ -190,47 +170,62 @@ export function resolveSources(
 						continue
 					}
 				}
-
 				activeTasks++
 				fs.readFile(join(parent, epath), (err, buff) => {
 					activeTasks--
 					if (resolved) return
+					const ri = pi * elen + ei
 					if (err) {
 						// oxlint-disable-next-line typescript/no-explicit-any
 						if ((err as any).code === "ENOENT") {
-							results[pi * elen + ei] = null
-						} else {
-							results[pi * elen + ei] = {
-								error: err,
-								source: { inverted: false, path: epath, rules: [] },
-							}
+							results[ri] = null
+							check()
+							return
 						}
-					} else {
-						const source: Source = { inverted: false, path: epath, rules: [] }
-						const act = extract(source, buff!)
-						if (act === null) {
-							results[pi * elen + ei] = null
-						} else if (act instanceof Error) {
-							results[pi * elen + ei] = { error: act, source }
-						} else {
-							results[pi * elen + ei] = source
+						results[ri] = {
+							error: err,
+							source: { inverted: false, path: epath, rules: [] },
 						}
+						check()
+						return
 					}
+					const source: Source = { inverted: false, path: epath, rules: [] }
+					const act = extract(source, buff!)
+					if (act === null) results[ri] = null
+					else if (act === undefined) results[ri] = source
+					else results[ri] = { error: act, source }
 					check()
 				})
 			}
 			if (directoryTasks === 0) check()
 		}
-
 		if (pi === 0 && entries) {
-			launch(null, entries)
-		} else {
-			activeTasks++
-			fs.readdir(parent, { withFileTypes: true }, (err, entries_) => {
-				activeTasks--
-				launch(err, entries_ as Dirent[])
-			})
+			launch(entries)
+			continue
 		}
+		activeTasks++
+		fs.readdir(parent, { withFileTypes: true }, (err, entries_) => {
+			activeTasks--
+			if (!err) {
+				launch(entries_ as Dirent[])
+				return
+			}
+			for (let ei = 0; ei < elen; ei++) {
+				const ri = pi * elen + ei
+				// oxlint-disable-next-line typescript/no-explicit-any
+				if ((err as any).code === "ENOENT") {
+					results[ri] = null
+					continue
+				}
+				const extractor = extractors[ei]!
+				results[ri] = {
+					error: err,
+					source: { inverted: false, path: extractor.path, rules: [] },
+				}
+			}
+			check()
+			return
+		})
 	}
 
 	if (plen === 0) check()
