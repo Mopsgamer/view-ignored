@@ -275,9 +275,11 @@ export function getIncludes(parsed: any, gitDir: string | null, branch: string |
 
 // oxlint-disable-next-line typescript/no-explicit-any
 const configCacheMap = new WeakMap<FsAdapter, Map<string, any>>()
+// oxlint-disable-next-line typescript/no-explicit-any
+const mergedConfigCacheMap = new WeakMap<FsAdapter, Map<string, any>>()
 
 // oxlint-disable-next-line typescript/no-explicit-any
-function getCache<K, V>(wm: WeakMap<FsAdapter, Map<K, V>>, fs: FsAdapter): Map<K, V> {
+export function getCache<K, V>(wm: WeakMap<FsAdapter, Map<K, V>>, fs: FsAdapter): Map<K, V> {
 	let m = wm.get(fs)
 	if (!m) {
 		m = new Map()
@@ -297,21 +299,27 @@ export function loadRec(
 ): void {
 	if (sig?.aborted) return cb(null)
 
+	const mCache = getCache(mergedConfigCacheMap, fs)
+	const mKey = path + ":" + (gitDir || "") + ":" + (branch || "")
+	const mCached = mCache.get(mKey)
+	if (mCached !== undefined) return cb(mCached)
+
 	const cache = getCache(configCacheMap, fs)
 	const cached = cache.get(path)
 
 	// oxlint-disable-next-line typescript/no-explicit-any
-	const processParsed = (parsed: any) => {
-		const includes = getIncludes(parsed, gitDir, branch)
+	const processParsed = (parsed: any, includes: string[]) => {
 		const len = includes.length
 		if (len === 0) return cb(parsed)
 
 		const dir = dirname(path)
 		// oxlint-disable-next-line typescript/no-explicit-any
-		const results: any[] = Array.from({ length: len })
+		const results: any[] = new Array(len)
 		let pending = len
 
-		const merged = JSON.parse(JSON.stringify(parsed))
+		// oxlint-disable-next-line typescript/no-explicit-any
+		const merged: any = {}
+		mergeConfig(merged, parsed)
 
 		for (let i = 0; i < len; i++) {
 			loadRec(fs, resolvePath(dir, includes[i]!), gitDir, branch, sig, (v) => {
@@ -320,20 +328,29 @@ export function loadRec(
 					for (let j = 0; j < len; j++) {
 						if (results[j]) mergeConfig(merged, results[j])
 					}
+					mCache.set(mKey, merged)
 					cb(merged)
 				}
 			})
 		}
 	}
 
-	if (cached) return processParsed(cached)
+	if (cached) return processParsed(cached, getIncludes(cached, gitDir, branch))
 
 	fs.readFile(path, (err, res) => {
-		if (err) return cb(null)
+		if (err) {
+			mCache.set(mKey, null)
+			return cb(null)
+		}
 
 		const parsed = parseGit(res!.toString())
 		cache.set(path, parsed)
 
-		processParsed(parsed)
+		const includes = getIncludes(parsed, gitDir, branch)
+		if (includes.length === 0) {
+			mCache.set(mKey, parsed)
+		}
+
+		processParsed(parsed, includes)
 	})
 }

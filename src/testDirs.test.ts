@@ -110,6 +110,7 @@ describe("dirs option", () => {
 					cb(err)
 				}) as FsAdapter["readFile"],
 				readdir: nodefs.readdir,
+				stat: nodefs.stat,
 			},
 			invert: false,
 			signal: null,

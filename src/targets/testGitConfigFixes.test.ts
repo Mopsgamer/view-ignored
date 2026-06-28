@@ -33,6 +33,8 @@ test("Cache Bypass with gitDir", (done) => {
 			readCount++
 			cb(null, Buffer.from("[core]\n\tbare = true"))
 		},
+		// oxlint-disable-next-line typescript/no-explicit-any
+		stat: null as any,
 	}
 
 	loadRec(fs, "/config", "gitdir", null, null, (_res1) => {

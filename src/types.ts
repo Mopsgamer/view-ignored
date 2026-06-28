@@ -13,6 +13,7 @@ export interface FsAdapter {
 	 */
 	readdir: typeof fs.readdir
 	readFile: typeof fs.readFile
+	stat: typeof fs.stat
 }
 
 /**

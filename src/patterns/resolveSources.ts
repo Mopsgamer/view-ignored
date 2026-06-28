@@ -67,6 +67,9 @@ export function resolveSources(
 	const { fs, external, cwd, signal, target, resource, dir, entries } = options
 	const { root, extractors } = target
 
+	const cached = external.get(dir)
+	if (cached !== undefined) return cb(null, cached)
+
 	if (root === "." && dir !== ".") {
 		return resolveSources({ ...options, dir: "." }, (err, res) => {
 			if (err) return cb(err, null)
@@ -75,19 +78,18 @@ export function resolveSources(
 		})
 	}
 
-	const paths: string[] = []
+	const searchDirs: string[] = []
+	const relDirs: string[] = []
 	let current = dir
 
 	while (true) {
 		if (signal?.aborted) return cb(signal.reason as Error, null)
 
 		const cached = external.get(current)
-		if (cached !== undefined) {
-			if (current === dir) return cb(null, cached)
-			break
-		}
+		if (cached !== undefined) break
 
-		paths.push(join(cwd, current))
+		searchDirs.push(join(cwd, current))
+		relDirs.push(current)
 		if (current === "." || current === "/") break
 		current = dirname(current)
 	}
@@ -95,7 +97,10 @@ export function resolveSources(
 	if (root.startsWith("/")) {
 		let curr = root
 		while (curr.length < cwd.length && cwd.startsWith(curr)) {
-			if (!external.has(curr)) paths.push(curr)
+			if (!external.has(curr)) {
+				searchDirs.push(curr)
+				relDirs.push(curr)
+			}
 			const nextSlash = cwd.indexOf("/", curr.length + 1)
 			if (nextSlash === -1) break
 			curr = cwd.slice(0, nextSlash)
@@ -103,7 +108,7 @@ export function resolveSources(
 	}
 
 	const elen = extractors.length
-	const plen = paths.length
+	const plen = searchDirs.length
 	let pi = 0
 	let ei = 0
 
@@ -112,11 +117,13 @@ export function resolveSources(
 
 		if (pi >= plen) {
 			const res = resource ?? null
-			external.set(dir, res)
+			for (let i = 0; i < plen; i++) {
+				external.set(relDirs[i]!, res)
+			}
 			return cb(null, res)
 		}
 
-		const parent = paths[pi]!
+		const parent = searchDirs[pi]!
 		const extractor = extractors[ei]!
 		const { path: epath, extract } = extractor
 
@@ -125,7 +132,7 @@ export function resolveSources(
 			ei = 0
 		}
 
-		if (entries && parent === paths[0]) {
+		if (entries && pi === 0) {
 			const slashIdx = epath.indexOf("/")
 			const firstSegment = slashIdx === -1 ? epath : epath.slice(0, slashIdx)
 			let found = false
@@ -135,7 +142,10 @@ export function resolveSources(
 					break
 				}
 			}
-			if (!found) return next()
+			if (!found) {
+				next()
+				return
+			}
 		}
 
 		fs.readFile(join(parent, epath), (err, buff) => {
@@ -145,7 +155,9 @@ export function resolveSources(
 					error: err,
 					source: { inverted: false, path: epath, rules: [] },
 				}
-				external.set(dir, res)
+				for (let i = 0; i <= pi; i++) {
+					external.set(relDirs[i]!, res)
+				}
 				return cb(null, res)
 			}
 
@@ -155,12 +167,17 @@ export function resolveSources(
 			if (act === null) return next()
 			if (act instanceof Error) {
 				const res: Resource = { error: act, source }
-				external.set(dir, res)
+				for (let i = 0; i <= pi; i++) {
+					external.set(relDirs[i]!, res)
+				}
 				return cb(null, res)
 			}
 
-			external.set(dir, source)
-			return cb(null, source)
+			for (let i = 0; i <= pi; i++) {
+				const d = relDirs[i]
+				if (d !== undefined) external.set(d, source)
+			}
+			cb(null, source)
 		})
 	}
 

@@ -11,11 +11,13 @@ import { MatcherStream } from "./patterns/matcherStream.js"
 import { sortFirstFolders } from "./testSort.test.js"
 
 export function createAdapter(vol: Volume): FsAdapter {
-	const fs = createFsFromVolume(vol)
-	const adapter = {
+	// oxlint-disable-next-line typescript/no-explicit-any
+	const fs = createFsFromVolume(vol) as any
+	const adapter: FsAdapter = {
 		readFile: fs.readFile.bind(fs),
 		readdir: fs.readdir.bind(fs),
-	} as unknown as FsAdapter
+		stat: fs.stat.bind(fs),
+	}
 	return adapter
 }
 
