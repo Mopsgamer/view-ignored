@@ -72,114 +72,106 @@ export function resolveSources(
 
 	if (root === "." && dir !== ".") {
 		return resolveSources({ ...options, dir: "." }, (err, res) => {
-			if (err) return cb(err, null)
-			external.set(dir, res)
-			cb(null, res)
+			if (!err) external.set(dir, res)
+			cb(err, res)
 		})
 	}
 
 	const searchDirs: string[] = []
 	const relDirs: string[] = []
-	let current = dir
+	let curr = dir
 
 	while (true) {
-		if (signal?.aborted) return cb(signal.reason as Error, null)
-
-		const cached = external.get(current)
-		if (cached !== undefined) break
-
-		searchDirs.push(join(cwd, current))
-		relDirs.push(current)
-		if (current === "." || current === "/") break
-		current = dirname(current)
+		// oxlint-disable-next-line typescript/no-explicit-any
+		if (signal?.aborted) return cb(signal.reason as Error, null as any)
+		if (external.has(curr)) break
+		searchDirs.push(join(cwd, curr))
+		relDirs.push(curr)
+		if (curr === "." || curr === "/") break
+		curr = dirname(curr)
 	}
 
 	if (root.startsWith("/")) {
-		let curr = root
-		while (curr.length < cwd.length && cwd.startsWith(curr)) {
-			if (!external.has(curr)) {
-				searchDirs.push(curr)
-				relDirs.push(curr)
+		let c = root
+		while (c.length < cwd.length && cwd.startsWith(c)) {
+			if (!external.has(c)) {
+				searchDirs.push(c)
+				relDirs.push(c)
 			}
-			const nextSlash = cwd.indexOf("/", curr.length + 1)
-			if (nextSlash === -1) break
-			curr = cwd.slice(0, nextSlash)
+			const next = cwd.indexOf("/", c.length + 1)
+			if (next === -1) break
+			c = cwd.slice(0, next)
 		}
 	}
 
-	const elen = extractors.length
 	const plen = searchDirs.length
-	let pi = 0
-	let ei = 0
+	const elen = extractors.length
+	if (!plen) return cb(null, (resource ?? null) as Resource)
 
-	function next(): void {
-		if (signal?.aborted) return cb(signal.reason as Error, null)
-
-		if (pi >= plen) {
-			const res = resource ?? null
-			for (let i = 0; i < plen; i++) {
-				external.set(relDirs[i]!, res)
-			}
-			return cb(null, res)
-		}
-
-		const parent = searchDirs[pi]!
-		const extractor = extractors[ei]!
-		const { path: epath, extract } = extractor
-
-		if (++ei >= elen) {
-			pi++
-			ei = 0
-		}
-
-		if (entries && pi === 0) {
-			const slashIdx = epath.indexOf("/")
-			const firstSegment = slashIdx === -1 ? epath : epath.slice(0, slashIdx)
-			let found = false
-			for (let k = 0, len = entries.length; k < len; k++) {
-				if (entries[k]!.name === firstSegment) {
-					found = true
-					break
-				}
-			}
-			if (!found) {
-				next()
-				return
-			}
-		}
-
-		fs.readFile(join(parent, epath), (err, buff) => {
-			if (err) {
-				if (err.code === "ENOENT") return next()
-				const res: Resource = {
-					error: err,
-					source: { inverted: false, path: epath, rules: [] },
-				}
-				for (let i = 0; i <= pi; i++) {
-					external.set(relDirs[i]!, res)
-				}
-				return cb(null, res)
-			}
-
-			const source: Source = { inverted: false, path: epath, rules: [] }
-			const act = extract(source, buff!)
-
-			if (act === null) return next()
-			if (act instanceof Error) {
-				const res: Resource = { error: act, source }
-				for (let i = 0; i <= pi; i++) {
-					external.set(relDirs[i]!, res)
-				}
-				return cb(null, res)
-			}
-
-			for (let i = 0; i <= pi; i++) {
-				const d = relDirs[i]
-				if (d !== undefined) external.set(d, source)
-			}
-			cb(null, source)
-		})
+	let called = false
+	let nextPi = 0
+	const states = new Array(plen)
+	const done = (err: Error | null, res: Resource) => {
+		if (called) return
+		called = true
+		cb(err, res)
 	}
 
-	next()
+	const check = () => {
+		if (called) return
+		while (nextPi < plen) {
+			const s = states[nextPi]
+			if (!s?.ready) return
+			for (let j = 0; j < elen; j++) {
+				const r = s.results[j]
+				if (r === undefined) return
+				if (r !== null) {
+					for (let k = 0; k <= nextPi; k++) external.set(relDirs[k]!, r as Resource)
+					return done(null, r as Resource)
+				}
+			}
+			nextPi++
+		}
+		const res = (resource ?? null) as Resource
+		for (const d of relDirs) external.set(d, res)
+		done(null, res)
+	}
+
+	searchDirs.forEach((path, i) => {
+		const s = (states[i] = { ready: false, results: new Array(elen) })
+		const onEnts = (ents: Dirent[] | null) => {
+			// oxlint-disable-next-line typescript/no-explicit-any
+			if (signal?.aborted) return done(signal.reason as Error, null as any)
+			s.ready = true
+			let pending = 0
+			const set = ents && ents.length > 32 ? new Set(ents.map((e) => e.name)) : null
+
+			for (let j = 0; j < elen; j++) {
+				const { path: ep, extract } = extractors[j]!
+				const segment = ep.split("/", 1)[0]!
+				if (ents && (set ? !set.has(segment) : !ents.some((e) => e.name === segment))) {
+					s.results[j] = null
+					continue
+				}
+
+				pending++
+				fs.readFile(join(path, ep), (err, buff) => {
+					if (called) return
+					// oxlint-disable-next-line typescript/no-explicit-any
+					if (signal?.aborted) return done(signal.reason as Error, null as any)
+					const src: Source = { inverted: false, path: ep, rules: [] }
+					let r: Resource = null
+					if (!err) {
+						const act = extract(src, buff!)
+						if (act !== null) r = act instanceof Error ? { error: act, source: src } : src
+					} else if (err.code !== "ENOENT") r = { error: err, source: src }
+					s.results[j] = r
+					check()
+				})
+			}
+			if (!pending) check()
+		}
+		if (i === 0 && entries) onEnts(entries)
+		else fs.readdir(path, { withFileTypes: true }, (_, res) => onEnts(res || null))
+	})
 }
