@@ -12,15 +12,15 @@ import {
 import { unixify, join, dirname } from "../unixify.js"
 import { HOME, XDG, resolvePath, loadRec, mergeConfig, getCache } from "./gitConfig.js"
 
+const findGCache = new WeakMap<FsAdapter, Map<string, string | null>>()
+const branchCache = new WeakMap<FsAdapter, Map<string, string | null>>()
+
+const globalIgnore = XDG ? join(XDG, "git/ignore") : join(HOME, ".config/git/ignore")
+
 /**
  * @since 0.12.0
  */
 export function makeGit(): Target {
-	const findGCache = new WeakMap<FsAdapter, Map<string, string | null>>()
-	const branchCache = new WeakMap<FsAdapter, Map<string, string | null>>()
-
-	const globalIgnore = XDG ? join(XDG, "git/ignore") : join(HOME, ".config/git/ignore")
-
 	const extractors: Extractor[] = [
 		{
 			extract: extractGitignore,
