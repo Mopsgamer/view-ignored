@@ -137,24 +137,23 @@ export function resolveSources(
 		done(null, res)
 	}
 
+	const segs = extractors.map((e) => e.path.split("/", 1)[0]!)
+
 	searchDirs.forEach((path, i) => {
 		const s = (states[i] = { ready: false, results: new Array(elen) })
 		const onEnts = (ents: Dirent[] | null) => {
 			// oxlint-disable-next-line typescript/no-explicit-any
 			if (signal?.aborted) return done(signal.reason as Error, null as any)
 			s.ready = true
-			let pending = 0
+			let p = 0
 			const set = ents && ents.length > 32 ? new Set(ents.map((e) => e.name)) : null
-
 			for (let j = 0; j < elen; j++) {
 				const { path: ep, extract } = extractors[j]!
-				const segment = ep.split("/", 1)[0]!
-				if (ents && (set ? !set.has(segment) : !ents.some((e) => e.name === segment))) {
+				if (ents && (set ? !set.has(segs[j]!) : !ents.some((e) => e.name === segs[j]))) {
 					s.results[j] = null
 					continue
 				}
-
-				pending++
+				p++
 				fs.readFile(join(path, ep), (err, buff) => {
 					if (called) return
 					// oxlint-disable-next-line typescript/no-explicit-any
@@ -164,12 +163,14 @@ export function resolveSources(
 					if (!err) {
 						const act = extract(src, buff!)
 						if (act !== null) r = act instanceof Error ? { error: act, source: src } : src
-					} else if (err.code !== "ENOENT") r = { error: err, source: src }
+					} else if (err.code !== "ENOENT") {
+						r = { error: err, source: src }
+					}
 					s.results[j] = r
 					check()
 				})
 			}
-			if (!pending) check()
+			if (!p) check()
 		}
 		if (i === 0 && entries) onEnts(entries)
 		else fs.readdir(path, { withFileTypes: true }, (_, res) => onEnts(res || null))
