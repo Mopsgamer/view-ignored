@@ -2,7 +2,6 @@ import type { ExtractorFn } from "./extractor.js"
 import type { PatternCompileOptions } from "./patternCompile.js"
 import type { Rule } from "./rule.js"
 
-import { ruleCompile } from "./resolveSources.js"
 import { resolveNegatable, type Source } from "./source.js"
 
 /**
@@ -35,10 +34,8 @@ export function extractGitignoreRules(
 	source: Source,
 	content: Buffer,
 	options?: PatternCompileOptions,
-): { exclude: Rule; include: Rule } {
-	const include: Rule = { compiled: null, excludes: false, pattern: [] }
-	const exclude: Rule = { compiled: null, excludes: true, pattern: [] }
-
+): void {
+	let rule: Rule | undefined
 	let start = 0
 	const len = content.length
 	while (start < len) {
@@ -141,7 +138,7 @@ export function extractGitignoreRules(
 						}
 
 						if (resolvedLine.length > 0) {
-							resolveNegatable(resolvedLine, false, include, exclude)
+							source.rules.unshift((rule = resolveNegatable(resolvedLine, false, options, rule)))
 						}
 					}
 				}
@@ -150,14 +147,4 @@ export function extractGitignoreRules(
 
 		start = end + 1
 	}
-
-	if (include.pattern.length > 0) {
-		ruleCompile(include, options)
-		source.rules.push(include)
-	}
-	if (exclude.pattern.length > 0) {
-		ruleCompile(exclude, options)
-		source.rules.push(exclude)
-	}
-	return { exclude, include }
 }

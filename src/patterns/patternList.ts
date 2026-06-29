@@ -54,13 +54,12 @@ export type PatternList = string[]
  * @since 0.6.0
  */
 export function patternListCompile(
-	list: PatternList,
-	options?: PatternCompileOptions,
+	options: PatternCompileOptions & { context: PatternList },
 ): PatternCache[] {
-	const len = list.length
+	const len = options.context.length ?? 0
 	const res = Array.from<PatternCache>({ length: len })
 	for (let i = 0; i < len; i++) {
-		res[i] = patternCompile(list[i]!, list, options)
+		res[i] = patternCompile(options.context[i]!, options)
 	}
 	return res
 }

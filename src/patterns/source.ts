@@ -1,5 +1,7 @@
 import type { Rule, RuleMatch } from "./rule.js"
 
+import { patternCompile, type PatternCompileOptions } from "./patternCompile.js"
+
 /**
  * Represents a source of external patterns.
  *
@@ -42,31 +44,42 @@ export type Source = {
 }
 
 /**
- * Adds a negatable pattern to the source's rules.
- * Strips the leading '!' for include patterns,
- * and adds to exclude patterns otherwise.
+ * Converts pattern ("x" (excludes) or "!x" (includes)) to a rule.
+ * You can also invert the behavior.
+ * It compiles the rule.
  *
- * Expecting the rules
- * to be added into the source and then compiled.
+ *
+ * if !x -> includes + x
+ * if x -> excludes + x
+ * if invert && !x -> excludes + x
+ * if invert && x -> includes + x
  *
  * @since 0.6.0
  */
 export function resolveNegatable(
 	pattern: string,
 	invert: boolean,
-	include: Rule,
-	exclude: Rule,
-): void {
-	if (invert) {
-		;[exclude, include] = [include, exclude]
+	options?: PatternCompileOptions,
+	reuse?: Rule,
+): Rule {
+	// if !x -> includes + x.slice(1)
+	// if x -> excludes + x
+	// if invert && !x -> excludes + x.slice(1)
+	// if invert && x -> includes + x
+	const negated = pattern.charCodeAt(0) === 33
+	const excludes = negated === invert
+	if (negated) pattern = pattern.slice(1)
+	const iff = reuse && excludes === reuse.excludes
+	const rule: Rule = iff
+		? reuse
+		: {
+				compiled: [patternCompile(pattern, options)],
+				excludes,
+				pattern: [pattern],
+			}
+	if (iff) {
+		rule.compiled!.push(patternCompile(pattern, options))
+		rule.pattern.push(pattern)
 	}
-
-	let dist = exclude
-
-	if (pattern.charCodeAt(0) === 33) {
-		dist = include
-		pattern = pattern.slice(1)
-	}
-
-	dist.pattern.push(pattern)
+	return rule
 }

@@ -2,7 +2,6 @@ import type { ExtractorFn } from "./extractor.js"
 import type { Rule } from "./rule.js"
 
 import { npmManifestParse } from "../targets/npmManifest.js"
-import { ruleCompile } from "./resolveSources.js"
 import { resolveNegatable, type Source } from "./source.js"
 
 /**
@@ -28,10 +27,7 @@ extractPackageJson satisfies ExtractorFn
  *
  * @since 0.12.0
  */
-export function extractPackageJsonRules(
-	source: Source,
-	content: Buffer,
-): { exclude: Rule; include: Rule } | null {
+export function extractPackageJsonRules(source: Source, content: Buffer): void | null {
 	let dist: { files?: string[] }
 
 	try {
@@ -45,22 +41,10 @@ export function extractPackageJsonRules(
 	}
 
 	source.inverted = true
-	const include: Rule = { compiled: null, excludes: false, pattern: [] }
-	const exclude: Rule = { compiled: null, excludes: true, pattern: [] }
-
-	for (const pattern of dist.files) {
-		resolveNegatable(pattern, true, include, exclude)
-	}
+	let rule: Rule | undefined
 
 	const options = { nocase: true }
-	if (include.pattern.length > 0) {
-		ruleCompile(include, options)
-		source.rules.push(include)
+	for (const pattern of dist.files) {
+		source.rules.push((rule = resolveNegatable(pattern, true, options, rule)))
 	}
-	if (exclude.pattern.length > 0) {
-		ruleCompile(exclude, options)
-		source.rules.push(exclude)
-	}
-
-	return { exclude, include }
 }

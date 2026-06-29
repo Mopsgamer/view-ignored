@@ -84,7 +84,7 @@ const sourcePackageJson: Source = {
 	path: "package.json",
 	rules: [
 		{
-			compiled: [patternCompile("/out", sourcePackageJsonExclude)],
+			compiled: [patternCompile("/out", { context: sourcePackageJsonExclude })],
 			excludes: false,
 			pattern: sourcePackageJsonExclude,
 		},
@@ -108,11 +108,11 @@ const sourceGitignore: Source = {
 		},
 		{
 			compiled: [
-				patternCompile("node_modules", sourceGitignoreExclude),
-				patternCompile("out", sourceGitignoreExclude),
-				patternCompile("dist", sourceGitignoreExclude),
-				patternCompile("*.tgz", sourceGitignoreExclude),
-				patternCompile("*.cpuprofile", sourceGitignoreExclude),
+				patternCompile("node_modules", { context: sourceGitignoreExclude }),
+				patternCompile("out", { context: sourceGitignoreExclude }),
+				patternCompile("dist", { context: sourceGitignoreExclude }),
+				patternCompile("*.tgz", { context: sourceGitignoreExclude }),
+				patternCompile("*.cpuprofile", { context: sourceGitignoreExclude }),
 			],
 			excludes: true,
 			pattern: sourceGitignoreExclude,

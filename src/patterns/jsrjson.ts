@@ -3,7 +3,6 @@ import type { Rule } from "./rule.js"
 
 import stripJsonComments from "strip-json-comments"
 
-import { ruleCompile } from "./resolveSources.js"
 import { resolveNegatable, type Source } from "./source.js"
 
 interface JsrManifest {
@@ -35,10 +34,7 @@ extractJsrJson satisfies ExtractorFn
  *
  * @since 0.12.0
  */
-export function extractJsrJsonRules(
-	source: Source,
-	content: Buffer,
-): { exclude: Rule; include: Rule } {
+export function extractJsrJsonRules(source: Source, content: Buffer): void {
 	let dist: JsrManifest
 
 	try {
@@ -52,35 +48,21 @@ export function extractJsrJsonRules(
 		throw new Error("Invalid '" + source.path + "': Root must be an object")
 	}
 
-	const include: Rule = { compiled: null, excludes: false, pattern: [] }
-	const exclude: Rule = { compiled: null, excludes: true, pattern: [] }
+	let rule: Rule | undefined
 
 	// Resolve patterns based on the manifest hierarchy
 	const target = dist.publish ?? dist
 
+	const options = { nocase: true }
 	if (target.exclude && Array.isArray(target.exclude)) {
-		exclude.pattern.push(...target.exclude)
-	}
-
-	if (target.include && Array.isArray(target.include)) {
-		include.pattern.push(...target.include)
-	}
-
-	for (const si of [include, exclude]) {
-		for (const pattern of si.pattern) {
-			resolveNegatable(pattern, true, include, exclude)
+		for (const pattern of target.exclude) {
+			source.rules.push((rule = resolveNegatable(pattern, false, options, rule)))
 		}
 	}
 
-	const options = { nocase: true }
-	if (include.pattern.length > 0) {
-		ruleCompile(include, options)
-		source.rules.push(include)
+	if (target.include && Array.isArray(target.include)) {
+		for (const pattern of target.include) {
+			source.rules.push((rule = resolveNegatable(pattern, true, options, rule)))
+		}
 	}
-	if (exclude.pattern.length > 0) {
-		ruleCompile(exclude, options)
-		source.rules.push(exclude)
-	}
-
-	return { exclude, include }
 }

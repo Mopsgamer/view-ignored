@@ -36,7 +36,7 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist workspace", () => {
 		await testScan(done, tree, ["child.js", "package.json"], {
 			target: makeNPM(),
 			dirs: false,
-			within: process.cwd() + "/test/workspaces/foo",
+			cwd: process.cwd() + "/test/workspaces/foo",
 		})
 	})
 

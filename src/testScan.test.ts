@@ -104,11 +104,27 @@ export async function testScan(
 	} catch (e) {
 		if (ctx.paths.size) {
 			const map = Array.from(ctx.paths.entries()).map(
-				([k, v]) => [k, { ignored: v.ignored, kind: RMK[v.kind] }] as const,
+				([k, v]) =>
+					[
+						k,
+						{
+							ignored: v.ignored,
+							kind: RMK[v.kind],
+							...(v.kind === 6
+								? {
+										pattern: v.pattern,
+									}
+								: {}),
+						},
+					] as const,
 			)
-			console.error("scan: ctx.paths (debug): " + Bun.inspect(new Map(map), { colors: true }))
+			console.error(
+				"scan: ctx.paths (debug):\x1b[0m " + Bun.inspect(new Map(map), { colors: true }),
+			)
 		} else
-			console.error("scan: no paths, ctx.external: " + Bun.inspect(ctx.external, { colors: true }))
+			console.error(
+				"scan: no paths, ctx.external:\x1b[0m " + Bun.inspect(ctx.external, { colors: true }),
+			)
 		if (failed.length) console.error("Contains failed sources:", failed)
 		throw e
 	}
@@ -128,14 +144,27 @@ export async function testScan(
 			} catch (e) {
 				if (ctx.paths.size) {
 					const map = Array.from(ctx.paths.entries()).map(
-						([k, v]) => [k, { ignored: v.ignored, kind: RMK[v.kind] }] as const,
+						([k, v]) =>
+							[
+								k,
+								{
+									ignored: v.ignored,
+									kind: RMK[v.kind],
+									...(v.kind === 6
+										? {
+												pattern: v.pattern,
+											}
+										: {}),
+								},
+							] as const,
 					)
 					console.error(
-						"scanStream: ctx.paths (debug): " + Bun.inspect(new Map(map), { colors: true }),
+						"scanStream: ctx.paths (debug):\x1b[0m " + Bun.inspect(new Map(map), { colors: true }),
 					)
 				} else
 					console.error(
-						"scanStream: no paths, ctx.external: " + Bun.inspect(ctx.external, { colors: true }),
+						"scanStream: no paths, ctx.external:\x1b[0m " +
+							Bun.inspect(ctx.external, { colors: true }),
 					)
 				if (failed.length) console.error("Contains failed sources:", failed)
 				throw e

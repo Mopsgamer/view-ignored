@@ -6,47 +6,54 @@ import { type Source } from "./source.js"
 describe("gitignore parsing compliance", () => {
 	function parse(content: string) {
 		const source: Source = { inverted: false, path: ".gitignore", rules: [] }
-		const { exclude, include } = extractGitignoreRules(source, Buffer.from(content))
-		return { exclude: exclude.pattern, include: include.pattern }
+		extractGitignoreRules(source, Buffer.from(content))
+		return source.rules
 	}
 
 	test("leading spaces are preserved", () => {
-		const { exclude } = parse("  foo")
-		expect(exclude).toContain("  foo")
+		const rules = parse("  foo")
+		expect(rules[0]?.excludes).toBeTrue()
+		expect(rules[0]?.pattern).toContain("  foo")
 	})
 
 	test("trailing spaces are trimmed if not escaped", () => {
-		const { exclude } = parse("foo  ")
-		expect(exclude).toContain("foo")
+		const rules = parse("foo  ")
+		expect(rules[0]?.excludes).toBeTrue()
+		expect(rules[0]?.pattern).toContain("foo")
 	})
 
 	test("trailing spaces are preserved if escaped", () => {
-		const { exclude } = parse("foo\\ ")
-		expect(exclude).toContain("foo ")
+		const rules = parse("foo\\ ")
+		expect(rules[0]?.excludes).toBeTrue()
+		expect(rules[0]?.pattern).toContain("foo ")
 	})
 
 	test("only lines starting with # are comments", () => {
-		const { exclude } = parse(" #foo")
-		expect(exclude).toContain(" #foo")
+		const rules = parse(" #foo")
+		expect(rules[0]?.excludes).toBeTrue()
+		expect(rules[0]?.pattern).toContain(" #foo")
 
-		const { exclude: exclude2 } = parse("#comment")
-		expect(exclude2).toHaveLength(0)
+		const rules2 = parse("#comment")
+		expect(rules2).toHaveLength(0)
 	})
 
 	test("escaped # is not a comment", () => {
-		const { exclude } = parse("\\#foo")
-		expect(exclude).toContain("#foo")
+		const rules = parse("\\#foo")
+		expect(rules[0]?.excludes).toBeTrue()
+		expect(rules[0]?.pattern).toContain("#foo")
 	})
 
 	test("gitignore escaping - hash and comment", () => {
-		const { exclude } = parse("file\\#withhash # and comment")
-		expect(exclude).toContain("file#withhash")
-		expect(exclude).not.toContain("file#withhash # and comment")
+		const rules = parse("file\\#withhash # and comment")
+		expect(rules[0]?.excludes).toBeTrue()
+		expect(rules[0]?.pattern).toContain("file#withhash")
+		expect(rules[0]?.pattern).not.toContain("file#withhash # and comment")
 	})
 
 	test("negation with leading space", () => {
-		const { include } = parse("! foo")
-		expect(include).toContain(" foo")
+		const rules = parse("! foo")
+		expect(rules[0]?.excludes).toBeFalse()
+		expect(rules[0]?.pattern).toContain(" foo")
 	})
 
 	test("complex mixed case", () => {
@@ -59,35 +66,46 @@ describe("gitignore parsing compliance", () => {
 			"! e", // include " e"
 		].join("\n")
 
-		const { exclude, include } = parse(content)
-		expect(exclude).toContain("a")
-		expect(exclude).toContain(" b")
-		expect(exclude).toContain("c ")
-		expect(exclude).toContain(" #d")
-		expect(include).toContain(" e")
+		const rules = parse(content)
+		expect(rules[4]?.excludes).toBeTrue()
+		expect(rules[4]?.pattern).toContain("a")
+		expect(rules[3]?.excludes).toBeTrue()
+		expect(rules[3]?.pattern).toContain(" b")
+		expect(rules[2]?.excludes).toBeTrue()
+		expect(rules[2]?.pattern).toContain("c ")
+		expect(rules[1]?.excludes).toBeTrue()
+		expect(rules[1]?.pattern).toContain(" #d")
+		expect(rules[0]?.excludes).toBeFalse()
+		expect(rules[0]?.pattern).toContain(" e")
 	})
 
 	test("CRLF handling", () => {
-		const { exclude } = parse("foo\r\nbar\r")
-		expect(exclude).toContain("foo")
-		expect(exclude).toContain("bar")
+		const rules = parse("foo\r\nbar\r")
+		expect(rules[0]?.excludes).toBeTrue()
+		expect(rules[0]?.pattern).toContain("foo")
+		expect(rules[1]?.excludes).toBeTrue()
+		expect(rules[1]?.pattern).toContain("bar")
 	})
 
 	test("multiple backslashes before trailing space", () => {
-		const { exclude: exclude1 } = parse("foo\\\\ ") // escaped backslash, trailing space trimmed
-		expect(exclude1).toContain("foo\\")
+		const rules = parse("foo\\\\ ") // escaped backslash, trailing space trimmed
+		expect(rules[0]?.excludes).toBeTrue()
+		expect(rules[0]?.pattern).toContain("foo\\")
 
-		const { exclude: exclude2 } = parse("foo\\\\\\ ") // escaped backslash + escaped space
-		expect(exclude2).toContain("foo\\ ")
+		const rules2 = parse("foo\\\\\\ ") // escaped backslash + escaped space
+		expect(rules2[0]?.excludes).toBeTrue()
+		expect(rules2[0]?.pattern).toContain("foo\\ ")
 	})
 
 	test("gitignore UTF-8", () => {
-		const { exclude } = parse("🚀.js")
-		expect(exclude).toContain("🚀.js")
+		const rules = parse("🚀.js")
+		expect(rules[0]?.excludes).toBeTrue()
+		expect(rules[0]?.pattern).toContain("🚀.js")
 	})
 
 	test("gitignore UTF-8 escaped space", () => {
-		const { exclude } = parse("🚀\\ ")
-		expect(exclude).toContain("🚀 ")
+		const rules = parse("🚀\\ ")
+		expect(rules[0]?.excludes).toBeTrue()
+		expect(rules[0]?.pattern).toContain("🚀 ")
 	})
 })

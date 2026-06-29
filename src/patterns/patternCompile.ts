@@ -14,6 +14,14 @@ export type PatternCompileOptions = {
 	 * @since 0.8.0
 	 */
 	nocase?: boolean
+	/**
+	 * The list of patterns to use as context for matching.
+	 *
+	 * @default []
+	 *
+	 * @since 0.12.0
+	 */
+	context?: PatternList
 }
 
 /**
@@ -23,11 +31,7 @@ export type PatternCompileOptions = {
  *
  * @since 0.8.0
  */
-export function patternCompile(
-	pattern: string,
-	context: PatternList = [],
-	options?: PatternCompileOptions,
-): PatternCache {
+export function patternCompile(pattern: string, options?: PatternCompileOptions): PatternCache {
 	const nocase = !!options?.nocase
 	const isRoot = pattern.startsWith("/")
 
@@ -61,7 +65,7 @@ export function patternCompile(
 		test: selectTest(lowerCleaned, cleanedWithSlash, isRoot, nocase, matchBase, isMatch),
 	}
 
-	return { pattern, patternContext: context, re }
+	return { pattern, patternContext: options?.context ?? [], re }
 }
 
 function selectTest(

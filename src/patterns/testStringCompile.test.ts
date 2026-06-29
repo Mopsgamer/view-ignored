@@ -11,9 +11,7 @@ describe(".gitignore", () => {
 		expect(patternCacheTest(patternCompile(".git"), ".Git/message")).toBeFalse()
 	})
 	test("stringCompile .git .Git/message nocase true", () => {
-		expect(
-			patternCacheTest(patternCompile(".git", undefined, { nocase: true }), ".Git/message"),
-		).toBeTrue()
+		expect(patternCacheTest(patternCompile(".git", { nocase: true }), ".Git/message")).toBeTrue()
 	})
 	test("stringCompile .git .github/message", () => {
 		expect(patternCacheTest(patternCompile(".git"), ".github/message")).toBeFalse()

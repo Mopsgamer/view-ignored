@@ -8,6 +8,9 @@ and this project adheres to
 
 ## [Unreleased]
 
+- `Source.rules` is now an array of rules.
+- `resolveNegatable` is now less low-level.
+  Now it tries to add a compiled pattern to `Rule`.
 - Add `vign-diff` CLI utility for hunting bugs.
 - Renamed `fastInternal` and `fastDepth` to `skipInternal` and `skipDepth`.
 - Allow comments in Deno and JSR manifests for the `json` extension.

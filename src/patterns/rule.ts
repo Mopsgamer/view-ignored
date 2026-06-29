@@ -263,16 +263,9 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 
 	if (src !== null) {
 		const rules = src.rules
-		const elen = rules.length
-		if (elen === 0) {
-			return (src._noMatchCache ??= {
-				ignored: src.inverted,
-				kind: RuleMatchKind.noMatch,
-				source: src,
-			})
-		}
+		const rlen = rules.length
 
-		for (let i = 0; i < elen; i++) {
+		for (let i = 0; i < rlen; i++) {
 			const rule = rules[i]!
 			const res = cacheTest(rule.compiled!, entry, lowerPath)
 			if (res === null) continue

@@ -19,7 +19,7 @@ import { patternListCompile } from "./patternList.js"
  * @since 0.6.0
  */
 export function ruleCompile(rule: Rule, options?: PatternCompileOptions): Rule {
-	rule.compiled = patternListCompile(rule.pattern, options)
+	rule.compiled = patternListCompile({ ...options, context: rule.pattern })
 	return rule
 }
 
@@ -190,7 +190,14 @@ export function resolveSources(
 						return
 					}
 					const source: Source = { inverted: false, path: epath, rules: [] }
-					const act = extract(source, buff!)
+					let act: void | null | Error
+					try {
+						act = extract(source, buff!)
+					} catch (act) {
+						results[ri] = { error: act, source }
+						check()
+						return
+					}
 					if (act === null) results[ri] = null
 					else if (act === undefined) results[ri] = source
 					else results[ri] = { error: act, source }

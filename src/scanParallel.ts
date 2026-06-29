@@ -119,7 +119,7 @@ export function scanParallel(
 											results!.push(self)
 										}
 
-										if (entry.isDirectory() && self.next === 0) {
+										if (self.isDir && self.next === 0) {
 											walk(currentRelPath, depth + 1, res)
 										}
 									}
