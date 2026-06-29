@@ -24,7 +24,7 @@ export function scanParallel(
 	cb: (err: Error | null, results: WalkResult[] | null) => void,
 ): void {
 	const { scanOptions, stream, external, failed, onResult } = options
-	const { within } = scanOptions
+	const { within, invert } = scanOptions
 
 	const results: WalkResult[] | null = onResult ? null : []
 
@@ -68,17 +68,15 @@ export function scanParallel(
 						let dirMatched = 0
 						let dirDirs = 0
 
-						if (len === 0) {
-							if (onResult) {
-								onResult({
-									depth,
-									dir: relPath,
-									dirs: 0,
-									files: 0,
-									ignored: false,
-									matched: 0,
-								})
-							}
+						if (len === 0 && onResult) {
+							onResult({
+								depth,
+								dir: relPath,
+								dirs: 0,
+								files: 0,
+								ignored: false,
+								matched: 0,
+							})
 						}
 
 						for (let i = 0; i < len; i++) {
@@ -110,7 +108,13 @@ export function scanParallel(
 											dirDirs++
 										} else {
 											dirFiles++
-											if (!self.match.ignored) dirMatched++
+											const isIncluded =
+												invert === true
+													? self.match.ignored
+													: invert === 2
+														? true
+														: !self.match.ignored
+											if (isIncluded) dirMatched++
 										}
 
 										if (onResult) {
@@ -124,17 +128,15 @@ export function scanParallel(
 										}
 									}
 									pendingResults--
-									if (pendingResults === 0) {
-										if (onResult) {
-											onResult({
-												depth,
-												dir: relPath,
-												dirs: dirDirs,
-												files: dirFiles,
-												ignored: false,
-												matched: dirMatched,
-											})
-										}
+									if (pendingResults === 0 && onResult) {
+										onResult({
+											depth,
+											dir: relPath,
+											dirs: dirDirs,
+											files: dirFiles,
+											ignored: false,
+											matched: dirMatched,
+										})
 									}
 									taskDone()
 								},

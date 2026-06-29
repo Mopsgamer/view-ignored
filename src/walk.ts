@@ -86,8 +86,8 @@ export function walkIncludes(
 		return target.ignores(testOptions, (err, match) => {
 			// oxlint-disable-next-line typescript/no-explicit-any
 			if (err) return cb(err, null as any)
-			if (invert) match = { ...match, ignored: !match.ignored }
 
+			const isExcluded = invert === true ? !match.ignored : invert === 2 ? false : match.ignored
 			const direntPath = isDir ? path + "/" : path
 
 			const result: WalkResult = {
@@ -108,11 +108,7 @@ export function walkIncludes(
 				}
 				return cb(null, result)
 			}
-			if (match.ignored) {
-				if (stream && (dirs || !isDir))
-					stream.dispatchEvent(
-						new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
-					)
+			if (isExcluded) {
 				if (isDir && skipInternal) result.next = 1
 				return cb(null, result)
 			}
@@ -125,8 +121,7 @@ export function walkIncludes(
 		// oxlint-disable-next-line typescript/no-explicit-any
 		if (err) return cb(err, null as any)
 
-		if (invert) match = { ...match, ignored: !match.ignored }
-
+		const isExcluded = invert === true ? !match.ignored : invert === 2 ? false : match.ignored
 		const direntPath = isDir ? path + "/" : path
 
 		const result: WalkResult = {
@@ -148,11 +143,7 @@ export function walkIncludes(
 			return cb(null, result)
 		}
 
-		if (match.ignored) {
-			if (stream && (dirs || !isDir))
-				stream.dispatchEvent(
-					new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
-				)
+		if (isExcluded) {
 			if (isDir && skipInternal) result.next = 1
 			return cb(null, result)
 		}
@@ -163,9 +154,9 @@ export function walkIncludes(
 					stream.dispatchEvent(
 						new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
 					)
-			} else {
-				result.tooDeep = true
+				return cb(null, result)
 			}
+			result.tooDeep = true
 			return cb(null, result)
 		}
 
@@ -198,10 +189,11 @@ export function walkPatchResult(
 	r: WalkResult,
 	options: Required<ScanOptions>,
 ): void {
-	const { match } = r
-	if (match.ignored) return
-	const { path, parentPath, tooDeep, includeParent, isDir } = r
-	const { dirs } = options
+	const { match, path, parentPath, tooDeep, includeParent, isDir } = r
+	const { dirs, invert } = options
+
+	const isExcluded = invert === true ? !match.ignored : invert === 2 ? false : match.ignored
+	if (isExcluded) return
 	if (!tooDeep && (dirs || !isDir)) ctx.paths.set(path, match)
 	if (includeParent && dirs) {
 		const parent = parentPath + "/"

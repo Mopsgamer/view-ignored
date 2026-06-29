@@ -132,7 +132,10 @@ export async function testScan(
 	const stream = scanStream(o)
 	const results = new Set<string>()
 	stream.addEventListener("dirent", ({ detail: dirent }) => {
-		if (dirent.match.ignored) return
+		const { invert = false } = o
+		const isExcluded =
+			invert === true ? !dirent.match.ignored : invert === 2 ? false : dirent.match.ignored
+		if (isExcluded) return
 		if (results.has(dirent.path)) results.delete(dirent.path)
 		results.add(dirent.path)
 	})

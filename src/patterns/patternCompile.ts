@@ -34,8 +34,10 @@ export type PatternCompileOptions = {
 export function patternCompile(pattern: string, options?: PatternCompileOptions): PatternCache {
 	const nocase = !!options?.nocase
 	const isRoot = pattern.startsWith("/")
+	const isRelative = pattern.startsWith("./")
 
 	let cleaned = pattern
+	if (isRelative) cleaned = cleaned.slice(2)
 	if (cleaned.charCodeAt(cleaned.length - 1) === 47) cleaned = cleaned.slice(0, -1)
 	if (isRoot) cleaned = cleaned.slice(1)
 
@@ -43,7 +45,7 @@ export function patternCompile(pattern: string, options?: PatternCompileOptions)
 
 	const hasSlash = cleaned.includes("/")
 
-	const matchBase = !isRoot && !hasSlash
+	const matchBase = !(isRoot || isRelative || hasSlash)
 	const cleanedWithSlash = lowerCleaned + "/"
 
 	const isMatchRe = glob.makeRe(lowerCleaned, {

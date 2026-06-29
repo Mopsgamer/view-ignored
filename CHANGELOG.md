@@ -8,6 +8,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+- Fix `match.ignored`. Were always false.
+- `invert` now supports the value `2`, which enables all paths.
 - `Source.rules` is now an array of rules.
 - `resolveNegatable` is now less low-level.
   Now it tries to add a compiled pattern to `Rule`.

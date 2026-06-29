@@ -64,7 +64,7 @@ export type ScanOptions = {
 	 *
 	 * @since 0.6.0
 	 */
-	invert?: boolean
+	invert?: boolean | 2
 
 	/**
 	 * Starting from depth `0` means you will see

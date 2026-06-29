@@ -29,7 +29,7 @@ describe("Git", () => {
 					{ once: true },
 				)
 			},
-			{ target: makeGit() },
+			{ invert: 2, target: makeGit() },
 		)
 	})
 	test("scanStream .gitignore", async (done) => {
@@ -58,7 +58,7 @@ describe("Git", () => {
 					{ once: true },
 				)
 			},
-			{ target: makeGit() },
+			{ invert: 2, target: makeGit() },
 		)
 	})
 })
