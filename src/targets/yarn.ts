@@ -104,21 +104,15 @@ export function makeYarn(): Target {
 
 				const set = new Set<string>()
 
-				function normal(path: string): string {
-					let res = unixify(path)
-					if (res.startsWith("/")) res = res.slice(1)
-					return res
-				}
-
-				if (typeof dist.main === "string") set.add(normal(dist.main))
-				if (typeof dist.module === "string") set.add(normal(dist.module))
-				if (typeof dist.browser === "string") set.add(normal(dist.browser))
+				if (typeof dist.main === "string") set.add(unixify(dist.main))
+				if (typeof dist.module === "string") set.add(unixify(dist.module))
+				if (typeof dist.browser === "string") set.add(unixify(dist.browser))
 
 				if (typeof dist.bin === "string") {
-					set.add(normal(dist.bin))
+					set.add(unixify(dist.bin))
 				} else if (typeof dist.bin === "object" && dist.bin !== null) {
 					Object.values(dist.bin).forEach((binPath) => {
-						if (typeof binPath === "string") set.add(normal(binPath))
+						if (typeof binPath === "string") set.add(unixify(binPath))
 					})
 				}
 

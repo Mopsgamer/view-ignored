@@ -12,8 +12,8 @@ export interface PackageJson {
 	main?: string
 	module?: string
 	optionalDependencies?: Record<string, string>
-	bundleDependencies?: string[]
-	bundledDependencies?: string[]
+	bundleDependencies?: boolean | string[]
+	bundledDependencies?: boolean | string[]
 }
 
 function isValidNpmName(name: string): boolean {
@@ -110,10 +110,14 @@ export function npmManifestParse(s: string): PackageJson {
 		}
 	}
 
-	const arrayFields: (keyof PackageJson)[] = ["files", "bundleDependencies", "bundledDependencies"]
-	for (const field of arrayFields) {
-		if (field in parsed && !isArrayOfStrings(parsed[field])) {
-			throw new Error(`'${field}' field must be an array of strings`)
+	if ("files" in parsed && !isArrayOfStrings(parsed.files)) {
+		throw new Error("'files' field must be an array of strings")
+	}
+
+	const bundleFields: (keyof PackageJson)[] = ["bundleDependencies", "bundledDependencies"]
+	for (const field of bundleFields) {
+		if (field in parsed && typeof parsed[field] !== "boolean" && !isArrayOfStrings(parsed[field])) {
+			throw new Error(`'${field}' field must be a boolean or an array of strings`)
 		}
 	}
 
