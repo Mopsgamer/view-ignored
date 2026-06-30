@@ -190,8 +190,6 @@ const TARGETS: Record<string, TargetDef> = {
 	},
 }
 
-const UNSUPPORTED: string[] = []
-
 interface Diff {
 	file: string
 	issue: string
@@ -228,26 +226,42 @@ function openUrl(url: string) {
 }
 
 function showHelp() {
-	process.stdout.write(
-		`${styleText("bold", "Usage:")} vign-diff ${styleText("blue", "[command]")} ${styleText("blue", "[target]")} [flags]\n`,
-	)
-	process.stdout.write(`${styleText("bold", "Commands:")} diff (default), list, ls\n`)
-	process.stdout.write(`${styleText("bold", "Flags:")} -V (verbose), -i (issue), -h (help)\n`)
-	process.stdout.write(`${styleText("bold", "Targets:")}\n`)
-	for (const [name, info] of Object.entries(TARGETS)) {
-		process.stdout.write(`  ${styleText("blue", name.padEnd(14))} ${styleText("dim", info.cmd)}\n`)
-	}
-	if (UNSUPPORTED.length > 0) {
-		process.stdout.write(`\x1b[1;38;5;208mUnsupported:\x1b[0m ${UNSUPPORTED.join(", ")}\n`)
-	}
-	process.stdout.write(`${styleText("bold", "Links:")}\n`)
+	const b = (s: string) => styleText("bold", s)
+	const d = (s: string) => styleText("dim", s)
+	const blue = (s: string) => styleText("blue", s)
+
+	console.log(`${b("vign-diff")} ${d(`v${pkg.version}`)}`)
+	console.log(`Hunt for bugs by comparing ${b("view-ignored")} against system CLIs.\n`)
+
+	console.log(`${b("Usage:")}`)
+	console.log(`  vign-diff ${blue("[command]")} ${blue("<target>")} [flags]\n`)
+
+	console.log(`${b("Commands:")}`)
+	console.log(`  ${blue("diff")}           Compare against system CLI (default)`)
+	console.log(`  ${blue("list")}, ${blue("ls")}     List files included by view-ignored\n`)
+
+	console.log(`${b("Targets:")}`)
+	const targetNames = Object.keys(TARGETS).sort()
+	console.log(`  ${targetNames.join(", ")} (or ${blue("all")})\n`)
+
+	console.log(`${b("Flags:")}`)
+	console.log(`  ${blue("-i")}, ${blue("--issue")}     Open GitHub issue on discrepancy`)
+	console.log(`  ${blue("-V")}, ${blue("--verbose")}   Show raw report`)
+	console.log(`  ${blue("-h")}, ${blue("--help")}      Show this help output`)
+	console.log(`  ${blue("-v")}, ${blue("--version")}   Show version\n`)
+
+	console.log(`${b("Examples:")}`)
+	console.log(`  vign-diff git          ${d("# Compare against git")}`)
+	console.log(`  vign-diff list npm     ${d("# List files for npm package")}`)
+	console.log(`  vign-diff all -i       ${d("# Scan all and open issues")}\n`)
+
 	const repo = pkg.repository.url.replace(/^git\+/, "").replace(/\.git$/, "")
 	const npmLink = `https://www.npmjs.org/package/${pkg.name}`
 	const npmxLink = `https://www.npmx.dev/package/${pkg.name}`
-	process.stdout.write(`${styleText("blue", repo)}\n`)
-	process.stdout.write(`  ${styleText("blue", npmLink)}\n`)
-	process.stdout.write(`  ${styleText("blue", npmxLink)}\n`)
-	process.stdout.write(`v${styleText(["blue", "dim"], pkg.version)}\n`)
+	console.log(`${b("Links:")}`)
+	console.log(`  ${blue(repo)}`)
+	console.log(`  ${blue(npmLink)}`)
+	console.log(`  ${blue(npmxLink)}`)
 }
 
 function hasBin(bin: string): boolean {
@@ -514,6 +528,7 @@ async function main() {
 				help: { short: "h", type: "boolean" },
 				issue: { short: "i", type: "boolean" },
 				verbose: { short: "V", type: "boolean" },
+				version: { short: "v", type: "boolean" },
 			},
 		})
 	} catch (err: unknown) {
@@ -524,8 +539,13 @@ async function main() {
 	}
 
 	const { values, positionals } = args
-	if (values.help) {
+	if (values.help || positionals[0] === "help") {
 		showHelp()
+		return
+	}
+
+	if (values.version) {
+		console.log(`v${pkg.version}`)
 		return
 	}
 
