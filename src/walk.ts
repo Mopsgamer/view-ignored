@@ -29,6 +29,7 @@ export type WalkResult = {
 	next: 0 | 1
 	depth: number
 	isDir: boolean
+	entry: Dirent
 }
 
 export type WalkTotal = {
@@ -47,27 +48,8 @@ export function walkIncludes(
 	options: WalkOptions,
 	cb: (err: Error | null, result: WalkResult) => void,
 ): void {
-	const {
-		entry,
-		stream,
-		scanOptions,
-		relPath: path,
-		lowerEntry,
-		parentPath,
-		resource,
-		depth,
-	} = options
-	const {
-		target,
-		depth: maxDepth,
-		invert,
-		skipDepth,
-		skipInternal,
-		dirs,
-		fs,
-		cwd,
-		signal,
-	} = scanOptions
+	const { entry, scanOptions, relPath: path, lowerEntry, parentPath, resource, depth } = options
+	const { target, depth: maxDepth, invert, skipDepth, skipInternal, fs, cwd, signal } = scanOptions
 
 	const isDir = entry.isDirectory()
 
@@ -92,6 +74,7 @@ export function walkIncludes(
 
 			const result: WalkResult = {
 				depth,
+				entry,
 				includeParent: false,
 				isDir,
 				match,
@@ -101,11 +84,6 @@ export function walkIncludes(
 				tooDeep: true,
 			}
 			if (isRuleMatchInvalid(match)) {
-				if (stream && (dirs || !isDir)) {
-					stream.dispatchEvent(
-						new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
-					)
-				}
 				return cb(null, result)
 			}
 			if (isExcluded) {
@@ -126,6 +104,7 @@ export function walkIncludes(
 
 		const result: WalkResult = {
 			depth,
+			entry,
 			includeParent: false,
 			isDir,
 			match,
@@ -136,10 +115,6 @@ export function walkIncludes(
 		}
 
 		if (isRuleMatchInvalid(match)) {
-			if (stream && (dirs || !isDir))
-				stream.dispatchEvent(
-					new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
-				)
 			return cb(null, result)
 		}
 
@@ -150,10 +125,6 @@ export function walkIncludes(
 
 		if (isDir) {
 			if (depth <= maxDepth) {
-				if (stream && dirs)
-					stream.dispatchEvent(
-						new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
-					)
 				return cb(null, result)
 			}
 			result.tooDeep = true
@@ -167,16 +138,6 @@ export function walkIncludes(
 
 		if (parentPath !== "" && parentPath !== ".") result.includeParent = true
 
-		if (stream) {
-			if (result.includeParent && dirs)
-				stream.dispatchEvent(
-					new CustomEvent("dirent", { detail: { dirent: entry, match, path: parentPath + "/" } }),
-				)
-			stream.dispatchEvent(
-				new CustomEvent("dirent", { detail: { dirent: entry, match, path: direntPath } }),
-			)
-		}
-
 		cb(null, result)
 	})
 }
@@ -188,19 +149,38 @@ export function walkPatchResult(
 	ctx: MatcherContext,
 	r: WalkResult,
 	options: Required<ScanOptions>,
+	stream?: MatcherStream,
 ): void {
-	const { match, path, parentPath, tooDeep, includeParent, isDir } = r
+	const { match, path, parentPath, tooDeep, includeParent, isDir, entry } = r
 	const { dirs, invert } = options
 
 	const isExcluded = invert === true ? !match.ignored : invert === 2 ? false : match.ignored
-	if (isExcluded) return
-	if (!tooDeep && (dirs || !isDir)) ctx.paths.set(path, match)
-	if (includeParent && dirs) {
-		const parent = parentPath + "/"
-		if (!ctx.paths.has(parent)) {
-			ctx.paths.set(parent, match)
+
+	if (isExcluded) {
+		if (isRuleMatchInvalid(match)) {
+			if (stream && !ctx.paths.has(path) && (dirs || !isDir)) {
+				ctx.paths.set(path, match)
+				stream.dispatchEvent(new CustomEvent("dirent", { detail: { dirent: entry, match, path } }))
+			}
+		}
+		return
+	}
+
+	if (!tooDeep && (dirs || !isDir) && !ctx.paths.has(path)) {
+		ctx.paths.set(path, match)
+		if (stream) {
+			stream.dispatchEvent(new CustomEvent("dirent", { detail: { dirent: entry, match, path } }))
 		}
 	}
+
+	if (!(includeParent && dirs)) return
+	const parent = parentPath + "/"
+	if (ctx.paths.has(parent)) return
+	ctx.paths.set(parent, match)
+	if (!stream) return
+	stream.dispatchEvent(
+		new CustomEvent("dirent", { detail: { dirent: entry, match, path: parent } }),
+	)
 }
 
 /**

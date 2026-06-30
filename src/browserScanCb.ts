@@ -71,6 +71,7 @@ export function browserScanCb(
 		within: normalWithin,
 	}
 
+	const stream = this as MatcherStream | undefined
 	const parallelOptions = <ScanParallelOptions>{
 		external: ctx.external,
 		failed: ctx.failed,
@@ -79,10 +80,10 @@ export function browserScanCb(
 				walkPatchTotal(ctx, scanOptions.depth, result)
 				return
 			}
-			walkPatchResult(ctx, result, scanOptions)
+			walkPatchResult(ctx, result, scanOptions, stream)
 		},
 		scanOptions,
-		stream: this,
+		stream,
 	}
 
 	const parallelHandle = (err: Error | null) => {
