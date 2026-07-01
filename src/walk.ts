@@ -41,6 +41,10 @@ export type WalkTotal = {
 	ignored: boolean
 }
 
+function isMatchExcluded(invert: boolean | 2, match: RuleMatch): boolean {
+	return invert === true ? !match.ignored : invert === 2 ? false : match.ignored
+}
+
 /**
  * @since 0.11.0
  */
@@ -53,23 +57,23 @@ export function walkIncludes(
 
 	const isDir = entry.isDirectory()
 
-	const testOptions = {
-		cwd,
-		entry: path,
-		fs,
-		lowerEntry: lowerEntry || path.toLowerCase(),
-		parentPath,
-		resource,
-		signal,
-		target,
-	}
-
-	if (skipDepth && depth > maxDepth) {
-		return target.ignores(testOptions, (err, match) => {
+	target.ignores(
+		{
+			cwd,
+			entry: path,
+			fs,
+			lowerEntry: lowerEntry || path.toLowerCase(),
+			parentPath,
+			resource,
+			signal,
+			target,
+		},
+		(err, match) => {
 			// oxlint-disable-next-line typescript/no-explicit-any
 			if (err) return cb(err, null as any)
 
-			const isExcluded = invert === true ? !match.ignored : invert === 2 ? false : match.ignored
+			const tooDeepFlag = skipDepth && depth > maxDepth
+			const isExcluded = isMatchExcluded(invert, match)
 			const direntPath = isDir ? path + "/" : path
 
 			const result: WalkResult = {
@@ -81,65 +85,49 @@ export function walkIncludes(
 				next: 0,
 				parentPath,
 				path: direntPath,
-				tooDeep: true,
+				tooDeep: tooDeepFlag,
 			}
+
 			if (isRuleMatchInvalid(match)) {
 				return cb(null, result)
 			}
+
 			if (isExcluded) {
 				if (isDir && skipInternal) result.next = 1
 				return cb(null, result)
 			}
-			result.next = isDir ? 0 : 1
-			cb(null, result)
-		})
-	}
 
-	target.ignores(testOptions, (err, match) => {
-		// oxlint-disable-next-line typescript/no-explicit-any
-		if (err) return cb(err, null as any)
-
-		const isExcluded = invert === true ? !match.ignored : invert === 2 ? false : match.ignored
-		const direntPath = isDir ? path + "/" : path
-
-		const result: WalkResult = {
-			depth,
-			entry,
-			includeParent: false,
-			isDir,
-			match,
-			next: 0,
-			parentPath,
-			path: direntPath,
-			tooDeep: false,
-		}
-
-		if (isRuleMatchInvalid(match)) {
-			return cb(null, result)
-		}
-
-		if (isExcluded) {
-			if (isDir && skipInternal) result.next = 1
-			return cb(null, result)
-		}
-
-		if (isDir) {
-			if (depth <= maxDepth) {
+			if (tooDeepFlag) {
+				result.next = isDir ? 0 : 1
 				return cb(null, result)
 			}
-			result.tooDeep = true
-			return cb(null, result)
-		}
 
-		if (depth > maxDepth) {
-			result.tooDeep = true
-			return cb(null, result)
-		}
+			if (depth > maxDepth) {
+				result.tooDeep = true
+				return cb(null, result)
+			}
 
-		if (parentPath !== "" && parentPath !== ".") result.includeParent = true
+			if (!isDir && parentPath !== "" && parentPath !== ".") {
+				result.includeParent = true
+			}
 
-		cb(null, result)
-	})
+			cb(null, result)
+		},
+	)
+}
+
+function patch(
+	ctx: MatcherContext,
+	stream: MatcherStream | undefined,
+	path: string,
+	entry: Dirent,
+	match: RuleMatch,
+): void {
+	if (ctx.paths.has(path)) return
+	ctx.paths.set(path, match)
+	if (stream) {
+		stream.dispatchEvent(new CustomEvent("dirent", { detail: { dirent: entry, match, path } }))
+	}
 }
 
 /**
@@ -154,49 +142,47 @@ export function walkPatchResult(
 	const { match, path, parentPath, tooDeep, includeParent, isDir, entry } = r
 	const { dirs, invert } = options
 
-	const isExcluded = invert === true ? !match.ignored : invert === 2 ? false : match.ignored
+	const isExcluded = isMatchExcluded(invert, match)
 
 	if (isExcluded) {
-		if (isRuleMatchInvalid(match)) {
-			if (stream && !ctx.paths.has(path) && (dirs || !isDir)) {
-				ctx.paths.set(path, match)
-				stream.dispatchEvent(new CustomEvent("dirent", { detail: { dirent: entry, match, path } }))
-			}
+		if (isRuleMatchInvalid(match) && stream && (dirs || !isDir)) {
+			patch(ctx, stream, path, entry, match)
 		}
 		return
 	}
 
-	if (!tooDeep && (dirs || !isDir) && !ctx.paths.has(path)) {
-		ctx.paths.set(path, match)
-		if (stream) {
-			stream.dispatchEvent(new CustomEvent("dirent", { detail: { dirent: entry, match, path } }))
-		}
+	if (!tooDeep && (dirs || !isDir)) {
+		patch(ctx, stream, path, entry, match)
 	}
 
-	if (!(includeParent && dirs)) return
-	const parent = parentPath + "/"
-	if (ctx.paths.has(parent)) return
-	ctx.paths.set(parent, match)
-	if (!stream) return
-	stream.dispatchEvent(
-		new CustomEvent("dirent", { detail: { dirent: entry, match, path: parent } }),
-	)
+	if (includeParent && dirs) {
+		patch(ctx, stream, parentPath + "/", entry, match)
+	}
+}
+
+function addToTotal(
+	total: Map<string, Total>,
+	dir: string,
+	files: number,
+	matched: number,
+	dirs: number,
+): void {
+	const dirTotal = getOrInsertComputed(total, dir, () => ({
+		totalDirs: 0,
+		totalFiles: 0,
+		totalMatchedFiles: 0,
+	}))
+	dirTotal.totalFiles += files
+	dirTotal.totalMatchedFiles += matched
+	dirTotal.totalDirs += dirs
 }
 
 /**
  * Patches the {@link MatcherContext} with the given total.
  */
 export function walkPatchTotal(ctx: MatcherContext, maxDepth: number, t: WalkTotal): void {
-	const { dir, files, matched, dirs, ignored } = t
-	if (t.depth <= maxDepth && !ignored) {
-		const dirTotal = getOrInsertComputed(ctx.total, dir, () => ({
-			totalDirs: 0,
-			totalFiles: 0,
-			totalMatchedFiles: 0,
-		}))
-		dirTotal.totalFiles += files
-		dirTotal.totalDirs += dirs
-		dirTotal.totalMatchedFiles += matched
+	if (t.depth <= maxDepth && !t.ignored) {
+		addToTotal(ctx.total, t.dir, t.files, t.matched, t.dirs)
 	}
 }
 
@@ -210,14 +196,12 @@ export function propagateTotals(total: Map<string, Total>): void {
 		const dir = dirs[i]!
 		if (dir === "." || dir === "/") continue
 		const dirTotal = total.get(dir)!
-		const parent = dirname(dir)
-		const parentTotal = getOrInsertComputed(total, parent, () => ({
-			totalDirs: 0,
-			totalFiles: 0,
-			totalMatchedFiles: 0,
-		}))
-		parentTotal.totalFiles += dirTotal.totalFiles
-		parentTotal.totalDirs += dirTotal.totalDirs
-		parentTotal.totalMatchedFiles += dirTotal.totalMatchedFiles
+		addToTotal(
+			total,
+			dirname(dir),
+			dirTotal.totalFiles,
+			dirTotal.totalMatchedFiles,
+			dirTotal.totalDirs,
+		)
 	}
 }
