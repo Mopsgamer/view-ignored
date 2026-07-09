@@ -9,6 +9,7 @@ import { scan } from "./browser_scan.js"
 import { scanStream } from "./browser_stream.js"
 import { MatcherStream } from "./patterns/matcherStream.js"
 import { sortFirstFolders } from "./testSort.test.js"
+import type { RuleMatch } from "./patterns/rule.js"
 
 export function createAdapter(vol: Volume): FsAdapter {
 	// oxlint-disable-next-line typescript/no-explicit-any
@@ -98,36 +99,7 @@ export async function testScan(
 	}
 
 	const ctx = await scan(o)
-	const { paths, failed } = ctx
-	try {
-		expect(sortFirstFolders(paths.keys())).toStrictEqual(sortFirstFolders(test))
-	} catch (e) {
-		if (ctx.paths.size) {
-			const map = Array.from(ctx.paths.entries()).map(
-				([k, v]) =>
-					[
-						k,
-						{
-							ignored: v.ignored,
-							kind: RMK[v.kind],
-							...(v.kind === 6
-								? {
-										pattern: v.pattern,
-									}
-								: {}),
-						},
-					] as const,
-			)
-			console.error(
-				"scan: ctx.paths (debug):\x1b[0m " + Bun.inspect(new Map(map), { colors: true }),
-			)
-		} else
-			console.error(
-				"scan: no paths, ctx.external:\x1b[0m " + Bun.inspect(ctx.external, { colors: true }),
-			)
-		if (failed.length) console.error("Contains failed sources:", failed)
-		throw e
-	}
+	comparePaths(false, ctx, test)
 
 	const stream = scanStream(o)
 	const results = new Set<string>()
@@ -143,34 +115,7 @@ export async function testScan(
 		"end",
 		() => {
 			try {
-				expect(sortFirstFolders(results)).toStrictEqual(sortFirstFolders(test))
-			} catch (e) {
-				if (ctx.paths.size) {
-					const map = Array.from(ctx.paths.entries()).map(
-						([k, v]) =>
-							[
-								k,
-								{
-									ignored: v.ignored,
-									kind: RMK[v.kind],
-									...(v.kind === 6
-										? {
-												pattern: v.pattern,
-											}
-										: {}),
-								},
-							] as const,
-					)
-					console.error(
-						"scanStream: ctx.paths (debug):\x1b[0m " + Bun.inspect(new Map(map), { colors: true }),
-					)
-				} else
-					console.error(
-						"scanStream: no paths, ctx.external:\x1b[0m " +
-							Bun.inspect(ctx.external, { colors: true }),
-					)
-				if (failed.length) console.error("Contains failed sources:", failed)
-				throw e
+				comparePaths(true, ctx, test)
 			} finally {
 				done()
 			}
@@ -178,6 +123,40 @@ export async function testScan(
 		{ once: true },
 	)
 	await stream.start()
+}
+
+function pathsToDebug([k, v]: [string, RuleMatch]) {
+	return [
+		k,
+		{
+			ignored: v.ignored,
+			kind: RMK[v.kind],
+			...(v.kind === 6
+				? {
+						pattern: v.pattern,
+					}
+				: {}),
+		},
+	] as const
+}
+
+function comparePaths(stream: boolean, ctx: MatcherContext, test: string[]): void {
+	try {
+		expect(sortFirstFolders(ctx.paths.keys())).toStrictEqual(sortFirstFolders(test))
+	} catch (e) {
+		const prefix = stream ? "scanStream" : "stream"
+		if (ctx.paths.size) {
+			const map = Array.from(ctx.paths.entries()).map(pathsToDebug)
+			console.error(
+				`${prefix}: ctx.paths (debug):\x1b[0m ` + Bun.inspect(new Map(map), { colors: true }),
+			)
+		} else
+			console.error(
+				`${prefix}: no paths, ctx.external:\x1b[0m ` + Bun.inspect(ctx.external, { colors: true }),
+			)
+		if (ctx.failed.length) console.error("Contains failed sources:", ctx.failed)
+		throw e
+	}
 }
 
 enum RMK {
