@@ -83,6 +83,9 @@ export function makeNPM(): Target {
 						"/yarn.lock",
 						"/pnpm-lock.yaml",
 						"/bun.lockb",
+
+						// npm-packlist ignores files with stars when publishing
+						"*\\**",
 					],
 				},
 				{ nocase: true },
