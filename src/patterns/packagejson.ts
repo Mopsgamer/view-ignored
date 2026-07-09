@@ -45,6 +45,6 @@ export function extractPackageJsonRules(source: Source, content: Buffer): void |
 
 	const options = { nocase: true }
 	for (const pattern of dist.files) {
-		source.rules.push((rule = resolveNegatable(pattern, true, options, rule)))
+		source.rules.unshift((rule = resolveNegatable(pattern, true, options, rule)))
 	}
 }
