@@ -38,9 +38,9 @@ export type Rule = {
 	 *
 	 * @see {@link ruleTest} provides the ignoring algorithm.
 	 *
-	 * @since 0.9.0
+	 * @since 0.11.0
 	 */
-	pattern: PatternList
+	list: PatternList
 	/**
 	 * If `true`, pattern "test" will exclude file named "test".
 	 *

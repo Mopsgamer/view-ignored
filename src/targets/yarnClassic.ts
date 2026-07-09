@@ -44,7 +44,7 @@ export function makeYarnClassic(): Target {
 			{
 				compiled: null,
 				excludes: true,
-				pattern: [
+				list: [
 					// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L26
 					".git",
 					"CVS",
@@ -83,7 +83,7 @@ export function makeYarnClassic(): Target {
 			{
 				compiled: null,
 				excludes: false,
-				pattern: [
+				list: [
 					// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L10
 					"/package.json",
 					"/readme*",

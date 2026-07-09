@@ -34,12 +34,12 @@ export function makeNPM(): Target {
 	const bundledInclude: Rule = {
 		compiled: [],
 		excludes: false,
-		pattern: [], // filled within init
+		list: [], // filled within init
 	}
 	const internalInclude: Rule = {
 		compiled: [],
 		excludes: false,
-		pattern: [], // filled within init
+		list: [], // filled within init
 	}
 
 	const internal: InternalRules = {
@@ -48,7 +48,7 @@ export function makeNPM(): Target {
 				{
 					compiled: null,
 					excludes: true,
-					pattern: [".npmignore", ".gitignore"],
+					list: [".npmignore", ".gitignore"],
 				},
 				{ nocase: true },
 			),
@@ -60,7 +60,7 @@ export function makeNPM(): Target {
 				{
 					compiled: null,
 					excludes: true,
-					pattern: [
+					list: [
 						// https://github.com/npm/npm-packlist/blob/main/lib/index.js#L16
 						".git",
 						".svn",
@@ -94,7 +94,7 @@ export function makeNPM(): Target {
 				{
 					compiled: null,
 					excludes: false,
-					pattern: [
+					list: [
 						// https://github.com/npm/npm-packlist/blob/main/lib/index.js#L287
 						"/package.json",
 						"README",
@@ -150,7 +150,7 @@ export function makeNPM(): Target {
 
 				// TODO: NPM should include bundled deps
 
-				internalInclude.pattern = Array.from(set)
+				internalInclude.list = Array.from(set)
 				ruleCompile(internalInclude, { nocase: true })
 				cb(null)
 			})

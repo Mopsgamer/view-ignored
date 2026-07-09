@@ -21,7 +21,7 @@ export type PatternCompileOptions = {
 	 *
 	 * @since 0.12.0
 	 */
-	context?: PatternList
+	list?: PatternList
 }
 
 /**
@@ -67,7 +67,7 @@ export function patternCompile(pattern: string, options?: PatternCompileOptions)
 		test: selectTest(lowerCleaned, cleanedWithSlash, isRoot, nocase, matchBase, isMatch),
 	}
 
-	return { pattern, patternContext: options?.context ?? [], re }
+	return { list: options?.list ?? [], pattern, re }
 }
 
 function selectTest(

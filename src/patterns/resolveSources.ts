@@ -19,7 +19,7 @@ import { patternListCompile } from "./patternList.js"
  * @since 0.6.0
  */
 export function ruleCompile(rule: Rule, options?: PatternCompileOptions): Rule {
-	rule.compiled = patternListCompile({ ...options, context: rule.pattern })
+	rule.compiled = patternListCompile({ ...options, list: rule.list })
 	return rule
 }
 

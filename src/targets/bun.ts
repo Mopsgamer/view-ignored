@@ -33,7 +33,7 @@ export function makeBun(): Target {
 	const internalInclude: Rule = {
 		compiled: [],
 		excludes: false,
-		pattern: [], // filled within init
+		list: [], // filled within init
 	}
 
 	const internal: Rule[] = [
@@ -41,7 +41,7 @@ export function makeBun(): Target {
 		ruleCompile({
 			compiled: null,
 			excludes: true,
-			pattern: [
+			list: [
 				// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L180
 				"package-lock.json",
 				"yarn.lock",
@@ -84,7 +84,7 @@ export function makeBun(): Target {
 			{
 				compiled: null,
 				excludes: false,
-				pattern: [
+				list: [
 					// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L2586
 					"package.json",
 
@@ -136,7 +136,7 @@ export function makeBun(): Target {
 
 				// TODO: Bun should include bundled deps
 
-				internalInclude.pattern = Array.from(set)
+				internalInclude.list = Array.from(set)
 				ruleCompile(internalInclude, { nocase: true })
 				cb(null)
 			})

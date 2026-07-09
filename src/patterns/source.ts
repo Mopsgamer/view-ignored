@@ -75,11 +75,11 @@ export function resolveNegatable(
 		: {
 				compiled: [patternCompile(pattern, options)],
 				excludes,
-				pattern: [pattern],
+				list: [pattern],
 			}
 	if (iff) {
 		rule.compiled!.push(patternCompile(pattern, options))
-		rule.pattern.push(pattern)
+		rule.list.push(pattern)
 	}
 	return rule
 }

@@ -33,7 +33,7 @@ export function makeVSCE(): Target {
 		ruleCompile({
 			compiled: null,
 			excludes: true,
-			pattern: [
+			list: [
 				// https://github.com/microsoft/vscode-vsce/blob/main/src/package.ts#L1633
 				".vscodeignore",
 				"package-lock.json",

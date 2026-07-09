@@ -41,7 +41,7 @@ export function makeDeno(): Target {
 		ruleCompile({
 			compiled: null,
 			excludes: true,
-			pattern: [".git", ".DS_Store"],
+			list: [".git", ".DS_Store"],
 		}),
 	]
 

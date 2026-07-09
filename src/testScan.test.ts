@@ -1,4 +1,5 @@
 import type { MatcherContext } from "./patterns/matcherContext.js"
+import type { RuleMatch } from "./patterns/rule.js"
 import type { ScanOptions, FsAdapter, ScanBrowserOptions } from "./types.js"
 
 import { expect } from "bun:test"
@@ -9,7 +10,6 @@ import { scan } from "./browser_scan.js"
 import { scanStream } from "./browser_stream.js"
 import { MatcherStream } from "./patterns/matcherStream.js"
 import { sortFirstFolders } from "./testSort.test.js"
-import type { RuleMatch } from "./patterns/rule.js"
 
 export function createAdapter(vol: Volume): FsAdapter {
 	// oxlint-disable-next-line typescript/no-explicit-any

@@ -24,9 +24,9 @@ export type PatternCache = {
 	/**
 	 * The original pattern list this cache was compiled from.
 	 *
-	 * @since 0.6.0
+	 * @since 0.11.0
 	 */
-	patternContext: PatternList
+	list: PatternList
 }
 
 /**
@@ -54,12 +54,12 @@ export type PatternList = string[]
  * @since 0.6.0
  */
 export function patternListCompile(
-	options: PatternCompileOptions & { context: PatternList },
+	options: PatternCompileOptions & { list: PatternList },
 ): PatternCache[] {
-	const len = options.context.length ?? 0
+	const len = options.list.length ?? 0
 	const res = Array.from<PatternCache>({ length: len })
 	for (let i = 0; i < len; i++) {
-		res[i] = patternCompile(options.context[i]!, options)
+		res[i] = patternCompile(options.list[i]!, options)
 	}
 	return res
 }

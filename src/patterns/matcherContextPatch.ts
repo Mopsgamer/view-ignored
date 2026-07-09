@@ -257,7 +257,7 @@ function updateTotals(
 	deltaMatchedFiles: number,
 	deltaDirs: number,
 ) {
-	for (let parent = path; ; ) {
+	for (let parent = path; ;) {
 		const total = getOrInsertComputed(ctx.total, parent, () => ({
 			totalDirs: 0,
 			totalFiles: 0,

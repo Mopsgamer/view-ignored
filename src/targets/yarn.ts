@@ -37,7 +37,7 @@ export function makeYarn(): Target {
 	const internalInclude: Rule = {
 		compiled: [],
 		excludes: false,
-		pattern: [],
+		list: [],
 	}
 
 	const internal: Rule[] = [
@@ -45,7 +45,7 @@ export function makeYarn(): Target {
 		ruleCompile({
 			compiled: null,
 			excludes: true,
-			pattern: [
+			list: [
 				// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L26
 				"/package.tgz",
 
@@ -65,7 +65,7 @@ export function makeYarn(): Target {
 			{
 				compiled: null,
 				excludes: false,
-				pattern: [
+				list: [
 					// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L10
 					"/package.json",
 					"/README",
@@ -118,7 +118,7 @@ export function makeYarn(): Target {
 
 				// TODO: Yarn should include bundled deps
 
-				internalInclude.pattern = Array.from(set)
+				internalInclude.list = Array.from(set)
 				ruleCompile(internalInclude, { nocase: true })
 				cb(null)
 			})
