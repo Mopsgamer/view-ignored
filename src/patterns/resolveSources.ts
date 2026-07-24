@@ -70,14 +70,6 @@ export function resolveSources(
 	const cached = external.get(dir)
 	if (cached !== undefined) return cb(null, cached)
 
-	if (root === "." && dir !== ".") {
-		return resolveSources({ ...options, dir: "." }, (err, res) => {
-			if (err) return cb(err, null)
-			external.set(dir, res)
-			cb(null, res)
-		})
-	}
-
 	const searchDirs: string[] = []
 	const relDirs: string[] = []
 	let current = dir

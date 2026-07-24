@@ -1,6 +1,5 @@
 import { describe, test, expect } from "bun:test"
 
-import { RuleMatchKind } from "../patterns/rule.js"
 import { testScan } from "../testScan.test.js"
 import { makeNPM } from "./npm.js"
 
@@ -120,49 +119,6 @@ describe("NPM", () => {
 			},
 			["bar.js", "package.json"],
 			{ target: makeNPM() },
-		)
-	})
-
-	test("monorepo should use package.json if cwd is .", async (done) => {
-		await testScan(
-			done,
-			{
-				file: "1",
-				"index.js": "('src')",
-				"index.ts": "('src')",
-				"package.json": JSON.stringify({
-					files: ["index.ts"],
-					name: "root",
-					version: "0.0.1",
-				}),
-				packages: {
-					a: {
-						"index.js": "('a')",
-						"package.json": JSON.stringify({
-							files: ["index.js"],
-							name: "a",
-							version: "0.0.1",
-						}),
-					},
-				},
-			},
-			({ ctx }) => {
-				expect(ctx.paths.has("file")).toBeFalse()
-				expect(ctx.paths.get("index.ts")).toMatchObject({
-					ignored: false,
-					kind: RuleMatchKind.external,
-					pattern: "index.ts",
-				})
-				expect(ctx.paths.has("index.js")).toBeFalse()
-				expect(ctx.paths.has("packages/a/index.js")).toBeFalse()
-
-				const src = ctx.external.get("packages/a")
-				expect(src).toBeObject()
-				if (src && "path" in src) {
-					expect(src.path).toBe("package.json")
-				}
-			},
-			{ cwd: process.cwd() + "/test", target: makeNPM() },
 		)
 	})
 	test("monorepo should use packages/a/package.json if cwd is packages/a", async (done) => {

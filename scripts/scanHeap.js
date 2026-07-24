@@ -23,11 +23,13 @@ const skipInternal = args.includes("--skipInternal")
 const printPaths = args.includes("--print")
 const takeSnapshot = args.includes("--snapshot")
 
-const target = Targets[targetName]
+// oxlint-disable-next-line import/namespace
+const target = Targets["make" + targetName]?.()
 if (!target) {
 	console.error(
 		`Unknown target: ${targetName}. Available: ${Object.keys(Targets)
-			.filter((k) => k !== "Target")
+			.filter((k) => k.startsWith("make"))
+			.map((k) => k.slice(4))
 			.join(", ")}`,
 	)
 	process.exit(1)

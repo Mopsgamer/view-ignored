@@ -7,6 +7,7 @@ const targetName = targetFlag ? targetFlag.split("=")[1] : "Git"
 const skipInternal = args.includes("--skipInternal")
 const printPaths = args.includes("--print")
 
+// oxlint-disable-next-line import/namespace
 const targetMaker = Targets["make" + targetName]
 if (!targetMaker) {
 	console.error(
