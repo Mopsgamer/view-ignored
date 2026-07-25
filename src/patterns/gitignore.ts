@@ -1,6 +1,6 @@
 import type { ExtractorFn } from "./extractor.js"
 import type { PatternCompileOptions } from "./patternCompile.js"
-import type { Rule } from "./rule.js"
+import type { GlobRule } from "./rule.js"
 
 import { resolveNegatable, type Source } from "./source.js"
 
@@ -58,8 +58,8 @@ function processGitignoreLine(
 	start: number,
 	lineEnd: number,
 	options?: PatternCompileOptions,
-	rule?: Rule,
-): Rule | undefined {
+	rule?: GlobRule,
+): GlobRule | undefined {
 	if (content[start] === 35) {
 		return rule
 	}
@@ -156,7 +156,7 @@ export function extractGitignoreRules(
 	content: Buffer,
 	options?: PatternCompileOptions,
 ): void {
-	let rule: Rule | undefined
+	let rule: GlobRule | undefined
 	let start = 0
 	const len = content.length
 	while (start < len) {

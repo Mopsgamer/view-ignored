@@ -1,3 +1,5 @@
+import type { GlobRule } from "./index.js"
+
 import { describe, test, expect } from "bun:test"
 
 import { extractGitignoreRules } from "./gitignore.js"
@@ -7,7 +9,7 @@ describe("gitignore parsing compliance", () => {
 	function parse(content: string) {
 		const source: Source = { inverted: false, path: ".gitignore", rules: [] }
 		extractGitignoreRules(source, Buffer.from(content))
-		return source.rules
+		return source.rules as GlobRule[]
 	}
 
 	test("leading spaces are preserved", () => {

@@ -1,4 +1,7 @@
+import type { Dirent } from "node:fs"
+
 import type { PatternFinderOptions } from "./extractor.js"
+import type { IgnoresOptions } from "./ignores.js"
 import type { Source } from "./source.js"
 
 import { patternCacheTest, type PatternList, type PatternCache } from "./patternList.js"
@@ -32,7 +35,7 @@ export type InternalRules = {
  *
  * @since 0.6.0
  */
-export type Rule = {
+export type GlobRule = {
 	/**
 	 * Provides ignored or included file and directory patterns.
 	 *
@@ -58,6 +61,25 @@ export type Rule = {
 	 */
 	compiled: null | PatternCache[]
 }
+
+export type CustomRule = {
+	/**
+	 * Custom match function.
+	 *
+	 * @since 0.12.0
+	 */
+	match: (options: IgnoresOptions) => PatternCache | Error | null
+	/**
+	 * Provides ignored or included file and directory patterns.
+	 *
+	 * @see {@link ruleTest} provides the ignoring algorithm.
+	 *
+	 * @since 0.12.0
+	 */
+	list: PatternList
+}
+
+export type Rule = GlobRule | CustomRule
 
 /**
  * The kind of a pattern match.
@@ -91,7 +113,7 @@ export interface RuleMatchBaseSource<K extends string | number | symbol> extends
  * @since 0.9.1
  */
 export interface RuleMatchBasePattern<K extends string | number | symbol> extends RuleMatchBase<K> {
-	pattern: string
+	pattern: unknown
 }
 
 /**
@@ -203,11 +225,25 @@ export interface RuleTestOptions extends PatternFinderOptions {
 	entry: string
 
 	/**
+	 * Result of the `dirname(entry)` call.
+	 *
+	 * @since 0.12.0
+	 */
+	parentPath: string
+
+	/**
 	 * Pre-lowercased entry path.
 	 *
 	 * @since 0.11.0
 	 */
 	lowerEntry?: string
+
+	/**
+	 * The filesystem entry's Dirent representation if available.
+	 *
+	 * @since 0.12.0
+	 */
+	entryDirent?: Dirent
 }
 
 function cacheTest(
@@ -256,8 +292,21 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 	const [beforeInternal, afterInternal] = Array.isArray(internalRules)
 		? [internalRules, []]
 		: [internalRules.before, internalRules.after]
+
+	const ignoreOptions: IgnoresOptions = {
+		cwd: options.cwd,
+		entry,
+		entryDirent: options.entryDirent,
+		fs: options.fs,
+		lowerEntry: lowerPath,
+		parentPath: options.parentPath,
+		resource: src,
+		signal: options.signal,
+		target: options.target,
+	}
+
 	if (beforeInternal.length > 0) {
-		const internalMatch = ruleTestInternalSync(beforeInternal, entry, lowerPath)
+		const internalMatch = ruleTestInternalSync(beforeInternal, ignoreOptions)
 		if (internalMatch) return internalMatch
 	}
 
@@ -267,7 +316,8 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 
 		for (let i = 0; i < rlen; i++) {
 			const rule = rules[i]!
-			const res = cacheTest(rule.compiled!, entry, lowerPath)
+			const res =
+				"match" in rule ? rule.match(ignoreOptions) : cacheTest(rule.compiled!, entry, lowerPath)
 			if (res === null) continue
 			if (res instanceof Error) {
 				return {
@@ -280,7 +330,7 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 			}
 
 			return {
-				ignored: rule.excludes,
+				ignored: "match" in rule ? true : rule.excludes,
 				kind: RuleMatchKind.external,
 				pattern: res.pattern,
 				source: src,
@@ -289,7 +339,7 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 	}
 
 	if (afterInternal.length > 0) {
-		const internalMatch = ruleTestInternalSync(afterInternal, entry, lowerPath)
+		const internalMatch = ruleTestInternalSync(afterInternal, ignoreOptions)
 		if (internalMatch) return internalMatch
 	}
 
@@ -302,10 +352,13 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 	}
 }
 
-function ruleTestInternalSync(rules: Rule[], entry: string, lowerPath?: string): RuleMatch | void {
+function ruleTestInternalSync(rules: Rule[], options: IgnoresOptions): RuleMatch | void {
 	for (let i = 0, len = rules.length; i < len; i++) {
 		const rule = rules[i]!
-		const res = cacheTest(rule.compiled!, entry, lowerPath)
+		const res =
+			"match" in rule
+				? rule.match(options)
+				: cacheTest(rule.compiled!, options.entry, options.lowerEntry)
 		if (res === null) continue
 		if (res instanceof Error) {
 			return {
@@ -317,7 +370,7 @@ function ruleTestInternalSync(rules: Rule[], entry: string, lowerPath?: string):
 		}
 
 		return {
-			ignored: rule.excludes,
+			ignored: "match" in rule ? true : rule.excludes,
 			kind: RuleMatchKind.internal,
 			pattern: res.pattern,
 		}

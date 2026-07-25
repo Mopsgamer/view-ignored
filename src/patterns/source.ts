@@ -1,4 +1,4 @@
-import type { Rule, RuleMatch } from "./rule.js"
+import type { GlobRule, Rule, RuleMatch } from "./rule.js"
 
 import { patternCompile, type PatternCompileOptions } from "./patternCompile.js"
 
@@ -41,6 +41,13 @@ export type Source = {
 	 * @since 0.6.0
 	 */
 	inverted: boolean
+
+	/**
+	 * Directory where the source was located.
+	 *
+	 * @since 0.12.0
+	 */
+	dir?: string
 }
 
 /**
@@ -60,8 +67,8 @@ export function resolveNegatable(
 	pattern: string,
 	invert: boolean,
 	options?: PatternCompileOptions,
-	reuse?: Rule,
-): Rule {
+	reuse?: GlobRule,
+): GlobRule {
 	// if !x -> includes + x.slice(1)
 	// if x -> excludes + x
 	// if invert && !x -> excludes + x.slice(1)

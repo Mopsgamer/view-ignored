@@ -1,5 +1,5 @@
 import type { ExtractorFn } from "./extractor.js"
-import type { Rule } from "./rule.js"
+import type { GlobRule } from "./rule.js"
 
 import { npmManifestParse } from "../targets/npmManifest.js"
 import { resolveNegatable, type Source } from "./source.js"
@@ -41,7 +41,7 @@ export function extractPackageJsonRules(source: Source, content: Buffer): void |
 	}
 
 	source.inverted = true
-	let rule: Rule | undefined
+	let rule: GlobRule | undefined
 
 	const options = { nocase: true }
 	for (const pattern of dist.files) {

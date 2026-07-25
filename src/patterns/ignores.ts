@@ -1,3 +1,5 @@
+import type { Dirent } from "node:fs"
+
 import type { InitState } from "./initState.js"
 import type { Resource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"
@@ -32,6 +34,12 @@ export interface IgnoresOptions extends InitState {
 	 * @since 0.10.1
 	 */
 	parentPath: string
+	/**
+	 * The filesystem entry's Dirent representation if available.
+	 *
+	 * @since 0.12.0
+	 */
+	entryDirent?: Dirent
 }
 
 /**

@@ -61,6 +61,7 @@ export function walkIncludes(
 		{
 			cwd,
 			entry: path,
+			entryDirent: entry,
 			fs,
 			lowerEntry: lowerEntry || path.toLowerCase(),
 			parentPath,

@@ -458,7 +458,7 @@ async function run(
 
 		const groups: Record<string, typeof reports> = {}
 		for (const r of reports) {
-			const key = `${r.issue}|${r.pattern || ""}|${r.origin}`
+			const key = `${r.issue}|${JSON.stringify(r.pattern) || ""}|${r.origin}`
 			if (!groups[key]) groups[key] = []
 			groups[key].push(r)
 		}
@@ -484,7 +484,7 @@ async function run(
 
 			for (const r of shown) {
 				console.log(
-					`  ${icon}${styleText("bold", r.file)}\n      ${styleText("dim", "Issue:")}  ${r.issue}${r.pattern ? `\n      ${styleText("dim", "Pattern:")} ${styleText("blue", r.pattern)} (${styleText("dim", r.origin)})` : ""}`,
+					`  ${icon}${styleText("bold", r.file)}\n      ${styleText("dim", "Issue:")}  ${r.issue}${r.pattern ? `\n      ${styleText("dim", "Pattern:")} ${styleText("blue", JSON.stringify(r.pattern))} (${styleText("dim", r.origin)})` : ""}`,
 				)
 			}
 			if (hidden > 0) {

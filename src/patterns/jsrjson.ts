@@ -1,5 +1,5 @@
 import type { ExtractorFn } from "./extractor.js"
-import type { Rule } from "./rule.js"
+import type { GlobRule } from "./rule.js"
 
 import stripJsonComments from "strip-json-comments"
 
@@ -48,7 +48,7 @@ export function extractJsrJsonRules(source: Source, content: Buffer): void {
 		throw new Error("Invalid '" + source.path + "': Root must be an object")
 	}
 
-	let rule: Rule | undefined
+	let rule: GlobRule | undefined
 
 	// Resolve patterns based on the manifest hierarchy
 	const target = dist.publish ?? dist
