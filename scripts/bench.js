@@ -55,6 +55,33 @@ const benchmarkFiles =
 				.sort()
 				.map((f) => path.join("benchmarks", f))
 
+function findActualEnd(chunk) {
+	let braceCount = 0
+	for (let j = 0; j < chunk.length; j++) {
+		if (chunk[j] === "{") {
+			braceCount++
+		} else if (chunk[j] === "}") {
+			braceCount--
+			if (braceCount === 0) {
+				return j
+			}
+		}
+	}
+	return -1
+}
+
+function tryParseBenchmarkChunk(chunk, actualEnd, fileResults) {
+	if (actualEnd === -1) return
+	try {
+		const obj = JSON.parse(chunk.substring(0, actualEnd + 1))
+		if (obj.benchmarks) {
+			fileResults.push(obj)
+		}
+	} catch {
+		// Skip
+	}
+}
+
 async function runBenchmarks() {
 	const results = []
 	const needsTable = values.diff || values.out || values.now
@@ -105,29 +132,8 @@ async function runBenchmarks() {
 					const end = i + 1 < indices.length ? indices[i + 1] : jsonContent.length
 					const chunk = jsonContent.substring(start, end).trim()
 
-					let braceCount = 0
-					let actualEnd = -1
-					for (let j = 0; j < chunk.length; j++) {
-						if (chunk[j] === "{") braceCount++
-						else if (chunk[j] === "}") {
-							braceCount--
-							if (braceCount === 0) {
-								actualEnd = j
-								break
-							}
-						}
-					}
-
-					if (actualEnd !== -1) {
-						try {
-							const obj = JSON.parse(chunk.substring(0, actualEnd + 1))
-							if (obj.benchmarks) {
-								fileResults.push(obj)
-							}
-						} catch {
-							// Skip
-						}
-					}
+					const actualEnd = findActualEnd(chunk)
+					tryParseBenchmarkChunk(chunk, actualEnd, fileResults)
 				}
 				results.push({ file, results: fileResults })
 			}

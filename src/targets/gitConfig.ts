@@ -43,6 +43,14 @@ export function mergeConfig(target: any, source: any): void {
 }
 
 // oxlint-disable-next-line typescript/no-explicit-any
+function handlePathKey(section: any, sectionName: string | null, res: any, order: string[]): void {
+	;(section[res.key] ||= []).push(res.val)
+	if (sectionName === "include" || sectionName?.startsWith('includeif "')) {
+		order.push(sectionName + ":" + (section[res.key].length - 1))
+	}
+}
+
+// oxlint-disable-next-line typescript/no-explicit-any
 export function parseGit(text: string): any {
 	// oxlint-disable-next-line typescript/no-explicit-any
 	const obj: any = {}
@@ -78,10 +86,7 @@ export function parseGit(text: string): any {
 			i = res.nextIdx
 			if (res.key) {
 				if (res.key === "path") {
-					;(section[res.key] ||= []).push(res.val)
-					if (sectionName === "include" || sectionName?.startsWith('includeif "')) {
-						order.push(sectionName + ":" + (section[res.key].length - 1))
-					}
+					handlePathKey(section, sectionName, res, order)
 				} else {
 					section[res.key] = res.val
 				}
