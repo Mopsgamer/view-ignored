@@ -166,11 +166,15 @@ describe("NPM", () => {
 
 	test("throws an error if package.json is invalid", async (done) => {
 		expect(() =>
-			testScan(done, { "package.json": "{ invalid json }" }, [], { target: makeNPM() }),
+			testScan(done, { "package.json": "{ invalid json }" }, () => {}, { target: makeNPM() }),
 		).toThrow()
-		expect(() => testScan(done, { "package.json": "{}" }, [], { target: makeNPM() })).toThrow()
 		expect(() =>
-			testScan(done, { "package.json": '{ "name": 0, "version": 0 }' }, [], { target: makeNPM() }),
+			testScan(done, { "package.json": "{}" }, () => {}, { target: makeNPM() }),
+		).toThrow()
+		expect(() =>
+			testScan(done, { "package.json": '{ "name": 0, "version": 0 }' }, () => {}, {
+				target: makeNPM(),
+			}),
 		).toThrow()
 	})
 })

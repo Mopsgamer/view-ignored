@@ -160,14 +160,14 @@ function comparePaths(stream: boolean, ctx: MatcherContext, test: string[]): voi
 }
 
 enum RMK {
-	"none",
-	"missingSource",
-	"noMatch",
-	"invalidSource",
-	"invalidExternal",
-	"invalidInternal",
-	"external",
-	"internal",
+	none,
+	missingSource,
+	noMatch,
+	invalidSource,
+	invalidExternal,
+	invalidInternal,
+	external,
+	internal,
 }
 
 /**

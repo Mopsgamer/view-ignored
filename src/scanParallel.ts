@@ -52,12 +52,11 @@ export function scanParallel(
 							return
 						}
 						if (res && "error" in res && res.error) {
-							if (failed) {
-								failed.push(res)
-							} else {
+							if (!failed) {
 								handleError(res.error)
 								return
 							}
+							failed.push(res)
 						}
 
 						const len = entries.length
