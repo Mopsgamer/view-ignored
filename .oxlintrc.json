@@ -3,6 +3,11 @@
 	"plugins": ["import", "oxc", "unicorn", "jsdoc", "eslint", "typescript"],
 	"rules": {
 		"no-control-regex": "off",
+		"no-else-return": "error",
+		"no-lonely-if": "error",
+		"unicorn/no-lonely-if": "error",
+		"oxc/branches-sharing-code": "error",
+		"max-depth": "error",
 		"typescript/no-explicit-any": "error",
 		"typescript/restrict-template-expressions": "off",
 		"import/no-duplicates": "error",
