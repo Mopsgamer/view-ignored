@@ -58,11 +58,9 @@ export async function matcherContextAddPath(
 			),
 		)
 
-		if (!match.ignored && options.dirs) {
-			if (!ctx.paths.has(entry)) {
-				ctx.paths.set(entry, match)
-				added.push(entry)
-			}
+		if (!match.ignored && options.dirs && !ctx.paths.has(entry)) {
+			ctx.paths.set(entry, match)
+			added.push(entry)
 		}
 
 		updateTotals(ctx, parentPath, 0, 0, 1)
@@ -139,11 +137,9 @@ export async function matcherContextAddPath(
 	)
 
 	updateTotals(ctx, parentPath, 1, match.ignored ? 0 : 1, 0)
-	if (!match.ignored) {
-		if (!ctx.paths.has(entry)) {
-			ctx.paths.set(entry, match)
-			added.push(entry)
-		}
+	if (!match.ignored && !ctx.paths.has(entry)) {
+		ctx.paths.set(entry, match)
+		added.push(entry)
 	}
 
 	return added
@@ -197,16 +193,18 @@ export async function matcherContextRemovePath(
 		const direntPathLen = direntPath.length
 		for (const [element] of ctx.external) {
 			if (
-				element.length >= direntPathLen &&
-				(element === direntPath || element.startsWith(direntPath + "/"))
+				element.length < direntPathLen ||
+				(element !== direntPath && !element.startsWith(direntPath + "/"))
 			) {
-				if (ctx.external.delete(element) && ctx.failed.length) {
-					const failedEntryIndex = ctx.failed.findIndex(
-						(fail) => dirname(fail.source.path) === element,
-					)
-					if (failedEntryIndex >= 0) {
-						ctx.failed.splice(failedEntryIndex, 1)
-					}
+				continue
+			}
+			const isDeleted = ctx.external.delete(element)
+			if (isDeleted && ctx.failed.length) {
+				const failedEntryIndex = ctx.failed.findIndex(
+					(fail) => dirname(fail.source.path) === element,
+				)
+				if (failedEntryIndex >= 0) {
+					ctx.failed.splice(failedEntryIndex, 1)
 				}
 			}
 		}

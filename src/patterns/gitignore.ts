@@ -25,6 +25,127 @@ export function extractGitignore(
 
 extractGitignore satisfies ExtractorFn
 
+function isCommentLineChar(content: Buffer, start: number, i: number): boolean {
+	if (i <= start || content[i - 1] !== 32) {
+		return false
+	}
+	let hasNonSpaceBefore = false
+	for (let j = start; j < i - 1; j++) {
+		if (content[j] !== 32 && content[j] !== 9 && content[j] !== 13) {
+			hasNonSpaceBefore = true
+			break
+		}
+	}
+
+	if (!hasNonSpaceBefore) {
+		return false
+	}
+
+	let backslashCount = 0
+	for (let j = i - 2; j >= start; j--) {
+		if (content[j] === 92) {
+			backslashCount++
+		} else {
+			break
+		}
+	}
+	return backslashCount % 2 === 0
+}
+
+function processGitignoreLine(
+	source: Source,
+	content: Buffer,
+	start: number,
+	lineEnd: number,
+	options?: PatternCompileOptions,
+	rule?: Rule,
+): Rule | undefined {
+	if (content[start] === 35) {
+		return rule
+	}
+
+	let isEscaped = false
+	const lineBuff = Buffer.allocUnsafe(lineEnd - start)
+	let lineBuffIdx = 0
+
+	for (let i = start; i < lineEnd; i++) {
+		const c = content[i] as number
+		if (isEscaped) {
+			lineBuff[lineBuffIdx++] = c
+			isEscaped = false
+			continue
+		}
+		if (c === 92) {
+			isEscaped = true
+			lineBuff[lineBuffIdx++] = c
+			continue
+		}
+		if (c === 35) {
+			if (isCommentLineChar(content, start, i)) {
+				if (i > start && lineBuffIdx > 0 && lineBuff[lineBuffIdx - 1] === 32) {
+					lineBuffIdx--
+				}
+				break
+			}
+			lineBuff[lineBuffIdx++] = c
+			continue
+		}
+		lineBuff[lineBuffIdx++] = c
+	}
+
+	if (lineBuffIdx === 0) {
+		return rule
+	}
+
+	let actualLastRealCharIdx = -1
+	let tempIsEscaped = false
+	for (let k = 0; k < lineBuffIdx; k++) {
+		const c = lineBuff[k]
+		if (tempIsEscaped) {
+			actualLastRealCharIdx = k + 1
+			tempIsEscaped = false
+		} else if (c === 92) {
+			tempIsEscaped = true
+		} else if (c !== 32 && c !== 9 && c !== 13) {
+			actualLastRealCharIdx = k + 1
+		}
+	}
+
+	if (tempIsEscaped) {
+		actualLastRealCharIdx = lineBuffIdx
+	}
+
+	if (actualLastRealCharIdx === -1) {
+		return rule
+	}
+
+	const rawLine = lineBuff.toString("utf8", 0, actualLastRealCharIdx)
+
+	let resolvedLine = ""
+	let resolvedIsEscaped = false
+	for (let m = 0; m < rawLine.length; m++) {
+		const rc = rawLine[m]
+		if (resolvedIsEscaped) {
+			resolvedLine += rc
+			resolvedIsEscaped = false
+		} else if (rc === "\\") {
+			resolvedIsEscaped = true
+		} else {
+			resolvedLine += rc
+		}
+	}
+	if (resolvedIsEscaped) {
+		resolvedLine += "\\"
+	}
+
+	if (resolvedLine.length > 0) {
+		rule = resolveNegatable(resolvedLine, false, options, rule)
+		source.rules.unshift(rule)
+	}
+
+	return rule
+}
+
 /**
  * Extracts and compiles patterns from the file.
  *
@@ -45,104 +166,7 @@ export function extractGitignoreRules(
 		const lineEnd = end > start && content[end - 1] === 0x0d ? end - 1 : end
 
 		if (start < lineEnd) {
-			if (content[start] === 35) {
-				// skip comment line
-			} else {
-				let isEscaped = false
-				let lineBuff = Buffer.allocUnsafe(lineEnd - start)
-				let lineBuffIdx = 0
-
-				for (let i = start; i < lineEnd; i++) {
-					const c = content[i] as number
-					if (isEscaped) {
-						lineBuff[lineBuffIdx++] = c
-						isEscaped = false
-					} else if (c === 92) {
-						isEscaped = true
-						lineBuff[lineBuffIdx++] = c
-					} else if (c === 35) {
-						// unescaped hash
-						let isComment = false
-						if (i > start && content[i - 1] === 32) {
-							// Check if there was any NON-SPACE char before this space
-							let hasNonSpaceBefore = false
-							for (let j = start; j < i - 1; j++) {
-								if (content[j] !== 32 && content[j] !== 9 && content[j] !== 13) {
-									hasNonSpaceBefore = true
-									break
-								}
-							}
-
-							if (hasNonSpaceBefore) {
-								let backslashCount = 0
-								for (let j = i - 2; j >= start; j--) {
-									if (content[j] === 92) backslashCount++
-									else break
-								}
-								if (backslashCount % 2 === 0) {
-									isComment = true
-								}
-							}
-						}
-
-						if (isComment) {
-							if (i > start && lineBuffIdx > 0 && lineBuff[lineBuffIdx - 1] === 32) {
-								lineBuffIdx--
-							}
-							break
-						} else {
-							lineBuff[lineBuffIdx++] = c
-						}
-					} else {
-						lineBuff[lineBuffIdx++] = c
-					}
-				}
-
-				if (lineBuffIdx > 0) {
-					let actualLastRealCharIdx = -1
-					let tempIsEscaped = false
-					for (let k = 0; k < lineBuffIdx; k++) {
-						const c = lineBuff[k]
-						if (tempIsEscaped) {
-							actualLastRealCharIdx = k + 1
-							tempIsEscaped = false
-						} else if (c === 92) {
-							tempIsEscaped = true
-						} else if (c !== 32 && c !== 9 && c !== 13) {
-							actualLastRealCharIdx = k + 1
-						}
-					}
-
-					if (tempIsEscaped) {
-						actualLastRealCharIdx = lineBuffIdx
-					}
-
-					if (actualLastRealCharIdx !== -1) {
-						const rawLine = lineBuff.toString("utf8", 0, actualLastRealCharIdx)
-
-						let resolvedLine = ""
-						let resolvedIsEscaped = false
-						for (let m = 0; m < rawLine.length; m++) {
-							const rc = rawLine[m]
-							if (resolvedIsEscaped) {
-								resolvedLine += rc
-								resolvedIsEscaped = false
-							} else if (rc === "\\") {
-								resolvedIsEscaped = true
-							} else {
-								resolvedLine += rc
-							}
-						}
-						if (resolvedIsEscaped) {
-							resolvedLine += "\\"
-						}
-
-						if (resolvedLine.length > 0) {
-							source.rules.unshift((rule = resolveNegatable(resolvedLine, false, options, rule)))
-						}
-					}
-				}
-			}
+			rule = processGitignoreLine(source, content, start, lineEnd, options, rule)
 		}
 
 		start = end + 1
