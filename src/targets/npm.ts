@@ -8,6 +8,7 @@ import {
 	extractPackageJson,
 	extractGitignore,
 	type InternalRules,
+	type CustomRule,
 } from "../patterns/index.js"
 import { unixify } from "../unixify.js"
 import { npmManifestParse, type PackageJson } from "./npmManifest.js"
@@ -54,6 +55,11 @@ export function makeNPM(): Target {
 			),
 		],
 		before: [
+			<CustomRule>{
+				match({ entryDirent }) {
+					return entryDirent.isSymbolicLink() ? "<symlink>" : null
+				},
+			},
 			internalInclude,
 			bundledInclude,
 			ruleCompile(

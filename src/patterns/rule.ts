@@ -68,7 +68,7 @@ export type CustomRule = {
 	 *
 	 * @since 0.12.0
 	 */
-	match: (options: IgnoresOptions) => PatternCache | Error | null
+	match: (options: IgnoresOptions) => string | Error | null
 	/**
 	 * Provides ignored or included file and directory patterns.
 	 *
@@ -243,7 +243,7 @@ export interface RuleTestOptions extends PatternFinderOptions {
 	 *
 	 * @since 0.12.0
 	 */
-	entryDirent?: Dirent
+	entryDirent: Dirent
 }
 
 function cacheTest(
@@ -324,7 +324,7 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 					error: res,
 					ignored: false,
 					kind: RuleMatchKind.invalidExternal,
-					pattern: "",
+					pattern: typeof res === "string" ? res : "",
 					source: src,
 				}
 			}
@@ -332,7 +332,7 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 			return {
 				ignored: "match" in rule ? true : rule.excludes,
 				kind: RuleMatchKind.external,
-				pattern: res.pattern,
+				pattern: typeof res === "string" ? res : res.pattern,
 				source: src,
 			}
 		}
@@ -365,14 +365,14 @@ function ruleTestInternalSync(rules: Rule[], options: IgnoresOptions): RuleMatch
 				error: res,
 				ignored: false,
 				kind: RuleMatchKind.invalidInternal,
-				pattern: "",
+				pattern: typeof res === "string" ? res : "",
 			}
 		}
 
 		return {
 			ignored: "match" in rule ? true : rule.excludes,
 			kind: RuleMatchKind.internal,
-			pattern: res.pattern,
+			pattern: typeof res === "string" ? res : res.pattern,
 		}
 	}
 }

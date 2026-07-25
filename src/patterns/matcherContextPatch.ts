@@ -1,3 +1,5 @@
+import type { Dirent } from "fs"
+
 import type { ScanOptions } from "../types.js"
 import type { MatcherContext } from "./matcherContext.js"
 import type { Resource } from "./resource.js"
@@ -48,6 +50,17 @@ export async function matcherContextAddPath(
 				{
 					cwd,
 					entry: direntPath,
+					entryDirent: {
+						isBlockDevice: () => false,
+						isCharacterDevice: () => false,
+						isDirectory: () => true,
+						isFIFO: () => false,
+						isFile: () => false,
+						isSocket: () => false,
+						isSymbolicLink: () => false,
+						name: direntPath.slice(direntPath.lastIndexOf("/") + 1),
+						parentPath,
+					} as Dirent,
 					fs,
 					parentPath,
 					resource,
@@ -126,6 +139,17 @@ export async function matcherContextAddPath(
 			{
 				cwd,
 				entry,
+				entryDirent: {
+					isBlockDevice: () => false,
+					isCharacterDevice: () => false,
+					isDirectory: () => false,
+					isFIFO: () => false,
+					isFile: () => true,
+					isSocket: () => false,
+					isSymbolicLink: () => false,
+					name: direntPath.slice(direntPath.lastIndexOf("/") + 1),
+					parentPath,
+				} as Dirent,
 				fs,
 				parentPath,
 				resource,
