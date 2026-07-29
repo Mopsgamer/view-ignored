@@ -10,13 +10,6 @@ import type { Rule, InternalRules } from "../patterns/rule.js"
  */
 export interface Target {
 	/**
-	 * If enabled and no source found (null), will skip internal patterns
-	 * and include files with the `missingSource` match.
-	 *
-	 * @since 0.12.0
-	 */
-	needsSource: boolean
-	/**
 	 * Should be compiled. If an array, it will be treated *high*.
 	 *
 	 * @since 0.10.0

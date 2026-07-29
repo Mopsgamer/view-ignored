@@ -60,8 +60,8 @@ export function walkIncludes(
 	target.ignores(
 		{
 			cwd,
+			dirent: entry,
 			entry: path,
-			entryDirent: entry,
 			fs,
 			lowerEntry: lowerEntry || path.toLowerCase(),
 			parentPath,

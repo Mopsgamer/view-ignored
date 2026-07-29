@@ -20,7 +20,6 @@ and this project adheres to
 - Allow comments in Deno and JSR manifests for the `json` extension.
 - Add `ScanBrowserOptions`.
 - Fix `.git/info/exclude` by implementing `InternalRules`.
-  Also added the `Target.needsSource` option.
 - Removed `extractGitignoreNocase` and similar functions.
   Added `extractGitignoreRules` and other `Rules` methods.
 - Fixed `matcherContext { Add | Remove } Path`.

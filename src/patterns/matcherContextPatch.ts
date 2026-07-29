@@ -49,8 +49,7 @@ export async function matcherContextAddPath(
 			target.ignores(
 				{
 					cwd,
-					entry: direntPath,
-					entryDirent: {
+					dirent: {
 						isBlockDevice: () => false,
 						isCharacterDevice: () => false,
 						isDirectory: () => true,
@@ -61,6 +60,7 @@ export async function matcherContextAddPath(
 						name: direntPath.slice(direntPath.lastIndexOf("/") + 1),
 						parentPath,
 					} as Dirent,
+					entry: direntPath,
 					fs,
 					parentPath,
 					resource,
@@ -138,8 +138,7 @@ export async function matcherContextAddPath(
 		target.ignores(
 			{
 				cwd,
-				entry,
-				entryDirent: {
+				dirent: {
 					isBlockDevice: () => false,
 					isCharacterDevice: () => false,
 					isDirectory: () => false,
@@ -150,6 +149,7 @@ export async function matcherContextAddPath(
 					name: direntPath.slice(direntPath.lastIndexOf("/") + 1),
 					parentPath,
 				} as Dirent,
+				entry,
 				fs,
 				parentPath,
 				resource,

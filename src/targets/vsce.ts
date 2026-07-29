@@ -90,7 +90,6 @@ export function makeVSCE(): Target {
 			})
 		},
 		internalRules: internal,
-		needsSource: true, // package.json without files prop is a valid source
 		root: ".",
 	}
 }

@@ -142,7 +142,6 @@ export function makeBun(): Target {
 			})
 		},
 		internalRules: internal,
-		needsSource: true,
 		root: ".",
 	}
 }

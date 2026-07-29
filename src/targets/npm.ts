@@ -37,11 +37,7 @@ export function makeNPM(): Target {
 		excludes: false,
 		list: [], // filled within init
 	}
-	const internalInclude: Rule = {
-		compiled: [],
-		excludes: false,
-		list: [], // filled within init
-	}
+	const directPathsInclude: Record<string, string> = Object.create(null)
 
 	const internal: InternalRules = {
 		after: [
@@ -56,11 +52,10 @@ export function makeNPM(): Target {
 		],
 		before: [
 			<CustomRule>{
-				match({ entryDirent }) {
-					return entryDirent.isSymbolicLink() ? "<symlink>" : null
+				match({ dirent, entry }) {
+					return dirent.isSymbolicLink() ? "//symlink" : directPathsInclude[entry] ? entry : null
 				},
 			},
-			internalInclude,
 			bundledInclude,
 			ruleCompile(
 				{
@@ -140,29 +135,24 @@ export function makeNPM(): Target {
 					return
 				}
 
-				const set = new Set<string>()
-
-				if (typeof dist.main === "string") set.add(unixify(dist.main))
-				if (typeof dist.module === "string") set.add(unixify(dist.module))
-				if (typeof dist.browser === "string") set.add(unixify(dist.browser))
+				if (typeof dist.main === "string") directPathsInclude["main"] = unixify(dist.main)
+				if (typeof dist.module === "string") directPathsInclude["module"] = unixify(dist.module)
+				if (typeof dist.browser === "string") directPathsInclude["browser"] = unixify(dist.browser)
 
 				if (typeof dist.bin === "string") {
-					set.add(unixify(dist.bin))
+					directPathsInclude["bin"] = unixify(dist.bin)
 				} else if (typeof dist.bin === "object" && dist.bin !== null) {
-					Object.values(dist.bin).forEach((binPath) => {
-						if (typeof binPath === "string") set.add(unixify(binPath))
+					Object.entries(dist.bin).forEach(([key, binPath]) => {
+						if (typeof binPath === "string") directPathsInclude["bin." + key] = unixify(binPath)
 					})
 				}
 
 				// TODO: NPM should include bundled deps
 
-				internalInclude.list = Array.from(set)
-				ruleCompile(internalInclude, { nocase: true })
 				cb(null)
 			})
 		},
 		internalRules: internal,
-		needsSource: true, // package.json without files prop is a valid source
 		root: ".",
 	}
 }

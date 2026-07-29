@@ -66,17 +66,45 @@ export type CustomRule = {
 	/**
 	 * Custom match function.
 	 *
+	 * @returns The pattern, matching error or null.
+	 * It could be `boolean | Error`, but we use `string | null | Error`.
+	 * `string` gives us ability to tell why the path is ignored.
+	 * User decides what to do with the string, not view-ignored.
+	 *
+	 * @example
+	 *   match(o) {
+	 *     if (o.dirent.isSymlink()) {
+	 *       // ignores symlinks
+	 *       return "//symlink"
+	 *     }
+	 *     if (o.includes("hi")) {
+	 *       return "*hi*" || ("**"+"/*hi*") || "//includes 'hi'"
+	 *     }
+	 *     if (patternCompile("*hi*")) {
+	 *       // btw, do not compile inside match, it's slow
+	 *       return "*hi*"
+	 *     }
+	 *     return null
+	 *   }
+	 *
+	 * @example
+	 *   // Some standandized examples
+	 *
+	 *   // message or glob
+	 *   return "//starts with 's' && !ends with 't'"
+	 *   return "s*[!t]" // can be used instead of "**"+"/s*[!t]"
+	 *
+	 *   // some other messages
+	 *   return "//has 't'"
+	 *   return "//!has 't'"
+	 *   return "//has 't' at 1"
+	 *   return "//base has 't'"
+	 *   return "//dirname has 't'"
+	 *   return "//dirname base has 't'"
+	 *
 	 * @since 0.12.0
 	 */
 	match: (options: IgnoresOptions) => string | Error | null
-	/**
-	 * Provides ignored or included file and directory patterns.
-	 *
-	 * @see {@link ruleTest} provides the ignoring algorithm.
-	 *
-	 * @since 0.12.0
-	 */
-	list: PatternList
 }
 
 export type Rule = GlobRule | CustomRule
@@ -104,7 +132,7 @@ export interface RuleMatchBase<K extends string | number | symbol> {
  * @since 0.9.1
  */
 export interface RuleMatchBaseSource<K extends string | number | symbol> extends RuleMatchBase<K> {
-	source: Source
+	source: Source | null
 }
 
 /**
@@ -243,7 +271,7 @@ export interface RuleTestOptions extends PatternFinderOptions {
 	 *
 	 * @since 0.12.0
 	 */
-	entryDirent: Dirent
+	dirent: Dirent
 }
 
 function cacheTest(
@@ -277,11 +305,7 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 		throw new Error("view-ignored has crashed: no source cached.")
 	}
 
-	if (src === null) {
-		if (options.target.needsSource) {
-			return { ignored: false, kind: RuleMatchKind.missingSource }
-		}
-	} else if ("error" in src) {
+	if (src !== null && "error" in src) {
 		return { ...src, ignored: true, kind: RuleMatchKind.invalidSource }
 	}
 
@@ -295,8 +319,8 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 
 	const ignoreOptions: IgnoresOptions = {
 		cwd: options.cwd,
+		dirent: options.dirent,
 		entry,
-		entryDirent: options.entryDirent,
 		fs: options.fs,
 		lowerEntry: lowerPath,
 		parentPath: options.parentPath,
@@ -343,10 +367,12 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 		if (internalMatch) return internalMatch
 	}
 
-	if (src === null) return { ignored: false, kind: RuleMatchKind.missingSource }
+	if (src === null) {
+		return { ignored: false, kind: RuleMatchKind.missingSource }
+	}
 
 	return {
-		ignored: src.inverted,
+		ignored: src?.inverted || false,
 		kind: RuleMatchKind.noMatch,
 		source: src,
 	}

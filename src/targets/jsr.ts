@@ -60,7 +60,6 @@ export function makeJSR(): Target {
 			next()
 		},
 		internalRules: internal,
-		needsSource: true,
 		root: ".",
 	}
 }

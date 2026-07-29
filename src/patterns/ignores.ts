@@ -39,7 +39,7 @@ export interface IgnoresOptions extends InitState {
 	 *
 	 * @since 0.12.0
 	 */
-	entryDirent: Dirent
+	dirent: Dirent
 }
 
 /**

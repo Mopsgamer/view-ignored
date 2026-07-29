@@ -445,7 +445,7 @@ async function run(
 			const m = d.match as RuleMatch
 			const origin =
 				m.kind === RuleMatchKind.external
-					? m.source.path
+					? (m.source?.path ?? "<null source>")
 					: m.kind === RuleMatchKind.internal
 						? "internal"
 						: "none"

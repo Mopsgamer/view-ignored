@@ -157,7 +157,6 @@ export function makeGit(): Target {
 			})
 		},
 		internalRules: internal,
-		needsSource: false,
 		root: "/",
 	}
 }

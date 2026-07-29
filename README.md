@@ -125,7 +125,6 @@ export function makeDocker(): Target {
 		extractors,
 		ignores: ruleTest,
 		internalRules: internal,
-		needsSource: false, // .dockerignore is optional
 		root: ".",
 	}
 }

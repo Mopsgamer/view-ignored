@@ -73,7 +73,6 @@ export function makeDeno(): Target {
 			next()
 		},
 		internalRules: internal,
-		needsSource: true,
 		root: ".",
 	}
 }
