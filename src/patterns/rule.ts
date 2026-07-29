@@ -64,6 +64,13 @@ export type GlobRule = {
 
 export type CustomRule = {
 	/**
+	 * Applies when `match(path)` returns `string`.
+	 * If `true`, path is ignored.
+	 *
+	 * @since 0.12.0
+	 */
+	excludes: boolean
+	/**
 	 * Custom match function.
 	 *
 	 * @returns The pattern, matching error or null.
@@ -348,13 +355,13 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 					error: res,
 					ignored: false,
 					kind: RuleMatchKind.invalidExternal,
-					pattern: typeof res === "string" ? res : "",
+					pattern: "",
 					source: src,
 				}
 			}
 
 			return {
-				ignored: "match" in rule ? true : rule.excludes,
+				ignored: rule.excludes,
 				kind: RuleMatchKind.external,
 				pattern: typeof res === "string" ? res : res.pattern,
 				source: src,
@@ -391,12 +398,12 @@ function ruleTestInternalSync(rules: Rule[], options: IgnoresOptions): RuleMatch
 				error: res,
 				ignored: false,
 				kind: RuleMatchKind.invalidInternal,
-				pattern: typeof res === "string" ? res : "",
+				pattern: "",
 			}
 		}
 
 		return {
-			ignored: "match" in rule ? true : rule.excludes,
+			ignored: rule.excludes,
 			kind: RuleMatchKind.internal,
 			pattern: typeof res === "string" ? res : res.pattern,
 		}

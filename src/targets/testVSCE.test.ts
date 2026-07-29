@@ -23,7 +23,7 @@ describe("VSCE", () => {
 		await testScan(
 			done,
 			{ ".vscode-test": { a: "" }, "package.json": packageJson },
-			["package.json", ".vscode-test/", ".vscode-test/a"],
+			["package.json"],
 			{ target: makeVSCE() },
 		)
 	})

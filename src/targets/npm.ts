@@ -3,15 +3,13 @@ import type { Target } from "./target.js"
 import {
 	type Extractor,
 	ruleTest,
-	type Rule,
 	ruleCompile,
 	extractPackageJson,
 	extractGitignore,
 	type InternalRules,
 	type CustomRule,
 } from "../patterns/index.js"
-import { unixify } from "../unixify.js"
-import { npmManifestParse, type PackageJson } from "./npmManifest.js"
+import { npmManifestParse, type PackageJson, extractManifestIncludes } from "./npmManifest.js"
 
 /**
  * @since 0.12.0
@@ -32,11 +30,6 @@ export function makeNPM(): Target {
 		},
 	]
 
-	const bundledInclude: Rule = {
-		compiled: [],
-		excludes: false,
-		list: [], // filled within init
-	}
 	const directPathsInclude: Record<string, string> = Object.create(null)
 
 	const internal: InternalRules = {
@@ -51,12 +44,23 @@ export function makeNPM(): Target {
 			),
 		],
 		before: [
-			<CustomRule>{
-				match({ dirent, entry }) {
-					return dirent.isSymbolicLink() ? "//symlink" : directPathsInclude[entry] ? entry : null
+			{
+				excludes: true,
+				match({ dirent }) {
+					return dirent.isSymbolicLink() ? "//symlink" : null
 				},
-			},
-			bundledInclude,
+			} satisfies CustomRule as CustomRule,
+			{
+				excludes: false,
+				match({ entry }) {
+					for (const [manifestProp, path] of Object.entries(directPathsInclude)) {
+						if (entry === path) {
+							return "//'" + manifestProp + "' property is " + path
+						}
+					}
+					return null
+				},
+			} satisfies CustomRule as CustomRule,
 			ruleCompile(
 				{
 					compiled: null,
@@ -135,17 +139,7 @@ export function makeNPM(): Target {
 					return
 				}
 
-				if (typeof dist.main === "string") directPathsInclude["main"] = unixify(dist.main)
-				if (typeof dist.module === "string") directPathsInclude["module"] = unixify(dist.module)
-				if (typeof dist.browser === "string") directPathsInclude["browser"] = unixify(dist.browser)
-
-				if (typeof dist.bin === "string") {
-					directPathsInclude["bin"] = unixify(dist.bin)
-				} else if (typeof dist.bin === "object" && dist.bin !== null) {
-					Object.entries(dist.bin).forEach(([key, binPath]) => {
-						if (typeof binPath === "string") directPathsInclude["bin." + key] = unixify(binPath)
-					})
-				}
+				extractManifestIncludes(dist, directPathsInclude)
 
 				// TODO: NPM should include bundled deps
 

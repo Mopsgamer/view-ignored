@@ -22,7 +22,7 @@ describe("Bun", () => {
 		await testScan(
 			done,
 			{ node_modules: { a: "" }, "package.json": packageJson },
-			["package.json", "node_modules/", "node_modules/a"],
+			["package.json"],
 			{ target: makeBun() },
 		)
 	})

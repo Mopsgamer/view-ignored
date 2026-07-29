@@ -7,9 +7,9 @@ import {
 	ruleCompile,
 	extractPackageJson,
 	extractGitignore,
+	type CustomRule,
 } from "../patterns/index.js"
-import { unixify } from "../unixify.js"
-import { npmManifestParse, type PackageJson } from "./npmManifest.js"
+import { npmManifestParse, type PackageJson, extractManifestIncludes } from "./npmManifest.js"
 
 /**
  * @since 0.12.0
@@ -30,14 +30,26 @@ export function makeBun(): Target {
 		},
 	]
 
-	const internalInclude: Rule = {
-		compiled: [],
-		excludes: false,
-		list: [], // filled within init
-	}
+	const directPathsInclude: Record<string, string> = Object.create(null)
 
 	const internal: Rule[] = [
-		internalInclude,
+		{
+			excludes: true,
+			match({ dirent }) {
+				return dirent.isSymbolicLink() ? "//symlink" : null
+			},
+		} satisfies CustomRule as CustomRule,
+		{
+			excludes: false,
+			match({ entry }) {
+				for (const [manifestProp, path] of Object.entries(directPathsInclude)) {
+					if (entry === path) {
+						return "//'" + manifestProp + "' property is " + path
+					}
+				}
+				return null
+			},
+		} satisfies CustomRule as CustomRule,
 		ruleCompile({
 			compiled: null,
 			excludes: true,
@@ -119,25 +131,9 @@ export function makeBun(): Target {
 					return
 				}
 
-				const set = new Set<string>()
-
-				if (typeof dist.main === "string") set.add(unixify(dist.main))
-				if (typeof dist.module === "string") set.add(unixify(dist.module))
-				if (typeof dist.browser === "string") set.add(unixify(dist.browser))
-
-				// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L1440
-				if (typeof dist.bin === "string") {
-					set.add(unixify(dist.bin))
-				} else if (typeof dist.bin === "object" && dist.bin !== null) {
-					Object.values(dist.bin).forEach((binPath) => {
-						if (typeof binPath === "string") set.add(unixify(binPath))
-					})
-				}
-
 				// TODO: Bun should include bundled deps
 
-				internalInclude.list = Array.from(set)
-				ruleCompile(internalInclude, { nocase: true })
+				extractManifestIncludes(dist, directPathsInclude)
 				cb(null)
 			})
 		},

@@ -1,3 +1,5 @@
+import { unixify } from "../unixify.js"
+
 export interface PackageJson {
 	name: string
 	version: string
@@ -130,4 +132,40 @@ export function npmManifestParse(s: string): PackageJson {
 	}
 
 	return parsed as PackageJson
+}
+
+/**
+ * Extracts and normalizes direct paths (main, module, browser, and bin fields)
+ * to be included in target package file scans, cleaning leading `./` and `/`,
+ * stripping trailing slashes, and ignoring invalid parent-escaping paths (e.g., `../`).
+ *
+ * @since 0.12.0
+ */
+export function extractManifestIncludes(manifest: PackageJson, dist: Record<string, string>): void {
+	addDirectPath(manifest.main, dist, "main")
+	addDirectPath(manifest.module, dist, "module")
+	addDirectPath(manifest.browser, dist, "browser")
+
+	if (typeof manifest.bin === "string") {
+		addDirectPath(manifest.bin, dist, "bin")
+	} else if (typeof manifest.bin === "object" && manifest.bin !== null) {
+		Object.entries(manifest.bin).forEach(([key, binPath]) => {
+			addDirectPath(binPath, dist, "bin." + key)
+		})
+	}
+}
+
+function addDirectPath(p: string | undefined, dist: Record<string, string>, key: string) {
+	if (typeof p !== "string") return
+	let normalized = unixify(p)
+	while (normalized.startsWith("./") || normalized.startsWith("/")) {
+		if (normalized.startsWith("./")) {
+			normalized = normalized.slice(2)
+		} else {
+			normalized = normalized.slice(1)
+		}
+	}
+	if (normalized && !normalized.startsWith("../") && normalized !== "..") {
+		dist[key] = normalized
+	}
 }

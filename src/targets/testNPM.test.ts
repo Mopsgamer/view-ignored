@@ -164,6 +164,15 @@ describe("NPM", () => {
 		)
 	})
 
+	test("ignores node_modules", async (done) => {
+		await testScan(
+			done,
+			{ node_modules: { a: "" }, "package.json": packageJsonNoFiles },
+			["package.json"],
+			{ target: makeNPM() },
+		)
+	})
+
 	test("throws an error if package.json is invalid", async (done) => {
 		expect(() =>
 			testScan(done, { "package.json": "{ invalid json }" }, () => {}, { target: makeNPM() }),

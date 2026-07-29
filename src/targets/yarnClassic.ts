@@ -7,8 +7,9 @@ import {
 	ruleCompile,
 	extractPackageJson,
 	extractGitignore,
+	type CustomRule,
 } from "../patterns/index.js"
-import { npmManifestParse } from "./npmManifest.js"
+import { npmManifestParse, extractManifestIncludes } from "./npmManifest.js"
 
 /**
  * @since 0.12.0
@@ -39,7 +40,26 @@ export function makeYarnClassic(): Target {
 		},
 	]
 
+	const directPathsInclude: Record<string, string> = Object.create(null)
+
 	const internal: Rule[] = [
+		{
+			excludes: true,
+			match({ dirent }) {
+				return dirent.isSymbolicLink() ? "//symlink" : null
+			},
+		} satisfies CustomRule as CustomRule,
+		{
+			excludes: false,
+			match({ entry }) {
+				for (const [manifestProp, path] of Object.entries(directPathsInclude)) {
+					if (entry === path) {
+						return "//'" + manifestProp + "' property is " + path
+					}
+				}
+				return null
+			},
+		} satisfies CustomRule as CustomRule,
 		ruleCompile(
 			{
 				compiled: null,
@@ -108,12 +128,15 @@ export function makeYarnClassic(): Target {
 					return
 				}
 
+				let dist
 				try {
-					npmManifestParse(content!.toString())
+					dist = npmManifestParse(content!.toString())
 				} catch (error) {
 					cb(new Error("Invalid 'package.json'", { cause: error }))
 					return
 				}
+
+				extractManifestIncludes(dist, directPathsInclude)
 				cb(null)
 			})
 		},
