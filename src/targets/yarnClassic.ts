@@ -6,7 +6,7 @@ import {
 	type Rule,
 	ruleCompile,
 	extractPackageJson,
-	extractGitignore,
+	extractNpmignore,
 	type CustomRule,
 } from "../patterns/index.js"
 import { npmManifestParse, extractManifestIncludes } from "./npmManifest.js"
@@ -22,19 +22,19 @@ export function makeYarnClassic(): Target {
 		},
 		{
 			extract(source, content) {
-				return extractGitignore(source, content, { nocase: true })
+				return extractNpmignore(source, content, { nocase: true })
 			},
 			path: ".yarnignore",
 		},
 		{
 			extract(source, content) {
-				return extractGitignore(source, content, { nocase: true })
+				return extractNpmignore(source, content, { nocase: true })
 			},
 			path: ".npmignore",
 		},
 		{
 			extract(source, content) {
-				return extractGitignore(source, content, { nocase: true })
+				return extractNpmignore(source, content, { nocase: true })
 			},
 			path: ".gitignore",
 		},
