@@ -266,10 +266,10 @@ function compareBenchmarks(current, base) {
 
 			if (diffPercent > 0) {
 				if (isSig && diffPercent >= 10) emoji = "💩"
-				ratioStr = `+${diffPercent.toFixed(1)}% (${low.toFixed(1)}% … ${high.toFixed(1)}%)`
+				ratioStr = ` +${diffPercent.toFixed(1)}% (${low.toFixed(1)}% … ${high.toFixed(1)}%)`
 			} else {
 				if (isSig && diffPercent <= -10) emoji = "⚡"
-				ratioStr = `-${Math.abs(diffPercent).toFixed(1)}% (${low.toFixed(1)}% … ${high.toFixed(1)}%)`
+				ratioStr = ` -${Math.abs(diffPercent).toFixed(1)}% (${low.toFixed(1)}% … ${high.toFixed(1)}%)`
 			}
 		}
 
@@ -333,7 +333,7 @@ function getTable(rows, isTerminal) {
 	const headers = [
 		"Benchmark",
 		"Measurement (mean [std.dev range])",
-		"Min \u2026 Max",
+		"Min \u2026 Max (Raw extremes)",
 		"Outliers",
 		"Ratio (delta [confidence interval])",
 	]

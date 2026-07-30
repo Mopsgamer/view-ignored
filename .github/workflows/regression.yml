@@ -66,7 +66,11 @@ jobs:
             cat speed_report.txt >> regression_output.txt
             echo '```' >> regression_output.txt
             echo "" >> regression_output.txt
+            echo "## Size Regression Report" > regression_output.txt
+            echo "" >> regression_output.txt
+            echo '```txt' >> regression_output.txt
             cat size_report.txt >> regression_output.txt
+            echo '```' >> regression_output.txt
           fi
 
       - name: Print benchmark results to log

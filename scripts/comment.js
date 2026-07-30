@@ -43,7 +43,7 @@ async function main() {
 	const botComment = comments.find((c) => c.body.includes(commentHeader))
 
 	const body = fs.readFileSync(bodyFile, "utf8")
-	const fullBody = `${commentHeader}\n\n${"```txt\n" + body + "```"}\n`
+	const fullBody = body
 
 	if (botComment) {
 		console.log("Updating existing comment...")

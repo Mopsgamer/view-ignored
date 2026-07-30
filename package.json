@@ -90,6 +90,7 @@
 		"cpu": "bun run --expose-gc --cpu-prof --cpu-prof-md --cpu-prof-name CPU.me scripts/scan.js --skipInternal",
 		"cpu:node": "node --expose-gc --cpu-prof --cpu-prof-name CPU.me.node.cpuprofile scripts/scan.js --skipInternal",
 		"bench": "bun scripts/bench.js",
+		"size": "bun scripts/size.js",
 		"coverage": "bun run test --coverage --coverage-reporter=lcov",
 		"test": "bun test --timeout 5000 src",
 		"test:patterns": "bun test --timeout 5000 src/patterns",
