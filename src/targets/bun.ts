@@ -38,72 +38,68 @@ export function makeBun(): Target {
 
 	const directPathsInclude: Record<string, string> = Object.create(null)
 
-	if (!cachedBunExcludesRule) {
-		cachedBunExcludesRule = ruleCompile({
+	cachedBunExcludesRule ||= ruleCompile({
+		compiled: null,
+		excludes: true,
+		list: [
+			// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L180
+			"package-lock.json",
+			"yarn.lock",
+			"pnpm-lock.yaml",
+			"bun.lockb",
+			"bun.lock", // npm includes it
+
+			// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L189
+			".*.swp",
+			"._*",
+			".DS_Store",
+			".git",
+			".gitignore",
+			".hg",
+			".npmignore",
+			".npmrc",
+			".lock-wscript",
+			".svn",
+			"wafpickle-*",
+			"CVS",
+			"npm-debug.log",
+
+			// bun says it is "mentioned in the docs but does not appear to be ignored by default"
+			// but we know it should be /build/config.gypi, not just config.gypi, haha
+			// "config.gypi",
+
+			".env.production", // npm includes it
+			"bunfig.toml", // npm includes it
+
+			// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L284
+			// manifest should be included, but bun ignores it on this line
+			// bun forces it later: https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L2586
+			// "package.json",
+
+			// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L285
+			"node_modules",
+		],
+	})
+
+	cachedBunIncludesRule ||= ruleCompile(
+		{
 			compiled: null,
-			excludes: true,
+			excludes: false,
 			list: [
-				// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L180
-				"package-lock.json",
-				"yarn.lock",
-				"pnpm-lock.yaml",
-				"bun.lockb",
-				"bun.lock", // npm includes it
+				// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L2586
+				"package.json",
 
-				// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L189
-				".*.swp",
-				"._*",
-				".DS_Store",
-				".git",
-				".gitignore",
-				".hg",
-				".npmignore",
-				".npmrc",
-				".lock-wscript",
-				".svn",
-				"wafpickle-*",
-				"CVS",
-				"npm-debug.log",
-
-				// bun says it is "mentioned in the docs but does not appear to be ignored by default"
-				// but we know it should be /build/config.gypi, not just config.gypi, haha
-				// "config.gypi",
-
-				".env.production", // npm includes it
-				"bunfig.toml", // npm includes it
-
-				// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L284
-				// manifest should be included, but bun ignores it on this line
-				// bun forces it later: https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L2586
-				// "package.json",
-
-				// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L285
-				"node_modules",
+				// the special?.* check works this way: https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L2599
+				"LICENSE",
+				"LICENSE.*",
+				"LICENCE",
+				"LICENCE.*",
+				"README",
+				"README.*",
 			],
-		}) as GlobRule
-	}
-
-	if (!cachedBunIncludesRule) {
-		cachedBunIncludesRule = ruleCompile(
-			{
-				compiled: null,
-				excludes: false,
-				list: [
-					// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L2586
-					"package.json",
-
-					// the special?.* check works this way: https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L2599
-					"LICENSE",
-					"LICENSE.*",
-					"LICENCE",
-					"LICENCE.*",
-					"README",
-					"README.*",
-				],
-			},
-			{ nocase: true },
-		) as GlobRule
-	}
+		},
+		{ nocase: true },
+	)
 
 	const internal: Rule[] = [
 		symlinkRule,

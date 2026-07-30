@@ -6,6 +6,9 @@ import { scan as browserScan } from "../out/browser.js"
 import { scan } from "../out/index.js"
 import { makeGit } from "../out/targets/index.js"
 
+// Precache git target rules to avoid data skewing
+makeGit()
+
 const igw = process.argv.includes("--igw")
 const vign = process.argv.includes("--vign")
 const cwd = process.cwd()

@@ -38,47 +38,43 @@ export function makeYarn(): Target {
 
 	const directPathsInclude: Record<string, string> = Object.create(null)
 
-	if (!cachedYarnExcludesRule) {
-		cachedYarnExcludesRule = ruleCompile({
+	cachedYarnExcludesRule ||= ruleCompile({
+		compiled: null,
+		excludes: true,
+		list: [
+			// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L26
+			"/package.tgz",
+
+			".github",
+			".git",
+			".hg",
+			"node_modules",
+
+			".npmignore",
+			".gitignore",
+
+			".#*",
+			".DS_Store",
+		],
+	})
+
+	cachedYarnIncludesRule ||= ruleCompile(
+		{
 			compiled: null,
-			excludes: true,
+			excludes: false,
 			list: [
-				// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L26
-				"/package.tgz",
-
-				".github",
-				".git",
-				".hg",
-				"node_modules",
-
-				".npmignore",
-				".gitignore",
-
-				".#*",
-				".DS_Store",
+				// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L10
+				"/package.json",
+				"/README",
+				"/README.*",
+				"/LICENSE",
+				"/LICENSE.*",
+				"/LICENCE",
+				"/LICENCE.*",
 			],
-		}) as GlobRule
-	}
-
-	if (!cachedYarnIncludesRule) {
-		cachedYarnIncludesRule = ruleCompile(
-			{
-				compiled: null,
-				excludes: false,
-				list: [
-					// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L10
-					"/package.json",
-					"/README",
-					"/README.*",
-					"/LICENSE",
-					"/LICENSE.*",
-					"/LICENCE",
-					"/LICENCE.*",
-				],
-			},
-			{ nocase: true },
-		) as GlobRule
-	}
+		},
+		{ nocase: true },
+	)
 
 	const internal: Rule[] = [
 		symlinkRule,

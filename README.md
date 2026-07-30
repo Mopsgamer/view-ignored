@@ -101,10 +101,9 @@ import {
 	ruleCompile,
 	type InternalRules,
 	type GlobRule,
-	type PatternCache,
 } from "view-ignored/patterns"
 
-let cachedDockerPatterns: PatternCache[] | null = null
+let cachedDockerRule: GlobRule | null = null
 
 export function makeDocker(): Target {
 	const extractors: Extractor[] = [
@@ -114,23 +113,14 @@ export function makeDocker(): Target {
 		},
 	]
 
-	if (!cachedDockerPatterns) {
-		const r = ruleCompile({
-			compiled: null,
-			excludes: true,
-			list: [".git/", "node_modules/", ".DS_Store"],
-		}) as GlobRule
-		cachedDockerPatterns = r.compiled as PatternCache[]
-	}
-
-	const rule1: GlobRule = {
-		compiled: cachedDockerPatterns,
+	cachedDockerRule ||= ruleCompile({
+		compiled: null,
 		excludes: true,
 		list: [".git/", "node_modules/", ".DS_Store"],
-	}
+	})
 
 	const internal: InternalRules = {
-		before: [rule1],
+		before: [cachedDockerRule],
 		after: [],
 	}
 

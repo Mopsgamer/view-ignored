@@ -27,13 +27,11 @@ export function makeJSR(): Target {
 		},
 	]
 
-	if (!cachedJSRRule) {
-		cachedJSRRule = ruleCompile({
-			compiled: null,
-			excludes: true,
-			list: [".git", ".DS_Store"],
-		}) as GlobRule
-	}
+	cachedJSRRule ||= ruleCompile({
+		compiled: null,
+		excludes: true,
+		list: [".git", ".DS_Store"],
+	})
 
 	const internal: Rule[] = [cachedJSRRule]
 

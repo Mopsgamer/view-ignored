@@ -5,6 +5,9 @@ import { resolveSources } from "../out/patterns/resolveSources.js"
 import { makeNPM } from "../out/targets/npm.js"
 import { unixify } from "../out/unixify.js"
 
+// Precache npm target rules to avoid data skewing
+makeNPM()
+
 const cwd = unixify(process.cwd())
 const target = makeNPM()
 const external = new Map()

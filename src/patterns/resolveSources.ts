@@ -2,7 +2,7 @@ import type { Dirent } from "node:fs"
 
 import type { PatternCompileOptions } from "./patternCompile.js"
 import type { Resource } from "./resource.js"
-import type { GlobRule, Rule } from "./rule.js"
+import type { GlobRule } from "./rule.js"
 import type { Source } from "./source.js"
 
 import { dirname, join } from "../unixify.js"
@@ -18,7 +18,7 @@ import { patternListCompile } from "./patternList.js"
  *
  * @since 0.6.0
  */
-export function ruleCompile(rule: GlobRule, options?: PatternCompileOptions): Rule {
+export function ruleCompile(rule: GlobRule, options?: PatternCompileOptions): GlobRule {
 	rule.compiled = patternListCompile({ ...options, list: rule.list })
 	return rule
 }

@@ -37,13 +37,11 @@ export function makeDeno(): Target {
 		packageJsonExtractor,
 	]
 
-	if (!cachedDenoRule) {
-		cachedDenoRule = ruleCompile({
-			compiled: null,
-			excludes: true,
-			list: [".git", ".DS_Store"],
-		}) as GlobRule
-	}
+	cachedDenoRule ||= ruleCompile({
+		compiled: null,
+		excludes: true,
+		list: [".git", ".DS_Store"],
+	})
 
 	const internal: Rule[] = [cachedDenoRule]
 

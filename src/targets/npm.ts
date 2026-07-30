@@ -39,75 +39,69 @@ export function makeNPM(): Target {
 
 	const directPathsInclude: Record<string, string> = Object.create(null)
 
-	if (!cachedNpmAfterExcludesRule) {
-		cachedNpmAfterExcludesRule = ruleCompile(
-			{
-				compiled: null,
-				excludes: true,
-				list: [".npmignore", ".gitignore"],
-			},
-			{ nocase: true },
-		) as GlobRule
-	}
+	cachedNpmAfterExcludesRule ||= ruleCompile(
+		{
+			compiled: null,
+			excludes: true,
+			list: [".npmignore", ".gitignore"],
+		},
+		{ nocase: true },
+	)
 
-	if (!cachedNpmBeforeExcludesRule) {
-		cachedNpmBeforeExcludesRule = ruleCompile(
-			{
-				compiled: null,
-				excludes: true,
-				list: [
-					// https://github.com/npm/npm-packlist/blob/main/lib/index.js#L16
-					".git",
-					".svn",
-					".hg",
-					"CVS",
-					"/.lock-wscript",
-					"/.wafpickle-*",
-					"/build/config.gypi",
-					"npm-debug.log",
-					".npmrc",
-					".*.swp",
-					".DS_Store",
-					"._*",
-					"*.orig",
-					"/archived-packages/**",
+	cachedNpmBeforeExcludesRule ||= ruleCompile(
+		{
+			compiled: null,
+			excludes: true,
+			list: [
+				// https://github.com/npm/npm-packlist/blob/main/lib/index.js#L16
+				".git",
+				".svn",
+				".hg",
+				"CVS",
+				"/.lock-wscript",
+				"/.wafpickle-*",
+				"/build/config.gypi",
+				"npm-debug.log",
+				".npmrc",
+				".*.swp",
+				".DS_Store",
+				"._*",
+				"*.orig",
+				"/archived-packages/**",
 
-					// https://github.com/npm/npm-packlist/blob/main/lib/index.js#L294
-					"/node_modules",
-					"/package-lock.json",
-					"/yarn.lock",
-					"/pnpm-lock.yaml",
-					"/bun.lockb",
+				// https://github.com/npm/npm-packlist/blob/main/lib/index.js#L294
+				"/node_modules",
+				"/package-lock.json",
+				"/yarn.lock",
+				"/pnpm-lock.yaml",
+				"/bun.lockb",
 
-					// npm-packlist ignores files with stars when publishing
-					"*\\**",
-				],
-			},
-			{ nocase: true },
-		) as GlobRule
-	}
+				// npm-packlist ignores files with stars when publishing
+				"*\\**",
+			],
+		},
+		{ nocase: true },
+	)
 
-	if (!cachedNpmBeforeIncludesRule) {
-		cachedNpmBeforeIncludesRule = ruleCompile(
-			{
-				compiled: null,
-				excludes: false,
-				list: [
-					// https://github.com/npm/npm-packlist/blob/main/lib/index.js#L287
-					"/package.json",
-					"README",
-					"COPYING",
-					"LICENSE",
-					"LICENCE",
-					"README.*",
-					"COPYING.*",
-					"LICENSE.*",
-					"LICENCE.*",
-				],
-			},
-			{ nocase: true },
-		) as GlobRule
-	}
+	cachedNpmBeforeIncludesRule ||= ruleCompile(
+		{
+			compiled: null,
+			excludes: false,
+			list: [
+				// https://github.com/npm/npm-packlist/blob/main/lib/index.js#L287
+				"/package.json",
+				"README",
+				"COPYING",
+				"LICENSE",
+				"LICENCE",
+				"README.*",
+				"COPYING.*",
+				"LICENSE.*",
+				"LICENCE.*",
+			],
+		},
+		{ nocase: true },
+	)
 
 	const internal: InternalRules = {
 		after: [cachedNpmAfterExcludesRule],

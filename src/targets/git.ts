@@ -31,13 +31,11 @@ export function makeGit(): Target {
 		},
 	]
 
-	if (!cachedGitRule) {
-		cachedGitRule = ruleCompile({
-			compiled: null,
-			excludes: true,
-			list: [".git", ".DS_Store"],
-		}) as GlobRule
-	}
+	cachedGitRule ||= ruleCompile({
+		compiled: null,
+		excludes: true,
+		list: [".git", ".DS_Store"],
+	})
 
 	const internal: InternalRules = {
 		after: [],
