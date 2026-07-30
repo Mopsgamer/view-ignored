@@ -1,6 +1,6 @@
 import type { PatternCache, PatternList } from "./patternList.js"
 
-import glob from "micromatch"
+import glob from "picomatch"
 
 /**
  * @since 0.8.0
