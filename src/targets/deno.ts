@@ -7,8 +7,11 @@ import {
 	ruleCompile,
 	extractJsrJson,
 	packageJsonExtractor,
+	type GlobRule,
 } from "../patterns/index.js"
 import { makeJsrInit } from "./jsrManifest.js"
+
+let cachedDenoRule: GlobRule | null = null
 
 /**
  * @since 0.12.0
@@ -34,13 +37,15 @@ export function makeDeno(): Target {
 		packageJsonExtractor,
 	]
 
-	const internal: Rule[] = [
-		ruleCompile({
+	if (!cachedDenoRule) {
+		cachedDenoRule = ruleCompile({
 			compiled: null,
 			excludes: true,
 			list: [".git", ".DS_Store"],
-		}),
-	]
+		}) as GlobRule
+	}
+
+	const internal: Rule[] = [cachedDenoRule]
 
 	return <Target>{
 		extractors,

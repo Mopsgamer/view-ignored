@@ -7,6 +7,7 @@ import {
 	ruleCompile,
 	extractGitignore,
 	packageJsonExtractor,
+	type GlobRule,
 } from "../patterns/index.js"
 import {
 	npmManifestParse,
@@ -15,6 +16,9 @@ import {
 	symlinkRule,
 	makeDirectPathsRule,
 } from "./npmManifest.js"
+
+let cachedBunExcludesRule: GlobRule | null = null
+let cachedBunIncludesRule: GlobRule | null = null
 
 /**
  * @since 0.12.0
@@ -34,10 +38,8 @@ export function makeBun(): Target {
 
 	const directPathsInclude: Record<string, string> = Object.create(null)
 
-	const internal: Rule[] = [
-		symlinkRule,
-		makeDirectPathsRule(directPathsInclude),
-		ruleCompile({
+	if (!cachedBunExcludesRule) {
+		cachedBunExcludesRule = ruleCompile({
 			compiled: null,
 			excludes: true,
 			list: [
@@ -78,8 +80,11 @@ export function makeBun(): Target {
 				// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L285
 				"node_modules",
 			],
-		}), // nocase should be false here
-		ruleCompile(
+		}) as GlobRule
+	}
+
+	if (!cachedBunIncludesRule) {
+		cachedBunIncludesRule = ruleCompile(
 			{
 				compiled: null,
 				excludes: false,
@@ -97,7 +102,14 @@ export function makeBun(): Target {
 				],
 			},
 			{ nocase: true },
-		),
+		) as GlobRule
+	}
+
+	const internal: Rule[] = [
+		symlinkRule,
+		makeDirectPathsRule(directPathsInclude),
+		cachedBunExcludesRule,
+		cachedBunIncludesRule,
 	]
 
 	return <Target>{

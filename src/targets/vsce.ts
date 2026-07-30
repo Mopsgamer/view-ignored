@@ -7,8 +7,11 @@ import {
 	ruleCompile,
 	extractGitignore,
 	packageJsonExtractor,
+	type GlobRule,
 } from "../patterns/index.js"
 import { vsceManifestParse } from "./vsceManifest.js"
+
+let cachedVSCERule: GlobRule | null = null
 
 /**
  * @since 0.12.0
@@ -26,8 +29,8 @@ export function makeVSCE(): Target {
 		},
 	]
 
-	const internal: Rule[] = [
-		ruleCompile({
+	if (!cachedVSCERule) {
+		cachedVSCERule = ruleCompile({
 			compiled: null,
 			excludes: true,
 			list: [
@@ -64,8 +67,10 @@ export function makeVSCE(): Target {
 				".vscode-test",
 				".vscode-test-web",
 			],
-		}),
-	]
+		}) as GlobRule
+	}
+
+	const internal: Rule[] = [cachedVSCERule]
 
 	return <Target>{
 		extractors,

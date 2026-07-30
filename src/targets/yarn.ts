@@ -6,6 +6,7 @@ import {
 	type Rule,
 	ruleCompile,
 	packageJsonExtractor,
+	type GlobRule,
 } from "../patterns/index.js"
 import {
 	npmManifestParse,
@@ -15,6 +16,9 @@ import {
 	makeDirectPathsRule,
 	extractNoCaseNpmignore,
 } from "./npmManifest.js"
+
+let cachedYarnExcludesRule: GlobRule | null = null
+let cachedYarnIncludesRule: GlobRule | null = null
 
 /**
  * @since 0.12.0
@@ -34,10 +38,8 @@ export function makeYarn(): Target {
 
 	const directPathsInclude: Record<string, string> = Object.create(null)
 
-	const internal: Rule[] = [
-		symlinkRule,
-		makeDirectPathsRule(directPathsInclude),
-		ruleCompile({
+	if (!cachedYarnExcludesRule) {
+		cachedYarnExcludesRule = ruleCompile({
 			compiled: null,
 			excludes: true,
 			list: [
@@ -55,8 +57,11 @@ export function makeYarn(): Target {
 				".#*",
 				".DS_Store",
 			],
-		}),
-		ruleCompile(
+		}) as GlobRule
+	}
+
+	if (!cachedYarnIncludesRule) {
+		cachedYarnIncludesRule = ruleCompile(
 			{
 				compiled: null,
 				excludes: false,
@@ -72,7 +77,14 @@ export function makeYarn(): Target {
 				],
 			},
 			{ nocase: true },
-		),
+		) as GlobRule
+	}
+
+	const internal: Rule[] = [
+		symlinkRule,
+		makeDirectPathsRule(directPathsInclude),
+		cachedYarnExcludesRule,
+		cachedYarnIncludesRule,
 	]
 
 	return <Target>{
