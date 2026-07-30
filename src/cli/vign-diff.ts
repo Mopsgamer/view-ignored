@@ -30,6 +30,26 @@ interface TargetDef {
 	parse: (out: string) => string[]
 }
 
+function parseDenoOrJSR(out: string): string[] {
+	const files: string[] = []
+	let inFiles = false
+	for (const line of out.split(/\r?\n/)) {
+		if (line.includes("Simulating publish") && line.includes("with files:")) {
+			inFiles = true
+			continue
+		}
+		if (inFiles && !line.startsWith("   file:///")) {
+			if (line.trim() === "") continue
+			break
+		}
+		if (inFiles) {
+			const match = line.match(/   file:\/\/\/\S+\/([^\s()]+)/)
+			if (match?.[1]) files.push(match[1])
+		}
+	}
+	return files
+}
+
 const TARGETS: Record<string, TargetDef> = {
 	bun: {
 		bin: "bun",
@@ -48,25 +68,7 @@ const TARGETS: Record<string, TargetDef> = {
 		bin: "deno",
 		cmd: "deno publish --dry-run --allow-dirty --allow-slow-types",
 		make: makeDeno,
-		parse: (out) => {
-			const files: string[] = []
-			let inFiles = false
-			for (const line of out.split(/\r?\n/)) {
-				if (line.includes("Simulating publish") && line.includes("with files:")) {
-					inFiles = true
-					continue
-				}
-				if (inFiles && !line.startsWith("   file:///")) {
-					if (line.trim() === "") continue
-					break
-				}
-				if (inFiles) {
-					const match = line.match(/   file:\/\/\/\S+\/([^\s()]+)/)
-					if (match?.[1]) files.push(match[1])
-				}
-			}
-			return files
-		},
+		parse: parseDenoOrJSR,
 	},
 	git: {
 		bin: "git",
@@ -78,25 +80,7 @@ const TARGETS: Record<string, TargetDef> = {
 		bin: "jsr",
 		cmd: "jsr publish --dry-run --allow-dirty --allow-slow-types",
 		make: makeJSR,
-		parse: (out) => {
-			const files: string[] = []
-			let inFiles = false
-			for (const line of out.split(/\r?\n/)) {
-				if (line.includes("Simulating publish") && line.includes("with files:")) {
-					inFiles = true
-					continue
-				}
-				if (inFiles && !line.startsWith("   file:///")) {
-					if (line.trim() === "") continue
-					break
-				}
-				if (inFiles) {
-					const match = line.match(/   file:\/\/\/\S+\/([^\s()]+)/)
-					if (match?.[1]) files.push(match[1])
-				}
-			}
-			return files
-		},
+		parse: parseDenoOrJSR,
 	},
 	npm: {
 		bin: "npm",
