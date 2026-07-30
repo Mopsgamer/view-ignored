@@ -5,7 +5,7 @@ import {
 	ruleTest,
 	ruleCompile,
 	extractPackageJson,
-	extractGitignore,
+	extractNpmignore,
 	type InternalRules,
 	type CustomRule,
 } from "../patterns/index.js"
@@ -21,11 +21,11 @@ export function makeNPM(): Target {
 			path: "package.json",
 		},
 		{
-			extract: extractGitignore,
+			extract: extractNpmignore,
 			path: ".npmignore",
 		},
 		{
-			extract: extractGitignore,
+			extract: extractNpmignore,
 			path: ".gitignore",
 		},
 	]

@@ -5,7 +5,7 @@ import {
 	ruleTest,
 	type Rule,
 	ruleCompile,
-	extractGitignore,
+	extractNpmignore,
 	extractPackageJson,
 	type CustomRule,
 } from "../patterns/index.js"
@@ -22,13 +22,13 @@ export function makeYarn(): Target {
 		},
 		{
 			extract(source, content) {
-				return extractGitignore(source, content, { nocase: true })
+				return extractNpmignore(source, content, { nocase: true })
 			},
 			path: ".npmignore",
 		},
 		{
 			extract(source, content) {
-				return extractGitignore(source, content, { nocase: true })
+				return extractNpmignore(source, content, { nocase: true })
 			},
 			path: ".gitignore",
 		},
