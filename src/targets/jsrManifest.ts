@@ -1,4 +1,34 @@
+import type { Extractor } from "../patterns/extractor.js"
+import type { InitCb } from "../patterns/init.js"
+
 import { isArrayOfStrings } from "./npmManifest.js"
+
+export function makeJsrInit(name: string, extractors: Extractor[]): InitCb {
+	return ({ fs, cwd }, cb) => {
+		let i = 0
+		function next() {
+			if (i >= extractors.length) {
+				cb(new Error("Error while initializing " + name + ": No valid manifest found"))
+				return
+			}
+			const extractor = extractors[i++]!
+			fs.readFile(cwd + "/" + extractor.path, (err, data) => {
+				if (err) {
+					next()
+					return
+				}
+				try {
+					jsrManifestParse(data!.toString())
+				} catch (error) {
+					cb(new Error("Invalid '" + extractor.path + "'", { cause: error }))
+					return
+				}
+				cb(null)
+			})
+		}
+		next()
+	}
+}
 
 export interface JsrPublishConfig {
 	include?: string[]

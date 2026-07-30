@@ -6,9 +6,9 @@ import {
 	type Rule,
 	ruleCompile,
 	extractJsrJson,
-	extractPackageJson,
+	packageJsonExtractor,
 } from "../patterns/index.js"
-import { jsrManifestParse } from "./jsrManifest.js"
+import { makeJsrInit } from "./jsrManifest.js"
 
 /**
  * @since 0.12.0
@@ -31,10 +31,7 @@ export function makeDeno(): Target {
 			extract: extractJsrJson,
 			path: "jsr.jsonc",
 		},
-		{
-			extract: extractPackageJson,
-			path: "package.json",
-		},
+		packageJsonExtractor,
 	]
 
 	const internal: Rule[] = [
@@ -48,30 +45,7 @@ export function makeDeno(): Target {
 	return <Target>{
 		extractors,
 		ignores: ruleTest,
-		init({ fs, cwd }, cb) {
-			let i = 0
-			function next() {
-				if (i >= extractors.length) {
-					cb(new Error("Error while initializing Deno: No valid manifest found"))
-					return
-				}
-				const extractor = extractors[i++]!
-				fs.readFile(cwd + "/" + extractor.path, (err, data) => {
-					if (err) {
-						next()
-						return
-					}
-					try {
-						jsrManifestParse(data!.toString())
-					} catch (error) {
-						cb(new Error("Invalid '" + extractor.path + "'", { cause: error }))
-						return
-					}
-					cb(null)
-				})
-			}
-			next()
-		},
+		init: makeJsrInit("Deno", extractors),
 		internalRules: internal,
 		root: ".",
 	}

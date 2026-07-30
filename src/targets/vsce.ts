@@ -5,8 +5,8 @@ import {
 	ruleTest,
 	type Rule,
 	ruleCompile,
-	extractPackageJson,
 	extractGitignore,
+	packageJsonExtractor,
 } from "../patterns/index.js"
 import { vsceManifestParse } from "./vsceManifest.js"
 
@@ -15,10 +15,7 @@ import { vsceManifestParse } from "./vsceManifest.js"
  */
 export function makeVSCE(): Target {
 	const extractors: Extractor[] = [
-		{
-			extract: extractPackageJson,
-			path: "package.json",
-		},
+		packageJsonExtractor,
 		{
 			extract: extractGitignore,
 			path: ".vscodeignore",

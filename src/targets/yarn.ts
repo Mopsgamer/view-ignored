@@ -5,8 +5,7 @@ import {
 	ruleTest,
 	type Rule,
 	ruleCompile,
-	extractNpmignore,
-	extractPackageJson,
+	packageJsonExtractor,
 } from "../patterns/index.js"
 import {
 	npmManifestParse,
@@ -14,6 +13,7 @@ import {
 	extractManifestIncludes,
 	symlinkRule,
 	makeDirectPathsRule,
+	extractNoCaseNpmignore,
 } from "./npmManifest.js"
 
 /**
@@ -21,20 +21,13 @@ import {
  */
 export function makeYarn(): Target {
 	const extractors: Extractor[] = [
+		packageJsonExtractor,
 		{
-			extract: extractPackageJson,
-			path: "package.json",
-		},
-		{
-			extract(source, content) {
-				return extractNpmignore(source, content, { nocase: true })
-			},
+			extract: extractNoCaseNpmignore,
 			path: ".npmignore",
 		},
 		{
-			extract(source, content) {
-				return extractNpmignore(source, content, { nocase: true })
-			},
+			extract: extractNoCaseNpmignore,
 			path: ".gitignore",
 		},
 	]

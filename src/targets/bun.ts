@@ -5,8 +5,8 @@ import {
 	ruleTest,
 	type Rule,
 	ruleCompile,
-	extractPackageJson,
 	extractGitignore,
+	packageJsonExtractor,
 } from "../patterns/index.js"
 import {
 	npmManifestParse,
@@ -21,10 +21,7 @@ import {
  */
 export function makeBun(): Target {
 	const extractors: Extractor[] = [
-		{
-			extract: extractPackageJson,
-			path: "package.json",
-		},
+		packageJsonExtractor,
 		{
 			extract: extractGitignore,
 			path: ".npmignore",

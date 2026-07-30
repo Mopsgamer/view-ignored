@@ -1,4 +1,4 @@
-import type { ExtractorFn } from "./extractor.js"
+import type { Extractor, ExtractorFn } from "./extractor.js"
 import type { GlobRule } from "./rule.js"
 
 import { npmManifestParse } from "../targets/npmManifest.js"
@@ -21,6 +21,11 @@ export function extractPackageJson(source: Source, content: Buffer): void | null
 }
 
 extractPackageJson satisfies ExtractorFn
+
+export const packageJsonExtractor: Extractor = {
+	extract: extractPackageJson,
+	path: "package.json",
+}
 
 /**
  * Extracts and compiles patterns from the file.
