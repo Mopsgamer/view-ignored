@@ -8,6 +8,7 @@ import {
 	ruleCompile,
 	type InternalRules,
 	type Source,
+	type GlobRule,
 } from "../patterns/index.js"
 import { unixify, join, dirname } from "../unixify.js"
 import { HOME, XDG, resolvePath, loadRec, mergeConfig, getCache } from "./gitConfig.js"
@@ -16,6 +17,8 @@ const findGCache = new WeakMap<FsAdapter, Map<string, string | null>>()
 const branchCache = new WeakMap<FsAdapter, Map<string, string | null>>()
 
 const globalIgnore = XDG ? join(XDG, "git/ignore") : join(HOME, ".config/git/ignore")
+
+let cachedGitRule: GlobRule | null = null
 
 /**
  * @since 0.12.0
@@ -28,15 +31,15 @@ export function makeGit(): Target {
 		},
 	]
 
+	cachedGitRule ||= ruleCompile({
+		compiled: null,
+		excludes: true,
+		list: [".git", ".DS_Store"],
+	})
+
 	const internal: InternalRules = {
 		after: [],
-		before: [
-			ruleCompile({
-				compiled: null,
-				excludes: true,
-				list: [".git", ".DS_Store"],
-			}),
-		],
+		before: [cachedGitRule],
 	}
 
 	return <Target>{

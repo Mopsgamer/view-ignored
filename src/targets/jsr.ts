@@ -6,8 +6,11 @@ import {
 	type Rule,
 	ruleCompile,
 	extractJsrJson,
+	type GlobRule,
 } from "../patterns/index.js"
 import { makeJsrInit } from "./jsrManifest.js"
+
+let cachedJSRRule: GlobRule | null = null
 
 /**
  * @since 0.12.0
@@ -24,13 +27,13 @@ export function makeJSR(): Target {
 		},
 	]
 
-	const internal: Rule[] = [
-		ruleCompile({
-			compiled: null,
-			excludes: true,
-			list: [".git", ".DS_Store"],
-		}),
-	]
+	cachedJSRRule ||= ruleCompile({
+		compiled: null,
+		excludes: true,
+		list: [".git", ".DS_Store"],
+	})
+
+	const internal: Rule[] = [cachedJSRRule]
 
 	return <Target>{
 		extractors,

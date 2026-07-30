@@ -6,6 +6,9 @@ import { scan as browserScan } from "../out/browser.js"
 import { scan } from "../out/index.js"
 import { makeNPM } from "../out/targets/index.js"
 
+// Precache npm target rules to avoid data skewing
+makeNPM()
+
 const igw = process.argv.includes("--igw")
 const vign = process.argv.includes("--vign")
 const cwd = process.cwd()

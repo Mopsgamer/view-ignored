@@ -89,7 +89,7 @@ if (match.kind === RuleMatchKind.external) {
 ### Using custom target
 
 You can create custom targets by implementing the `Target` interface.
-This is an example for a Docker-like target:
+This is an example for a Docker-like target, which caches its internal compiled glob patterns to avoid recompiling them on subsequent calls:
 
 ```ts
 import type { Target } from "view-ignored/targets"
@@ -100,7 +100,10 @@ import {
 	ruleTest,
 	ruleCompile,
 	type InternalRules,
+	type GlobRule,
 } from "view-ignored/patterns"
+
+let cachedDockerRule: GlobRule | null = null
 
 export function makeDocker(): Target {
 	const extractors: Extractor[] = [
@@ -110,14 +113,14 @@ export function makeDocker(): Target {
 		},
 	]
 
+	cachedDockerRule ||= ruleCompile({
+		compiled: null,
+		excludes: true,
+		list: [".git/", "node_modules/", ".DS_Store"],
+	})
+
 	const internal: InternalRules = {
-		before: [
-			ruleCompile({
-				compiled: null,
-				excludes: true,
-				pattern: [".git/", "node_modules/", ".DS_Store"],
-			}),
-		],
+		before: [cachedDockerRule],
 		after: [],
 	}
 

@@ -6,6 +6,7 @@ import {
 	type Rule,
 	ruleCompile,
 	packageJsonExtractor,
+	type GlobRule,
 } from "../patterns/index.js"
 import {
 	npmManifestParse,
@@ -14,6 +15,9 @@ import {
 	makeDirectPathsRule,
 	extractNoCaseNpmignore,
 } from "./npmManifest.js"
+
+let cachedYarnClassicExcludesRule: GlobRule | null = null
+let cachedYarnClassicIncludesRule: GlobRule | null = null
 
 /**
  * @since 0.12.0
@@ -37,65 +41,69 @@ export function makeYarnClassic(): Target {
 
 	const directPathsInclude: Record<string, string> = Object.create(null)
 
+	cachedYarnClassicExcludesRule ||= ruleCompile(
+		{
+			compiled: null,
+			excludes: true,
+			list: [
+				// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L26
+				".git",
+				"CVS",
+				".svn",
+				".hg",
+
+				"node_modules",
+
+				"yarn.lock",
+				".lock-wscript",
+				".wafpickle-0",
+				".wafpickle-1",
+				".wafpickle-2",
+				".wafpickle-3",
+				".wafpickle-4",
+				".wafpickle-5",
+				".wafpickle-6",
+				".wafpickle-7",
+				".wafpickle-8",
+				".wafpickle-9",
+				"*.swp",
+				"._*",
+				"npm-debug.log",
+				"yarn-error.log",
+				".npmrc",
+				".yarnrc",
+				".yarnrc.yml",
+				".npmignore",
+				".gitignore",
+				".DS_Store",
+			],
+		},
+		{ nocase: true },
+	)
+
+	cachedYarnClassicIncludesRule ||= ruleCompile(
+		{
+			compiled: null,
+			excludes: false,
+			list: [
+				// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L10
+				"/package.json",
+				"/readme*",
+				"/license*",
+				"/licence*",
+				"/changes*",
+				"/changelog*",
+				"/history*",
+			],
+		},
+		{ nocase: true },
+	)
+
 	const internal: Rule[] = [
 		symlinkRule,
 		makeDirectPathsRule(directPathsInclude),
-		ruleCompile(
-			{
-				compiled: null,
-				excludes: true,
-				list: [
-					// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L26
-					".git",
-					"CVS",
-					".svn",
-					".hg",
-
-					"node_modules",
-
-					"yarn.lock",
-					".lock-wscript",
-					".wafpickle-0",
-					".wafpickle-1",
-					".wafpickle-2",
-					".wafpickle-3",
-					".wafpickle-4",
-					".wafpickle-5",
-					".wafpickle-6",
-					".wafpickle-7",
-					".wafpickle-8",
-					".wafpickle-9",
-					"*.swp",
-					"._*",
-					"npm-debug.log",
-					"yarn-error.log",
-					".npmrc",
-					".yarnrc",
-					".yarnrc.yml",
-					".npmignore",
-					".gitignore",
-					".DS_Store",
-				],
-			},
-			{ nocase: true },
-		),
-		ruleCompile(
-			{
-				compiled: null,
-				excludes: false,
-				list: [
-					// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L10
-					"/package.json",
-					"/readme*",
-					"/license*",
-					"/licence*",
-					"/changes*",
-					"/changelog*",
-					"/history*",
-				],
-			},
-			{ nocase: true },
-		),
+		cachedYarnClassicExcludesRule,
+		cachedYarnClassicIncludesRule,
 	]
 
 	return <Target>{

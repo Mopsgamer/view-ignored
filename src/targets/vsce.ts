@@ -7,8 +7,11 @@ import {
 	ruleCompile,
 	extractGitignore,
 	packageJsonExtractor,
+	type GlobRule,
 } from "../patterns/index.js"
 import { vsceManifestParse } from "./vsceManifest.js"
+
+let cachedVSCERule: GlobRule | null = null
 
 /**
  * @since 0.12.0
@@ -26,46 +29,46 @@ export function makeVSCE(): Target {
 		},
 	]
 
-	const internal: Rule[] = [
-		ruleCompile({
-			compiled: null,
-			excludes: true,
-			list: [
-				// https://github.com/microsoft/vscode-vsce/blob/main/src/package.ts#L1633
-				".vscodeignore",
-				"package-lock.json",
-				"npm-debug.log",
-				"yarn.lock",
-				"yarn-error.log",
-				"npm-shrinkwrap.json",
-				".editorconfig",
-				".npmrc",
-				".yarnrc",
-				".gitattributes",
-				"*.todo",
-				"tslint.yaml",
-				".eslintrc*",
-				".babelrc*",
-				".prettierrc*",
-				".cz-config.js",
-				".commitlintrc*",
-				"webpack.config.js",
-				"ISSUE_TEMPLATE.md",
-				"CONTRIBUTING.md",
-				"PULL_REQUEST_TEMPLATE.md",
-				"CODE_OF_CONDUCT.md",
-				".github",
-				".travis.yml",
-				"appveyor.yml",
-				".git",
-				"*.vsix",
-				".DS_Store",
-				"*.vsixmanifest",
-				".vscode-test",
-				".vscode-test-web",
-			],
-		}),
-	]
+	cachedVSCERule ||= ruleCompile({
+		compiled: null,
+		excludes: true,
+		list: [
+			// https://github.com/microsoft/vscode-vsce/blob/main/src/package.ts#L1633
+			".vscodeignore",
+			"package-lock.json",
+			"npm-debug.log",
+			"yarn.lock",
+			"yarn-error.log",
+			"npm-shrinkwrap.json",
+			".editorconfig",
+			".npmrc",
+			".yarnrc",
+			".gitattributes",
+			"*.todo",
+			"tslint.yaml",
+			".eslintrc*",
+			".babelrc*",
+			".prettierrc*",
+			".cz-config.js",
+			".commitlintrc*",
+			"webpack.config.js",
+			"ISSUE_TEMPLATE.md",
+			"CONTRIBUTING.md",
+			"PULL_REQUEST_TEMPLATE.md",
+			"CODE_OF_CONDUCT.md",
+			".github",
+			".travis.yml",
+			"appveyor.yml",
+			".git",
+			"*.vsix",
+			".DS_Store",
+			"*.vsixmanifest",
+			".vscode-test",
+			".vscode-test-web",
+		],
+	})
+
+	const internal: Rule[] = [cachedVSCERule]
 
 	return <Target>{
 		extractors,

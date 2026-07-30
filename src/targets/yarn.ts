@@ -6,6 +6,7 @@ import {
 	type Rule,
 	ruleCompile,
 	packageJsonExtractor,
+	type GlobRule,
 } from "../patterns/index.js"
 import {
 	npmManifestParse,
@@ -15,6 +16,9 @@ import {
 	makeDirectPathsRule,
 	extractNoCaseNpmignore,
 } from "./npmManifest.js"
+
+let cachedYarnExcludesRule: GlobRule | null = null
+let cachedYarnIncludesRule: GlobRule | null = null
 
 /**
  * @since 0.12.0
@@ -34,45 +38,49 @@ export function makeYarn(): Target {
 
 	const directPathsInclude: Record<string, string> = Object.create(null)
 
+	cachedYarnExcludesRule ||= ruleCompile({
+		compiled: null,
+		excludes: true,
+		list: [
+			// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L26
+			"/package.tgz",
+
+			".github",
+			".git",
+			".hg",
+			"node_modules",
+
+			".npmignore",
+			".gitignore",
+
+			".#*",
+			".DS_Store",
+		],
+	})
+
+	cachedYarnIncludesRule ||= ruleCompile(
+		{
+			compiled: null,
+			excludes: false,
+			list: [
+				// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L10
+				"/package.json",
+				"/README",
+				"/README.*",
+				"/LICENSE",
+				"/LICENSE.*",
+				"/LICENCE",
+				"/LICENCE.*",
+			],
+		},
+		{ nocase: true },
+	)
+
 	const internal: Rule[] = [
 		symlinkRule,
 		makeDirectPathsRule(directPathsInclude),
-		ruleCompile({
-			compiled: null,
-			excludes: true,
-			list: [
-				// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L26
-				"/package.tgz",
-
-				".github",
-				".git",
-				".hg",
-				"node_modules",
-
-				".npmignore",
-				".gitignore",
-
-				".#*",
-				".DS_Store",
-			],
-		}),
-		ruleCompile(
-			{
-				compiled: null,
-				excludes: false,
-				list: [
-					// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L10
-					"/package.json",
-					"/README",
-					"/README.*",
-					"/LICENSE",
-					"/LICENSE.*",
-					"/LICENCE",
-					"/LICENCE.*",
-				],
-			},
-			{ nocase: true },
-		),
+		cachedYarnExcludesRule,
+		cachedYarnIncludesRule,
 	]
 
 	return <Target>{

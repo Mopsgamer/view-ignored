@@ -3,6 +3,9 @@ import * as fs from "node:fs"
 
 import { makeGit } from "../out/targets/index.js"
 
+// Precache git target rules to avoid data skewing
+makeGit()
+
 const cwd = process.cwd()
 
 console.log("Git Init benchmark")
