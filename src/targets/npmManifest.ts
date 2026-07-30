@@ -1,6 +1,12 @@
 import type { CustomRule } from "../patterns/rule.js"
+import type { Source } from "../patterns/source.js"
 
+import { extractNpmignore } from "../patterns/npmignore.js"
 import { unixify } from "../unixify.js"
+
+export function extractNoCaseNpmignore(source: Source, content: Buffer): void | null | Error {
+	return extractNpmignore(source, content, { nocase: true })
+}
 
 export const symlinkRule = {
 	excludes: true,

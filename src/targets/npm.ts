@@ -4,8 +4,8 @@ import {
 	type Extractor,
 	ruleTest,
 	ruleCompile,
-	extractPackageJson,
 	extractNpmignore,
+	packageJsonExtractor,
 	type InternalRules,
 } from "../patterns/index.js"
 import {
@@ -21,10 +21,7 @@ import {
  */
 export function makeNPM(): Target {
 	const extractors: Extractor[] = [
-		{
-			extract: extractPackageJson,
-			path: "package.json",
-		},
+		packageJsonExtractor,
 		{
 			extract: extractNpmignore,
 			path: ".npmignore",

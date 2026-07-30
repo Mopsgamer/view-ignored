@@ -7,7 +7,7 @@ import {
 	ruleCompile,
 	extractJsrJson,
 } from "../patterns/index.js"
-import { jsrManifestParse } from "./jsrManifest.js"
+import { makeJsrInit } from "./jsrManifest.js"
 
 /**
  * @since 0.12.0
@@ -35,30 +35,7 @@ export function makeJSR(): Target {
 	return <Target>{
 		extractors,
 		ignores: ruleTest,
-		init({ fs, cwd }, cb) {
-			let i = 0
-			function next() {
-				if (i >= extractors.length) {
-					cb(new Error("Error while initializing JSR: No valid manifest found"))
-					return
-				}
-				const extractor = extractors[i++]!
-				fs.readFile(cwd + "/" + extractor.path, (err, data) => {
-					if (err) {
-						next()
-						return
-					}
-					try {
-						jsrManifestParse(data!.toString())
-					} catch (error) {
-						cb(new Error("Invalid '" + extractor.path + "'", { cause: error }))
-						return
-					}
-					cb(null)
-				})
-			}
-			next()
-		},
+		init: makeJsrInit("JSR", extractors),
 		internalRules: internal,
 		root: ".",
 	}
