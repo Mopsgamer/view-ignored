@@ -1,4 +1,27 @@
+import type { CustomRule } from "../patterns/rule.js"
+
 import { unixify } from "../unixify.js"
+
+export const symlinkRule = {
+	excludes: true,
+	match({ dirent }) {
+		return dirent.isSymbolicLink() ? "//symlink" : null
+	},
+} satisfies CustomRule as CustomRule
+
+export function makeDirectPathsRule(directPathsInclude: Record<string, string>): CustomRule {
+	return {
+		excludes: false,
+		match({ entry }) {
+			for (const [manifestProp, path] of Object.entries(directPathsInclude)) {
+				if (entry === path) {
+					return "//'" + manifestProp + "' property is " + path
+				}
+			}
+			return null
+		},
+	} satisfies CustomRule as CustomRule
+}
 
 export interface PackageJson {
 	name: string
@@ -53,7 +76,7 @@ function isRecordOfStrings(value: unknown): value is Record<string, string> {
 	return Object.values(value).every((v) => typeof v === "string")
 }
 
-function isArrayOfStrings(value: unknown): value is string[] {
+export function isArrayOfStrings(value: unknown): value is string[] {
 	return Array.isArray(value) && value.every((v) => typeof v === "string")
 }
 

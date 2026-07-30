@@ -7,9 +7,13 @@ import {
 	ruleCompile,
 	extractPackageJson,
 	extractNpmignore,
-	type CustomRule,
 } from "../patterns/index.js"
-import { npmManifestParse, extractManifestIncludes } from "./npmManifest.js"
+import {
+	npmManifestParse,
+	extractManifestIncludes,
+	symlinkRule,
+	makeDirectPathsRule,
+} from "./npmManifest.js"
 
 /**
  * @since 0.12.0
@@ -43,23 +47,8 @@ export function makeYarnClassic(): Target {
 	const directPathsInclude: Record<string, string> = Object.create(null)
 
 	const internal: Rule[] = [
-		{
-			excludes: true,
-			match({ dirent }) {
-				return dirent.isSymbolicLink() ? "//symlink" : null
-			},
-		} satisfies CustomRule as CustomRule,
-		{
-			excludes: false,
-			match({ entry }) {
-				for (const [manifestProp, path] of Object.entries(directPathsInclude)) {
-					if (entry === path) {
-						return "//'" + manifestProp + "' property is " + path
-					}
-				}
-				return null
-			},
-		} satisfies CustomRule as CustomRule,
+		symlinkRule,
+		makeDirectPathsRule(directPathsInclude),
 		ruleCompile(
 			{
 				compiled: null,

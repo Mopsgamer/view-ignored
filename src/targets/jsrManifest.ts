@@ -1,3 +1,5 @@
+import { isArrayOfStrings } from "./npmManifest.js"
+
 export interface JsrPublishConfig {
 	include?: string[]
 	exclude?: string[]
@@ -8,10 +10,6 @@ export interface JsrManifest extends JsrPublishConfig {
 	version: string
 	exports: string | Record<string, string>
 	publish?: JsrPublishConfig
-}
-
-function isArrayOfStrings(value: unknown): value is string[] {
-	return Array.isArray(value) && value.every((v) => typeof v === "string")
 }
 
 export function jsrManifestParse(s: string): JsrManifest {
