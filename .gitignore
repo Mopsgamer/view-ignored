@@ -5,5 +5,4 @@ dist
 *.cpuprofile
 CPU.*.*
 HEAP.*.*
-bench_output.txt
 coverage

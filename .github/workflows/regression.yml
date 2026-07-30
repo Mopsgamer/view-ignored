@@ -1,4 +1,4 @@
-name: Speed Regression Reporter
+name: Speed and Size Regression Reporter
 
 on:
   pull_request:
@@ -9,13 +9,13 @@ on:
   workflow_dispatch:
     inputs:
       print_only:
-        description: "Only print the benchmark results to the log (do not comment on PR)"
+        description: "Without comment on PR"
         required: false
         type: boolean
         default: false
 
 jobs:
-  benchmark:
+  regression:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -35,12 +35,14 @@ jobs:
       - name: Build current
         run: bun run prod
 
-      - name: Run benchmark comparison
+      - name: Run regression comparison
         id: bench
         run: |
+          NO_TS_CHANGES="false"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "no_ts_changes=false" >> $GITHUB_OUTPUT
-            bun scripts/bench.js --vign --diff HEAD --out bench_output.txt || exit 1
+            bun scripts/bench.js --vign --diff HEAD --out speed_report.txt || exit 1
+            bun scripts/size.js --diff HEAD --out size_report.txt || exit 1
           else
             BASE_SHA="${{ github.event.pull_request.base.sha }}"
             HEAD_SHA="${{ github.event.pull_request.head.sha }}"
@@ -48,16 +50,28 @@ jobs:
 
             if [ -z "$TS_CHANGES" ]; then
               echo "no_ts_changes=true" >> $GITHUB_OUTPUT
+              NO_TS_CHANGES="true"
             else
               echo "no_ts_changes=false" >> $GITHUB_OUTPUT
               git fetch origin ${{ github.event.pull_request.base.ref }} || exit 1
-              bun scripts/bench.js --vign --diff origin/${{ github.event.pull_request.base.ref }} --out bench_output.txt || exit 1
+              bun scripts/bench.js --vign --diff origin/${{ github.event.pull_request.base.ref }} --out speed_report.txt || exit 1
+              bun scripts/size.js --diff origin/${{ github.event.pull_request.base.ref }} --out size_report.txt || exit 1
             fi
+          fi
+
+          if [ "$NO_TS_CHANGES" != "true" ]; then
+            echo "## Speed Regression Report" > regression_output.txt
+            echo "" >> regression_output.txt
+            echo '```txt' >> regression_output.txt
+            cat speed_report.txt >> regression_output.txt
+            echo '```' >> regression_output.txt
+            echo "" >> regression_output.txt
+            cat size_report.txt >> regression_output.txt
           fi
 
       - name: Print benchmark results to log
         if: ${{ inputs.print_only == true || github.event_name == 'workflow_dispatch' }}
-        run: cat bench_output.txt
+        run: cat regression_output.txt
 
       - name: Comment PR
         if: ${{ github.event_name == 'pull_request' && inputs.print_only != true && steps.bench.outputs.no_ts_changes != 'true' }}
@@ -69,4 +83,4 @@ jobs:
             --owner ${{ github.repository_owner }} \
             --repo ${{ github.event.repository.name }} \
             --pr ${{ github.event.pull_request.number }} \
-            --body-file bench_output.txt
+            --body-file regression_output.txt
