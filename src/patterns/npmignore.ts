@@ -58,7 +58,8 @@ export function extractNpmignoreRules(
 			lineEnd--
 		}
 
-		if (lineStart < lineEnd && content[lineStart] !== 35) { // '#' is 35
+		if (lineStart < lineEnd && content[lineStart] !== 35) {
+			// '#' is 35
 			const pattern = content.toString("utf8", lineStart, lineEnd)
 			rule = resolveNegatable(pattern, false, options, rule)
 			source.rules.unshift(rule)
