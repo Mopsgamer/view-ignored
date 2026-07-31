@@ -378,11 +378,11 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 		return { ignored: false, kind: RuleMatchKind.missingSource }
 	}
 
-	return {
-		ignored: src?.inverted || false,
+	return (src._noMatchCache ||= {
+		ignored: src.inverted || false,
 		kind: RuleMatchKind.noMatch,
 		source: src,
-	}
+	})
 }
 
 function ruleTestInternalSync(rules: Rule[], options: IgnoresOptions): RuleMatch | void {
