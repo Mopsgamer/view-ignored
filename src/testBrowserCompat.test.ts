@@ -1,4 +1,5 @@
 import { describe, test, expect } from "bun:test"
+import { execSync } from "node:child_process"
 import * as fs from "node:fs"
 import * as path from "node:path"
 
@@ -65,6 +66,9 @@ function getAllFiles(dir: string): string[] {
 describe("Browser API Compatibility", () => {
 	test("compiled browser files never import Node.js built-ins or use unguarded Node globals", () => {
 		const outDir = path.resolve("out")
+		if (!fs.existsSync(outDir)) {
+			execSync("bun run prod", { stdio: "ignore" })
+		}
 		const files = getAllFiles(outDir).filter((file) => {
 			const relative = path.relative(outDir, file).replace(/\\/g, "/")
 			return relative !== "scan.js" && relative !== "stream.js" && !relative.startsWith("cli/")
