@@ -1,8 +1,13 @@
+import type { EventMap } from "./patterns/matcherStreamTypes.js"
+
 import { describe, test, expect } from "bun:test"
+import { Volume } from "memfs"
+import * as process from "node:process"
 
 import { RuleMatchKind } from "./patterns/rule.js"
+import { scanStream } from "./stream.js"
 import { makeGit } from "./targets/git.js"
-import { testStream } from "./testScan.test.js"
+import { testStream, createAdapter } from "./testScan.test.js"
 
 describe("Git", () => {
 	test("scanStream no file", async (done) => {
@@ -59,6 +64,116 @@ describe("Git", () => {
 			},
 			{ invert: 2, target: makeGit() },
 		)
+	})
+})
+
+describe("Stream - AsyncIterable", () => {
+	test("standard complete async iteration yielding EntryInfo objects", async () => {
+		const tree = {
+			"file1.txt": "1",
+			"file2.txt": "2",
+		}
+		const cwd = process.cwd() + "/test-async-iter"
+		const vol = Volume.fromNestedJSON(tree, cwd)
+		const adapter = createAdapter(vol)
+		const o = { cwd, fs: adapter, target: makeGit() }
+
+		const stream = scanStream(o)
+		const paths: string[] = []
+		let endCtxSeen = false
+
+		for await (const event of stream) {
+			if (event.type === "dirent") {
+				const direntEvent = event as EventMap["dirent"]
+				paths.push(direntEvent.detail.path)
+				expect(direntEvent.detail).toHaveProperty("dirent")
+				expect(direntEvent.detail).toHaveProperty("match")
+			} else if (event.type === "end") {
+				endCtxSeen = true
+				const endEvent = event as EventMap["end"]
+				expect(endEvent.detail).toHaveProperty("paths")
+			}
+		}
+
+		expect(paths.sort()).toEqual(["file1.txt", "file2.txt"].sort())
+		expect(endCtxSeen).toBe(true)
+	})
+
+	test("early termination of the loop cleans up the event listeners", async () => {
+		const tree = {
+			"file1.txt": "1",
+			"file2.txt": "2",
+			"file3.txt": "3",
+		}
+		const cwd = process.cwd() + "/test-early-term"
+		const vol = Volume.fromNestedJSON(tree, cwd)
+		const adapter = createAdapter(vol)
+		const o = { cwd, fs: adapter, target: makeGit() }
+
+		const stream = scanStream(o)
+
+		let adds = 0
+		let removes = 0
+		const originalAdd = stream.addEventListener.bind(stream)
+		const originalRemove = stream.removeEventListener.bind(stream)
+
+		stream.addEventListener = (type, cb, options) => {
+			adds++
+			return originalAdd(type, cb, options)
+		}
+		stream.removeEventListener = (type, cb, options) => {
+			removes++
+			return originalRemove(type, cb, options)
+		}
+
+		// Iterate and break early
+		for await (const event of stream) {
+			if (event.type === "dirent") {
+				const direntEvent = event as EventMap["dirent"]
+				const path = direntEvent.detail.path
+				if (path === "file1.txt" || path === "file2.txt" || path === "file3.txt") {
+					break
+				}
+			}
+		}
+
+		// Ensure listeners were added and then subsequently cleaned up
+		expect(adds).toBeGreaterThan(0)
+		expect(removes).toBe(adds)
+	})
+
+	test("errors during stream generation are properly thrown by the iterator", async () => {
+		const cwd = process.cwd() + "/test-async-err"
+		const badFs = {
+			// oxlint-disable-next-line typescript/no-explicit-any
+			readFile: (_path: any, cb: any) => {
+				cb(null, Buffer.from(""))
+			},
+			// oxlint-disable-next-line typescript/no-explicit-any
+			readdir: (_path: any, _options: any, cb: any) => {
+				cb(new Error("Readdir failure simulation"))
+			},
+			// oxlint-disable-next-line typescript/no-explicit-any
+			stat: (_path: any, cb: any) => {
+				cb(null, {})
+			},
+		}
+		// oxlint-disable-next-line typescript/no-explicit-any
+		const o = { cwd, fs: badFs as any, target: makeGit() }
+
+		const stream = scanStream(o)
+		let thrownError: Error | null = null
+
+		try {
+			for await (const _ of stream) {
+				// empty
+			}
+		} catch (err) {
+			thrownError = err as Error
+		}
+
+		expect(thrownError).not.toBeNull()
+		expect(thrownError!.message).toBe("Readdir failure simulation")
 	})
 })
 

@@ -135,6 +135,30 @@ export function makeDocker(): Target {
 
 ### Streaming results
 
+The stream returned by `scanStream` is both an `EventTarget` and a standard `AsyncIterable` yielding all dispatched events (both `"dirent"` and `"end"` events).
+
+#### Option A: Consuming with a `for await...of` loop
+
+Yields both `"dirent"` and `"end"` events, allowing you to easily access the final context `ctx` directly:
+
+```ts
+import * as vign from "view-ignored"
+// or import * as vign from "view-ignored/stream"
+import { makeNPM } from "view-ignored/targets"
+
+const stream = vign.scanStream({ target: makeNPM() })
+for await (const event of stream) {
+	if (event.type === "dirent") {
+		console.log(event.detail.path)
+	} else if (event.type === "end") {
+		const ctx = event.detail
+		console.log(ctx.paths.has("package.json")) // true
+	}
+}
+```
+
+#### Option B: Consuming with event listeners
+
 ```ts
 import * as vign from "view-ignored"
 // or import * as vign from "view-ignored/stream"
@@ -142,17 +166,15 @@ import { makeNPM } from "view-ignored/targets"
 
 const stream = vign.scanStream({ target: makeNPM() })
 
-stream.addEventListener("dirent", console.log)
+stream.addEventListener("dirent", (e) => console.log(e.detail))
 stream.addEventListener(
 	"end",
 	({ detail: ctx }) => {
-		console.log(ctx.paths.has(".git/HEAD")) // false
-		console.log(ctx.paths.has("node_modules/")) // false
 		console.log(ctx.paths.has("package.json")) // true
 	},
 	{ once: true },
 )
-stream.start() // important
+stream.start() // important: start() is required when using event listeners!
 ```
 
 ### Browser and custom FS

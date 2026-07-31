@@ -87,4 +87,83 @@ export class MatcherStream extends EventTarget {
 			if (ctx) this.dispatchEvent(new CustomEvent("end", { detail: ctx }))
 		})
 	}
+
+	async *[Symbol.asyncIterator](): AsyncIterator<EventMap[keyof EventMap]> {
+		const queue: EventMap[keyof EventMap][] = []
+		let done = false
+		let error: Error | null = null
+		let resolveNext: (() => void) | null = null
+
+		const onDirent = (event: EventMap["dirent"]) => {
+			queue.push(event)
+			if (resolveNext) {
+				resolveNext()
+				resolveNext = null
+			}
+		}
+
+		const onEnd = (event: EventMap["end"]) => {
+			queue.push(event)
+			done = true
+			if (resolveNext) {
+				resolveNext()
+				resolveNext = null
+			}
+			cleanup()
+		}
+
+		// oxlint-disable-next-line typescript/no-explicit-any
+		this.addEventListener("dirent", onDirent as any)
+		// oxlint-disable-next-line typescript/no-explicit-any
+		this.addEventListener("end", onEnd as any)
+
+		let cleaned = false
+		const cleanup = () => {
+			if (cleaned) return
+			cleaned = true
+			// oxlint-disable-next-line typescript/no-explicit-any
+			this.removeEventListener("dirent", onDirent as any)
+			// oxlint-disable-next-line typescript/no-explicit-any
+			this.removeEventListener("end", onEnd as any)
+		}
+
+		const startPromise = this.start().then(
+			() => {
+				done = true
+				if (resolveNext) {
+					resolveNext()
+					resolveNext = null
+				}
+			},
+			(err) => {
+				error = err
+				if (resolveNext) {
+					resolveNext()
+					resolveNext = null
+				}
+			},
+		)
+
+		try {
+			while (true) {
+				if (queue.length > 0) {
+					yield queue.shift()!
+					continue
+				}
+				if (error) {
+					throw error
+				}
+				if (done) {
+					break
+				}
+				// oxlint-disable-next-line eslint/no-await-in-loop, no-await-in-loop
+				await new Promise<void>((resolve) => {
+					resolveNext = resolve
+				})
+			}
+			await startPromise
+		} finally {
+			cleanup()
+		}
+	}
 }
