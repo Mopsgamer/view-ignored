@@ -167,22 +167,9 @@ export function resolveSources(
 					activeTasks--
 					if (resolved) return
 					const ri = pi * elen + ei
-					if (err) {
-						// oxlint-disable-next-line typescript/no-explicit-any
-						if ((err as any).code === "ENOENT") {
-							results[ri] = null
-							check()
-							return
-						}
-						results[ri] = {
-							error: err,
-							source: {
-								dir: relDirs[pi],
-								inverted: false,
-								path: join(relDirs[pi]!, epath),
-								rules: [],
-							},
-						}
+					// oxlint-disable-next-line typescript/no-explicit-any
+					if (err && (err as any).code === "ENOENT") {
+						results[ri] = null
 						check()
 						return
 					}
@@ -191,6 +178,11 @@ export function resolveSources(
 						inverted: false,
 						path: join(relDirs[pi]!, epath),
 						rules: [],
+					}
+					if (err) {
+						results[ri] = { error: err, source }
+						check()
+						return
 					}
 					let act: void | null | Error
 					try {
