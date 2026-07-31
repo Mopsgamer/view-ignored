@@ -12,7 +12,7 @@ import type { Source } from "./source.js"
  *
  * @since 0.6.0
  */
-export type ExtractorFn = (source: Source, content: Buffer) => void | null | Error
+export type ExtractorFn = (source: Source, content: Uint8Array) => void | null | Error
 
 /**
  * Defines a method for extracting patterns from a specific source file.

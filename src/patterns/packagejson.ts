@@ -11,7 +11,7 @@ import { resolveNegatable, type Source } from "./source.js"
  *
  * @since 0.6.0
  */
-export function extractPackageJson(source: Source, content: Buffer): void | null | Error {
+export function extractPackageJson(source: Source, content: Uint8Array): void | null | Error {
 	try {
 		const r = extractPackageJsonRules(source, content)
 		if (r === null) return null
@@ -32,11 +32,11 @@ export const packageJsonExtractor: Extractor = {
  *
  * @since 0.12.0
  */
-export function extractPackageJsonRules(source: Source, content: Buffer): void | null {
+export function extractPackageJsonRules(source: Source, content: Uint8Array): void | null {
 	let dist: { files?: string[] }
 
 	try {
-		dist = npmManifestParse(content.toString())
+		dist = npmManifestParse(new TextDecoder().decode(content))
 	} catch (err) {
 		throw new Error("Invalid '" + source.path + "'", { cause: err })
 	}

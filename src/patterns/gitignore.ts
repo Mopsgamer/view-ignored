@@ -13,7 +13,7 @@ import { resolveNegatable, type Source } from "./source.js"
  */
 export function extractGitignore(
 	source: Source,
-	content: Buffer,
+	content: Uint8Array,
 	options?: PatternCompileOptions,
 ): void | Error {
 	try {
@@ -25,7 +25,7 @@ export function extractGitignore(
 
 extractGitignore satisfies ExtractorFn
 
-function isCommentLineChar(content: Buffer, start: number, i: number): boolean {
+function isCommentLineChar(content: Uint8Array, start: number, i: number): boolean {
 	if (i <= start || content[i - 1] !== 32) {
 		return false
 	}
@@ -54,7 +54,7 @@ function isCommentLineChar(content: Buffer, start: number, i: number): boolean {
 
 function processGitignoreLine(
 	source: Source,
-	content: Buffer,
+	content: Uint8Array,
 	start: number,
 	lineEnd: number,
 	options?: PatternCompileOptions,
@@ -65,7 +65,7 @@ function processGitignoreLine(
 	}
 
 	let isEscaped = false
-	const lineBuff = Buffer.allocUnsafe(lineEnd - start)
+	const lineBuff = new Uint8Array(lineEnd - start)
 	let lineBuffIdx = 0
 
 	for (let i = start; i < lineEnd; i++) {
@@ -119,7 +119,7 @@ function processGitignoreLine(
 		return rule
 	}
 
-	const rawLine = lineBuff.toString("utf8", 0, actualLastRealCharIdx)
+	const rawLine = new TextDecoder().decode(lineBuff.subarray(0, actualLastRealCharIdx))
 
 	let resolvedLine = ""
 	let resolvedIsEscaped = false
@@ -153,7 +153,7 @@ function processGitignoreLine(
  */
 export function extractGitignoreRules(
 	source: Source,
-	content: Buffer,
+	content: Uint8Array,
 	options?: PatternCompileOptions,
 ): void {
 	let rule: GlobRule | undefined

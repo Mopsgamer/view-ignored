@@ -8,6 +8,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+- Replace `Buffer` with `Uint8Array`.
+- Add browser output test.
 - Rename `Rule.pattern`, `PatternCache.patternContext` to `list`.
 - Add `CustomRule`. Split `Rule` into `GlobRule` and `CustomRule`.
 - Fix `match.ignored`. Were always false.
