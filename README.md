@@ -9,8 +9,7 @@
 [![speed-fast](https://img.shields.io/badge/speed-fast-salad?repo=Mopsgamer/view-ignored.svg)](https://github.com/Mopsgamer/view-ignored/tree/main/benchmarks)
 [![npm-packlist-tests](https://img.shields.io/badge/npm--packlist-33%2F68-blue)](https://github.com/Mopsgamer/view-ignored/tree/main/src/test-npm-packlist/)
 
-Retrieve list of files ignored/included
-by Git, NPM, Yarn, JSR, Deno, Bun, VSCode extension CLI and other tools.
+Retrieve a list of files ignored or included by Git, NPM, Yarn, JSR, Deno, Bun, VS Code extension CLI, and other tools.
 
 <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/git/git-original.svg" width="32" height="32" alt="git" />
 <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/npm/npm-original-wordmark.svg" width="32" height="32" alt="npm" />
@@ -28,40 +27,39 @@ by Git, NPM, Yarn, JSR, Deno, Bun, VSCode extension CLI and other tools.
 
 ## Highlights
 
-- **Reader.** Get a list of included files using configuration file
-  readers, not command-line wrappers.
-- **Reasoning.** Understand why certain files are included or excluded.
-- **Fast.** Optimized for performance with minimal memory overhead.
-- **Plugins.** Built-in [targets](#targets) for popular tools. Use custom
-  targets by implementing/extending the `Target` interface.
+- **Reader.** Get a list of included files by parsing configuration files directly, without wrapping command-line tools.
+- **Reasoning.** Retrieve detailed information explaining why specific files are included or excluded, matching original rule paths and pattern details.
+- **Fast.** Highly optimized for performance with minimal memory overhead.
+- **Plugins.** Built-in [targets](#targets) for popular tools. Create custom targets by implementing the `Target` interface.
 - **Streaming.** Native `scanStream` support for processing massive file trees with minimal memory overhead.
-- **Execution Control.** Use `fastDepth` and `fastInternal` options to fine-tune traversal depth and skip unnecessary directory checks. You can enable them if you don't care about stats. Full support for `AbortSignal` to cancel long-running scans instantly.
-- **Lightweight.** Minimal dependencies for fast performance and small bundle size.
-- **Browser.** Can be bundled for browser use.
-- **Windows.** Windows paths are converted to Unix paths for compatibility with `memfs` based tests and browsers.
+- **Execution Control.** Fine-tune traversal depth and skip unnecessary directory checks using the `fastDepth` and `fastInternal` options. Supports standard `AbortSignal` to cancel long-running scans instantly.
+- **Lightweight.** Minimal dependencies for fast performance and a small bundle size.
+- **Browser.** Fully compatible with browser environments when bundled.
+- **Windows.** Converts Windows-style paths to Unix format to guarantee compatibility across test frameworks (like `memfs`) and browser bundles.
 
 > [!NOTE]
-> Despite the name of the package being "view-ignored",
-> the primary purpose is to get the list of
-> **included** files, i.e., files that are **not ignored**.
-> You can invert the results if you need the ignored files
-> by setting the `invert` option to `true`.
+> Despite its name, the library's default behavior is to retrieve **included** files (i.e., files that are **not ignored**). If you want ignored files, or both, set the `invert` option: `true` returns only ignored files, while `2` returns all files annotated with their exact ignore status.
 
 ## v1 Roadmap
 
-- [x] Perfect API.
-- [x] Works for common use cases.
-- [ ] Follow `.gitignore` spec. (`ignore` does.)
-- [ ] Handle Git config.
-- [ ] Include node_modules bundled dependencies correctly.
-- [ ] Ensure compatibility and references.
-- [ ] \*Move targets into separate packages.
+- [x] **Perfect API.** Designed and finalized a clean, type-safe API for scanning and stream consumption.
+- [x] **Works for common use cases.** Production-ready for general project directory walking and status reports.
+- [ ] **Follow `.gitignore` spec.** Ensure strict alignment with Git's wildmatch algorithm (character classes, brackets, and negative matches), as `ignore` does.
+- [ ] **Handle Git config.** Parse and support Git system/global settings (such as local `.git/config` reference rules and `core.excludesfile` parsing).
+- [ ] **Include node_modules bundled dependencies correctly.** Walk subdependency folders under `bundledDependencies` for accurate package manager packing emulation.
+- [ ] **Ensure compatibility and references.** Perfect self-tests and comparisons against real CLI packaging output.
+- [ ] **\*Move targets into separate packages.** Decouple individual target modules into scoped sub-packages to reduce core bundle size (optional).
 
 <sub>\* - Optional.</sub>
 
-## Why this library exists?
+## Why this library exists
 
-Incorrect VS Code file tree git status, huge `npm-packlist` package, missing Git's wildmatch algorithm in JS ecosystem, and the fact that there's no lightweight way to get a list of ignored files, which would explain why specific files are being included or excluded.
+This library was created to solve several long-standing issues in the JavaScript ecosystem:
+
+- **Inconsistent Ignore Behavior:** Tools like VS Code, CLI bundlers, and custom scripts often differ in how they evaluate `.gitignore` and `.npmignore` patterns.
+- **Heavy Dependencies:** Alternative analysis libraries (such as `npm-packlist` or `ignore-walk`) carry deep, complex, and heavy dependency trees.
+- **Lack of Wildmatch Support:** Standard JS glob engines do not strictly adhere to Git's native wildmatch algorithm.
+- **No Explanability:** There was no lightweight, high-performance way to query _why_ a particular file was included or excluded with a traceable rule-origin path.
 
 ## Usage
 
@@ -86,10 +84,10 @@ if (match.kind === RuleMatchKind.external) {
 }
 ```
 
-### Using custom target
+### Using a custom target
 
 You can create custom targets by implementing the `Target` interface.
-This is an example for a Docker-like target, which caches its internal compiled glob patterns to avoid recompiling them on subsequent calls:
+This example demonstrates a Docker-like target that caches its compiled glob rules to avoid redundant parsing across runs:
 
 ```ts
 import type { Target } from "view-ignored/targets"
@@ -133,7 +131,7 @@ export function makeDocker(): Target {
 }
 ```
 
-### Streaming results
+### Streaming Results
 
 ```ts
 import * as vign from "view-ignored"
@@ -155,10 +153,9 @@ stream.addEventListener(
 stream.start() // important
 ```
 
-### Browser and custom FS
+### Browser and Custom Filesystem Compatibility
 
-To avoid imports from `node:fs` and `node:process` modules,
-use the browser submodule, which requires some additional options.
+To eliminate dependency on Node.js built-in modules (`node:fs` and `node:process`), import from the browser-specific subpaths and provide a custom filesystem adapter:
 
 ```ts
 import * as vign from "view-ignored/browser"
@@ -171,10 +168,9 @@ const customFs = { readFile, readdir }
 await vign.scan({ cwd, fs: customFs, target: makeGit() })
 ```
 
-### Watching for changes
+### Watching for Changes
 
-You can use patchers to update the `MatcherContext` without rescanning the entire tree.
-This is useful for implementing file watchers.
+You can use the built-in context patchers to incrementally update the scan results without rescanning the entire directory tree. This is highly efficient for file watching services.
 
 > [!IMPORTANT]
 > Directory paths must have a trailing slash.
@@ -204,42 +200,60 @@ await matcherContextAddPath(ctx, options, "src/file.ts")
 
 ## Targets
 
-The following built-in scanners are available:
+We provide optimized, high-performance re-implementations of various CLI/packer matching algorithms in TypeScript. These re-implementations emulate the exact ignore behavior of each target.
 
-- Git ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/git.ts))
-  - `view-ignored` handles Git-specific ignoring identically to Git.
-  - Reads `.gitignore` and `.git/info/exclude` and configurations.
-  - Searches from `/`. (system's root)
-  - Check this scanner by running `git ls-files --others --exclude-standard --cached`.
-- NPM ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/npm.ts))
-  - `view-ignored` should be compatible with NPM, PNPM, and others.
-  - Reads `package.json` `files` field or `.npmignore` or `.gitignore`.
-  - Searches from `.` (current working directory).
-  - Requires `package.json`: `name`, `version`.
-  - Check this scanner by running `npm pack --dry-run`.
-- Bun ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/bun.ts))
-  - Bun tries to mimic NPM, but that does not mean it behaves the same way.
-  - Searches from `.` (current working directory).
-  - Requires `package.json`: `name`, `version`. Forces paths from `bin` to be included.
-  - Check this scanner by running `bun pm pack --dry-run`.
-- Yarn ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/yarn.ts))
-  - Modern Berry and ZPM behavior. `YarnClassic` is available. ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/yarnClassic.ts))
-  - Reads `package.json` `files` field or `.npmignore` or `.gitignore`.
-  - Searches from `.` (current working directory).
-  - Requires `package.json`: `name`, `version`. Forces paths from `main`, `module`, `browser` and `bin` to be included.
-- VSCE ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/vsce.ts))
-  - Reads `package.json` `files` field or `.vscodeignore` or `.gitignore`.
-  - Searches from `.` (current working directory).
-  - Requires `package.json`: `name`, `version`, `engines.vscode`.
-  - Check this scanner by running `vsce ls`.
-- JSR ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/jsr.ts))
-  - Searches from `.` (current working directory).
-  - Requires `jsr.json` or `jsr.jsonc`.
-  - Validates `publish.include` and `publish.exclude` or `include` and `exclude` fields.
-- Deno ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/deno.ts))
-  - Searches from `.` (current working directory).
-  - Requires `jsr.json` or `jsr.jsonc` or `deno.json` or `deno.jsonc`.
-  - Validates `publish.include` and `publish.exclude` or `include` and `exclude` fields.
+### Git ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/git.ts))
+
+- **Original Algorithm & CLI Logic**: Git uses `dir.c` and standard globbing patterns (defined by its native `wildmatch` spec) to walk files. It resolves configurations starting from `/` (the system's root), loading rules sequentially:
+  1. Built-in defaults (such as ignoring `.git/` metadata itself).
+  2. Global configuration rules specified by the `core.excludesfile` variable in `~/.gitconfig` or system-wide settings.
+  3. Local configuration overrides within `.git/info/exclude`.
+  4. Local `.gitignore` files parsed on a per-directory basis.
+- **How We Emulate It**: Our target reads `.gitignore` and `.git/info/exclude` configurations, maps global settings via standard paths (`HOME` / `XDG_CONFIG_HOME`), and matches paths with optimized glob rules cached at the module level.
+- **Verification CLI Command**: `git ls-files --others --exclude-standard --cached`
+
+### NPM ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/npm.ts))
+
+- **Original Algorithm & CLI Logic**: The official `npm pack` command relies on `npm-packlist` to list directory contents. It runs a priority-based resolution algorithm:
+  1. **Strictly Included**: Essential package files like `package.json`, `README`, `LICENSE`, `LICENCE`, `CHANGES`, and files referenced in package-level configuration fields.
+  2. **Inverted Allow-list**: If the `files` array is defined in `package.json`, NPM operates in an inverted matching mode (allowing only matches from `files` plus mandatory files).
+  3. **Conditional Exclude**: If no `files` field is defined, it extracts rules from `.npmignore` files, falling back to `.gitignore` files if `.npmignore` is absent.
+  4. **Strictly Excluded**: Hardcoded ignores like `node_modules`, VCS directories (`.git`, `.hg`), lockfiles, and debug logs are always skipped.
+- **How We Emulate It**: Our target parses the root `package.json` to extract `name`, `version`, and entrypoints (`main`, `module`, `browser`, `bin`), converts target entry paths into exact forced inclusions, and executes priority-ordered cascading glob rules.
+- **Verification CLI Command**: `npm pack --dry-run`
+
+### Bun ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/bun.ts))
+
+- **Original Algorithm & CLI Logic**: Bun's native Rust implementation of the `bun pm pack` command mimics NPM's packing behavior but with subtle differences. It validates the manifest and processes hardcoded inclusions (`package.json`, standard documentation, and `bin` file paths) and excludes lockfiles (like `bun.lockb` and `bun.lock`) and system environments by default.
+- **How We Emulate It**: Our target initializes from the root `package.json`, extracting `bin` configurations and enforcing the specific hardcoded defaults mapped inside Bun's Rust packer engine.
+- **Verification CLI Command**: `bun pm pack --dry-run`
+
+### Yarn ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/yarn.ts))
+
+- **Original Algorithm & CLI Logic**: Modern Yarn (Berry) uses `@yarnpkg/plugin-pack` to package workspaces. It applies case-insensitive matching rules to package manifests and standard docs, extracts ignore lists from `.npmignore` and fallback `.gitignore` files, and prevents the packaging of its own workspace metadata (such as `.yarnrc.yml`, `.yarn`, and output `.tgz` files).
+- **How We Emulate It**: Our target maps Berry's exact exclude and include lists, parses entry fields, and case-insensitively extracts fallback rules from local ignore manifests.
+- **Verification CLI Command**: Runs modern Yarn's workspace packaging checks.
+
+### Yarn Classic ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/yarnClassic.ts))
+
+- **Original Algorithm & CLI Logic**: Legacy Yarn v1 packs files by evaluating `.yarnignore`, `.npmignore`, and `.gitignore` case-insensitively, alongside standard packing exclusions and a standard case-insensitive allow-list for documentation, license templates, and change logs.
+- **How We Emulate It**: Our target matches Classic's specific built-in excludes, performs case-insensitive rule extraction across all supported ignore manifests, and guarantees identical rule evaluation.
+
+### VSCE ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/vsce.ts))
+
+- **Original Algorithm & CLI Logic**: The `vsce package` tool requires standard workspace fields (`name`, `version`, and `engines.vscode` in `package.json`). It reads `.vscodeignore` patterns, falling back to `.gitignore` when `.vscodeignore` is absent. It automatically ignores non-production templates, administrative Markdown directories (`.github`), linter configuration templates, and testing rigs.
+- **How We Emulate It**: Our target validates VS Code engines in the manifest and registers `.vscodeignore` fallback rules over VSCE's predefined default blocklist.
+- **Verification CLI Command**: `vsce ls`
+
+### JSR ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/jsr.ts))
+
+- **Original Algorithm & CLI Logic**: JSR's publishing pipeline reads `jsr.json` or `jsr.jsonc`. It evaluates the fields `publish.include`/`include` and `publish.exclude`/`exclude`. When inclusion rules are present, it acts as an inverted allow-list, while ensuring VCS folders (`.git`) and local OS configurations are skipped.
+- **How We Emulate It**: Our target parses JSR configurations, validates the manifest keys, and dynamically toggles target list matching modes.
+
+### Deno ([our implementation](https://github.com/Mopsgamer/view-ignored/tree/main/src/targets/deno.ts))
+
+- **Original Algorithm & CLI Logic**: Deno's publishing system behaves identically to JSR, but searches sequentially for configuration files in the root workspace (`deno.json`, `deno.jsonc`, `jsr.json`, or `jsr.jsonc`) to extract publishing metadata.
+- **How We Emulate It**: Our target scans for any of the supported manifest formats and compiles matching publish and exclude rules.
 
 ## CLI
 
