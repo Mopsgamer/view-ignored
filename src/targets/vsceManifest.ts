@@ -6,7 +6,8 @@ export interface VsceManifest extends PackageJson {
 	}
 }
 
-// Regex source: https://github.com/microsoft/vscode-vsce/blob/main/src/validation.ts#L52
+// Regex source for validating the vscode engine compatibility version format.
+// https://github.com/microsoft/vscode-vsce/blob/70ca6ac250dfe5ca19214a3ad357368ffae471c5/src/validation.ts#L52
 const VSCODE_ENGINE_REGEX = /^\*$|^(\^|>=)?((\d+)|x)\.((\d+)|x)\.((\d+)|x)(-.*)?$/
 
 export function vsceManifestParse(s: string): VsceManifest {

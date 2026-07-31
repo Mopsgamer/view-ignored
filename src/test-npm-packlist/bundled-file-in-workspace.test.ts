@@ -1,3 +1,6 @@
+// Original test case verifying npm-packlist behavior for bundled-file-in-workspace.
+// https://github.com/npm/npm-packlist/blob/d1eed617b1ff1eedf5909efec7867aee385d0350/test/bundled-file-in-workspace.js
+
 import { describe, test } from "bun:test"
 
 import { makeNPM } from "../targets/npm.js"

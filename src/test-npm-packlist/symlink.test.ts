@@ -1,3 +1,6 @@
+// Original test case verifying npm-packlist behavior for symlink.
+// https://github.com/npm/npm-packlist/blob/d1eed617b1ff1eedf5909efec7867aee385d0350/test/symlink.js
+
 import { describe, test } from "bun:test"
 
 import { makeNPM } from "../targets/npm.js"

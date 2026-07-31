@@ -53,7 +53,8 @@ export function makeNPM(): Target {
 			compiled: null,
 			excludes: true,
 			list: [
-				// https://github.com/npm/npm-packlist/blob/main/lib/index.js#L16
+				// The list of default ignored file names and patterns used by npm-packlist when walking package directories.
+				// https://github.com/npm/npm-packlist/blob/d1eed617b1ff1eedf5909efec7867aee385d0350/lib/index.js#L17
 				".git",
 				".svn",
 				".hg",
@@ -69,7 +70,8 @@ export function makeNPM(): Target {
 				"*.orig",
 				"/archived-packages/**",
 
-				// https://github.com/npm/npm-packlist/blob/main/lib/index.js#L294
+				// The list of strictly ignored files and patterns (e.g. node_modules, lockfiles) forced by npm-packlist.
+				// https://github.com/npm/npm-packlist/blob/d1eed617b1ff1eedf5909efec7867aee385d0350/lib/index.js#L321
 				"/node_modules",
 				"/package-lock.json",
 				"/yarn.lock",
@@ -88,7 +90,8 @@ export function makeNPM(): Target {
 			compiled: null,
 			excludes: false,
 			list: [
-				// https://github.com/npm/npm-packlist/blob/main/lib/index.js#L287
+				// The list of files that are unconditionally included in npm packages (e.g. README, LICENSE) forced by npm-packlist.
+				// https://github.com/npm/npm-packlist/blob/d1eed617b1ff1eedf5909efec7867aee385d0350/lib/index.js#L315
 				"/package.json",
 				"README",
 				"COPYING",

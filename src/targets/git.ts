@@ -48,6 +48,8 @@ export function makeGit(): Target {
 		init({ fs, cwd, signal, target }, cb) {
 			const nCwd = unixify(cwd)
 
+			// Loads standard user excludes and repository-specific info/exclude patterns, mirroring Git's setup_standard_excludes function.
+			// https://github.com/git/git/blob/13c7afec212fc97ce257d15601659314c6673d6c/dir.c#L3482
 			const finalize = (
 				// oxlint-disable-next-line typescript/no-explicit-any
 				conf: any,

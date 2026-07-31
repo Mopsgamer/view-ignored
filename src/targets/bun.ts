@@ -42,14 +42,16 @@ export function makeBun(): Target {
 		compiled: null,
 		excludes: true,
 		list: [
-			// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L180
+			// The list of default ignored file names in the project root used by Bun when packing.
+			// https://github.com/oven-sh/bun/blob/bbe3f6a2629adf808adbd0da199ae8c94a3c0d47/src/runtime/cli/pack_command.rs#L352
 			"package-lock.json",
 			"yarn.lock",
 			"pnpm-lock.yaml",
 			"bun.lockb",
 			"bun.lock", // npm includes it
 
-			// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L189
+			// The general list of default ignored file names and glob patterns used by Bun when packing.
+			// https://github.com/oven-sh/bun/blob/bbe3f6a2629adf808adbd0da199ae8c94a3c0d47/src/runtime/cli/pack_command.rs#L363
 			".*.swp",
 			"._*",
 			".DS_Store",
@@ -71,12 +73,15 @@ export function makeBun(): Target {
 			".env.production", // npm includes it
 			"bunfig.toml", // npm includes it
 
-			// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L284
+			// Excludes package.json from default directory walking since it is handled unconditionally by Bun.
+			// https://github.com/oven-sh/bun/blob/bbe3f6a2629adf808adbd0da199ae8c94a3c0d47/src/runtime/cli/pack_command.rs#L1308
 			// manifest should be included, but bun ignores it on this line
-			// bun forces it later: https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L2586
+			// Forces the inclusion of package.json and other files that must always be packed by Bun.
+			// https://github.com/oven-sh/bun/blob/bbe3f6a2629adf808adbd0da199ae8c94a3c0d47/src/runtime/cli/pack_command.rs#L1605
 			// "package.json",
 
-			// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L285
+			// Excludes node_modules from default directory walking when packing.
+			// https://github.com/oven-sh/bun/blob/bbe3f6a2629adf808adbd0da199ae8c94a3c0d47/src/runtime/cli/pack_command.rs#L1314
 			"node_modules",
 		],
 	})
@@ -86,10 +91,12 @@ export function makeBun(): Target {
 			compiled: null,
 			excludes: false,
 			list: [
-				// https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L2586
+				// Forces the inclusion of package.json and other files that must always be packed by Bun.
+				// https://github.com/oven-sh/bun/blob/bbe3f6a2629adf808adbd0da199ae8c94a3c0d47/src/runtime/cli/pack_command.rs#L1605
 				"package.json",
 
-				// the special?.* check works this way: https://github.com/oven-sh/bun/blob/main/src/cli/pack_command.zig#L2599
+				// Matches special filenames like LICENSE, LICENCE, README, and their extension variants to unconditionally pack them.
+				// https://github.com/oven-sh/bun/blob/bbe3f6a2629adf808adbd0da199ae8c94a3c0d47/src/runtime/cli/pack_command.rs#L3944
 				"LICENSE",
 				"LICENSE.*",
 				"LICENCE",
