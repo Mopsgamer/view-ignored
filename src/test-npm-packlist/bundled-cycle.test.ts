@@ -1,3 +1,6 @@
+// Original test case verifying npm-packlist behavior for bundled-cycle.
+// https://github.com/npm/npm-packlist/blob/d1eed617b1ff1eedf5909efec7867aee385d0350/test/bundled-cycle.js
+
 import { describe, test } from "bun:test"
 
 import { makeNPM } from "../targets/npm.js"

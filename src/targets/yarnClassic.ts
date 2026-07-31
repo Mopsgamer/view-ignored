@@ -46,7 +46,8 @@ export function makeYarnClassic(): Target {
 			compiled: null,
 			excludes: true,
 			list: [
-				// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L26
+				// The list of standard ignored patterns defined by Yarn Berry plugin-pack when walking package directories.
+				// https://github.com/yarnpkg/berry/blob/57081c05a398f25c92df1dc78752f2053576cec0/packages/plugin-pack/sources/packUtils.ts#L23
 				".git",
 				"CVS",
 				".svn",
@@ -86,7 +87,8 @@ export function makeYarnClassic(): Target {
 			compiled: null,
 			excludes: false,
 			list: [
-				// https://github.com/yarnpkg/berry/blob/master/packages/plugin-pack/sources/packUtils.ts#L10
+				// The list of files that Yarn Berry unconditionally packs (never ignores) such as README and LICENSE.
+				// https://github.com/yarnpkg/berry/blob/57081c05a398f25c92df1dc78752f2053576cec0/packages/plugin-pack/sources/packUtils.ts#L9
 				"/package.json",
 				"/readme*",
 				"/license*",

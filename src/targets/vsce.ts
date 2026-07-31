@@ -33,7 +33,8 @@ export function makeVSCE(): Target {
 		compiled: null,
 		excludes: true,
 		list: [
-			// https://github.com/microsoft/vscode-vsce/blob/main/src/package.ts#L1633
+			// The list of default ignored files and glob patterns used by VSCE when packaging extensions.
+			// https://github.com/microsoft/vscode-vsce/blob/70ca6ac250dfe5ca19214a3ad357368ffae471c5/src/package.ts#L1633
 			".vscodeignore",
 			"package-lock.json",
 			"npm-debug.log",
