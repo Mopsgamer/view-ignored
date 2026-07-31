@@ -101,12 +101,11 @@ describe("Invert logic", () => {
 				"temp.log": "log content",
 			},
 		}
-		await testScan(
-			done,
-			customDir,
-			["node_modules/", "src/", "src/temp.log"],
-			{ invert: true, skipInternal: true, target: makeGit() },
-		)
+		await testScan(done, customDir, ["node_modules/", "src/", "src/temp.log"], {
+			invert: true,
+			skipInternal: true,
+			target: makeGit(),
+		})
 	})
 
 	test("invert: 2 and skipInternal: true should skip ignored directory and return both included and non-traversed ignored", async (done) => {
@@ -123,13 +122,7 @@ describe("Invert logic", () => {
 		await testScan(
 			done,
 			customDir,
-			[
-				".gitignore",
-				"src/",
-				"src/index.js",
-				"node_modules/",
-				"src/temp.log",
-			],
+			[".gitignore", "src/", "src/index.js", "node_modules/", "src/temp.log"],
 			{ invert: 2, skipInternal: true, target: makeGit() },
 		)
 	})
