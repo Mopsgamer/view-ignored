@@ -12,7 +12,7 @@ import { resolveNegatable, type Source } from "./source.js"
  */
 export function extractNpmignore(
 	source: Source,
-	content: Buffer,
+	content: Uint8Array,
 	options?: PatternCompileOptions,
 ): void | Error {
 	try {
@@ -35,7 +35,7 @@ function isWhitespace(code: number): boolean {
  */
 export function extractNpmignoreRules(
 	source: Source,
-	content: Buffer,
+	content: Uint8Array,
 	options?: PatternCompileOptions,
 ): void {
 	let rule: GlobRule | undefined
@@ -60,7 +60,7 @@ export function extractNpmignoreRules(
 
 		if (lineStart < lineEnd && content[lineStart] !== 35) {
 			// '#' is 35
-			const pattern = content.toString("utf8", lineStart, lineEnd)
+			const pattern = new TextDecoder().decode(content.subarray(lineStart, lineEnd))
 			rule = resolveNegatable(pattern, false, options, rule)
 			source.rules.unshift(rule)
 		}

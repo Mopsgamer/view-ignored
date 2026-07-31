@@ -8,7 +8,9 @@ and this project adheres to
 
 ## [Unreleased]
 
-- Implement `AsyncIterable` on the `MatcherStream` class, enabling clean consumption of stream events (both `dirent` and `end`) via `for await...of` loops.
+- Implement `AsyncIterable` on the `MatcherStream` class.
+- Replace `Buffer` with `Uint8Array`.
+- Add browser output test.
 - Rename `Rule.pattern`, `PatternCache.patternContext` to `list`.
 - Add `CustomRule`. Split `Rule` into `GlobRule` and `CustomRule`.
 - Fix `match.ignored`. Were always false.
