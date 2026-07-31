@@ -93,8 +93,11 @@ export function walkIncludes(
 				return cb(null, result)
 			}
 
+			if (isDir && skipInternal && match.ignored) {
+				result.next = 1
+			}
+
 			if (isExcluded) {
-				if (isDir && skipInternal) result.next = 1
 				return cb(null, result)
 			}
 
