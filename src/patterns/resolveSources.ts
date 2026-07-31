@@ -176,12 +176,22 @@ export function resolveSources(
 						}
 						results[ri] = {
 							error: err,
-							source: { dir: relDirs[pi], inverted: false, path: epath, rules: [] },
+							source: {
+								dir: relDirs[pi],
+								inverted: false,
+								path: join(relDirs[pi]!, epath),
+								rules: [],
+							},
 						}
 						check()
 						return
 					}
-					const source: Source = { dir: relDirs[pi], inverted: false, path: epath, rules: [] }
+					const source: Source = {
+						dir: relDirs[pi],
+						inverted: false,
+						path: join(relDirs[pi]!, epath),
+						rules: [],
+					}
 					let act: void | null | Error
 					try {
 						act = extract(source, buff!)
@@ -219,7 +229,12 @@ export function resolveSources(
 				const extractor = extractors[ei]!
 				results[ri] = {
 					error: err,
-					source: { inverted: false, path: extractor.path, rules: [] },
+					source: {
+						dir: relDirs[pi],
+						inverted: false,
+						path: join(relDirs[pi]!, extractor.path),
+						rules: [],
+					},
 				}
 			}
 			check()
