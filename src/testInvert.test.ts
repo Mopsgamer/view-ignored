@@ -93,10 +93,10 @@ describe("Invert logic", () => {
 	test("invert: true and skipInternal: true should skip ignored directory but scan non-ignored directory", async (done) => {
 		const customDir = {
 			".gitignore": "node_modules\nsrc/temp.log",
-			"node_modules": {
+			node_modules: {
 				"a.js": "console.log('a')",
 			},
-			"src": {
+			src: {
 				"index.js": "console.log('index')",
 				"temp.log": "log content",
 			},
@@ -104,10 +104,7 @@ describe("Invert logic", () => {
 		await testScan(
 			done,
 			customDir,
-			(o) => {
-				const { ctx } = o
-				expect(Array.from(ctx.paths.keys()).sort()).toEqual(["node_modules/", "src/", "src/temp.log"].sort())
-			},
+			["node_modules/", "src/", "src/temp.log"],
 			{ invert: true, skipInternal: true, target: makeGit() },
 		)
 	})
@@ -115,10 +112,10 @@ describe("Invert logic", () => {
 	test("invert: 2 and skipInternal: true should skip ignored directory and return both included and non-traversed ignored", async (done) => {
 		const customDir = {
 			".gitignore": "node_modules\nsrc/temp.log",
-			"node_modules": {
+			node_modules: {
 				"a.js": "console.log('a')",
 			},
-			"src": {
+			src: {
 				"index.js": "console.log('index')",
 				"temp.log": "log content",
 			},
@@ -126,16 +123,13 @@ describe("Invert logic", () => {
 		await testScan(
 			done,
 			customDir,
-			(o) => {
-				const { ctx } = o
-				expect(Array.from(ctx.paths.keys()).sort()).toEqual([
-					".gitignore",
-					"src/",
-					"src/index.js",
-					"node_modules/",
-					"src/temp.log",
-				].sort())
-			},
+			[
+				".gitignore",
+				"src/",
+				"src/index.js",
+				"node_modules/",
+				"src/temp.log",
+			],
 			{ invert: 2, skipInternal: true, target: makeGit() },
 		)
 	})
