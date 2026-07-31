@@ -19,7 +19,7 @@ interface JsrManifest {
  *
  * @since 0.6.0
  */
-export function extractJsrJson(source: Source, content: Buffer): void | Error {
+export function extractJsrJson(source: Source, content: Uint8Array): void | Error {
 	try {
 		extractJsrJsonRules(source, content)
 	} catch (e) {
@@ -34,11 +34,11 @@ extractJsrJson satisfies ExtractorFn
  *
  * @since 0.12.0
  */
-export function extractJsrJsonRules(source: Source, content: Buffer): void {
+export function extractJsrJsonRules(source: Source, content: Uint8Array): void {
 	let dist: JsrManifest
 
 	try {
-		dist = JSON.parse(stripJsonComments(content.toString()))
+		dist = JSON.parse(stripJsonComments(new TextDecoder().decode(content)))
 	} catch (e) {
 		throw new Error("Invalid JSON in '" + source.path + "'", { cause: e })
 	}

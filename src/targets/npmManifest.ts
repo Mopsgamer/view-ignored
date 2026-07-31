@@ -4,7 +4,7 @@ import type { Source } from "../patterns/source.js"
 import { extractNpmignore } from "../patterns/npmignore.js"
 import { unixify } from "../unixify.js"
 
-export function extractNoCaseNpmignore(source: Source, content: Buffer): void | null | Error {
+export function extractNoCaseNpmignore(source: Source, content: Uint8Array): void | null | Error {
 	return extractNpmignore(source, content, { nocase: true })
 }
 
