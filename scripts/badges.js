@@ -2,16 +2,11 @@ import { spawnSync } from "node:child_process"
 import { readFileSync, writeFileSync } from "node:fs"
 import { argv, env, exit } from "node:process"
 
-function updateBadge() {
-	const TEST_DIR = "src/test-npm-packlist/"
-	const README_PATH = "README.md"
-	const MARKER =
-		"[![speed-fast](https://img.shields.io/badge/speed-fast-salad?repo=Mopsgamer/view-ignored.svg)](https://github.com/Mopsgamer/view-ignored/tree/main/benchmarks)"
-
-	console.log("Running npm-packlist tests...")
-	const testProcess = spawnSync("bun", ["test", TEST_DIR], {
+function runTestSuite(dir, envVar) {
+	console.log(`Running tests in ${dir}...`)
+	const testProcess = spawnSync("bun", ["test", dir], {
 		encoding: "utf8",
-		env: { ...env, TEST_PACKLIST: "1" },
+		env: { ...env, [envVar]: "1" },
 	})
 
 	const output = (testProcess.stdout || "") + (testProcess.stderr || "")
@@ -19,14 +14,26 @@ function updateBadge() {
 	const totalMatch = output.match(/Ran (\d+) tests/)
 
 	if (!totalMatch) {
-		console.error("Error: Could not parse total test count from Bun output.")
+		console.error(`Error: Could not parse total test count from Bun output for ${dir}.`)
+		console.error(output)
 		exit(1)
 	}
 
 	const passed = passMatch ? passMatch[1] : "0"
 	const total = totalMatch[1]
-	const badgeValue = `${passed}/${total}`
-	console.log(`Test Results: ${badgeValue}`)
+	return `${passed}/${total}`
+}
+
+function updateBadge() {
+	const PACKLIST_DIR = "src/test-npm-packlist/"
+	const WILDMATCH_DIR = "src/test-wildmatch/"
+	const README_PATH = "README.md"
+
+	const packlistValue = runTestSuite(PACKLIST_DIR, "TEST_PACKLIST")
+	const wildmatchValue = runTestSuite(WILDMATCH_DIR, "TEST_WILDMATCH")
+
+	console.log(`npm-packlist Test Results: ${packlistValue}`)
+	console.log(`wildmatch Test Results: ${wildmatchValue}`)
 
 	let readmeContent = ""
 	try {
@@ -36,41 +43,80 @@ function updateBadge() {
 		exit(1)
 	}
 
-	const badgeRegex =
+	const packlistRegex =
 		/\[!\[npm-packlist-tests\]\(https:\/\/img\.shields\.io\/badge\/npm--packlist-(.*?)-blue\)\]\([^)]*\)/
-	const existingMatch = readmeContent.match(badgeRegex)
-	const oldBadgeValue = existingMatch
-		? decodeURIComponent(existingMatch[1]).replace(/--/g, "-")
+	const wildmatchRegex =
+		/\[!\[wildmatch-tests\]\(https:\/\/img\.shields\.io\/badge\/wildmatch-(.*?)-blue\)\]\([^)]*\)/
+
+	const existingPacklistMatch = readmeContent.match(packlistRegex)
+	const oldPacklistValue = existingPacklistMatch
+		? decodeURIComponent(existingPacklistMatch[1]).replace(/--/g, "-")
+		: null
+
+	const existingWildmatchMatch = readmeContent.match(wildmatchRegex)
+	const oldWildmatchValue = existingWildmatchMatch
+		? decodeURIComponent(existingWildmatchMatch[1]).replace(/--/g, "-")
 		: null
 
 	if (argv.includes("--check")) {
-		if (!oldBadgeValue) {
-			console.error("Badge is missing from README.md")
+		let mismatch = false
+		if (!oldPacklistValue) {
+			console.error("npm-packlist-tests badge is missing from README.md")
+			mismatch = true
+		} else if (packlistValue !== oldPacklistValue) {
+			console.error(
+				`npm-packlist badge is outdated. Current: ${oldPacklistValue}, Expected: ${packlistValue}`,
+			)
+			mismatch = true
+		}
+
+		if (!oldWildmatchValue) {
+			console.error("wildmatch-tests badge is missing from README.md")
+			mismatch = true
+		} else if (wildmatchValue !== oldWildmatchValue) {
+			console.error(
+				`wildmatch badge is outdated. Current: ${oldWildmatchValue}, Expected: ${wildmatchValue}`,
+			)
+			mismatch = true
+		}
+
+		if (mismatch) {
 			exit(1)
 		}
-		if (badgeValue !== oldBadgeValue) {
-			console.error(`Badge is outdated. Current: ${oldBadgeValue}, Expected: ${badgeValue}`)
-			exit(1)
-		}
-		console.log("Badge is up to date.")
+
+		console.log("All badges are up to date.")
 		return
 	}
 
-	const encodedValue = badgeValue.replace(/-/g, "--").replace(/\//g, "%2F")
-	const newBadge = `[![npm-packlist-tests](https://img.shields.io/badge/npm--packlist-${encodedValue}-blue)](https://github.com/Mopsgamer/view-ignored/tree/main/src/test-npm-packlist/)`
+	const encodedPacklistValue = packlistValue.replace(/-/g, "--").replace(/\//g, "%2F")
+	const newPacklistBadge = `[![npm-packlist-tests](https://img.shields.io/badge/npm--packlist-${encodedPacklistValue}-blue)](https://github.com/Mopsgamer/view-ignored/tree/main/src/test-npm-packlist/)`
 
-	if (badgeRegex.test(readmeContent)) {
-		readmeContent = readmeContent.replace(badgeRegex, newBadge)
+	const encodedWildmatchValue = wildmatchValue.replace(/-/g, "--").replace(/\//g, "%2F")
+	const newWildmatchBadge = `[![wildmatch-tests](https://img.shields.io/badge/wildmatch-${encodedWildmatchValue}-blue)](https://github.com/Mopsgamer/view-ignored/tree/main/src/test-wildmatch/)`
+
+	// Replace packlist badge
+	if (packlistRegex.test(readmeContent)) {
+		readmeContent = readmeContent.replace(packlistRegex, newPacklistBadge)
 	} else {
-		if (!readmeContent.includes(MARKER)) {
-			console.error(`Error: Marker badge not found in ${README_PATH}`)
-			exit(1)
-		}
-		readmeContent = readmeContent.replace(MARKER, `${MARKER}\n${newBadge}`)
+		console.error("Error: npm-packlist-tests badge not found in README.md")
+		exit(1)
+	}
+
+	// Insert or replace wildmatch badge
+	if (wildmatchRegex.test(readmeContent)) {
+		readmeContent = readmeContent.replace(wildmatchRegex, newWildmatchBadge)
+	} else {
+		// Insert wildmatch badge right after packlist badge
+		readmeContent = readmeContent.replace(
+			newPacklistBadge,
+			`${newPacklistBadge}\n${newWildmatchBadge}`,
+		)
 	}
 
 	writeFileSync(README_PATH, readmeContent, "utf8")
-	console.log(`Successfully updated ${README_PATH} with badge value ${badgeValue}`)
+	console.log(`Successfully updated ${README_PATH} with:`)
+	console.log(` - npm-packlist badge value ${packlistValue}`)
+	console.log(` - wildmatch badge value ${wildmatchValue}`)
 }
 
 updateBadge()
