@@ -3,6 +3,7 @@ import type { GlobRule } from "./rule.js"
 
 import stripJsonComments from "strip-json-comments"
 
+import { ruleCompile } from "./resolveSources.js"
 import { resolveNegatable, type Source } from "./source.js"
 
 interface JsrManifest {
@@ -56,13 +57,29 @@ export function extractJsrJsonRules(source: Source, content: Uint8Array): void {
 	const options = { nocase: true }
 	if (target.exclude && Array.isArray(target.exclude)) {
 		for (const pattern of target.exclude) {
-			source.rules.push((rule = resolveNegatable(pattern, false, options, rule)))
+			const nextRule = resolveNegatable(pattern, false, options, rule)
+			if (nextRule !== rule) {
+				rule = nextRule
+				source.rules.push(rule)
+			}
 		}
 	}
 
 	if (target.include && Array.isArray(target.include)) {
 		for (const pattern of target.include) {
-			source.rules.push((rule = resolveNegatable(pattern, true, options, rule)))
+			const nextRule = resolveNegatable(pattern, true, options, rule)
+			if (nextRule !== rule) {
+				rule = nextRule
+				source.rules.push(rule)
+			}
+		}
+	}
+
+	const rlen = source.rules.length
+	for (let i = 0; i < rlen; i++) {
+		const r = source.rules[i]!
+		if ("list" in r && r.compiled === null) {
+			ruleCompile(r, options)
 		}
 	}
 }

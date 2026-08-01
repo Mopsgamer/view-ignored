@@ -4,7 +4,7 @@ import type { PatternFinderOptions } from "./extractor.js"
 import type { IgnoresOptions } from "./ignores.js"
 import type { Source } from "./source.js"
 
-import { patternCacheTest, type PatternList, type PatternCache } from "./patternList.js"
+import { patternCacheTest, type PatternList } from "./patternList.js"
 
 /**
  * @since 0.12.0
@@ -59,7 +59,12 @@ export type GlobRule = {
 	 *
 	 * @since 0.6.0
 	 */
-	compiled: null | PatternCache[]
+	compiled: null | {
+		re: { test(string: string, lowerPath?: string): boolean }
+		pattern: string
+		list: PatternList
+		compiledItems?: { pattern: string; re: RegExp }[]
+	}
 }
 
 export type CustomRule = {
@@ -282,22 +287,35 @@ export interface RuleTestOptions extends PatternFinderOptions {
 }
 
 function cacheTest(
-	rs: PatternCache[],
+	rs: {
+		re: { test(string: string, lowerPath?: string): boolean }
+		pattern: string
+		list: PatternList
+		compiledItems?: { pattern: string; re: RegExp }[]
+	} | null,
 	path: string,
 	lowerPath?: string,
-): PatternCache | Error | null {
-	const len = rs.length
-	for (let i = 0; i < len; i++) {
-		const r = rs[i]!
-		try {
-			if (patternCacheTest(r, path, lowerPath)) {
-				return r
-			}
-		} catch (err) {
-			return err as Error
+): { pattern: string } | Error | null {
+	if (!rs) return null
+	try {
+		const n = lowerPath || path
+		if (!patternCacheTest(rs, path, lowerPath)) {
+			return null
 		}
+		const items = rs.compiledItems
+		if (items) {
+			const len = items.length
+			for (let i = 0; i < len; i++) {
+				const item = items[i]!
+				if (item.re.test(n)) {
+					return { pattern: item.pattern }
+				}
+			}
+		}
+		return { pattern: rs.pattern }
+	} catch (err) {
+		return err as Error
 	}
-	return null
 }
 
 /**
