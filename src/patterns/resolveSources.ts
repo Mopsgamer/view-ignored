@@ -149,14 +149,7 @@ export function resolveSources(
 				if (entries_) {
 					const slashIdx = epath.indexOf("/")
 					const firstSegment = slashIdx === -1 ? epath : epath.slice(0, slashIdx)
-					let found = false
-					for (let k = 0, len = entries_.length; k < len; k++) {
-						if (entries_[k]!.name === firstSegment) {
-							found = true
-							break
-						}
-					}
-					if (!found) {
+					if (!entries_.some((e) => e.name === firstSegment)) {
 						results[pi * elen + ei] = null
 						directoryTasks--
 						continue
@@ -184,17 +177,12 @@ export function resolveSources(
 						check()
 						return
 					}
-					let act: void | null | Error
 					try {
-						act = extract(source, buff!)
+						const act = extract(source, buff!)
+						results[ri] = act === null ? null : act === undefined ? source : { error: act, source }
 					} catch (act) {
-						results[ri] = { error: act, source }
-						check()
-						return
+						results[ri] = { error: act as Error, source }
 					}
-					if (act === null) results[ri] = null
-					else if (act === undefined) results[ri] = source
-					else results[ri] = { error: act, source }
 					check()
 				})
 			}
@@ -216,21 +204,19 @@ export function resolveSources(
 				// oxlint-disable-next-line typescript/no-explicit-any
 				if ((err as any).code === "ENOENT") {
 					results[ri] = null
-					continue
-				}
-				const extractor = extractors[ei]!
-				results[ri] = {
-					error: err,
-					source: {
-						dir: relDirs[pi],
-						inverted: false,
-						path: join(relDirs[pi]!, extractor.path),
-						rules: [],
-					},
+				} else {
+					results[ri] = {
+						error: err,
+						source: {
+							dir: relDirs[pi],
+							inverted: false,
+							path: join(relDirs[pi]!, extractors[ei]!.path),
+							rules: [],
+						},
+					}
 				}
 			}
 			check()
-			return
 		})
 	}
 
