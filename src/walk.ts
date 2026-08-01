@@ -152,15 +152,13 @@ export function walkPatchResult(
 		if (isRuleMatchInvalid(match) && stream && (dirs || !isDir)) {
 			patch(ctx, stream, path, entry, match)
 		}
-		return
-	}
-
-	if (!tooDeep && (dirs || !isDir)) {
-		patch(ctx, stream, path, entry, match)
-	}
-
-	if (includeParent && dirs) {
-		patch(ctx, stream, parentPath + "/", entry, match)
+	} else {
+		if (!tooDeep && (dirs || !isDir)) {
+			patch(ctx, stream, path, entry, match)
+		}
+		if (includeParent && dirs) {
+			patch(ctx, stream, parentPath + "/", entry, match)
+		}
 	}
 }
 
@@ -198,14 +196,15 @@ export function propagateTotals(total: Map<string, Total>): void {
 	const dirs = Array.from(total.keys()).sort((a, b) => b.length - a.length)
 	for (let i = 0, len = dirs.length; i < len; i++) {
 		const dir = dirs[i]!
-		if (dir === "." || dir === "/") continue
-		const dirTotal = total.get(dir)!
-		addToTotal(
-			total,
-			dirname(dir),
-			dirTotal.totalFiles,
-			dirTotal.totalMatchedFiles,
-			dirTotal.totalDirs,
-		)
+		if (dir !== "." && dir !== "/") {
+			const dirTotal = total.get(dir)!
+			addToTotal(
+				total,
+				dirname(dir),
+				dirTotal.totalFiles,
+				dirTotal.totalMatchedFiles,
+				dirTotal.totalDirs,
+			)
+		}
 	}
 }

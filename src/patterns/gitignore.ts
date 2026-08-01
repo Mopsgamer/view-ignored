@@ -31,23 +31,19 @@ function isCommentLineChar(content: Uint8Array, start: number, i: number): boole
 	}
 	let hasNonSpaceBefore = false
 	for (let j = start; j < i - 1; j++) {
-		if (content[j] !== 32 && content[j] !== 9 && content[j] !== 13) {
+		const c = content[j]!
+		if (c !== 32 && c !== 9 && c !== 13) {
 			hasNonSpaceBefore = true
 			break
 		}
 	}
-
 	if (!hasNonSpaceBefore) {
 		return false
 	}
 
 	let backslashCount = 0
-	for (let j = i - 2; j >= start; j--) {
-		if (content[j] === 92) {
-			backslashCount++
-		} else {
-			break
-		}
+	for (let j = i - 2; j >= start && content[j] === 92; j--) {
+		backslashCount++
 	}
 	return backslashCount % 2 === 0
 }
@@ -69,28 +65,24 @@ function processGitignoreLine(
 	let lineBuffIdx = 0
 
 	for (let i = start; i < lineEnd; i++) {
-		const c = content[i] as number
+		const c = content[i]!
 		if (isEscaped) {
 			lineBuff[lineBuffIdx++] = c
 			isEscaped = false
-			continue
-		}
-		if (c === 92) {
+		} else if (c === 92) {
 			isEscaped = true
 			lineBuff[lineBuffIdx++] = c
-			continue
-		}
-		if (c === 35) {
+		} else if (c === 35) {
 			if (isCommentLineChar(content, start, i)) {
-				if (i > start && lineBuffIdx > 0 && lineBuff[lineBuffIdx - 1] === 32) {
+				if (lineBuffIdx > 0 && lineBuff[lineBuffIdx - 1] === 32) {
 					lineBuffIdx--
 				}
 				break
 			}
 			lineBuff[lineBuffIdx++] = c
-			continue
+		} else {
+			lineBuff[lineBuffIdx++] = c
 		}
-		lineBuff[lineBuffIdx++] = c
 	}
 
 	if (lineBuffIdx === 0) {
@@ -100,7 +92,7 @@ function processGitignoreLine(
 	let actualLastRealCharIdx = -1
 	let tempIsEscaped = false
 	for (let k = 0; k < lineBuffIdx; k++) {
-		const c = lineBuff[k]
+		const c = lineBuff[k]!
 		if (tempIsEscaped) {
 			actualLastRealCharIdx = k + 1
 			tempIsEscaped = false
@@ -124,7 +116,7 @@ function processGitignoreLine(
 	let resolvedLine = ""
 	let resolvedIsEscaped = false
 	for (let m = 0; m < rawLine.length; m++) {
-		const rc = rawLine[m]
+		const rc = rawLine[m]!
 		if (resolvedIsEscaped) {
 			resolvedLine += rc
 			resolvedIsEscaped = false
@@ -160,10 +152,10 @@ export function extractGitignoreRules(
 	let start = 0
 	const len = content.length
 	while (start < len) {
-		let end = content.indexOf(0x0a, start)
+		let end = content.indexOf(10, start)
 		if (end === -1) end = len
 
-		const lineEnd = end > start && content[end - 1] === 0x0d ? end - 1 : end
+		const lineEnd = end > start && content[end - 1] === 13 ? end - 1 : end
 
 		if (start < lineEnd) {
 			rule = processGitignoreLine(source, content, start, lineEnd, options, rule)

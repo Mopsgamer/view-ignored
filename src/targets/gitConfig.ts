@@ -112,7 +112,7 @@ function parseSectionHeader(text: string, i: number, len: number) {
 	const sp = name.indexOf(" ")
 	if (sp !== -1) {
 		let sub = name.slice(sp + 1).trim()
-		if (sub.charCodeAt(0) === 34 && sub.charCodeAt(sub.length - 1) === 34) {
+		if (sub.startsWith('"') && sub.endsWith('"')) {
 			sub = sub.slice(1, -1)
 		}
 		name = name.slice(0, sp).toLowerCase() + ' "' + sub + '"'
@@ -128,15 +128,11 @@ function parseKeyValuePair(text: string, i: number, len: number) {
 	const kS = i
 	while (i < len && text.charCodeAt(i) !== 61 && text.charCodeAt(i) !== 10) i++
 
-	let kE = i
-	while (kE > kS && text.charCodeAt(kE - 1) <= 32) kE--
+	const key = text.slice(kS, i).trim().toLowerCase() || null
 
 	if (i >= len || text.charCodeAt(i) === 10) {
-		const key = kS < kE ? text.slice(kS, kE).toLowerCase() : null
 		return { key, nextIdx: i + 1, val: true }
 	}
-
-	const key = text.slice(kS, kE).toLowerCase()
 
 	i++
 	while (i < len && text.charCodeAt(i) <= 32 && text.charCodeAt(i) !== 10) i++
@@ -150,11 +146,8 @@ function parseKeyValuePair(text: string, i: number, len: number) {
 	)
 		i++
 
-	let vE = i
-	while (vE > vS && text.charCodeAt(vE - 1) <= 32) vE--
-
-	let val: string | boolean = text.slice(vS, vE)
-	if (val.charCodeAt(0) === 34 && val.charCodeAt(val.length - 1) === 34) {
+	let val: string | boolean = text.slice(vS, i).trim()
+	if (val.startsWith('"') && val.endsWith('"')) {
 		val = unescapeGitValue(val.slice(1, -1))
 	}
 
@@ -162,16 +155,7 @@ function parseKeyValuePair(text: string, i: number, len: number) {
 }
 
 function unescapeGitValue(val: string): string {
-	if (val.indexOf("\\") === -1) return val
-	let next = ""
-	for (let j = 0; j < val.length; j++) {
-		if (val[j] === "\\" && j + 1 < val.length) {
-			next += val[++j]
-		} else {
-			next += val[j]
-		}
-	}
-	return next
+	return val.includes("\\") ? val.replace(/\\(.)/g, "$1") : val
 }
 
 // oxlint-disable-next-line typescript/no-explicit-any
@@ -227,8 +211,8 @@ function hasConfig(obj: any, cond: string): boolean {
 // oxlint-disable-next-line typescript/no-explicit-any
 export function getIncludes(parsed: any, gitDir: string | null, branch: string | null): string[] {
 	const order = parsed.__order
+	const res: string[] = []
 	if (!order) {
-		const res: string[] = []
 		const inc = parsed["include"]
 		if (inc?.path) {
 			if (Array.isArray(inc.path)) res.push(...inc.path)
@@ -237,12 +221,11 @@ export function getIncludes(parsed: any, gitDir: string | null, branch: string |
 		return res
 	}
 
-	const res: string[] = []
 	const sGD = gitDir ? strip(gitDir) : null
 	const gD = sGD ? (sGD.charCodeAt(0) === 47 ? sGD.slice(1) : sGD) : null
 
 	for (let i = 0; i < order.length; i++) {
-		const entry = order[i]
+		const entry = order[i]!
 		const colon = entry.lastIndexOf(":")
 		const sectionName = entry.slice(0, colon)
 		const idx = parseInt(entry.slice(colon + 1), 10)
@@ -255,21 +238,17 @@ export function getIncludes(parsed: any, gitDir: string | null, branch: string |
 		if (!gD) continue
 
 		const condition = sectionName.slice(11, -1)
-		let matched = false
-
-		if (condition.startsWith("gitdir:")) {
-			matched = testPattern(strip(resolveHome(condition.slice(7))), gD, MatchMode.wildmatch)
-		} else if (condition.startsWith("gitdir/i:")) {
-			matched = testPattern(
-				strip(resolveHome(condition.slice(9))),
-				gD,
-				MatchMode.wildmatch | MatchMode.unsensitive,
-			)
-		} else if (branch && condition.startsWith("onbranch:")) {
-			matched = testPattern(condition.slice(9), branch, MatchMode.wildmatch)
-		} else if (condition.startsWith("hasconfig:")) {
-			matched = hasConfig(parsed, condition.slice(10))
-		}
+		const matched = condition.startsWith("gitdir:")
+			? testPattern(strip(resolveHome(condition.slice(7))), gD, MatchMode.wildmatch)
+			: condition.startsWith("gitdir/i:")
+				? testPattern(
+						strip(resolveHome(condition.slice(9))),
+						gD,
+						MatchMode.wildmatch | MatchMode.unsensitive,
+					)
+				: branch && condition.startsWith("onbranch:")
+					? testPattern(condition.slice(9), branch, MatchMode.wildmatch)
+					: condition.startsWith("hasconfig:") && hasConfig(parsed, condition.slice(10))
 
 		if (matched) {
 			res.push(parsed[sectionName].path[idx])

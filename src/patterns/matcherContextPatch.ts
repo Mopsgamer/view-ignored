@@ -6,10 +6,36 @@ import type { Resource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"
 
 import { getOrInsertComputed } from "../mapUtils.js"
+import { type ScanParallelOptions } from "../scanParallel.js"
 import { scanParallel } from "../scanParallel.js"
 import { dirname, unixify } from "../unixify.js"
 import { walkPatchResult, walkPatchTotal, propagateTotals, type WalkResult } from "../walk.js"
+import { type IgnoresOptions } from "./ignores.js"
+import { type ResolveSourcesOptions } from "./resolveSources.js"
 import { resolveSources } from "./resolveSources.js"
+
+const promResolve = (options: ResolveSourcesOptions): Promise<Resource> =>
+	new Promise((res, rej) => resolveSources(options, (err, r) => (err ? rej(err) : res(r))))
+
+const promIgnores = (options: IgnoresOptions): Promise<RuleMatch> =>
+	new Promise((res, rej) => options.target.ignores(options, (err, m) => (err ? rej(err) : res(m))))
+
+const promScanParallel = (options: ScanParallelOptions): Promise<WalkResult[] | null> =>
+	new Promise((res, rej) => scanParallel(options, (err, r) => (err ? rej(err) : res(r))))
+
+function mockDirent(name: string, parentPath: string, isDir: boolean): Dirent {
+	return {
+		isBlockDevice: () => false,
+		isCharacterDevice: () => false,
+		isDirectory: () => isDir,
+		isFIFO: () => false,
+		isFile: () => !isDir,
+		isSocket: () => false,
+		isSymbolicLink: () => false,
+		name,
+		parentPath,
+	} as Dirent
+}
 
 export async function matcherContextAddPath(
 	ctx: MatcherContext,
@@ -27,49 +53,30 @@ export async function matcherContextAddPath(
 	}
 	const direntPath = isDir ? entry.slice(0, -1) : entry
 	const parentPath = dirname(direntPath)
+	const name = direntPath.slice(direntPath.lastIndexOf("/") + 1)
 
 	const { target, fs, cwd, signal, depth: maxDepth } = options
 
 	if (isDir) {
-		const resource = await new Promise<Resource>((resolve, reject) =>
-			resolveSources(
-				{
-					cwd,
-					dir: direntPath,
-					external: ctx.external,
-					fs,
-					signal,
-					target,
-				},
-				(err, res) => (err ? reject(err) : resolve(res)),
-			),
-		)
+		const resource = await promResolve({
+			cwd,
+			dir: direntPath,
+			external: ctx.external,
+			fs,
+			signal,
+			target,
+		})
 
-		const match = await new Promise<RuleMatch>((resolve, reject) =>
-			target.ignores(
-				{
-					cwd,
-					dirent: {
-						isBlockDevice: () => false,
-						isCharacterDevice: () => false,
-						isDirectory: () => true,
-						isFIFO: () => false,
-						isFile: () => false,
-						isSocket: () => false,
-						isSymbolicLink: () => false,
-						name: direntPath.slice(direntPath.lastIndexOf("/") + 1),
-						parentPath,
-					} as Dirent,
-					entry: direntPath,
-					fs,
-					parentPath,
-					resource,
-					signal,
-					target,
-				},
-				(err, res) => (err ? reject(err) : resolve(res)),
-			),
-		)
+		const match = await promIgnores({
+			cwd,
+			dirent: mockDirent(name, parentPath, true),
+			entry: direntPath,
+			fs,
+			parentPath,
+			resource,
+			signal,
+			target,
+		})
 
 		if (!match.ignored && options.dirs && !ctx.paths.has(entry)) {
 			ctx.paths.set(entry, match)
@@ -86,31 +93,26 @@ export async function matcherContextAddPath(
 
 	const isSource = target.extractors.some((e) => e.path === entry)
 	if (isSource) {
-		const resultPromise = new Promise<WalkResult[] | null>((resolve, reject) =>
-			scanParallel(
-				{
-					external: ctx.external,
-					failed: ctx.failed,
-					onResult: (result) => {
-						if ("dir" in result) {
-							walkPatchTotal(ctx, maxDepth, result)
-							return
-						}
-						const { path, parentPath: rParentPath, includeParent } = result
-						if (!ctx.paths.has(path)) {
-							added.push(path)
-						}
-						if (includeParent && !ctx.paths.has(rParentPath + "/")) {
-							added.push(rParentPath + "/")
-						}
-						walkPatchResult(ctx, result, options)
-					},
-					scanOptions: { ...options, within: unixify(parentPath) },
-					stream: undefined,
-				},
-				(err, res) => (err ? reject(err) : resolve(res)),
-			),
-		)
+		const resultPromise = promScanParallel({
+			external: ctx.external,
+			failed: ctx.failed,
+			onResult: (result) => {
+				if ("dir" in result) {
+					walkPatchTotal(ctx, maxDepth, result)
+					return
+				}
+				const { path, parentPath: rParentPath, includeParent } = result
+				if (!ctx.paths.has(path)) {
+					added.push(path)
+				}
+				if (includeParent && !ctx.paths.has(rParentPath + "/")) {
+					added.push(rParentPath + "/")
+				}
+				walkPatchResult(ctx, result, options)
+			},
+			scanOptions: { ...options, within: unixify(parentPath) },
+			stream: undefined,
+		})
 		await matcherContextRemovePath(ctx, options, parentPath + "/")
 		await resultPromise
 		propagateTotals(ctx.total)
@@ -120,45 +122,25 @@ export async function matcherContextAddPath(
 		added.push(...(await matcherContextAddPath(ctx, options, parentPath + "/")))
 	}
 
-	const resource = await new Promise<Resource>((resolve, reject) =>
-		resolveSources(
-			{
-				cwd,
-				dir: parentPath,
-				external: ctx.external,
-				fs,
-				signal,
-				target,
-			},
-			(err, res) => (err ? reject(err) : resolve(res)),
-		),
-	)
+	const resource = await promResolve({
+		cwd,
+		dir: parentPath,
+		external: ctx.external,
+		fs,
+		signal,
+		target,
+	})
 
-	const match = await new Promise<RuleMatch>((resolve, reject) =>
-		target.ignores(
-			{
-				cwd,
-				dirent: {
-					isBlockDevice: () => false,
-					isCharacterDevice: () => false,
-					isDirectory: () => false,
-					isFIFO: () => false,
-					isFile: () => true,
-					isSocket: () => false,
-					isSymbolicLink: () => false,
-					name: direntPath.slice(direntPath.lastIndexOf("/") + 1),
-					parentPath,
-				} as Dirent,
-				entry,
-				fs,
-				parentPath,
-				resource,
-				signal,
-				target,
-			},
-			(err, res) => (err ? reject(err) : resolve(res)),
-		),
-	)
+	const match = await promIgnores({
+		cwd,
+		dirent: mockDirent(name, parentPath, false),
+		entry,
+		fs,
+		parentPath,
+		resource,
+		signal,
+		target,
+	})
 
 	updateTotals(ctx, parentPath, 1, match.ignored ? 0 : 1, 0)
 	if (!match.ignored && !ctx.paths.has(entry)) {
@@ -238,24 +220,19 @@ export async function matcherContextRemovePath(
 	const isSource = options.target.extractors.some((e) => e.path === entry)
 	if (isSource) {
 		const maxDepth = options.depth
-		const resultPromise = new Promise<WalkResult[] | null>((resolve, reject) =>
-			scanParallel(
-				{
-					external: ctx.external,
-					failed: ctx.failed,
-					onResult: (result) => {
-						if ("dir" in result) {
-							walkPatchTotal(ctx, maxDepth, result)
-							return
-						}
-						walkPatchResult(ctx, result, options)
-					},
-					scanOptions: { ...options, within: unixify(parentPath) },
-					stream: undefined,
-				},
-				(err, res) => (err ? reject(err) : resolve(res)),
-			),
-		)
+		const resultPromise = promScanParallel({
+			external: ctx.external,
+			failed: ctx.failed,
+			onResult: (result) => {
+				if ("dir" in result) {
+					walkPatchTotal(ctx, maxDepth, result)
+					return
+				}
+				walkPatchResult(ctx, result, options)
+			},
+			scanOptions: { ...options, within: unixify(parentPath) },
+			stream: undefined,
+		})
 		removed.push(...(await matcherContextRemovePath(ctx, options, parentPathDir)))
 		await resultPromise
 		propagateTotals(ctx.total)
