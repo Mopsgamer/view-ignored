@@ -1,3 +1,5 @@
+import type { Stats } from "node:fs"
+
 import type { Target } from "./target.js"
 
 import {
@@ -8,7 +10,10 @@ import {
 	packageJsonExtractor,
 	type InternalRules,
 	type GlobRule,
+	type IgnoresOptions,
 } from "../patterns/index.js"
+import { scan } from "../scan.js"
+import { join } from "../unixify.js"
 import {
 	npmManifestParse,
 	type PackageJson,
@@ -106,9 +111,63 @@ export function makeNPM(): Target {
 		{ nocase: true },
 	)
 
+	let bundledDeps: string[] = []
+
+	const bundledDepsRule = (options: IgnoresOptions) => {
+		if (options.entry !== "node_modules") return null
+
+		if (bundledDeps.length === 0) {
+			return {
+				external: new Map(),
+				failed: [],
+				paths: new Map(),
+				total: new Map(),
+			}
+		}
+
+		const mergedCtx = {
+			external: new Map(),
+			failed: [],
+			paths: new Map(),
+			total: new Map(),
+		}
+
+		const promises = bundledDeps.map((dep) => {
+			const depPath = "node_modules/" + dep
+			const absDepPath = join(options.cwd, depPath)
+			return new Promise<void>((resolve) => {
+				options.fs.stat(absDepPath, (_, stats?: Stats) => {
+					if (!stats?.isDirectory()) {
+						resolve()
+						return
+					}
+					scan({
+						cwd: absDepPath,
+						dirs: false,
+						fs: options.fs,
+						target: makeNPM(),
+					}).then(
+						(subCtx) => {
+							if (subCtx?.paths) {
+								for (const [p, m] of subCtx.paths) {
+									mergedCtx.paths.set(depPath + "/" + p, m)
+								}
+							}
+							resolve()
+						},
+						() => resolve(),
+					)
+				})
+			})
+		})
+
+		return Promise.all(promises).then(() => mergedCtx)
+	}
+
 	const internal: InternalRules = {
 		after: [cachedNpmAfterExcludesRule],
 		before: [
+			bundledDepsRule,
 			symlinkRule,
 			makeDirectPathsRule(directPathsInclude),
 			cachedNpmBeforeExcludesRule,
@@ -140,7 +199,20 @@ export function makeNPM(): Target {
 
 				extractManifestIncludes(dist, directPathsInclude)
 
-				// TODO: NPM should include bundled deps
+				const bundleDepsField = dist.bundleDependencies ?? dist.bundledDependencies
+				if (bundleDepsField === true) {
+					const depsKeys = dist.dependencies ? Object.keys(dist.dependencies) : []
+					const optDepsKeys = dist.optionalDependencies
+						? Object.keys(dist.optionalDependencies)
+						: []
+					bundledDeps = [...depsKeys, ...optDepsKeys]
+				} else if (Array.isArray(bundleDepsField)) {
+					bundledDeps = bundleDepsField.filter(
+						(dep) =>
+							(dist.dependencies && Object.hasOwn(dist.dependencies, dep)) ||
+							(dist.optionalDependencies && Object.hasOwn(dist.optionalDependencies, dep)),
+					)
+				}
 
 				cb(null)
 			})
