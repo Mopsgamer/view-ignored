@@ -1,0 +1,1570 @@
+bun test v1.3.14 (0d9b296a)
+
+src/test-wildmatch/node-ignore.test.ts:
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > #153: reinclude issue [15.22ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > #148 [1.49ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > #77: more cases for coverage [1.81ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > #77: directory ending with / not always correctly ignored [2.33ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > #59 and more cases about range notation [4.18ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > gitignore 2.22.1 example [1.41ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > object prototype [1.52ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > a and a/ [2.21ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > special case: [] [1.76ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > negated class: [!a].txt [1.86ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > negated range: [!a-c].txt [1.77ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > negated numeric range: [!0-9] [1.55ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > negated class in the middle: x[!y]z [1.81ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > #38 [2.98ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > #25 [2.84ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > wildcard: treated as a shell glob suitable for consumption by fnmatch(3) [1.90ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > #24: a negative pattern without a trailing wildcard [1.86ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > #14, README example broken in 3.0.3, not negate parent folder [1.70ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > issue #10: It is not possible to re-include a file if a parent directory of that file is excluded [1.49ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > we did not know whether the rule is a dir first [1.54ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > Put a backslash ("\") in front of the first "!" for patterns that begin with a literal "!" [1.76ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > Otherwise, Git treats the pattern as a shell glob suitable for consumption by fnmatch(3) with the FNM_PATHNAME flag [2.14ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > wildcards in the pattern will not match a / in the pathname. [2.05ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > A leading "**" followed by a slash means match in all directories [2.18ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > "**/foo/bar" matches file or directory "bar" anywhere that is directly under directory "foo" [1.54ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > A trailing "/**" matches everything inside [1.65ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > A slash followed by two consecutive asterisks then a slash matches zero or more directories [2.24ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > add a file content [1.63ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > should excape metacharacters of regular expressions [1.86ms]
+1065 | 			for (const p of allPaths) {
+1066 | 				const expectedIgnored = tc.paths[p] === 1
+1067 | 				const match = scanResult.paths.get(p)
+1068 | 				const isIgnored = match ? match.ignored : false
+1069 |
+1070 | 				expect(isIgnored).toBe(expectedIgnored)
+                             ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/node-ignore.test.ts:1070:23)
+(fail) node-ignore compatibility tests > file ended with "*" [1.56ms]
+
+src/test-wildmatch/git-wildmatch.test.ts:
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 2: text="" pattern="" [0.62ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 12: text="foobar" pattern="foo\*bar" [0.55ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 15: text="ten" pattern="**[!te]" [0.77ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 16: text="ten" pattern="**[!ten]" [0.89ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 18: text="ten" pattern="t[!a-g]n" [0.56ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 19: text="ton" pattern="t[!a-g]n" [0.64ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 27: text="foo/baz/bar" pattern="foo*bar" [0.69ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 28: text="foo/baz/bar" pattern="foo**bar" [0.63ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 31: text="foo/baz/bar" pattern="foo/**/**/bar" [0.64ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 34: text="foo/bar" pattern="foo/**/bar" [0.60ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 35: text="foo/bar" pattern="foo/**/**/bar" [0.59ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 36: text="foo/bar" pattern="foo?bar" [0.54ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 38: text="foo/bar" pattern="foo[^a-z]bar" [0.54ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 39: text="foo/bar" pattern="f[^eiu][^eiu][^eiu][^eiu][^eiu]r" [0.57ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 41: text="foo" pattern="**/foo" [0.50ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 58: text="a" pattern="[!]-]" [0.53ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 66: text="[ab]" pattern="[[::]ab]" [0.62ms]
+185 |     return {
+186 |         code: errorCode,
+187 |         message: formatError(errorCode, func, path, path2),
+188 |         path,
+189 |         toError() {
+190 |             const error = new Error(this.message);
+                                    ^
+ENOTDIR: not a directory, open '/workspace/.gitignore'
+ path: "/workspace/.gitignore",
+ code: "ENOTDIR"
+
+      at toError (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/util.js:190:31)
+      at getResolvedLinkOrThrow (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:534:26)
+      at openFile (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:717:43)
+      at <anonymous> (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:56:31)
+      at <anonymous> (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:67:27)
+      at fromJSON (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:643:22)
+      at fromNestedJSON (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:651:14)
+      at fromNestedJSON (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:34:13)
+      at <anonymous> (/app/.bun/install/cache/links/@jsonjoy.com+fs-node@4.64.0+2bdbff6ebab26a9c-1795ebe349269327/node_modules/@jsonjoy.com/fs-node/lib/volume.js:1186:78)
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:341:23)
+(fail) git wildmatch compatibility tests > pathmatch case 79: text="." pattern="[[:digit:][:upper:][:space:]]" [0.29ms]
+185 |     return {
+186 |         code: errorCode,
+187 |         message: formatError(errorCode, func, path, path2),
+188 |         path,
+189 |         toError() {
+190 |             const error = new Error(this.message);
+                                    ^
+ENOTDIR: not a directory, open '/workspace/.gitignore'
+ path: "/workspace/.gitignore",
+ code: "ENOTDIR"
+
+      at toError (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/util.js:190:31)
+      at getResolvedLinkOrThrow (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:534:26)
+      at openFile (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:717:43)
+      at <anonymous> (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:56:31)
+      at <anonymous> (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:67:27)
+      at fromJSON (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:643:22)
+      at fromNestedJSON (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:651:14)
+      at fromNestedJSON (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:34:13)
+      at <anonymous> (/app/.bun/install/cache/links/@jsonjoy.com+fs-node@4.64.0+2bdbff6ebab26a9c-1795ebe349269327/node_modules/@jsonjoy.com/fs-node/lib/volume.js:1186:78)
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:341:23)
+(fail) git wildmatch compatibility tests > pathmatch case 80: text="." pattern="[[:digit:][:punct:][:space:]]" [0.20ms]
+185 |     return {
+186 |         code: errorCode,
+187 |         message: formatError(errorCode, func, path, path2),
+188 |         path,
+189 |         toError() {
+190 |             const error = new Error(this.message);
+                                    ^
+ENOTDIR: not a directory, open '/workspace/.gitignore'
+ path: "/workspace/.gitignore",
+ code: "ENOTDIR"
+
+      at toError (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/util.js:190:31)
+      at getResolvedLinkOrThrow (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:534:26)
+      at openFile (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:717:43)
+      at <anonymous> (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:56:31)
+      at <anonymous> (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:67:27)
+      at fromJSON (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:643:22)
+      at fromNestedJSON (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:651:14)
+      at fromNestedJSON (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:34:13)
+      at <anonymous> (/app/.bun/install/cache/links/@jsonjoy.com+fs-node@4.64.0+2bdbff6ebab26a9c-1795ebe349269327/node_modules/@jsonjoy.com/fs-node/lib/volume.js:1186:78)
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:341:23)
+(fail) git wildmatch compatibility tests > pathmatch case 85: text="." pattern="[^[:alnum:][:alpha:][:blank:][:cntrl:][:digit:][:lower:][:space:][:upper:][:xdigit:]]" [0.18ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 90: text="]" pattern="[\\-^]" [0.63ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 112: text="a" pattern="[!------]" [0.60ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 116: text="[" pattern="[!]-a]" [0.74ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 119: text="G" pattern="[A-\\]" [0.88ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 130: text="[" pattern="[[-\]]" [0.90ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 131: text="]" pattern="[[-\]]" [0.87ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 136: text="XXX/adobe/courier/bold/o/normal//12/120/75/75/m/70/iso8859/1" pattern="XXX/*/*/*/*/*/*/12/*/*/*/m/*/*/*" [3.97ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 146: text="ab/cXd/efXg/hi" pattern="*X*i" [1.25ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 154: text="foo/bba/arr" pattern="foo*" [1.11ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 155: text="foo/bba/arr" pattern="foo**" [1.29ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 156: text="foo/bba/arr" pattern="foo/*arr" [1.25ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 157: text="foo/bba/arr" pattern="foo/**arr" [1.14ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 160: text="foo/bar" pattern="foo?bar" [1.09ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 162: text="foo/bar" pattern="foo[^a-z]bar" [1.11ms]
+352 |
+353 | 			const expectedIgnored = tc.match_pathmatch === 1
+354 | 			const match = scanResult.paths.get(tc.text)
+355 | 			const isIgnored = match ? match.ignored : false
+356 |
+357 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:357:22)
+(fail) git wildmatch compatibility tests > pathmatch case 163: text="ab/cXd/efXg/hi" pattern="*Xg*i" [1.15ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 2: text="" pattern="" [1.17ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 12: text="foobar" pattern="foo\*bar" [1.30ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 15: text="ten" pattern="**[!te]" [1.35ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 16: text="ten" pattern="**[!ten]" [1.42ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 18: text="ten" pattern="t[!a-g]n" [1.26ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 19: text="ton" pattern="t[!a-g]n" [1.43ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 27: text="foo/baz/bar" pattern="foo*bar" [1.49ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 28: text="foo/baz/bar" pattern="foo**bar" [1.57ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 31: text="foo/baz/bar" pattern="foo/**/**/bar" [1.57ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 34: text="foo/bar" pattern="foo/**/bar" [1.67ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 35: text="foo/bar" pattern="foo/**/**/bar" [1.36ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 36: text="foo/bar" pattern="foo?bar" [1.36ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 38: text="foo/bar" pattern="foo[^a-z]bar" [1.32ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 39: text="foo/bar" pattern="f[^eiu][^eiu][^eiu][^eiu][^eiu]r" [1.48ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 41: text="foo" pattern="**/foo" [1.26ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 58: text="a" pattern="[!]-]" [1.27ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: false
+Received: true
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 66: text="[ab]" pattern="[[::]ab]" [1.17ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 74: text="a" pattern="[[:digit:][:upper:][:space:]]" [1.38ms]
+185 |     return {
+186 |         code: errorCode,
+187 |         message: formatError(errorCode, func, path, path2),
+188 |         path,
+189 |         toError() {
+190 |             const error = new Error(this.message);
+                                    ^
+ENOTDIR: not a directory, open '/workspace/.gitignore'
+ path: "/workspace/.gitignore",
+ code: "ENOTDIR"
+
+      at toError (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/util.js:190:31)
+      at getResolvedLinkOrThrow (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:534:26)
+      at openFile (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:717:43)
+      at <anonymous> (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:56:31)
+      at <anonymous> (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:67:27)
+      at fromJSON (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:643:22)
+      at fromNestedJSON (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:651:14)
+      at fromNestedJSON (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:34:13)
+      at <anonymous> (/app/.bun/install/cache/links/@jsonjoy.com+fs-node@4.64.0+2bdbff6ebab26a9c-1795ebe349269327/node_modules/@jsonjoy.com/fs-node/lib/volume.js:1186:78)
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:376:23)
+(fail) git wildmatch compatibility tests > ipathmatch case 79: text="." pattern="[[:digit:][:upper:][:space:]]" [0.36ms]
+185 |     return {
+186 |         code: errorCode,
+187 |         message: formatError(errorCode, func, path, path2),
+188 |         path,
+189 |         toError() {
+190 |             const error = new Error(this.message);
+                                    ^
+ENOTDIR: not a directory, open '/workspace/.gitignore'
+ path: "/workspace/.gitignore",
+ code: "ENOTDIR"
+
+      at toError (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/util.js:190:31)
+      at getResolvedLinkOrThrow (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:534:26)
+      at openFile (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:717:43)
+      at <anonymous> (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:56:31)
+      at <anonymous> (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:67:27)
+      at fromJSON (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:643:22)
+      at fromNestedJSON (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:651:14)
+      at fromNestedJSON (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:34:13)
+      at <anonymous> (/app/.bun/install/cache/links/@jsonjoy.com+fs-node@4.64.0+2bdbff6ebab26a9c-1795ebe349269327/node_modules/@jsonjoy.com/fs-node/lib/volume.js:1186:78)
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:376:23)
+(fail) git wildmatch compatibility tests > ipathmatch case 80: text="." pattern="[[:digit:][:punct:][:space:]]" [0.30ms]
+185 |     return {
+186 |         code: errorCode,
+187 |         message: formatError(errorCode, func, path, path2),
+188 |         path,
+189 |         toError() {
+190 |             const error = new Error(this.message);
+                                    ^
+ENOTDIR: not a directory, open '/workspace/.gitignore'
+ path: "/workspace/.gitignore",
+ code: "ENOTDIR"
+
+      at toError (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/util.js:190:31)
+      at getResolvedLinkOrThrow (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:534:26)
+      at openFile (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:717:43)
+      at <anonymous> (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:56:31)
+      at <anonymous> (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:67:27)
+      at fromJSON (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:643:22)
+      at fromNestedJSON (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:651:14)
+      at fromNestedJSON (/app/.bun/install/cache/links/@jsonjoy.com+fs-core@4.64.0+2bdbff6ebab26a9c-ab3a339588293b01/node_modules/@jsonjoy.com/fs-core/lib/Superblock.js:34:13)
+      at <anonymous> (/app/.bun/install/cache/links/@jsonjoy.com+fs-node@4.64.0+2bdbff6ebab26a9c-1795ebe349269327/node_modules/@jsonjoy.com/fs-node/lib/volume.js:1186:78)
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:376:23)
+(fail) git wildmatch compatibility tests > ipathmatch case 85: text="." pattern="[^[:alnum:][:alpha:][:blank:][:cntrl:][:digit:][:lower:][:space:][:upper:][:xdigit:]]" [0.32ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 90: text="]" pattern="[\\-^]" [1.12ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 112: text="a" pattern="[!------]" [1.16ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 116: text="[" pattern="[!]-a]" [1.19ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 119: text="G" pattern="[A-\\]" [1.24ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 130: text="[" pattern="[[-\]]" [1.22ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 131: text="]" pattern="[[-\]]" [1.42ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 136: text="XXX/adobe/courier/bold/o/normal//12/120/75/75/m/70/iso8859/1" pattern="XXX/*/*/*/*/*/*/12/*/*/*/m/*/*/*" [2.61ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 146: text="ab/cXd/efXg/hi" pattern="*X*i" [1.45ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 154: text="foo/bba/arr" pattern="foo*" [1.38ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 155: text="foo/bba/arr" pattern="foo**" [1.38ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 156: text="foo/bba/arr" pattern="foo/*arr" [1.40ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 157: text="foo/bba/arr" pattern="foo/**arr" [1.43ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 160: text="foo/bar" pattern="foo?bar" [1.24ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 162: text="foo/bar" pattern="foo[^a-z]bar" [1.24ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 163: text="ab/cXd/efXg/hi" pattern="*Xg*i" [1.46ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 164: text="a" pattern="[A-Z]" [1.09ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 166: text="A" pattern="[a-z]" [1.19ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 168: text="a" pattern="[[:upper:]]" [1.19ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 170: text="A" pattern="[[:lower:]]" [1.21ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 172: text="A" pattern="[B-Za]" [1.20ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 174: text="A" pattern="[B-a]" [1.10ms]
+387 |
+388 | 			const expectedIgnored = tc.match_pathmatchi === 1
+389 | 			const match = scanResult.paths.get(tc.text)
+390 | 			const isIgnored = match ? match.ignored : false
+391 |
+392 | 			expect(isIgnored).toBe(expectedIgnored)
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/app/src/test-wildmatch/git-wildmatch.test.ts:392:22)
+(fail) git wildmatch compatibility tests > ipathmatch case 176: text="z" pattern="[Z-y]" [1.23ms]
+
+ 330 pass
+ 108 fail
+ 583 expect() calls
+Ran 438 tests across 2 files. [706.00ms]
