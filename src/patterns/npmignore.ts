@@ -1,7 +1,8 @@
 import type { ExtractorFn } from "./extractor.js"
-import type { PatternCompileOptions } from "./patternCompile.js"
+import type { PatternCompileOptions } from "./patternList.js"
 import type { GlobRule } from "./rule.js"
 
+import { ruleCompile } from "./resolveSources.js"
 import { resolveNegatable, type Source } from "./source.js"
 
 /**
@@ -61,10 +62,21 @@ export function extractNpmignoreRules(
 		if (lineStart < lineEnd && content[lineStart] !== 35) {
 			// '#' is 35
 			const pattern = new TextDecoder().decode(content.subarray(lineStart, lineEnd))
-			rule = resolveNegatable(pattern, false, options, rule)
-			source.rules.unshift(rule)
+			const nextRule = resolveNegatable(pattern, false, options, rule)
+			if (nextRule !== rule) {
+				rule = nextRule
+				source.rules.unshift(rule)
+			}
 		}
 
 		start = end + 1
+	}
+
+	const rlen = source.rules.length
+	for (let i = 0; i < rlen; i++) {
+		const r = source.rules[i]!
+		if ("list" in r && r.compiled === null) {
+			ruleCompile(r, options)
+		}
 	}
 }

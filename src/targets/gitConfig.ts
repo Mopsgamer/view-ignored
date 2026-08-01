@@ -1,6 +1,6 @@
 import type { FsAdapter } from "../types.js"
 
-import { patternCompile } from "../patterns/index.js"
+import { patternListCompile } from "../patterns/index.js"
 import { dirname, join, strip } from "../unixify.js"
 
 const enum MatchMode {
@@ -166,7 +166,7 @@ function testPattern(pat: string, str: string, mode: MatchMode = MatchMode.norma
 	let c = patternCacheMap.get(key)
 	if (!c) {
 		// oxlint-disable-next-line typescript/no-explicit-any
-		c = (patternCompile as any)(pat, undefined, { nocase: !!(mode & MatchMode.unsensitive) })
+		c = patternListCompile({ list: [pat], nocase: !!(mode & MatchMode.unsensitive) })
 		patternCacheMap.set(key, c)
 	}
 	return c.re.test(

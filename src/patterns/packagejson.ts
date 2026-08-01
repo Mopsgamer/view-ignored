@@ -2,6 +2,7 @@ import type { Extractor, ExtractorFn } from "./extractor.js"
 import type { GlobRule } from "./rule.js"
 
 import { npmManifestParse } from "../targets/npmManifest.js"
+import { ruleCompile } from "./resolveSources.js"
 import { resolveNegatable, type Source } from "./source.js"
 
 /**
@@ -50,6 +51,18 @@ export function extractPackageJsonRules(source: Source, content: Uint8Array): vo
 
 	const options = { nocase: true }
 	for (const pattern of dist.files) {
-		source.rules.unshift((rule = resolveNegatable(pattern, true, options, rule)))
+		const nextRule = resolveNegatable(pattern, true, options, rule)
+		if (nextRule !== rule) {
+			rule = nextRule
+			source.rules.unshift(rule)
+		}
+	}
+
+	const rlen = source.rules.length
+	for (let i = 0; i < rlen; i++) {
+		const r = source.rules[i]!
+		if ("list" in r && r.compiled === null) {
+			ruleCompile(r, options)
+		}
 	}
 }

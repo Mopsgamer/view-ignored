@@ -1,6 +1,6 @@
 import type { GlobRule, Rule, RuleMatch } from "./rule.js"
 
-import { patternCompile, type PatternCompileOptions } from "./patternCompile.js"
+import { type PatternCompileOptions } from "./patternList.js"
 
 /**
  * Represents a source of external patterns.
@@ -66,27 +66,20 @@ export type Source = {
 export function resolveNegatable(
 	pattern: string,
 	invert: boolean,
-	options?: PatternCompileOptions,
+	_options?: PatternCompileOptions,
 	reuse?: GlobRule,
 ): GlobRule {
-	// if !x -> includes + x.slice(1)
-	// if x -> excludes + x
-	// if invert && !x -> excludes + x.slice(1)
-	// if invert && x -> includes + x
 	const negated = pattern.charCodeAt(0) === 33
 	const excludes = negated === invert
 	if (negated) pattern = pattern.slice(1)
 	const iff = reuse && excludes === reuse.excludes
-	const rule: Rule = iff
+	const rule: GlobRule = iff
 		? reuse
 		: {
-				compiled: [patternCompile(pattern, options)],
+				compiled: null,
 				excludes,
-				list: [pattern],
+				list: [],
 			}
-	if (iff) {
-		rule.compiled!.push(patternCompile(pattern, options))
-		rule.list.push(pattern)
-	}
+	rule.list.push(pattern)
 	return rule
 }

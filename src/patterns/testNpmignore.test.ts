@@ -50,12 +50,10 @@ describe("npmignore parsing compliance", () => {
 		].join("\n")
 
 		const rules = parse(content)
-		expect(rules).toHaveLength(4)
-		expect(rules[3]?.excludes).toBeTrue()
-		expect(rules[3]?.list).toContain("a")
-		expect(rules[2]?.excludes).toBeTrue()
-		expect(rules[2]?.list).toContain("b")
+		expect(rules).toHaveLength(2)
 		expect(rules[1]?.excludes).toBeTrue()
+		expect(rules[1]?.list).toContain("a")
+		expect(rules[1]?.list).toContain("b")
 		expect(rules[1]?.list).toContain("c\\")
 		expect(rules[0]?.excludes).toBeFalse()
 		expect(rules[0]?.list).toContain("e")
@@ -63,9 +61,9 @@ describe("npmignore parsing compliance", () => {
 
 	test("CRLF handling", () => {
 		const rules = parse("foo\r\nbar\r")
+		expect(rules).toHaveLength(1)
 		expect(rules[0]?.excludes).toBeTrue()
 		expect(rules[0]?.list).toContain("foo")
-		expect(rules[1]?.excludes).toBeTrue()
-		expect(rules[1]?.list).toContain("bar")
+		expect(rules[0]?.list).toContain("bar")
 	})
 })

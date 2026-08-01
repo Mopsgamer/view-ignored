@@ -1,6 +1,6 @@
 import type { Dirent } from "node:fs"
 
-import type { PatternCompileOptions } from "./patternCompile.js"
+import type { PatternCompileOptions } from "./patternList.js"
 import type { Resource } from "./resource.js"
 import type { GlobRule } from "./rule.js"
 import type { Source } from "./source.js"

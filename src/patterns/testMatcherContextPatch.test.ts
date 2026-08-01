@@ -10,7 +10,7 @@ import { makeNPM } from "../targets/npm.js"
 import { createAdapter } from "../testScan.test.js"
 import { unixify } from "../unixify.js"
 import { matcherContextAddPath, matcherContextRemovePath } from "./matcherContextPatch.js"
-import { patternCompile } from "./patternCompile.js"
+import { patternListCompile } from "./patternList.js"
 import { RuleMatchKind, type RuleMatch } from "./rule.js"
 
 const fsJson = {
@@ -84,12 +84,12 @@ const sourcePackageJson: Source = {
 	path: "package.json",
 	rules: [
 		{
-			compiled: [patternCompile("/out", { list: sourcePackageJsonExclude })],
+			compiled: patternListCompile({ list: sourcePackageJsonExclude }),
 			excludes: false,
 			list: sourcePackageJsonExclude,
 		},
 		{
-			compiled: [],
+			compiled: null,
 			excludes: true,
 			list: [],
 		},
@@ -102,18 +102,12 @@ const sourceGitignore: Source = {
 	path: ".gitignore",
 	rules: [
 		{
-			compiled: [],
+			compiled: null,
 			excludes: false,
 			list: [],
 		},
 		{
-			compiled: [
-				patternCompile("node_modules", { list: sourceGitignoreExclude }),
-				patternCompile("out", { list: sourceGitignoreExclude }),
-				patternCompile("dist", { list: sourceGitignoreExclude }),
-				patternCompile("*.tgz", { list: sourceGitignoreExclude }),
-				patternCompile("*.cpuprofile", { list: sourceGitignoreExclude }),
-			],
+			compiled: patternListCompile({ list: sourceGitignoreExclude }),
 			excludes: true,
 			list: sourceGitignoreExclude,
 		},

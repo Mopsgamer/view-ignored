@@ -1,7 +1,8 @@
 import type { ExtractorFn } from "./extractor.js"
-import type { PatternCompileOptions } from "./patternCompile.js"
+import type { PatternCompileOptions } from "./patternList.js"
 import type { GlobRule } from "./rule.js"
 
+import { ruleCompile } from "./resolveSources.js"
 import { resolveNegatable, type Source } from "./source.js"
 
 /**
@@ -49,7 +50,7 @@ function isCommentLineChar(content: Uint8Array, start: number, i: number): boole
 }
 
 function processGitignoreLine(
-	source: Source,
+	_source: Source,
 	content: Uint8Array,
 	start: number,
 	lineEnd: number,
@@ -132,7 +133,6 @@ function processGitignoreLine(
 
 	if (resolvedLine.length > 0) {
 		rule = resolveNegatable(resolvedLine, false, options, rule)
-		source.rules.unshift(rule)
 	}
 
 	return rule
@@ -158,9 +158,21 @@ export function extractGitignoreRules(
 		const lineEnd = end > start && content[end - 1] === 13 ? end - 1 : end
 
 		if (start < lineEnd) {
-			rule = processGitignoreLine(source, content, start, lineEnd, options, rule)
+			const nextRule = processGitignoreLine(source, content, start, lineEnd, options, rule)
+			if (nextRule && nextRule !== rule) {
+				rule = nextRule
+				source.rules.unshift(rule)
+			}
 		}
 
 		start = end + 1
+	}
+
+	const rlen = source.rules.length
+	for (let i = 0; i < rlen; i++) {
+		const r = source.rules[i]!
+		if ("list" in r && r.compiled === null) {
+			ruleCompile(r, options)
+		}
 	}
 }
