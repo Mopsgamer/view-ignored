@@ -113,10 +113,36 @@ export function makeNPM(): Target {
 
 	let bundledDeps: string[] = []
 
-	const bundledDepsRule = (options: IgnoresOptions) => {
-		if (options.entry !== "node_modules") return null
+	const getPathDepth = (p: string, within: string): number => {
+		let rel = p
+		if (within !== "" && within !== ".") {
+			const prefix = within + "/"
+			if (p.startsWith(prefix)) {
+				rel = p.slice(prefix.length)
+			}
+		}
+		let slashCount = 0
+		const len = rel.length
+		for (let i = 0; i < len; i++) {
+			if (rel.charCodeAt(i) === 47) slashCount++
+		}
+		if (len > 0 && rel.charCodeAt(len - 1) === 47) {
+			slashCount--
+		}
+		return slashCount
+	}
 
-		if (bundledDeps.length === 0) {
+	const bundledDepsRule = (options: IgnoresOptions) => {
+		const entry = options.entry
+		if (entry !== "node_modules" && !entry.endsWith("/node_modules")) return null
+
+		const maxDepth = options.depth ?? Infinity
+		const within = options.within ?? "."
+
+		const pathDepth = getPathDepth(entry, within)
+		const remainingDepth = maxDepth - pathDepth - 2
+
+		if (remainingDepth < 0 || bundledDeps.length === 0) {
 			return {
 				external: new Map(),
 				failed: [],
@@ -133,7 +159,7 @@ export function makeNPM(): Target {
 		}
 
 		const promises = bundledDeps.map((dep) => {
-			const depPath = "node_modules/" + dep
+			const depPath = entry + "/" + dep
 			const absDepPath = join(options.cwd, depPath)
 			return new Promise<void>((resolve) => {
 				options.fs.stat(absDepPath, (_, stats?: Stats) => {
@@ -143,6 +169,7 @@ export function makeNPM(): Target {
 					}
 					scan({
 						cwd: absDepPath,
+						depth: remainingDepth,
 						dirs: false,
 						fs: options.fs,
 						target: makeNPM(),
