@@ -49,9 +49,7 @@ export type PatternList = string[]
  *
  * @since 0.6.0
  */
-export function patternListCompile(
-	options: PatternCompileOptions & { list: PatternList },
-): {
+export function patternListCompile(options: PatternCompileOptions & { list: PatternList }): {
 	re: { test(string: string, lowerPath?: string): boolean }
 	pattern: string
 	list: PatternList
