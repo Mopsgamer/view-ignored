@@ -23,19 +23,6 @@ export type PatternCompileOptions = {
 }
 
 /**
- * Safely calls RegExp.test.
- *
- * @since 0.6.0
- */
-export function patternCacheTest(
-	cache: { re: { test(string: string, lowerPath?: string): boolean } },
-	path: string,
-	lowerPath?: string,
-): boolean {
-	return cache.re.test(path, lowerPath)
-}
-
-/**
  * Represents a list of positive glob patterns.
  *
  * @since 0.6.0

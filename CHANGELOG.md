@@ -8,6 +8,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+- Drop `PatternCache` and `patternCompile`. Use `patternList`.
+- Fix `skipInternal: true` with `inverted: true` should skip folders.
 - Replace `Buffer` with `Uint8Array`.
 - Add browser output test.
 - Rename `Rule.pattern`, `PatternCache.patternContext` to `list`.

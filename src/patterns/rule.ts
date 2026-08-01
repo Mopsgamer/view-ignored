@@ -4,7 +4,7 @@ import type { PatternFinderOptions } from "./extractor.js"
 import type { IgnoresOptions } from "./ignores.js"
 import type { Source } from "./source.js"
 
-import { patternCacheTest, type PatternList } from "./patternList.js"
+import { type PatternList } from "./patternList.js"
 
 /**
  * @since 0.12.0
@@ -299,7 +299,7 @@ function cacheTest(
 	if (!rs) return null
 	try {
 		const n = lowerPath || path
-		if (!patternCacheTest(rs, path, lowerPath)) {
+		if (!rs.re.test(path, lowerPath)) {
 			return null
 		}
 		const items = rs.compiledItems
