@@ -1,4 +1,8 @@
+import type { Stats } from "node:fs"
+
 import type { Target } from "./target.js"
+
+import glob from "picomatch"
 
 import {
 	type Extractor,
@@ -8,7 +12,11 @@ import {
 	packageJsonExtractor,
 	type InternalRules,
 	type GlobRule,
+	type IgnoresOptions,
+	type MatcherContext,
 } from "../patterns/index.js"
+import { scan } from "../scan.js"
+import { join } from "../unixify.js"
 import {
 	npmManifestParse,
 	type PackageJson,
@@ -106,9 +114,94 @@ export function makeNPM(): Target {
 		{ nocase: true },
 	)
 
+	let bundledDeps: string[] = []
+
+	const bundledDepsRule = (options: IgnoresOptions) => {
+		const entry = options.entry
+		if (entry !== "node_modules" && !entry.endsWith("/node_modules")) return null
+
+		const remainingDepth = (options.depth ?? Infinity) - 2
+
+		if (remainingDepth < 0 || bundledDeps.length === 0) {
+			return {
+				external: new Map(),
+				failed: [],
+				paths: new Map(),
+				total: new Map(),
+			}
+		}
+
+		const mergedCtx = {
+			external: new Map(),
+			failed: [],
+			paths: new Map(),
+			total: new Map(),
+		}
+
+		const promises = bundledDeps.map((dep) => {
+			const depPath = entry + "/" + dep
+			const absDepPath = join(options.cwd, depPath)
+			return new Promise<void>((resolve) => {
+				options.fs.stat(absDepPath, (_, stats?: Stats) => {
+					if (!stats || !stats.isDirectory()) {
+						resolve()
+						return
+					}
+					scan({
+						cwd: absDepPath,
+						depth: remainingDepth,
+						dirs: false,
+						fs: options.fs,
+						target: makeNPM(),
+					}).then(
+						(subCtx) => {
+							if (subCtx.paths) {
+								for (const [p, m] of subCtx.paths) {
+									mergedCtx.paths.set(depPath + "/" + p, m)
+								}
+							}
+							resolve()
+						},
+						() => resolve(),
+					)
+				})
+			})
+		})
+
+		return Promise.all(promises).then(() => mergedCtx)
+	}
+
+	let workspaceRules: RegExp[] = []
+
+	const subPackageRule = (options: IgnoresOptions) => {
+		const entry = options.entry
+		if (!entry || entry === "." || !options.dirent.isDirectory()) return null
+
+		const isWorkspace = workspaceRules.some((re) => re.test(entry))
+		if (!isWorkspace) return null
+
+		const pkgPath = join(options.cwd, entry + "/package.json")
+		return new Promise<MatcherContext | null>((resolve) => {
+			options.fs.stat(pkgPath, (err, stats?: Stats) => {
+				if (!err && stats && stats.isFile()) {
+					resolve({
+						external: new Map(),
+						failed: [],
+						paths: new Map(),
+						total: new Map(),
+					})
+				} else {
+					resolve(null)
+				}
+			})
+		})
+	}
+
 	const internal: InternalRules = {
 		after: [cachedNpmAfterExcludesRule],
 		before: [
+			bundledDepsRule,
+			subPackageRule,
 			symlinkRule,
 			makeDirectPathsRule(directPathsInclude),
 			cachedNpmBeforeExcludesRule,
@@ -140,7 +233,36 @@ export function makeNPM(): Target {
 
 				extractManifestIncludes(dist, directPathsInclude)
 
-				// TODO: NPM should include bundled deps
+				const bundleDepsField = dist.bundleDependencies ?? dist.bundledDependencies
+				if (bundleDepsField === true) {
+					const depsKeys = dist.dependencies ? Object.keys(dist.dependencies) : []
+					const optDepsKeys = dist.optionalDependencies
+						? Object.keys(dist.optionalDependencies)
+						: []
+					bundledDeps = [...depsKeys, ...optDepsKeys]
+				}
+				if (Array.isArray(bundleDepsField)) {
+					bundledDeps = bundleDepsField.filter(
+						(dep) =>
+							(dist.dependencies && Object.hasOwn(dist.dependencies, dep)) ||
+							(dist.optionalDependencies && Object.hasOwn(dist.optionalDependencies, dep)),
+					)
+				}
+
+				let workspacePatterns: string[] = []
+				if (dist.workspaces) {
+					if (Array.isArray(dist.workspaces)) {
+						workspacePatterns = dist.workspaces
+					} else if (dist.workspaces.packages && Array.isArray(dist.workspaces.packages)) {
+						workspacePatterns = dist.workspaces.packages
+					}
+				}
+				workspaceRules = workspacePatterns.map((pattern) => {
+					let cleaned = pattern
+					if (cleaned.startsWith("./")) cleaned = cleaned.slice(2)
+					if (cleaned.endsWith("/")) cleaned = cleaned.slice(0, -1)
+					return glob.makeRe(cleaned, { nocase: true })
+				})
 
 				cb(null)
 			})

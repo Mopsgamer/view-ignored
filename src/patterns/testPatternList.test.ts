@@ -1,6 +1,10 @@
 import { describe, test, expect } from "bun:test"
 
-import { patternListCompile, patternCacheTest } from "./patternList.js"
+import { patternListCompile } from "./patternList.js"
+
+function patternCacheTest(compiled: { re: { test(str: string): boolean } }, str: string): boolean {
+	return compiled.re.test(str)
+}
 
 describe(".gitignore patternListCompile", () => {
 	test("stringCompile .git .git/message", () => {

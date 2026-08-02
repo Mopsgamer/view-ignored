@@ -40,6 +40,14 @@ export interface IgnoresOptions extends InitState {
 	 * @since 0.12.0
 	 */
 	dirent: Dirent
+	/**
+	 * Max depth of the parent scan.
+	 */
+	depth?: number
+	/**
+	 * within option of the parent scan.
+	 */
+	within?: string
 }
 
 /**

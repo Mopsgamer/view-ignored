@@ -2,6 +2,7 @@ import type { Dirent } from "node:fs"
 
 import type { PatternFinderOptions } from "./extractor.js"
 import type { IgnoresOptions } from "./ignores.js"
+import type { MatcherContext } from "./matcherContext.js"
 import type { Source } from "./source.js"
 
 import { type PatternList } from "./patternList.js"
@@ -119,7 +120,24 @@ export type CustomRule = {
 	match: (options: IgnoresOptions) => string | Error | null
 }
 
-export type Rule = GlobRule | CustomRule
+/**
+ * Represents a rule that allows skipping directory scanning.
+ * It is a functional rule that can return a `MatcherContext` or a `Promise` resolving to one,
+ * or `null` if the rule does not apply.
+ *
+ * @since 0.12.0
+ */
+export type SkipRule = (
+	options: IgnoresOptions,
+) => MatcherContext | Promise<MatcherContext | null> | null
+
+/**
+ * Represents any supported target rule, which can be a glob-based rule,
+ * a custom matching rule, or a directory skipping rule.
+ *
+ * @since 0.6.0
+ */
+export type Rule = GlobRule | CustomRule | SkipRule
 
 /**
  * The kind of a pattern match.
@@ -365,6 +383,7 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 
 		for (let i = 0; i < rlen; i++) {
 			const rule = rules[i]!
+			if (typeof rule === "function") continue
 			const res =
 				"match" in rule ? rule.match(ignoreOptions) : cacheTest(rule.compiled!, entry, lowerPath)
 			if (res === null) continue
@@ -406,6 +425,7 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 function ruleTestInternalSync(rules: Rule[], options: IgnoresOptions): RuleMatch | void {
 	for (let i = 0, len = rules.length; i < len; i++) {
 		const rule = rules[i]!
+		if (typeof rule === "function") continue
 		const res =
 			"match" in rule
 				? rule.match(options)

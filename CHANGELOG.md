@@ -8,6 +8,7 @@ and this project adheres to
 
 ## [Unreleased]
 
+- Add `SkipRule` to support skipping directory scanning and merging a custom `MatcherContext` returned by the rule.
 - Drop `PatternCache` and `patternCompile`. Use `patternList`.
 - Fix `skipInternal: true` with `inverted: true` should skip folders.
 - Replace `Buffer` with `Uint8Array`.
