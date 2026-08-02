@@ -54,7 +54,17 @@ export function walkIncludes(
 	cb: (err: Error | null, result: WalkResult) => void,
 ): void {
 	const { entry, scanOptions, relPath: path, lowerEntry, parentPath, resource, depth } = options
-	const { target, depth: maxDepth, invert, skipDepth, skipInternal, fs, cwd, signal } = scanOptions
+	const {
+		target,
+		depth: maxDepth,
+		invert,
+		skipDepth,
+		skipInternal,
+		fs,
+		cwd,
+		signal,
+		within,
+	} = scanOptions
 
 	const isDir = entry.isDirectory()
 
@@ -62,7 +72,7 @@ export function walkIncludes(
 		target.ignores(
 			{
 				cwd,
-				depth: maxDepth,
+				depth: maxDepth - depth,
 				dirent: entry,
 				entry: path,
 				fs,
@@ -71,7 +81,7 @@ export function walkIncludes(
 				resource,
 				signal,
 				target,
-				within: skipInternal ? undefined : scanOptions.within,
+				within: skipInternal ? undefined : within,
 			},
 			(err, match) => {
 				// oxlint-disable-next-line typescript/no-explicit-any
@@ -143,7 +153,7 @@ export function walkIncludes(
 
 		const ignoreOptions = {
 			cwd,
-			depth: maxDepth,
+			depth: maxDepth - depth,
 			dirent: entry,
 			entry: path,
 			fs,
@@ -152,7 +162,7 @@ export function walkIncludes(
 			resource,
 			signal,
 			target,
-			within: scanOptions.within,
+			within,
 		}
 		const res = rule(ignoreOptions)
 		if (res === null) continue
