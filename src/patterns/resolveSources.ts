@@ -1,14 +1,13 @@
 import type { Dirent } from "node:fs"
 
 import type { FsAdapter } from "../types.js"
-import type { Extractor, ExtractorFn } from "./extractor.js"
+import type { Extractor, ExtractorFn, PatternFinderOptions } from "./extractor.js"
 import type { PatternCompileOptions } from "./patternList.js"
 import type { Resource } from "./resource.js"
 import type { GlobRule } from "./rule.js"
 import type { Source } from "./source.js"
 
 import { dirname, join } from "../unixify.js"
-import { type PatternFinderOptions } from "./extractor.js"
 import { patternListCompile } from "./patternList.js"
 
 // Cache for resolved extended roots per cwd and extendsRoot field to avoid redundant filesystem lookups
@@ -231,6 +230,10 @@ function launchDirectoryExtractors(
 ): void {
 	const elen = extractors.length
 	const results = new Array(elen)
+	if (elen === 0) {
+		return cb(null, results)
+	}
+
 	let active = elen
 	let hasError = false
 
@@ -256,6 +259,7 @@ function launchDirectoryExtractors(
 				if (hasError) return
 				if (err) {
 					hasError = true
+					// oxlint-disable-next-line typescript/no-explicit-any
 					return cb(err, null as any)
 				}
 				results[ei] = res
