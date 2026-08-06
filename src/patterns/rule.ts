@@ -3,6 +3,7 @@ import type { Dirent } from "node:fs"
 import type { PatternFinderOptions } from "./extractor.js"
 import type { IgnoresOptions } from "./ignores.js"
 import type { MatcherContext } from "./matcherContext.js"
+import type { Resource } from "./resource.js"
 import type { Source } from "./source.js"
 
 import { type PatternList } from "./patternList.js"
@@ -377,8 +378,15 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 		if (internalMatch) return internalMatch
 	}
 
-	if (src !== null) {
-		const rules = src.rules
+	let currentSrc: Resource = src
+	const visited = new Set<Resource>()
+	while (currentSrc !== null && !("error" in currentSrc)) {
+		if (visited.has(currentSrc)) {
+			console.error("CYCLE DETECTED in currentSrc.parent chain! currentSrc path:", currentSrc.path)
+			break
+		}
+		visited.add(currentSrc)
+		const rules = currentSrc.rules
 		const rlen = rules.length
 
 		for (let i = 0; i < rlen; i++) {
@@ -393,7 +401,7 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 					ignored: false,
 					kind: RuleMatchKind.invalidExternal,
 					pattern: "",
-					source: src,
+					source: currentSrc,
 				}
 			}
 
@@ -401,9 +409,11 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 				ignored: rule.excludes,
 				kind: RuleMatchKind.external,
 				pattern: typeof res === "string" ? res : res.pattern,
-				source: src,
+				source: currentSrc,
 			}
 		}
+
+		currentSrc = currentSrc.parent ?? null
 	}
 
 	if (afterInternal.length > 0) {

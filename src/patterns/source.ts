@@ -1,3 +1,4 @@
+import type { Resource } from "./resource.js"
 import type { GlobRule, Rule, RuleMatch } from "./rule.js"
 
 import { type PatternCompileOptions } from "./patternList.js"
@@ -8,6 +9,12 @@ import { type PatternCompileOptions } from "./patternList.js"
  * @since 0.6.0
  */
 export type Source = {
+	/**
+	 * Parent source for hierarchical ignore file rules.
+	 *
+	 * @since 0.12.0
+	 */
+	parent?: Resource
 	/**
 	 * @internal
 	 *
