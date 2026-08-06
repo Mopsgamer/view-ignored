@@ -10,6 +10,13 @@ import type { Rule, InternalRules } from "../patterns/rule.js"
  */
 export interface Target {
 	/**
+	 * Specifies a package.json field name. If defined, the search for ignore files
+	 * can extend upwards above the cwd until a package.json containing this field is found.
+	 *
+	 * @since 0.12.0
+	 */
+	extendsRoot?: string
+	/**
 	 * Should be compiled. If an array, it will be treated *high*.
 	 *
 	 * @since 0.10.0

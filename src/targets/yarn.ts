@@ -86,6 +86,7 @@ export function makeYarn(): Target {
 	]
 
 	return <Target>{
+		extendsRoot: "workspaces",
 		extractors,
 		ignores: ruleTest,
 		init({ fs, cwd }, cb) {
