@@ -49,6 +49,8 @@ export function makeBun(): Target {
 			"pnpm-lock.yaml",
 			"bun.lockb",
 			"bun.lock", // npm includes it
+			"/.npm-extension.mjs",
+			"/.npm-extension.cjs",
 
 			// The general list of default ignored file names and glob patterns used by Bun when packing.
 			// https://github.com/oven-sh/bun/blob/bbe3f6a2629adf808adbd0da199ae8c94a3c0d47/src/runtime/cli/pack_command.rs#L363

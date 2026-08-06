@@ -77,6 +77,8 @@ export function makeYarnClassic(): Target {
 				".npmignore",
 				".gitignore",
 				".DS_Store",
+				"/.npm-extension.mjs",
+				"/.npm-extension.cjs",
 			],
 		},
 		{ nocase: true },

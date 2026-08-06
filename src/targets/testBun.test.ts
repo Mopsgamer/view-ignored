@@ -27,6 +27,24 @@ describe("Bun", () => {
 		)
 	})
 
+	test("excludes .npm-extension files", async (done) => {
+		await testScan(
+			done,
+			{
+				".npm-extension.cjs": "module.exports = {}\n",
+				".npm-extension.mjs": "export {}\n",
+				lib: { "index.js": "" },
+				"package.json": JSON.stringify({
+					files: ["lib", ".npm-extension.mjs", ".npm-extension.cjs"],
+					name: "bun-test",
+					version: "1.0.0",
+				}),
+			},
+			["lib/index.js", "package.json"],
+			{ dirs: false, target: makeBun() },
+		)
+	})
+
 	test("throws an error if package.json is invalid", async (done) => {
 		expect(() =>
 			testScan(done, { "package.json": "{ invalid json }" }, () => {}, { target: makeBun() }),

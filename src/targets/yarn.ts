@@ -56,6 +56,8 @@ export function makeYarn(): Target {
 
 			".#*",
 			".DS_Store",
+			"/.npm-extension.mjs",
+			"/.npm-extension.cjs",
 		],
 	})
 

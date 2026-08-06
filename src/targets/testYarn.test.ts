@@ -235,6 +235,25 @@ describe("Yarn", () => {
 			{ target: makeYarn() },
 		)
 	})
+
+	test("excludes .npm-extension files", async (done) => {
+		await testScan(
+			done,
+			{
+				".npm-extension.cjs": "module.exports = {}\n",
+				".npm-extension.mjs": "export {}\n",
+				lib: { "index.js": "" },
+				"package.json": JSON.stringify({
+					files: ["lib", ".npm-extension.mjs", ".npm-extension.cjs"],
+					name: "yarn-test",
+					version: "1.0.0",
+				}),
+			},
+			["lib/index.js", "package.json"],
+			{ dirs: false, target: makeYarn() },
+		)
+	})
+
 	test("ignores node_modules", async (done) => {
 		await testScan(
 			done,
