@@ -7,9 +7,9 @@
 ![node-v22-or-later](https://img.shields.io/badge/node->=22-salad?repo=Mopsgamer/view-ignored.svg)
 ![ts-v5-or-later](https://img.shields.io/badge/ts->=5.7-salad?repo=Mopsgamer/view-ignored)
 [![speed-fast](https://img.shields.io/badge/speed-fast-salad?repo=Mopsgamer/view-ignored.svg)](https://github.com/Mopsgamer/view-ignored/tree/main/benchmarks)
-[![npm-packlist-tests](https://img.shields.io/badge/npm--packlist-44%2F68-blue)](https://github.com/Mopsgamer/view-ignored/tree/main/src/test-npm-packlist/)
-[![wildmatch-tests](https://img.shields.io/badge/wildmatch-276%2F346-blue)](https://github.com/Mopsgamer/view-ignored/tree/main/src/test-wildmatch/)
-[![ignore-tests](https://img.shields.io/badge/ignore-54%2F84-blue)](https://github.com/Mopsgamer/view-ignored/tree/main/src/test-wildmatch/)
+[![npm-packlist-tests](https://img.shields.io/badge/npm--packlist-47%2F68-blue)](https://github.com/Mopsgamer/view-ignored/tree/main/src/test-npm-packlist/)
+[![wildmatch-tests](https://img.shields.io/badge/wildmatch-280%2F346-blue)](https://github.com/Mopsgamer/view-ignored/tree/main/src/test-wildmatch/)
+[![ignore-tests](https://img.shields.io/badge/ignore-55%2F84-blue)](https://github.com/Mopsgamer/view-ignored/tree/main/src/test-wildmatch/)
 
 Retrieve a list of files ignored or included by Git, NPM, Yarn, JSR, Deno, Bun, VS Code extension CLI, and other tools.
 
