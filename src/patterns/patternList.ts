@@ -85,13 +85,17 @@ export function patternListCompile(options: PatternCompileOptions & { list: Patt
 
 		if (isGlob) {
 			const isMatchRe = glob.makeRe(lowerCleaned, {
+				contains: true,
 				dot: true,
 				matchBase: false,
 				nobrace: true,
 				nocase,
 				nonegate: true,
 			})
-			part = isMatchRe.source.substring(1, isMatchRe.source.length - 1)
+			part = isMatchRe.source
+			if (part.startsWith("^") && part.endsWith("$")) {
+				part = part.slice(1, -1)
+			}
 		} else {
 			part = lowerCleaned.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 		}
