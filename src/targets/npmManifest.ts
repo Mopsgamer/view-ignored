@@ -45,6 +45,7 @@ export interface PackageJson {
 	optionalDependencies?: Record<string, string>
 	bundleDependencies?: boolean | string[]
 	bundledDependencies?: boolean | string[]
+	patchedDependencies?: Record<string, string>
 	workspaces?: string[] | { packages?: string[] }
 }
 
