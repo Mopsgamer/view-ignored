@@ -1,7 +1,6 @@
 import { describe, test, expect } from "bun:test"
 
 import { makeGit } from "./targets/git.js"
-import { makeNPM } from "./targets/npm.js"
 import { testScan, testStream } from "./testScan.test.js"
 
 const dir = {
@@ -57,35 +56,30 @@ describe("Invert logic", () => {
 		)
 	})
 
-	test("should contain full relative path in source.path for subdirectories with package.json", async (done) => {
+	test("should contain full relative path in source.path for subdirectories with local pattern files", async (done) => {
 		await testScan(
 			done,
 			{
-				"package.json": JSON.stringify({
-					name: "root-package",
-					version: "1.0.0",
-				}),
+				".gitignore": "ignored.txt",
 				sub: {
 					a: {
+						".gitignore": "ignored.txt",
+						"ignored.txt": "content",
 						"index.js": "console.log('a')",
-						"package.json": JSON.stringify({
-							files: ["index.js"],
-							name: "a",
-							version: "1.0.0",
-						}),
 					},
 				},
 			},
 			(o) => {
 				const { ctx } = o
 				// oxlint-disable-next-line typescript/no-explicit-any
-				const match = ctx.paths.get("sub/a/index.js") as any
+				const match = ctx.paths.get("sub/a/ignored.txt") as any
 				expect(match).toBeDefined()
 				expect(match?.source).toBeDefined()
-				expect(match?.source?.path).toBe("sub/a/package.json")
+				expect(match?.source?.path).toBe("sub/a/.gitignore")
 			},
 			{
-				target: makeNPM(),
+				invert: true,
+				target: makeGit(),
 			},
 		)
 	})

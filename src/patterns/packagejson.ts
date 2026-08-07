@@ -25,7 +25,7 @@ extractPackageJson satisfies ExtractorFn
 
 export const packageJsonExtractor: Extractor = {
 	extract: extractPackageJson,
-	path: "package.json",
+	path: "./package.json",
 }
 
 /**

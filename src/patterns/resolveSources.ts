@@ -166,24 +166,26 @@ function launchExtractor(
 	parent: string,
 	epath: string,
 	extract: ExtractorFn,
-	isAboveCwd: boolean,
 	entries_: Dirent[] | undefined,
 	dir: string,
 	cb: (err: Error | null, res: Resource) => void,
 ): void {
-	if (isAboveCwd && epath === "package.json") {
+	const isDotSlash = epath.startsWith("./")
+	if (isDotSlash && dir !== "." && dir !== "") {
 		return cb(null, null)
 	}
 
+	const cleanPath = isDotSlash ? epath.slice(2) : epath
+
 	if (entries_) {
-		const slashIdx = epath.indexOf("/")
-		const firstSegment = slashIdx === -1 ? epath : epath.slice(0, slashIdx)
+		const slashIdx = cleanPath.indexOf("/")
+		const firstSegment = slashIdx === -1 ? cleanPath : cleanPath.slice(0, slashIdx)
 		if (!entries_.some((e) => e.name === firstSegment)) {
 			return cb(null, null)
 		}
 	}
 
-	fs.readFile(join(parent, epath), (err, buff) => {
+	fs.readFile(join(parent, cleanPath), (err, buff) => {
 		if (err) {
 			// oxlint-disable-next-line typescript/no-explicit-any
 			if ((err as any).code === "ENOENT") {
@@ -191,8 +193,8 @@ function launchExtractor(
 			}
 			const source: Source = {
 				dir,
-				inverted: epath === "package.json",
-				path: join(dir, epath),
+				inverted: isDotSlash,
+				path: join(dir, cleanPath),
 				rules: [],
 			}
 			return cb(null, { error: err, source })
@@ -200,8 +202,8 @@ function launchExtractor(
 
 		const source: Source = {
 			dir,
-			inverted: epath === "package.json",
-			path: join(dir, epath),
+			inverted: isDotSlash,
+			path: join(dir, cleanPath),
 			rules: [],
 		}
 
@@ -223,7 +225,6 @@ function launchDirectoryExtractors(
 	fs: FsAdapter,
 	parent: string,
 	dir: string,
-	isAboveCwd: boolean,
 	extractors: Extractor[],
 	entries_: Dirent[] | undefined,
 	cb: (err: Error | null, results: Resource[]) => void,
@@ -247,25 +248,16 @@ function launchDirectoryExtractors(
 
 	for (let ei = 0; ei < elen; ei++) {
 		const extractor = extractors[ei]!
-		launchExtractor(
-			fs,
-			parent,
-			extractor.path,
-			extractor.extract,
-			isAboveCwd,
-			entries_,
-			dir,
-			(err, res) => {
-				if (hasError) return
-				if (err) {
-					hasError = true
-					// oxlint-disable-next-line typescript/no-explicit-any
-					return cb(err, null as any)
-				}
-				results[ei] = res
-				check()
-			},
-		)
+		launchExtractor(fs, parent, extractor.path, extractor.extract, entries_, dir, (err, res) => {
+			if (hasError) return
+			if (err) {
+				hasError = true
+				// oxlint-disable-next-line typescript/no-explicit-any
+				return cb(err, null as any)
+			}
+			results[ei] = res
+			check()
+		})
 	}
 }
 
@@ -408,28 +400,19 @@ export function resolveSources(
 		for (let pi = 0; pi < plen; pi++) {
 			const parent = searchDirs[pi]!
 			const relDir = relDirs[pi]!
-			const isAboveCwd = isParentOf(parent, cwd)
 
 			const runWithEntries = (dirEntries?: Dirent[]) => {
-				launchDirectoryExtractors(
-					fs,
-					parent,
-					relDir,
-					isAboveCwd,
-					extractors,
-					dirEntries,
-					(err, dirResults) => {
-						if (resolved) return
-						if (err) {
-							resolved = true
-							return cb(err, null)
-						}
-						for (let ei = 0; ei < elen; ei++) {
-							results[pi * elen + ei] = dirResults[ei]
-						}
-						checkAll()
-					},
-				)
+				launchDirectoryExtractors(fs, parent, relDir, extractors, dirEntries, (err, dirResults) => {
+					if (resolved) return
+					if (err) {
+						resolved = true
+						return cb(err, null)
+					}
+					for (let ei = 0; ei < elen; ei++) {
+						results[pi * elen + ei] = dirResults[ei]
+					}
+					checkAll()
+				})
 			}
 
 			if (pi === 0 && entries) {
@@ -451,16 +434,19 @@ export function resolveSources(
 					// For other readdir errors, populate results with error sources
 					for (let ei = 0; ei < elen; ei++) {
 						const extractor = extractors[ei]!
-						if (isAboveCwd && extractor.path === "package.json") {
+						const epath = extractor.path
+						const isExtractorDotSlash = epath.startsWith("./")
+						if (isExtractorDotSlash && relDir !== "." && relDir !== "") {
 							results[pi * elen + ei] = null
 							continue
 						}
+						const cleanExtractor = isExtractorDotSlash ? epath.slice(2) : epath
 						results[pi * elen + ei] = {
 							error: err,
 							source: {
 								dir: relDir,
-								inverted: extractor.path === "package.json",
-								path: join(relDir, extractor.path),
+								inverted: isExtractorDotSlash,
+								path: join(relDir, cleanExtractor),
 								rules: [],
 							},
 						}
