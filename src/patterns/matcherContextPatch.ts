@@ -11,8 +11,7 @@ import { scanParallel } from "../scanParallel.js"
 import { dirname, unixify } from "../unixify.js"
 import { walkPatchResult, walkPatchTotal, propagateTotals, type WalkResult } from "../walk.js"
 import { type IgnoresOptions } from "./ignores.js"
-import { type ResolveSourcesOptions } from "./resolveSources.js"
-import { resolveSources } from "./resolveSources.js"
+import { type ResolveSourcesOptions, resolveSources } from "./resolveSources.js"
 
 const promResolve = (options: ResolveSourcesOptions): Promise<Resource> =>
 	new Promise((res, rej) => resolveSources(options, (err, r) => (err ? rej(err) : res(r))))
@@ -91,7 +90,9 @@ export async function matcherContextAddPath(
 		return added
 	}
 
-	const isSource = target.extractors.some((e) => e.path === entry)
+	const isSource = target.extractors.some(
+		(e) => (e.path.startsWith("./") ? e.path.slice(2) : e.path) === entry,
+	)
 	if (isSource) {
 		const resultPromise = promScanParallel({
 			external: ctx.external,
@@ -217,7 +218,9 @@ export async function matcherContextRemovePath(
 		return removed
 	}
 
-	const isSource = options.target.extractors.some((e) => e.path === entry)
+	const isSource = options.target.extractors.some(
+		(e) => (e.path.startsWith("./") ? e.path.slice(2) : e.path) === entry,
+	)
 	if (isSource) {
 		const maxDepth = options.depth
 		const resultPromise = promScanParallel({
