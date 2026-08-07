@@ -105,7 +105,7 @@ export function scanParallel(
 									if (self && self.match) {
 										if (self.isDir) {
 											dirDirs++
-										} else {
+										} else if (entry.isFile() || entry.isSymbolicLink()) {
 											dirFiles++
 											const isIncluded =
 												invert === true
