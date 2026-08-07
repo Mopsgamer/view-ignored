@@ -16,10 +16,14 @@ export function createAdapter(vol: Volume): FsAdapter {
 	const fs = createFsFromVolume(vol) as any
 
 	const isSpecial = (filePath: string): { isBlockDevice: boolean; isSocket: boolean } | null => {
+		const name = filePath.slice(filePath.lastIndexOf("/") + 1)
+		if (name !== "socket" && name !== "device") {
+			return null
+		}
 		try {
 			const content = vol.readFileSync(filePath, "utf8")
 			if (content === "not a file or dir") {
-				const isSocket = filePath.endsWith("socket")
+				const isSocket = name === "socket"
 				return { isBlockDevice: !isSocket, isSocket }
 			}
 		} catch {
