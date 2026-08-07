@@ -14,9 +14,10 @@ import {
 	type GlobRule,
 	type IgnoresOptions,
 	type MatcherContext,
+	type CustomRule,
 } from "../patterns/index.js"
 import { scan } from "../scan.js"
-import { join } from "../unixify.js"
+import { join, unixify } from "../unixify.js"
 import {
 	npmManifestParse,
 	type PackageJson,
@@ -32,7 +33,7 @@ let cachedNpmBeforeIncludesRule: GlobRule | null = null
 /**
  * @since 0.12.0
  */
-export function makeNPM(): Target {
+export function makeNPM(isBundledDep = false): Target {
 	const extractors: Extractor[] = [
 		packageJsonExtractor,
 		{
@@ -46,6 +47,18 @@ export function makeNPM(): Target {
 	]
 
 	const directPathsInclude: Record<string, string> = Object.create(null)
+
+	const patchedDepsExclude = new Set<string>()
+
+	const patchedDepsRule = {
+		excludes: true,
+		match({ entry }) {
+			if (patchedDepsExclude.has(entry)) {
+				return "//patchedDependencies exclusion"
+			}
+			return null
+		},
+	} satisfies CustomRule as CustomRule
 
 	cachedNpmAfterExcludesRule ||= ruleCompile(
 		{
@@ -154,7 +167,7 @@ export function makeNPM(): Target {
 						depth: remainingDepth,
 						dirs: false,
 						fs: options.fs,
-						target: makeNPM(),
+						target: makeNPM(true),
 					}).then(
 						(subCtx) => {
 							if (subCtx.paths) {
@@ -205,6 +218,7 @@ export function makeNPM(): Target {
 			bundledDepsRule,
 			subPackageRule,
 			symlinkRule,
+			patchedDepsRule,
 			makeDirectPathsRule(directPathsInclude),
 			cachedNpmBeforeExcludesRule,
 			cachedNpmBeforeIncludesRule,
@@ -235,6 +249,18 @@ export function makeNPM(): Target {
 				}
 
 				extractManifestIncludes(dist, directPathsInclude)
+
+				if (dist.patchedDependencies && !isBundledDep) {
+					for (const patchPath of Object.values(dist.patchedDependencies)) {
+						if (typeof patchPath !== "string") continue
+						let normalized = unixify(patchPath)
+						while (normalized.startsWith("./") || normalized.startsWith("/")) {
+							normalized = normalized.startsWith("./") ? normalized.slice(2) : normalized.slice(1)
+						}
+						if (!normalized || normalized.startsWith("../") || normalized === "..") continue
+						patchedDepsExclude.add(normalized)
+					}
+				}
 
 				const bundleDepsField = dist.bundleDependencies ?? dist.bundledDependencies
 				if (bundleDepsField === true) {
