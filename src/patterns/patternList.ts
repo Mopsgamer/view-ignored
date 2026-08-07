@@ -63,6 +63,7 @@ export function patternListCompile(options: PatternCompileOptions & { list: Patt
 		const pattern = list[i]!
 		const isRoot = pattern.startsWith("/")
 		const isRelative = pattern.startsWith("./")
+		const isAnchored = isRoot || isRelative
 
 		let cleaned = pattern
 		if (isRelative) cleaned = cleaned.slice(2)
@@ -100,7 +101,7 @@ export function patternListCompile(options: PatternCompileOptions & { list: Patt
 			part = lowerCleaned.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 		}
 
-		const source = (isRoot ? "^" : "(?:^|\\/)") + part + "(?:\\/|$)"
+		const source = (isAnchored ? "^" : "(?:^|\\/)") + part + "(?:\\/|$)"
 		patternSources[i] = source
 
 		compiledItems[i] = {
