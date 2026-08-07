@@ -356,7 +356,7 @@ export function resolveSources(
 			resolved = true
 
 			const defaultParentResource: Resource =
-				baseResource && !("error" in baseResource) && !baseResource.inverted ? baseResource : null
+				baseResource && !("error" in baseResource) ? baseResource : null
 
 			// Link sources of the same extractor across parent directories
 			for (let ei = 0; ei < elen; ei++) {
@@ -364,12 +364,10 @@ export function resolveSources(
 				for (let pi = plen - 1; pi >= 0; pi--) {
 					const res = results[pi * elen + ei]
 					if (res && res !== null) {
-						if (!("error" in res) && !res.inverted) {
+						if (!("error" in res)) {
 							res.parent = lastExtractorResource
 						}
-						if (!res.inverted) {
-							lastExtractorResource = res
-						}
+						lastExtractorResource = res
 					}
 				}
 			}
