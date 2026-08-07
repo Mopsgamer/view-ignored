@@ -60,6 +60,15 @@ export function makeNPM(isBundledDep = false): Target {
 		},
 	} satisfies CustomRule as CustomRule
 
+	const explicitRootFiles = new Set<string>()
+
+	const npmIgnoreExcludeGlobRule: GlobRule = {
+		compiled: null,
+		excludes: true,
+		list: [],
+	}
+	ruleCompile(npmIgnoreExcludeGlobRule, { nocase: true })
+
 	cachedNpmAfterExcludesRule ||= ruleCompile(
 		{
 			compiled: null,
@@ -219,6 +228,7 @@ export function makeNPM(isBundledDep = false): Target {
 			subPackageRule,
 			symlinkRule,
 			patchedDepsRule,
+			npmIgnoreExcludeGlobRule,
 			makeDirectPathsRule(directPathsInclude),
 			cachedNpmBeforeExcludesRule,
 			cachedNpmBeforeIncludesRule,
@@ -249,6 +259,28 @@ export function makeNPM(isBundledDep = false): Target {
 				}
 
 				extractManifestIncludes(dist, directPathsInclude)
+
+				if (dist.files) {
+					const list: string[] = []
+					for (const file of dist.files) {
+						let normalized = unixify(file)
+						while (normalized.startsWith("./") || normalized.startsWith("/")) {
+							normalized = normalized.startsWith("./") ? normalized.slice(2) : normalized.slice(1)
+						}
+						if (!normalized.includes("/")) {
+							explicitRootFiles.add(normalized)
+						}
+					}
+
+					// Whitelist Mode: exclude ignore files in 'before' to prevent
+					// nested ones from leaking if parent directory is whitelisted.
+					list.push("/*/**/.npmignore", "/*/**/.gitignore")
+					if (!explicitRootFiles.has(".npmignore")) list.push(".npmignore")
+					if (!explicitRootFiles.has(".gitignore")) list.push(".gitignore")
+
+					npmIgnoreExcludeGlobRule.list = list
+					ruleCompile(npmIgnoreExcludeGlobRule, { nocase: true })
+				}
 
 				if (dist.patchedDependencies && !isBundledDep) {
 					for (const patchPath of Object.values(dist.patchedDependencies)) {
