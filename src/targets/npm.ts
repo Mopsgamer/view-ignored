@@ -142,7 +142,7 @@ export function makeNPM(isBundledDep = false): Target {
 
 	const bundledDepsRule = (options: IgnoresOptions) => {
 		const entry = options.entry
-		if (entry !== "node_modules" && !entry.endsWith("/node_modules")) return null
+		if (entry !== join(options.within || "", "node_modules")) return null
 
 		const remainingDepth = (options.depth ?? Infinity) - 2
 
