@@ -31,7 +31,6 @@ describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist ignore-file-included-b
 				"pnpm-lock.yaml": "{}",
 				subdir: {
 					".npmrc": "sneaky=true",
-					"index.js": "",
 					"other.js": "",
 				},
 				"yarn.lock": "{}",
