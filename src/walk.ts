@@ -293,13 +293,17 @@ export function walkPatchResult(
 	}
 
 	if (isExcluded) {
-		if (isRuleMatchInvalid(match) && stream && (dirs || !isDir)) {
+		if (
+			isRuleMatchInvalid(match) &&
+			stream &&
+			(dirs || (!isDir && (entry.isFile() || entry.isSymbolicLink())))
+		) {
 			patch(ctx, stream, path, entry, match)
 		}
 		return
 	}
 
-	if (!tooDeep && (dirs || !isDir)) {
+	if (!tooDeep && (dirs || (!isDir && (entry.isFile() || entry.isSymbolicLink())))) {
 		patch(ctx, stream, path, entry, match)
 	}
 	if (includeParent && dirs) {

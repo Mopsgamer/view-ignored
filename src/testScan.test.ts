@@ -14,10 +14,71 @@ import { sortFirstFolders } from "./testSort.test.js"
 export function createAdapter(vol: Volume): FsAdapter {
 	// oxlint-disable-next-line typescript/no-explicit-any
 	const fs = createFsFromVolume(vol) as any
+
+	const isSpecial = (filePath: string): { isBlockDevice: boolean; isSocket: boolean } | null => {
+		try {
+			const content = vol.readFileSync(filePath, "utf8")
+			if (content === "not a file or dir") {
+				const isSocket = filePath.endsWith("socket")
+				return { isBlockDevice: !isSocket, isSocket }
+			}
+		} catch {
+			// ignore directories or read errors
+		}
+		return null
+	}
+
+	// oxlint-disable-next-line typescript/no-explicit-any
+	const wrappedReaddir = (path: string, options: any, callback: any) => {
+		if (typeof options === "function") {
+			callback = options
+			options = undefined
+		}
+		// oxlint-disable-next-line typescript/no-explicit-any
+		fs.readdir(path, options, (err: any, files: any[]) => {
+			if (err) return callback(err)
+			if (files && options && options.withFileTypes) {
+				for (const file of files) {
+					const fullPath = path.endsWith("/") ? path + file.name : path + "/" + file.name
+					const special = isSpecial(fullPath)
+					if (special) {
+						file.isFile = () => false
+						file.isSocket = () => special.isSocket
+						file.isBlockDevice = () => special.isBlockDevice
+					}
+				}
+			}
+			callback(null, files)
+		})
+	}
+
+	// oxlint-disable-next-line typescript/no-explicit-any
+	const wrappedStat = (path: string, options: any, callback: any) => {
+		if (typeof options === "function") {
+			callback = options
+			options = undefined
+		}
+		// oxlint-disable-next-line typescript/no-explicit-any
+		fs.stat(path, options, (err: any, stats: any) => {
+			if (err) return callback(err)
+			if (stats) {
+				const special = isSpecial(path)
+				if (special) {
+					stats.isFile = () => false
+					stats.isSocket = () => special.isSocket
+					stats.isBlockDevice = () => special.isBlockDevice
+				}
+			}
+			callback(null, stats)
+		})
+	}
+
 	const adapter: FsAdapter = {
 		readFile: fs.readFile.bind(fs),
-		readdir: fs.readdir.bind(fs),
-		stat: fs.stat.bind(fs),
+		// oxlint-disable-next-line typescript/no-explicit-any
+		readdir: wrappedReaddir as any,
+		// oxlint-disable-next-line typescript/no-explicit-any
+		stat: wrappedStat as any,
 	}
 	return adapter
 }
