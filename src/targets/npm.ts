@@ -1,5 +1,6 @@
 import type { Stats } from "node:fs"
 
+import type { FsAdapter } from "../types.js"
 import type { Target } from "./target.js"
 
 import glob from "picomatch"
@@ -17,7 +18,7 @@ import {
 } from "../patterns/index.js"
 import { makePackageJsonExtractor } from "../patterns/packagejson.js"
 import { scan } from "../scan.js"
-import { join, unixify } from "../unixify.js"
+import { join, dirname, trimLeadingDotSlash } from "../unixify.js"
 import {
 	npmManifestParse,
 	type PackageJson,
@@ -26,14 +27,127 @@ import {
 	makeDirectPathsRule,
 } from "./npmManifest.js"
 
-let cachedNpmAfterExcludesRule: GlobRule | null = null
-let cachedNpmBeforeExcludesRule: GlobRule | null = null
-let cachedNpmBeforeIncludesRule: GlobRule | null = null
+function findDependencyPackageJson(
+	cwd: string,
+	fs: FsAdapter,
+	importerRelPath: string,
+	depName: string,
+	resolveCb: (content: string | null, foundRelPath: string | null) => void,
+) {
+	const candidates: string[] = []
+	let current = importerRelPath
+	while (current && current !== "." && current !== "/") {
+		const idx = current.lastIndexOf("/")
+		const segment = idx === -1 ? current : current.slice(idx + 1)
+		if (segment !== "node_modules") {
+			candidates.push(current + "/node_modules/" + depName + "/package.json")
+		}
+		if (idx === -1) break
+		current = current.slice(0, idx)
+	}
+	candidates.push("node_modules/" + depName + "/package.json")
+
+	let idx = 0
+	const tryNext = () => {
+		if (idx >= candidates.length) {
+			resolveCb(null, null)
+			return
+		}
+		const cand = candidates[idx]!
+		idx++
+		const absPath = join(cwd, cand)
+		fs.readFile(absPath, (err, fileContent) => {
+			if (!err && fileContent) {
+				resolveCb(fileContent.toString(), cand)
+			} else {
+				tryNext()
+			}
+		})
+	}
+	tryNext()
+}
+
+const cachedNpmAfterExcludesRule = ruleCompile(
+	{
+		compiled: null,
+		excludes: true,
+		list: [".npmignore", ".gitignore"],
+	},
+	{ nocase: true },
+)
+
+const cachedNpmBeforeExcludesRule = ruleCompile(
+	{
+		compiled: null,
+		excludes: true,
+		list: [
+			".git",
+			".svn",
+			".hg",
+			"CVS",
+			"/.lock-wscript",
+			"/.wafpickle-*",
+			"/build/config.gypi",
+			"npm-debug.log",
+			".npmrc",
+			".*.swp",
+			".DS_Store",
+			"._*",
+			"*.orig",
+			"/archived-packages/**",
+
+			"/node_modules",
+			"/package-lock.json",
+			"/yarn.lock",
+			"/pnpm-lock.yaml",
+			"/bun.lockb",
+			"/bun.lock",
+			"/.npm-extension.mjs",
+			"/.npm-extension.cjs",
+			"*~",
+
+			"*\\**",
+		],
+	},
+	{ nocase: true },
+)
+
+const cachedNpmBeforeIncludesRule = ruleCompile(
+	{
+		compiled: null,
+		excludes: false,
+		list: [
+			"/package.json",
+			"/README",
+			"/COPYING",
+			"/LICENSE",
+			"/LICENCE",
+			"/README.*",
+			"/COPYING.*",
+			"/LICENSE.*",
+			"/LICENCE.*",
+		],
+	},
+	{ nocase: true },
+)
 
 /**
  * @since 0.12.0
  */
 export function makeNPM(mode: "list" | "publish" | "bundle" = "publish"): Target {
+	let dist: PackageJson | undefined
+	const rootDeps = new Set<string>()
+	const whitelistedPaths = new Set<string>()
+	let whitelistedRegex: RegExp | null = null
+	let workspaceRegex: RegExp | null = null
+	let bundledDeps: string[] = []
+
+	const isWhitelistedByFiles = (entry: string): boolean => {
+		if (!dist || !dist.files) return false
+		if (whitelistedPaths.has(entry)) return true
+		return whitelistedRegex !== null && whitelistedRegex.test(entry)
+	}
+
 	const extractors: Extractor[] = [
 		makePackageJsonExtractor(mode),
 		{
@@ -68,79 +182,6 @@ export function makeNPM(mode: "list" | "publish" | "bundle" = "publish"): Target
 		list: [],
 	}
 	ruleCompile(npmIgnoreExcludeGlobRule, { nocase: true })
-
-	cachedNpmAfterExcludesRule ||= ruleCompile(
-		{
-			compiled: null,
-			excludes: true,
-			list: [".npmignore", ".gitignore"],
-		},
-		{ nocase: true },
-	)
-
-	cachedNpmBeforeExcludesRule ||= ruleCompile(
-		{
-			compiled: null,
-			excludes: true,
-			list: [
-				// The list of default ignored file names and patterns used by npm-packlist when walking package directories.
-				// https://github.com/npm/npm-packlist/blob/d1eed617b1ff1eedf5909efec7867aee385d0350/lib/index.js#L17
-				".git",
-				".svn",
-				".hg",
-				"CVS",
-				"/.lock-wscript",
-				"/.wafpickle-*",
-				"/build/config.gypi",
-				"npm-debug.log",
-				".npmrc",
-				".*.swp",
-				".DS_Store",
-				"._*",
-				"*.orig",
-				"/archived-packages/**",
-
-				// The list of strictly ignored files and patterns (e.g. node_modules, lockfiles) forced by npm-packlist.
-				// https://github.com/npm/npm-packlist/blob/d1eed617b1ff1eedf5909efec7867aee385d0350/lib/index.js#L321
-				"/node_modules",
-				"/package-lock.json",
-				"/yarn.lock",
-				"/pnpm-lock.yaml",
-				"/bun.lockb",
-				"/bun.lock",
-				"/.npm-extension.mjs",
-				"/.npm-extension.cjs",
-				"*~",
-
-				// npm-packlist ignores files with stars when publishing
-				"*\\**",
-			],
-		},
-		{ nocase: true },
-	)
-
-	cachedNpmBeforeIncludesRule ||= ruleCompile(
-		{
-			compiled: null,
-			excludes: false,
-			list: [
-				// The list of files that are unconditionally included in npm packages (e.g. README, LICENSE) forced by npm-packlist.
-				// https://github.com/npm/npm-packlist/blob/d1eed617b1ff1eedf5909efec7867aee385d0350/lib/index.js#L315
-				"/package.json",
-				"/README",
-				"/COPYING",
-				"/LICENSE",
-				"/LICENCE",
-				"/README.*",
-				"/COPYING.*",
-				"/LICENSE.*",
-				"/LICENCE.*",
-			],
-		},
-		{ nocase: true },
-	)
-
-	let bundledDeps: string[] = []
 
 	const bundledDepsRule = (options: IgnoresOptions) => {
 		const entry = options.entry
@@ -197,28 +238,35 @@ export function makeNPM(mode: "list" | "publish" | "bundle" = "publish"): Target
 		return Promise.all(promises).then(() => mergedCtx)
 	}
 
-	let workspaceRules: RegExp[] = []
-
-	const subPackageRule = (options: IgnoresOptions) => {
+	const packageResolutionRule = (options: IgnoresOptions) => {
 		const entry = options.entry
 		if (!entry || entry === "." || !options.dirent.isDirectory()) return null
 
-		const isWorkspace = workspaceRules.some((re) => re.test(entry))
-		if (!isWorkspace) return null
+		if (isWhitelistedByFiles(entry)) return null
+
+		const isWorkspace = workspaceRegex !== null && workspaceRegex.test(entry)
+		if (!isWorkspace && rootDeps.size === 0) return null
 
 		const pkgPath = join(options.cwd, entry + "/package.json")
 		return new Promise<MatcherContext | null>((resolve) => {
-			options.fs.stat(pkgPath, (err, stats?: Stats) => {
-				if (!err && stats && stats.isFile()) {
-					resolve({
-						external: new Map(),
-						failed: [],
-						paths: new Map(),
-						total: new Map(),
-					})
-				} else {
-					resolve(null)
+			options.fs.readFile(pkgPath, (err, content) => {
+				if (!err && content) {
+					try {
+						const pkg = JSON.parse(content.toString())
+						if (pkg && (isWorkspace || (typeof pkg.name === "string" && rootDeps.has(pkg.name)))) {
+							resolve({
+								external: new Map(),
+								failed: [],
+								paths: new Map(),
+								total: new Map(),
+							})
+							return
+						}
+					} catch {
+						// ignore parse error
+					}
 				}
+				resolve(null)
 			})
 		})
 	}
@@ -227,7 +275,7 @@ export function makeNPM(mode: "list" | "publish" | "bundle" = "publish"): Target
 		after: [cachedNpmAfterExcludesRule],
 		before: [
 			bundledDepsRule,
-			subPackageRule,
+			packageResolutionRule,
 			symlinkRule,
 			patchedDepsRule,
 			npmIgnoreExcludeGlobRule,
@@ -241,7 +289,22 @@ export function makeNPM(mode: "list" | "publish" | "bundle" = "publish"): Target
 		extendsRoot: "workspaces",
 		extractors,
 		ignores: ruleTest,
-		init({ fs, cwd }, cb) {
+		init(options, cb) {
+			const fs = options.fs
+			const cwd = options.cwd
+			dist = undefined
+			rootDeps.clear()
+			whitelistedPaths.clear()
+			whitelistedRegex = null
+			workspaceRegex = null
+			bundledDeps = []
+			explicitRootFiles.clear()
+			patchedDepsExclude.clear()
+			npmIgnoreExcludeGlobRule.list = []
+			for (const key in directPathsInclude) {
+				delete directPathsInclude[key]
+			}
+
 			fs.readFile(cwd + "/package.json", (err, content) => {
 				if (err) {
 					if (mode !== "publish") return cb(null)
@@ -253,23 +316,62 @@ export function makeNPM(mode: "list" | "publish" | "bundle" = "publish"): Target
 					return
 				}
 
-				let dist: PackageJson
+				let parsedDist: PackageJson
 				try {
-					dist = npmManifestParse(content!.toString(), mode)
+					parsedDist = npmManifestParse(content!.toString(), mode)
+					dist = parsedDist
 				} catch (error) {
 					cb(new Error("Invalid 'package.json'", { cause: error }))
 					return
 				}
 
-				extractManifestIncludes(dist, directPathsInclude)
+				if (parsedDist.dependencies) {
+					for (const dep in parsedDist.dependencies) {
+						rootDeps.add(dep)
+					}
+				}
+				if (parsedDist.devDependencies) {
+					for (const dep in parsedDist.devDependencies) {
+						rootDeps.add(dep)
+					}
+				}
+				if (parsedDist.optionalDependencies) {
+					for (const dep in parsedDist.optionalDependencies) {
+						rootDeps.add(dep)
+					}
+				}
 
-				if (dist.files) {
-					const list: string[] = []
-					for (const file of dist.files) {
-						let normalized = unixify(file)
-						while (normalized.startsWith("./") || normalized.startsWith("/")) {
-							normalized = normalized.startsWith("./") ? normalized.slice(2) : normalized.slice(1)
+				if (parsedDist.files) {
+					const reSources: string[] = []
+					for (let i = 0; i < parsedDist.files.length; i++) {
+						const file = parsedDist.files[i]!
+						const normalized = trimLeadingDotSlash(file)
+						whitelistedPaths.add(normalized)
+
+						let parent = dirname(normalized)
+						while (parent && parent !== "." && parent !== "/") {
+							whitelistedPaths.add(parent)
+							parent = dirname(parent)
 						}
+
+						try {
+							reSources.push(glob.makeRe(normalized, { dot: true, nocase: true }).source)
+						} catch {
+							// ignore invalid globs
+						}
+					}
+					if (reSources.length > 0) {
+						whitelistedRegex = new RegExp(reSources.join("|"), "i")
+					}
+				}
+
+				extractManifestIncludes(parsedDist, directPathsInclude)
+
+				if (parsedDist.files) {
+					const list: string[] = []
+					for (let i = 0; i < parsedDist.files.length; i++) {
+						const file = parsedDist.files[i]!
+						const normalized = trimLeadingDotSlash(file)
 						if (!normalized.includes("/")) {
 							explicitRootFiles.add(normalized)
 						}
@@ -285,50 +387,164 @@ export function makeNPM(mode: "list" | "publish" | "bundle" = "publish"): Target
 					ruleCompile(npmIgnoreExcludeGlobRule, { nocase: true })
 				}
 
-				if (dist.patchedDependencies && mode === "publish") {
-					for (const patchPath of Object.values(dist.patchedDependencies)) {
+				if (parsedDist.patchedDependencies && mode === "publish") {
+					for (const patchPath of Object.values(parsedDist.patchedDependencies)) {
 						if (typeof patchPath !== "string") continue
-						let normalized = unixify(patchPath)
-						while (normalized.startsWith("./") || normalized.startsWith("/")) {
-							normalized = normalized.startsWith("./") ? normalized.slice(2) : normalized.slice(1)
-						}
+						const normalized = trimLeadingDotSlash(patchPath)
 						if (!normalized || normalized.startsWith("../") || normalized === "..") continue
 						patchedDepsExclude.add(normalized)
 					}
 				}
 
-				const bundleDepsField = dist.bundleDependencies ?? dist.bundledDependencies
-				if (bundleDepsField === true) {
-					const depsKeys = dist.dependencies ? Object.keys(dist.dependencies) : []
-					const optDepsKeys = dist.optionalDependencies
-						? Object.keys(dist.optionalDependencies)
-						: []
-					bundledDeps = [...depsKeys, ...optDepsKeys]
-				}
-				if (Array.isArray(bundleDepsField)) {
-					bundledDeps = bundleDepsField.filter(
-						(dep) =>
-							(dist.dependencies && Object.hasOwn(dist.dependencies, dep)) ||
-							(dist.optionalDependencies && Object.hasOwn(dist.optionalDependencies, dep)),
-					)
+				const getDepPackageJson = (
+					importerRelPath: string,
+					depName: string,
+					resolveCb: (content: string | null, foundRelPath: string | null) => void,
+				) => {
+					findDependencyPackageJson(cwd, fs, importerRelPath, depName, resolveCb)
 				}
 
-				let workspacePatterns: string[] = []
-				if (dist.workspaces) {
-					if (Array.isArray(dist.workspaces)) {
-						workspacePatterns = dist.workspaces
-					} else if (dist.workspaces.packages && Array.isArray(dist.workspaces.packages)) {
-						workspacePatterns = dist.workspaces.packages
+				const bundleDepsField =
+					parsedDist.bundleDependencies !== undefined
+						? parsedDist.bundleDependencies
+						: parsedDist.bundledDependencies
+				let initialBundledDeps: string[] = []
+				if (bundleDepsField === true) {
+					if (parsedDist.dependencies) {
+						for (const dep in parsedDist.dependencies) {
+							initialBundledDeps.push(dep)
+						}
+					}
+					if (parsedDist.optionalDependencies) {
+						for (const dep in parsedDist.optionalDependencies) {
+							initialBundledDeps.push(dep)
+						}
+					}
+				} else if (Array.isArray(bundleDepsField)) {
+					const deps = parsedDist.dependencies
+					const optDeps = parsedDist.optionalDependencies
+					for (let i = 0; i < bundleDepsField.length; i++) {
+						const dep = bundleDepsField[i]!
+						if ((deps && deps[dep] !== undefined) || (optDeps && optDeps[dep] !== undefined)) {
+							initialBundledDeps.push(dep)
+						}
 					}
 				}
-				workspaceRules = workspacePatterns.map((pattern) => {
-					let cleaned = pattern
-					if (cleaned.startsWith("./")) cleaned = cleaned.slice(2)
-					if (cleaned.endsWith("/")) cleaned = cleaned.slice(0, -1)
-					return glob.makeRe(cleaned, { nocase: true })
-				})
 
-				cb(null)
+				const resolvedBundledDeps = new Set<string>()
+				const visited = new Set<string>()
+
+				const resolveTransitive = (importerRelPath: string, depName: string, done: () => void) => {
+					resolvedBundledDeps.add(depName)
+					const visitKey = importerRelPath + "::" + depName
+					if (visited.has(visitKey)) {
+						done()
+						return
+					}
+					visited.add(visitKey)
+
+					getDepPackageJson(importerRelPath, depName, (content, foundRelPath) => {
+						if (!content || !foundRelPath) {
+							done()
+							return
+						}
+
+						let pkg: PackageJson
+						try {
+							pkg = JSON.parse(content)
+						} catch {
+							done()
+							return
+						}
+
+						let pending = 0
+						const deps = pkg.dependencies
+						const optDeps = pkg.optionalDependencies
+						if (deps) {
+							for (const _ in deps) {
+								pending++
+							}
+						}
+						if (optDeps) {
+							for (const _ in optDeps) {
+								pending++
+							}
+						}
+
+						if (pending === 0) {
+							done()
+							return
+						}
+
+						const subDir = dirname(foundRelPath)
+						const onSubDone = () => {
+							pending--
+							if (pending === 0) {
+								done()
+							}
+						}
+						if (deps) {
+							for (const subDep in deps) {
+								resolveTransitive(subDir, subDep, onSubDone)
+							}
+						}
+						if (optDeps) {
+							for (const subDep in optDeps) {
+								resolveTransitive(subDir, subDep, onSubDone)
+							}
+						}
+					})
+				}
+
+				const afterInit = () => {
+					let workspacePatterns: string[] = []
+					if (parsedDist.workspaces) {
+						if (Array.isArray(parsedDist.workspaces)) {
+							workspacePatterns = parsedDist.workspaces
+						} else if (
+							parsedDist.workspaces.packages &&
+							Array.isArray(parsedDist.workspaces.packages)
+						) {
+							workspacePatterns = parsedDist.workspaces.packages
+						}
+					}
+					if (workspacePatterns.length > 0) {
+						const reSources: string[] = []
+						for (let i = 0; i < workspacePatterns.length; i++) {
+							const pattern = workspacePatterns[i]!
+							let cleaned = pattern
+							if (cleaned.startsWith("./")) cleaned = cleaned.slice(2)
+							if (cleaned.endsWith("/")) cleaned = cleaned.slice(0, -1)
+							try {
+								reSources.push(glob.makeRe(cleaned, { nocase: true }).source)
+							} catch {
+								// ignore invalid globs
+							}
+						}
+						if (reSources.length > 0) {
+							workspaceRegex = new RegExp(reSources.join("|"), "i")
+						}
+					}
+
+					cb(null)
+				}
+
+				let pendingInitial = initialBundledDeps.length
+				if (pendingInitial === 0) {
+					bundledDeps = []
+					afterInit()
+					return
+				}
+
+				for (const dep of initialBundledDeps) {
+					resolveTransitive(".", dep, () => {
+						pendingInitial--
+						if (pendingInitial === 0) {
+							bundledDeps = Array.from(resolvedBundledDeps)
+							afterInit()
+						}
+					})
+				}
 			})
 		},
 		internalRules: internal,
