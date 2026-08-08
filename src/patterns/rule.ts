@@ -94,7 +94,7 @@ export type CustomRule = {
 	 *     if (o.includes("hi")) {
 	 *       return "*hi*" || ("**"+"/*hi*") || "//includes 'hi'"
 	 *     }
-	 *     if (patternCompile("*hi*")) {
+	 *     if (patternListCompile({ list: ["*hi*"] })) {
 	 *       // btw, do not compile inside match, it's slow
 	 *       return "*hi*"
 	 *     }

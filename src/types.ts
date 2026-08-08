@@ -101,7 +101,7 @@ export type ScanOptions = {
 	 *
 	 * @default `false`
 	 *
-	 * @since 0.6.0
+	 * @since 0.12.0
 	 */
 	skipDepth?: boolean
 
@@ -121,7 +121,7 @@ export type ScanOptions = {
 	 *
 	 * @default `false`
 	 *
-	 * @since 0.6.0
+	 * @since 0.12.0
 	 */
 	skipInternal?: boolean
 

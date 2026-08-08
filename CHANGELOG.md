@@ -9,7 +9,7 @@ and this project adheres to
 ## [Unreleased]
 
 - Add `SkipRule` to support skipping directory scanning and merging a custom `MatcherContext` returned by the rule.
-- Drop `PatternCache` and `patternCompile`. Use `patternList`.
+- Drop `PatternCache` and `patternCompile`. Use `patternListCompile` and `patternList`.
 - Fix `skipInternal: true` with `inverted: true` should skip folders.
 - Replace `Buffer` with `Uint8Array`.
 - Add browser output test.
@@ -27,7 +27,7 @@ and this project adheres to
 - Fix `.git/info/exclude` by implementing `InternalRules`.
 - Removed `extractGitignoreNocase` and similar functions.
   Added `extractGitignoreRules` and other `Rules` methods.
-- Fixed `matcherContext { Add | Remove } Path`.
+- Fixed `matcherContextAddPath` and `matcherContextRemovePath`.
   It makes watching stable enough, but we won't add `watch`.
   Use `chokidar` instead of Node's built-in watching,
   as the latter is complete garbage, unless you want to.

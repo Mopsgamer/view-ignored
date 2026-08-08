@@ -42,7 +42,7 @@ describe("dirs option", () => {
 		)
 	})
 
-	test("dirs: false with skipDepth and skipInternal (fastOptions)", async (done) => {
+	test("dirs: false with skipDepth and skipInternal (skipOptions)", async (done) => {
 		// .git should be ignored by default in makeGit()
 		// node_modules is NOT ignored by default in makeGit() unless it's in .gitignore
 		await testScan(
@@ -60,7 +60,7 @@ describe("dirs option", () => {
 		)
 	})
 
-	test("dirs: false with skipDepth: true (fastDepth)", async (done) => {
+	test("dirs: false with skipDepth: true (skipDepth)", async (done) => {
 		await testScan(
 			done,
 			{
@@ -75,7 +75,7 @@ describe("dirs option", () => {
 		)
 	})
 
-	test("dirs: false with skipInternal: true (fastInternal)", async (done) => {
+	test("dirs: false with skipInternal: true (skipInternal)", async (done) => {
 		await testScan(
 			done,
 			{
