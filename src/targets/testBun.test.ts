@@ -58,4 +58,16 @@ describe("Bun", () => {
 			}),
 		).toThrow()
 	})
+
+	test("list mode parses files correctly", async (done) => {
+		await testScan(
+			done,
+			{
+				"README.md": "",
+				"package.json": packageJson,
+			},
+			["README.md", "package.json"],
+			{ target: makeBun("list") },
+		)
+	})
 })

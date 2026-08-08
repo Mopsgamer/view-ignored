@@ -40,7 +40,7 @@ export function makeDeno(): Target {
 	cachedDenoRule ||= ruleCompile({
 		compiled: null,
 		excludes: true,
-		list: [".git", ".DS_Store"],
+		list: [".git", ".DS_Store", ".gitignore", "node_modules"],
 	})
 
 	const internal: Rule[] = [cachedDenoRule]

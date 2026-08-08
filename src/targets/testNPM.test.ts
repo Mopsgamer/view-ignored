@@ -186,4 +186,28 @@ describe("NPM", () => {
 			}),
 		).toThrow()
 	})
+
+	test("bundle mode skips root default excludes", async (done) => {
+		await testScan(
+			done,
+			{
+				"package-lock.json": "{}",
+				"package.json": packageJsonNoFiles,
+			},
+			["package.json", "package-lock.json"],
+			{ target: makeNPM("bundle") },
+		)
+	})
+
+	test("list mode parses files correctly", async (done) => {
+		await testScan(
+			done,
+			{
+				"README.md": "",
+				"package.json": packageJsonNoFiles,
+			},
+			["README.md", "package.json"],
+			{ target: makeNPM("list") },
+		)
+	})
 })
