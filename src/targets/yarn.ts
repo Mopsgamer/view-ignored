@@ -5,13 +5,15 @@ import {
 	ruleTest,
 	type Rule,
 	ruleCompile,
-	packageJsonExtractor,
 	type GlobRule,
 } from "../patterns/index.js"
+import { makePackageJsonExtractor } from "../patterns/packagejson.js"
 import {
-	npmManifestParse,
-	type PackageJson,
-	extractManifestIncludes,
+	createNpmContext,
+	initNpmContext,
+	makePatchedDepsRule,
+	makePackageResolutionRule,
+	makeBundledDepsRule,
 	symlinkRule,
 	makeDirectPathsRule,
 	extractNoCaseNpmignore,
@@ -23,9 +25,11 @@ let cachedYarnIncludesRule: GlobRule | null = null
 /**
  * @since 0.12.0
  */
-export function makeYarn(): Target {
+export function makeYarn(mode: "list" | "publish" | "bundle" = "publish"): Target {
+	const ctx = createNpmContext(mode)
+
 	const extractors: Extractor[] = [
-		packageJsonExtractor,
+		makePackageJsonExtractor(mode),
 		{
 			extract: extractNoCaseNpmignore,
 			path: ".npmignore",
@@ -35,8 +39,6 @@ export function makeYarn(): Target {
 			path: ".gitignore",
 		},
 	]
-
-	const directPathsInclude: Record<string, string> = Object.create(null)
 
 	cachedYarnExcludesRule ||= ruleCompile({
 		compiled: null,
@@ -81,8 +83,12 @@ export function makeYarn(): Target {
 	)
 
 	const internal: Rule[] = [
+		makeBundledDepsRule(ctx, makeYarn),
+		makePackageResolutionRule(ctx),
 		symlinkRule,
-		makeDirectPathsRule(directPathsInclude),
+		makePatchedDepsRule(ctx),
+		ctx.npmIgnoreExcludeGlobRule,
+		makeDirectPathsRule(ctx.directPathsInclude),
 		cachedYarnExcludesRule,
 		cachedYarnIncludesRule,
 	]
@@ -91,30 +97,8 @@ export function makeYarn(): Target {
 		extendsRoot: "workspaces",
 		extractors,
 		ignores: ruleTest,
-		init({ fs, cwd }, cb) {
-			fs.readFile(cwd + "/package.json", (err, content) => {
-				if (err) {
-					if (err.code === "ENOENT") {
-						cb(null)
-						return
-					}
-					cb(new Error("Error while initializing Yarn", { cause: err }))
-					return
-				}
-
-				let dist: PackageJson
-				try {
-					dist = npmManifestParse(content!.toString())
-				} catch (error) {
-					cb(new Error("Invalid 'package.json'", { cause: error }))
-					return
-				}
-
-				// TODO: Yarn should include bundled deps
-
-				extractManifestIncludes(dist, directPathsInclude)
-				cb(null)
-			})
+		init(options, cb) {
+			initNpmContext(ctx, options, cb)
 		},
 		internalRules: internal,
 		root: ".",
