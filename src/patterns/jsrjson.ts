@@ -78,8 +78,6 @@ export function extractJsrJsonRules(source: Source, content: Uint8Array): void {
 	const rlen = source.rules.length
 	for (let i = 0; i < rlen; i++) {
 		const r = source.rules[i]!
-		if ("list" in r && r.compiled === null) {
-			ruleCompile(r, options)
-		}
+		if ("list" in r && r.compiled === null) ruleCompile(r, options)
 	}
 }

@@ -52,12 +52,8 @@ export function jsrManifestParse(s: string): JsrManifest {
 	// Basic runtime validation for required fields
 	const { name, version, exports, include, exclude, publish } = parsed as JsrManifest
 
-	if (typeof name !== "string") {
-		throw new Error("Missing or invalid 'name' in manifest")
-	}
-	if (typeof version !== "string") {
-		throw new Error("Missing or invalid 'version' in manifest")
-	}
+	if (typeof name !== "string") throw new Error("Missing or invalid 'name' in manifest")
+	if (typeof version !== "string") throw new Error("Missing or invalid 'version' in manifest")
 	if (typeof exports !== "string" && (typeof exports !== "object" || exports === null)) {
 		throw new Error("Missing or invalid 'exports' in manifest")
 	}

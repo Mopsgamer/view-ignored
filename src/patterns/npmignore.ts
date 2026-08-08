@@ -47,14 +47,10 @@ export function extractNpmignoreRules(
 		let lineEnd = end > start && content[end - 1] === 0x0d ? end - 1 : end
 
 		// Trim leading spaces
-		while (lineStart < lineEnd && isWhitespace(content[lineStart]!)) {
-			lineStart++
-		}
+		while (lineStart < lineEnd && isWhitespace(content[lineStart]!)) lineStart++
 
 		// Trim trailing spaces
-		while (lineEnd > lineStart && isWhitespace(content[lineEnd - 1]!)) {
-			lineEnd--
-		}
+		while (lineEnd > lineStart && isWhitespace(content[lineEnd - 1]!)) lineEnd--
 
 		if (lineStart < lineEnd && content[lineStart] !== 35) {
 			// '#' is 35
@@ -72,8 +68,6 @@ export function extractNpmignoreRules(
 	const rlen = source.rules.length
 	for (let i = 0; i < rlen; i++) {
 		const r = source.rules[i]!
-		if ("list" in r && r.compiled === null) {
-			ruleCompile(r, options)
-		}
+		if ("list" in r && r.compiled === null) ruleCompile(r, options)
 	}
 }
