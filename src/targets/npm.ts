@@ -9,13 +9,13 @@ import {
 	ruleTest,
 	ruleCompile,
 	extractNpmignore,
-	packageJsonExtractor,
 	type InternalRules,
 	type GlobRule,
 	type IgnoresOptions,
 	type MatcherContext,
 	type CustomRule,
 } from "../patterns/index.js"
+import { makePackageJsonExtractor } from "../patterns/packagejson.js"
 import { scan } from "../scan.js"
 import { join, unixify } from "../unixify.js"
 import {
@@ -33,9 +33,9 @@ let cachedNpmBeforeIncludesRule: GlobRule | null = null
 /**
  * @since 0.12.0
  */
-export function makeNPM(isBundledDep = false): Target {
+export function makeNPM(mode: "list" | "publish" | "bundle" = "publish"): Target {
 	const extractors: Extractor[] = [
-		packageJsonExtractor,
+		makePackageJsonExtractor(mode),
 		{
 			extract: extractNpmignore,
 			path: ".npmignore",
@@ -176,7 +176,7 @@ export function makeNPM(isBundledDep = false): Target {
 						depth: remainingDepth,
 						dirs: false,
 						fs: options.fs,
-						target: makeNPM(true),
+						target: makeNPM("bundle"),
 					}).then(
 						(subCtx) => {
 							if (subCtx.paths) {
@@ -230,7 +230,7 @@ export function makeNPM(isBundledDep = false): Target {
 			patchedDepsRule,
 			npmIgnoreExcludeGlobRule,
 			makeDirectPathsRule(directPathsInclude),
-			cachedNpmBeforeExcludesRule,
+			...(mode === "bundle" ? [] : [cachedNpmBeforeExcludesRule]),
 			cachedNpmBeforeIncludesRule,
 		],
 	}
@@ -242,6 +242,7 @@ export function makeNPM(isBundledDep = false): Target {
 		init({ fs, cwd }, cb) {
 			fs.readFile(cwd + "/package.json", (err, content) => {
 				if (err) {
+					if (mode !== "publish") return cb(null)
 					if (err.code === "ENOENT") {
 						cb(new Error("'package.json' not found", { cause: err }))
 						return
@@ -252,7 +253,7 @@ export function makeNPM(isBundledDep = false): Target {
 
 				let dist: PackageJson
 				try {
-					dist = npmManifestParse(content!.toString())
+					dist = npmManifestParse(content!.toString(), mode)
 				} catch (error) {
 					cb(new Error("Invalid 'package.json'", { cause: error }))
 					return
@@ -282,7 +283,7 @@ export function makeNPM(isBundledDep = false): Target {
 					ruleCompile(npmIgnoreExcludeGlobRule, { nocase: true })
 				}
 
-				if (dist.patchedDependencies && !isBundledDep) {
+				if (dist.patchedDependencies && mode === "publish") {
 					for (const patchPath of Object.values(dist.patchedDependencies)) {
 						if (typeof patchPath !== "string") continue
 						let normalized = unixify(patchPath)
