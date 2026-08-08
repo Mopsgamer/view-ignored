@@ -91,41 +91,59 @@ export function isArrayOfStrings(value: unknown): value is string[] {
 const SEMVER_REGEX =
 	/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/
 
-export function npmManifestParse(s: string): PackageJson {
-	const parsed = JSON.parse(s)
+export function npmManifestParse(
+	s: string,
+	mode: "list" | "publish" | "bundle" = "publish",
+): PackageJson {
+	// oxlint-disable-next-line typescript/no-explicit-any
+	let parsed: any
+	try {
+		parsed = JSON.parse(s)
+	} catch (err) {
+		if (mode !== "publish") return {} as PackageJson
+		throw err
+	}
 
 	if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+		if (mode !== "publish") return {} as PackageJson
 		throw new Error("npm manifest must be a JSON object")
 	}
 
 	if ("private" in parsed && typeof parsed.private !== "boolean") {
+		if (mode !== "publish") return {} as PackageJson
 		throw new Error("'private' field must be a boolean")
 	}
 
 	if (!parsed.private) {
 		if (typeof parsed.name !== "string") {
+			if (mode !== "publish") return {} as PackageJson
 			throw new Error("Manifest must have a non-empty string 'name'")
 		}
 		if (typeof parsed.version !== "string") {
+			if (mode !== "publish") return {} as PackageJson
 			throw new Error("Manifest must have a non-empty string 'version'")
 		}
 		if (!isValidNpmName(parsed.name)) {
+			if (mode !== "publish") return {} as PackageJson
 			throw new Error(`'${parsed.name}' is not a valid npm package name`)
 		}
 
 		// Strict SemVer verification
 		if (!SEMVER_REGEX.test(parsed.version)) {
+			if (mode !== "publish") return {} as PackageJson
 			throw new Error(`'${parsed.version}' is not a valid SemVer version (expected format: X.Y.Z)`)
 		}
 	}
 
 	if ("bundleDependencies" in parsed && "bundledDependencies" in parsed) {
+		if (mode !== "publish") return {} as PackageJson
 		throw new Error("Manifest cannot contain both 'bundleDependencies' and 'bundledDependencies'")
 	}
 
 	const stringFields: (keyof PackageJson)[] = ["browser", "main", "module"]
 	for (const field of stringFields) {
 		if (field in parsed && typeof parsed[field] !== "string") {
+			if (mode !== "publish") return {} as PackageJson
 			throw new Error(`'${field}' field must be a string`)
 		}
 	}
@@ -139,17 +157,20 @@ export function npmManifestParse(s: string): PackageJson {
 	]
 	for (const field of recordFields) {
 		if (field in parsed && !isRecordOfStrings(parsed[field])) {
+			if (mode !== "publish") return {} as PackageJson
 			throw new Error(`'${field}' field must be an object with string values`)
 		}
 	}
 
 	if ("files" in parsed && !isArrayOfStrings(parsed.files)) {
+		if (mode !== "publish") return {} as PackageJson
 		throw new Error("'files' field must be an array of strings")
 	}
 
 	const bundleFields: (keyof PackageJson)[] = ["bundleDependencies", "bundledDependencies"]
 	for (const field of bundleFields) {
 		if (field in parsed && typeof parsed[field] !== "boolean" && !isArrayOfStrings(parsed[field])) {
+			if (mode !== "publish") return {} as PackageJson
 			throw new Error(`'${field}' field must be a boolean or an array of strings`)
 		}
 	}
@@ -158,6 +179,7 @@ export function npmManifestParse(s: string): PackageJson {
 		const binValue = parsed.bin
 		const isValidBin = typeof binValue === "string" || isRecordOfStrings(binValue)
 		if (!isValidBin) {
+			if (mode !== "publish") return {} as PackageJson
 			throw new Error("'bin' field must be a string or an object with string values")
 		}
 	}

@@ -41,7 +41,7 @@ module.exports = elf =>
 				"package.json": "c'est ne pas une j'son",
 			},
 			["deps/foo/config/config.gypi", "elf.js", "package.json"],
-			{ target: makeNPM(), dirs: false },
+			{ target: makeNPM("list"), dirs: false },
 		)
 	})
 })
