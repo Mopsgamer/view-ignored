@@ -6,13 +6,15 @@ import {
 	type Rule,
 	ruleCompile,
 	extractGitignore,
-	packageJsonExtractor,
 	type GlobRule,
 } from "../patterns/index.js"
+import { makePackageJsonExtractor } from "../patterns/packagejson.js"
 import {
-	npmManifestParse,
-	type PackageJson,
-	extractManifestIncludes,
+	createNpmContext,
+	initNpmContext,
+	makePatchedDepsRule,
+	makePackageResolutionRule,
+	makeBundledDepsRule,
 	symlinkRule,
 	makeDirectPathsRule,
 } from "./npmManifest.js"
@@ -23,9 +25,11 @@ let cachedBunIncludesRule: GlobRule | null = null
 /**
  * @since 0.12.0
  */
-export function makeBun(): Target {
+export function makeBun(mode: "list" | "publish" | "bundle" = "publish"): Target {
+	const ctx = createNpmContext(mode)
+
 	const extractors: Extractor[] = [
-		packageJsonExtractor,
+		makePackageJsonExtractor(mode),
 		{
 			extract: extractGitignore,
 			path: ".npmignore",
@@ -35,8 +39,6 @@ export function makeBun(): Target {
 			path: ".gitignore",
 		},
 	]
-
-	const directPathsInclude: Record<string, string> = Object.create(null)
 
 	cachedBunExcludesRule ||= ruleCompile({
 		compiled: null,
@@ -111,8 +113,12 @@ export function makeBun(): Target {
 	)
 
 	const internal: Rule[] = [
+		makeBundledDepsRule(ctx, makeBun),
+		makePackageResolutionRule(ctx),
 		symlinkRule,
-		makeDirectPathsRule(directPathsInclude),
+		makePatchedDepsRule(ctx),
+		ctx.npmIgnoreExcludeGlobRule,
+		makeDirectPathsRule(ctx.directPathsInclude),
 		cachedBunExcludesRule,
 		cachedBunIncludesRule,
 	]
@@ -121,26 +127,8 @@ export function makeBun(): Target {
 		extendsRoot: "workspaces",
 		extractors,
 		ignores: ruleTest,
-		init({ fs, cwd }, cb) {
-			fs.readFile(cwd + "/package.json", (err, content) => {
-				if (err) {
-					cb(new Error("Error while initializing Bun", { cause: err }))
-					return
-				}
-
-				let dist: PackageJson
-				try {
-					dist = npmManifestParse(content!.toString())
-				} catch (error) {
-					cb(new Error("Invalid 'package.json'", { cause: error }))
-					return
-				}
-
-				// TODO: Bun should include bundled deps
-
-				extractManifestIncludes(dist, directPathsInclude)
-				cb(null)
-			})
+		init(options, cb) {
+			initNpmContext(ctx, options, cb)
 		},
 		internalRules: internal,
 		root: ".",

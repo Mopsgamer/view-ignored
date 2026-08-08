@@ -5,12 +5,15 @@ import {
 	ruleTest,
 	type Rule,
 	ruleCompile,
-	packageJsonExtractor,
 	type GlobRule,
 } from "../patterns/index.js"
+import { makePackageJsonExtractor } from "../patterns/packagejson.js"
 import {
-	npmManifestParse,
-	extractManifestIncludes,
+	createNpmContext,
+	initNpmContext,
+	makePatchedDepsRule,
+	makePackageResolutionRule,
+	makeBundledDepsRule,
 	symlinkRule,
 	makeDirectPathsRule,
 	extractNoCaseNpmignore,
@@ -22,9 +25,11 @@ let cachedYarnClassicIncludesRule: GlobRule | null = null
 /**
  * @since 0.12.0
  */
-export function makeYarnClassic(): Target {
+export function makeYarnClassic(mode: "list" | "publish" | "bundle" = "publish"): Target {
+	const ctx = createNpmContext(mode)
+
 	const extractors: Extractor[] = [
-		packageJsonExtractor,
+		makePackageJsonExtractor(mode),
 		{
 			extract: extractNoCaseNpmignore,
 			path: ".yarnignore",
@@ -38,8 +43,6 @@ export function makeYarnClassic(): Target {
 			path: ".gitignore",
 		},
 	]
-
-	const directPathsInclude: Record<string, string> = Object.create(null)
 
 	cachedYarnClassicExcludesRule ||= ruleCompile(
 		{
@@ -104,8 +107,12 @@ export function makeYarnClassic(): Target {
 	)
 
 	const internal: Rule[] = [
+		makeBundledDepsRule(ctx, makeYarnClassic),
+		makePackageResolutionRule(ctx),
 		symlinkRule,
-		makeDirectPathsRule(directPathsInclude),
+		makePatchedDepsRule(ctx),
+		ctx.npmIgnoreExcludeGlobRule,
+		makeDirectPathsRule(ctx.directPathsInclude),
 		cachedYarnClassicExcludesRule,
 		cachedYarnClassicIncludesRule,
 	]
@@ -114,24 +121,8 @@ export function makeYarnClassic(): Target {
 		extendsRoot: "workspaces",
 		extractors,
 		ignores: ruleTest,
-		init({ fs, cwd }, cb) {
-			fs.readFile(cwd + "/package.json", (err, content) => {
-				if (err) {
-					cb(new Error("Error while initializing Yarn classic", { cause: err }))
-					return
-				}
-
-				let dist
-				try {
-					dist = npmManifestParse(content!.toString())
-				} catch (error) {
-					cb(new Error("Invalid 'package.json'", { cause: error }))
-					return
-				}
-
-				extractManifestIncludes(dist, directPathsInclude)
-				cb(null)
-			})
+		init(options, cb) {
+			initNpmContext(ctx, options, cb)
 		},
 		internalRules: internal,
 		root: ".",
