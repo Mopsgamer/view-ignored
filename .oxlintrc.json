@@ -19,6 +19,7 @@
 		"unicorn/prefer-array-index-of": "error",
 		"unicorn/no-useless-iterator-to-array": "error",
 		"unicorn/no-new-array": "off",
+		"eslint/prefer-destructuring": "error",
 		"eslint/func-names": ["error", "always"],
 
 		"check-access": "warn"

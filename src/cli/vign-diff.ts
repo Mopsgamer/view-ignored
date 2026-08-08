@@ -267,7 +267,7 @@ function fmtTime(ms: number): string {
 }
 
 function openUrl(url: string) {
-	const platform = process.platform
+	const { platform } = process
 
 	if (platform === "win32") {
 		spawn("cmd.exe", ["/c", "start", '""', url], { detached: true, stdio: "ignore" }).unref()
@@ -667,7 +667,7 @@ async function run(
 		})
 
 		for (const group of sortedGroups) {
-			const first = group[0]
+			const [first] = group
 			if (!first) continue
 			const icon = first.issue.startsWith("Missing")
 				? styleText("yellow", "[-] ")

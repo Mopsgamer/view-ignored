@@ -55,7 +55,7 @@ export function makeGit(): Target {
 				conf: any,
 				gDir: string | null,
 			) => {
-				const core = conf["core"]
+				const { core } = conf
 				const ex = core ? core["excludesfile"] : null
 				const p = ex ? resolvePath(gDir || nCwd, ex) : resolvePath(gDir || nCwd, globalIgnore)
 

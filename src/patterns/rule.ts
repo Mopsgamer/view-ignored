@@ -353,10 +353,10 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 		return { ...src, ignored: true, kind: RuleMatchKind.invalidSource }
 	}
 
-	const entry = options.entry
+	const { entry } = options
 	const lowerPath = options.lowerEntry || entry.toLowerCase()
 
-	const internalRules = options.target.internalRules
+	const { internalRules } = options.target
 	const [beforeInternal, afterInternal] = Array.isArray(internalRules)
 		? [internalRules, []]
 		: [internalRules.before, internalRules.after]
@@ -390,7 +390,7 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 		if (currentSrc.inverted) {
 			hasInverted = true
 		}
-		const rules = currentSrc.rules
+		const { rules } = currentSrc
 		const rlen = rules.length
 
 		for (let i = 0; i < rlen; i++) {

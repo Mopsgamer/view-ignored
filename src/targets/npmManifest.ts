@@ -466,7 +466,7 @@ export function makePatchedDepsRule(ctx: NpmContext): CustomRule {
 
 export function makePackageResolutionRule(ctx: NpmContext): SkipRule {
 	return (options: IgnoresOptions) => {
-		const entry = options.entry
+		const { entry } = options
 		if (!entry || entry === "." || !options.dirent.isDirectory()) return null
 
 		if (isWhitelistedByFiles(ctx, entry)) return null
@@ -507,7 +507,7 @@ export function makeBundledDepsRule(
 	makeTarget: (mode: "list" | "publish" | "bundle") => Target,
 ): SkipRule {
 	return (options: IgnoresOptions) => {
-		const entry = options.entry
+		const { entry } = options
 		if (entry !== join(options.within || "", "node_modules")) return null
 
 		const remainingDepth = (options.depth ?? Infinity) - 2
@@ -567,8 +567,7 @@ export function initNpmContext(
 	options: { fs: FsAdapter; cwd: string },
 	cb: (err: Error | null) => void,
 ): void {
-	const fs = options.fs
-	const cwd = options.cwd
+	const { fs, cwd } = options
 	ctx.dist = undefined
 	ctx.rootDeps.clear()
 	ctx.whitelistedPaths.clear()

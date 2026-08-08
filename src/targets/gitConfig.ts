@@ -76,7 +76,7 @@ export function parseGit(text: string): any {
 			case 91: // section header
 				const res = parseSectionHeader(text, i, len)
 				i = res.nextIdx
-				sectionName = res.sectionName
+				;({ sectionName } = res)
 				section = obj[sectionName] ||= {}
 				continue
 		}

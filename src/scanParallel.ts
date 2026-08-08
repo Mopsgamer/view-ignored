@@ -81,7 +81,7 @@ export function scanParallel(
 						for (let i = 0; i < len; i++) {
 							const entry = entries[i]!
 							activeTasks++
-							const name = entry.name
+							const { name } = entry
 							const currentRelPath = prefix + name
 							const lowerEntry = currentRelPath.toLowerCase()
 

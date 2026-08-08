@@ -20,7 +20,7 @@ function runTestSuite(dirOrFile, envVar) {
 	}
 
 	const passed = passMatch ? passMatch[1] : "0"
-	const total = totalMatch[1]
+	const [, total] = totalMatch
 	return `${passed}/${total}`
 }
 

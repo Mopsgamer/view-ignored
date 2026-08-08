@@ -140,7 +140,7 @@ export function walkIncludes(
 		return
 	}
 
-	const internalRules = target.internalRules
+	const { internalRules } = target
 	const rules = internalRules
 		? Array.isArray(internalRules)
 			? internalRules

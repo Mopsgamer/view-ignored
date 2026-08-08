@@ -43,7 +43,7 @@ export function patternListCompile(options: PatternCompileOptions & { list: Patt
 	compiledItems?: { pattern: string; re: RegExp }[]
 } {
 	const nocase = !!options.nocase
-	const list = options.list
+	const { list } = options
 	const len = list.length
 
 	if (len === 0) {

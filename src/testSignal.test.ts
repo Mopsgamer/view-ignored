@@ -10,7 +10,7 @@ describe("signal option", () => {
 	test("aborted signal should throw", async () => {
 		const controller = new AbortController()
 		controller.abort("reason")
-		const signal = controller.signal
+		const { signal } = controller
 
 		// resolveSources.ts returns signal.reason as error
 		expect(scan({ signal, target: makeGit() })).rejects.toBe("reason")
