@@ -2,7 +2,7 @@ import type { CustomRule } from "../patterns/rule.js"
 import type { Source } from "../patterns/source.js"
 
 import { extractNpmignore } from "../patterns/npmignore.js"
-import { unixify } from "../unixify.js"
+import { isWhitespace, trimLeadingDotSlash } from "../unixify.js"
 
 export function extractNoCaseNpmignore(source: Source, content: Uint8Array): void | null | Error {
 	return extractNpmignore(source, content, { nocase: true })
@@ -49,8 +49,23 @@ export interface PackageJson {
 	workspaces?: string[] | { packages?: string[] }
 }
 
+function hasUppercase(s: string): boolean {
+	const len = s.length
+	for (let i = 0; i < len; i++) {
+		const c = s.charCodeAt(i)
+		if (c >= 65 && c <= 90) return true
+	}
+	return false
+}
+
 function isValidNpmName(name: string): boolean {
-	if (name.trim() !== name || name.length === 0 || name.length > 214) {
+	const len = name.length
+	if (
+		len === 0 ||
+		len > 214 ||
+		isWhitespace(name.charCodeAt(0)) ||
+		isWhitespace(name.charCodeAt(len - 1))
+	) {
 		return false
 	}
 	if (name.startsWith("@")) {
@@ -64,7 +79,7 @@ function isValidNpmName(name: string): boolean {
 }
 
 function isValidNameComponent(part: string): boolean {
-	if (part.startsWith(".") || part.startsWith("_") || part !== part.toLowerCase()) {
+	if (part.startsWith(".") || part.startsWith("_") || hasUppercase(part)) {
 		return false
 	}
 	if (/[~!'()* ]/.test(part)) {
@@ -148,18 +163,28 @@ export function npmManifestParse(
 		}
 	}
 
-	const recordFields: (keyof PackageJson)[] = [
-		"engines",
-		"scripts",
-		"dependencies",
-		"devDependencies",
-		"optionalDependencies",
-	]
-	for (const field of recordFields) {
-		if (field in parsed && !isRecordOfStrings(parsed[field])) {
-			if (mode !== "publish") return {} as PackageJson
-			throw new Error(`'${field}' field must be an object with string values`)
-		}
+	if (parsed.engines !== undefined && !isRecordOfStrings(parsed.engines)) {
+		if (mode !== "publish") return {} as PackageJson
+		throw new Error("'engines' field must be an object with string values")
+	}
+	if (parsed.scripts !== undefined && !isRecordOfStrings(parsed.scripts)) {
+		if (mode !== "publish") return {} as PackageJson
+		throw new Error("'scripts' field must be an object with string values")
+	}
+	if (parsed.dependencies !== undefined && !isRecordOfStrings(parsed.dependencies)) {
+		if (mode !== "publish") return {} as PackageJson
+		throw new Error("'dependencies' field must be an object with string values")
+	}
+	if (parsed.devDependencies !== undefined && !isRecordOfStrings(parsed.devDependencies)) {
+		if (mode !== "publish") return {} as PackageJson
+		throw new Error("'devDependencies' field must be an object with string values")
+	}
+	if (
+		parsed.optionalDependencies !== undefined &&
+		!isRecordOfStrings(parsed.optionalDependencies)
+	) {
+		if (mode !== "publish") return {} as PackageJson
+		throw new Error("'optionalDependencies' field must be an object with string values")
 	}
 
 	if ("files" in parsed && !isArrayOfStrings(parsed.files)) {
@@ -210,14 +235,7 @@ export function extractManifestIncludes(manifest: PackageJson, dist: Record<stri
 
 function addDirectPath(p: string | undefined, dist: Record<string, string>, key: string) {
 	if (typeof p !== "string") return
-	let normalized = unixify(p)
-	while (normalized.startsWith("./") || normalized.startsWith("/")) {
-		if (normalized.startsWith("./")) {
-			normalized = normalized.slice(2)
-		} else {
-			normalized = normalized.slice(1)
-		}
-	}
+	const normalized = trimLeadingDotSlash(p)
 	if (normalized && !normalized.startsWith("../") && normalized !== "..") {
 		dist[key] = normalized
 	}

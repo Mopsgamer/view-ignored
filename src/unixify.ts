@@ -54,3 +54,37 @@ export function strip(p: string): string {
 	}
 	return res
 }
+
+/**
+ * Checks if a character code represents a whitespace.
+ *
+ * @since 0.12.0
+ */
+export function isWhitespace(code: number): boolean {
+	return (
+		code === 32 ||
+		(code >= 9 && code <= 13) ||
+		code === 160 ||
+		code === 5760 ||
+		(code >= 8192 && code <= 8202) ||
+		code === 8232 ||
+		code === 8233 ||
+		code === 8239 ||
+		code === 8287 ||
+		code === 12288 ||
+		code === 65279
+	)
+}
+
+/**
+ * Trims leading "./" and "/" from a path segment.
+ *
+ * @since 0.12.0
+ */
+export function trimLeadingDotSlash(p: string): string {
+	let current = p
+	while (current.startsWith("./") || current.startsWith("/")) {
+		current = current.startsWith("./") ? current.slice(2) : current.slice(1)
+	}
+	return current
+}

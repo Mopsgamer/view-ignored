@@ -2,6 +2,7 @@ import type { ExtractorFn } from "./extractor.js"
 import type { PatternCompileOptions } from "./patternList.js"
 import type { GlobRule } from "./rule.js"
 
+import { isWhitespace } from "../unixify.js"
 import { ruleCompile } from "./resolveSources.js"
 import { resolveNegatable, type Source } from "./source.js"
 
@@ -24,10 +25,6 @@ export function extractNpmignore(
 }
 
 extractNpmignore satisfies ExtractorFn
-
-function isWhitespace(code: number): boolean {
-	return code === 32 || code === 9 || code === 13 || code === 10 || code === 11 || code === 12
-}
 
 /**
  * Extracts and compiles patterns from the file using NPM/ignore-walk style trimming.
