@@ -191,16 +191,15 @@ export async function testScan(
 }
 
 function pathsToDebug([k, v]: [string, RuleMatch]) {
+	// oxlint-disable-next-line typescript/no-explicit-any
+	const match = v as any
 	return [
 		k,
 		{
-			ignored: v.ignored,
-			kind: RMK[v.kind],
-			...(v.kind === 6
-				? {
-						pattern: v.pattern,
-					}
-				: {}),
+			ignored: match.ignored,
+			kind: RMK[match.kind],
+			pattern: match.pattern,
+			source: match.source?.path,
 		},
 	] as const
 }
