@@ -34,7 +34,7 @@ Retrieve a list of files ignored or included by Git, NPM, Yarn, JSR, Deno, Bun, 
 - **Fast.** Highly optimized for performance with minimal memory overhead.
 - **Plugins.** Built-in [targets](#targets) for popular tools. Create custom targets by implementing the `Target` interface.
 - **Streaming.** Native `scanStream` support for processing massive file trees with minimal memory overhead.
-- **Execution Control.** Fine-tune traversal depth and skip unnecessary directory checks using the `fastDepth` and `fastInternal` options. Supports standard `AbortSignal` to cancel long-running scans instantly.
+- **Execution Control.** Fine-tune traversal depth and skip unnecessary directory checks using the `skipDepth` and `skipInternal` options. Supports standard `AbortSignal` to cancel long-running scans instantly.
 - **Lightweight.** Minimal dependencies for fast performance and a small bundle size.
 - **Browser.** Fully compatible with browser environments when bundled.
 - **Windows.** Converts Windows-style paths to Unix format to guarantee compatibility across test frameworks (like `memfs`) and browser bundles.
