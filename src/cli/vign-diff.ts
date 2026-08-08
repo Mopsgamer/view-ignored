@@ -301,8 +301,8 @@ function showHelp() {
 	console.log(`  vign-diff ${blue("[command]")} ${blue("<target>")} [flags]\n`)
 
 	console.log(`${b("Commands:")}`)
-	console.log(`  ${blue("diff")}           Compare against system CLI (default)`)
-	console.log(`  ${blue("list")}, ${blue("ls")}     List files included by view-ignored\n`)
+	console.log(`  ${blue("diff")}                Compare against system CLI (default)`)
+	console.log(`  ${blue("list")}, ${blue("ls")}            List files included by view-ignored\n`)
 
 	console.log(`${b("Targets:")}`)
 	const targetNames = Object.keys(TARGETS).sort()
@@ -320,17 +320,17 @@ function showHelp() {
 	console.log(
 		`  ${blue("-m")}, ${blue("--mode")}          Target mode for NPM-like packages (publish, list, bundle)`,
 	)
-	console.log(`  ${blue("--depth")}              Depth limit for scanning`)
-	console.log(`  ${blue("--dirs")}               Include/exclude directories in scan (true/false)`)
-	console.log(`  ${blue("--skip-internal")}      Toggle skipping internal matches (true/false)`)
-	console.log(`  ${blue("--invert")}             Inverting matcher rules (true, false, or 2)\n`)
+	console.log(`  ${blue("--depth")}             Depth limit for scanning`)
+	console.log(`  ${blue("--dirs")}              Include/exclude directories in scan (true/false)`)
+	console.log(`  ${blue("--skip-internal")}     Toggle skipping internal matches (true/false)`)
+	console.log(`  ${blue("--invert")}            Inverting matcher rules (true, false, or 2)\n`)
 
 	console.log(`${b("Examples:")}`)
-	console.log(`  vign-diff git          ${d("# Compare against git")}`)
-	console.log(`  vign-diff list npm     ${d("# List files for npm package")}`)
+	console.log(`  vign-diff git       ${d("# Compare against git")}`)
+	console.log(`  vign-diff list npm  ${d("# List files for npm package")}`)
 	console.log(`  vign-diff git -s untracked ${d("# Compare untracked files only")}`)
-	console.log(`  vign-diff npm -s text  ${d("# Compare using npm pack text output format")}`)
-	console.log(`  vign-diff all -i       ${d("# Scan all and open issues")}\n`)
+	console.log(`  vign-diff npm -s text ${d("# Compare using npm pack text output format")}`)
+	console.log(`  vign-diff all -i    ${d("# Scan all and open issues")}\n`)
 
 	const repo = pkg.repository.url.replace(/^git\+/, "").replace(/\.git$/, "")
 	const npmLink = `https://www.npmjs.org/package/${pkg.name}`
