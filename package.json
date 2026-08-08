@@ -92,7 +92,7 @@
 		"bench": "bun scripts/bench.js",
 		"benchreadme": "bun scripts/benchreadme.js && bun run fmt benchmarks/README.md",
 		"size": "bun scripts/size.js",
-		"coverage": "bun run test --coverage --coverage-reporter=lcov",
+		"coverage": "TEST_PACKLIST=1 bun run test --coverage --coverage-reporter=lcov",
 		"test": "bun test --timeout 5000 src",
 		"test:patterns": "bun test --timeout 5000 src/patterns",
 		"test:targets": "bun test --timeout 5000 src/targets",
