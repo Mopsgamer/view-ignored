@@ -8,12 +8,8 @@ export function unixify(p: string): string {
 	const res = p.indexOf("\\") === -1 ? p : p.replaceAll("\\", "/")
 	let start = 0
 	let end = res.length
-	if (end >= 2 && res.charCodeAt(0) === 46 && res.charCodeAt(1) === 47) {
-		start = 2
-	}
-	if (end > start + 1 && res.charCodeAt(end - 1) === 47) {
-		end--
-	}
+	if (end >= 2 && res.charCodeAt(0) === 46 && res.charCodeAt(1) === 47) start = 2
+	if (end > start + 1 && res.charCodeAt(end - 1) === 47) end--
 	if (start === 0 && end === res.length) return res || "."
 	return res.slice(start, end) || "."
 }

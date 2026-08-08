@@ -43,9 +43,7 @@ function findExtendedRoot(
 	cb: (err: Error | null, path: string | null) => void,
 ): void {
 	const cacheKey = `${cwd}::${extendsRoot}`
-	if (extendedRootCache.has(cacheKey)) {
-		return cb(null, extendedRootCache.get(cacheKey)!)
-	}
+	if (extendedRootCache.has(cacheKey)) return cb(null, extendedRootCache.get(cacheKey)!)
 
 	let current = cwd
 
@@ -87,9 +85,7 @@ function resolveAllExtendedRoots(
 	cb: (err: Error | null, results: Map<string, string | null>) => void,
 ): void {
 	const results = new Map<string, string | null>()
-	if (keys.length === 0) {
-		return cb(null, results)
-	}
+	if (keys.length === 0) return cb(null, results)
 
 	let active = keys.length
 	let hasError = false
@@ -103,9 +99,7 @@ function resolveAllExtendedRoots(
 			}
 			results.set(key, path)
 			active--
-			if (active === 0) {
-				cb(null, results)
-			}
+			if (active === 0) cb(null, results)
 		})
 	}
 }
@@ -171,26 +165,20 @@ function launchExtractor(
 	cb: (err: Error | null, res: Resource) => void,
 ): void {
 	const isDotSlash = epath.startsWith("./")
-	if (isDotSlash && dir !== "." && dir !== "") {
-		return cb(null, null)
-	}
+	if (isDotSlash && dir !== "." && dir !== "") return cb(null, null)
 
 	const cleanPath = isDotSlash ? epath.slice(2) : epath
 
 	if (entries_) {
 		const slashIdx = cleanPath.indexOf("/")
 		const firstSegment = slashIdx === -1 ? cleanPath : cleanPath.slice(0, slashIdx)
-		if (!entries_.some((e) => e.name === firstSegment)) {
-			return cb(null, null)
-		}
+		if (!entries_.some((e) => e.name === firstSegment)) return cb(null, null)
 	}
 
 	fs.readFile(join(parent, cleanPath), (err, buff) => {
 		if (err) {
 			// oxlint-disable-next-line typescript/no-explicit-any
-			if ((err as any).code === "ENOENT") {
-				return cb(null, null)
-			}
+			if ((err as any).code === "ENOENT") return cb(null, null)
 			const source: Source = {
 				dir,
 				inverted: isDotSlash,
@@ -231,9 +219,7 @@ function launchDirectoryExtractors(
 ): void {
 	const elen = extractors.length
 	const results = new Array(elen)
-	if (elen === 0) {
-		return cb(null, results)
-	}
+	if (elen === 0) return cb(null, results)
 
 	let active = elen
 	let hasError = false
@@ -241,9 +227,7 @@ function launchDirectoryExtractors(
 	const check = () => {
 		if (hasError) return
 		active--
-		if (active === 0) {
-			cb(null, results)
-		}
+		if (active === 0) cb(null, results)
 	}
 
 	for (let ei = 0; ei < elen; ei++) {
@@ -289,9 +273,7 @@ export function resolveSources(
 		for (const [_, extRoot] of extendedRoots) {
 			if (extRoot && isParentOf(extRoot, cwd)) {
 				const lv = cwd.split("/").length - extRoot.split("/").length
-				if (lv > maxLevels) {
-					maxLevels = lv
-				}
+				if (lv > maxLevels) maxLevels = lv
 			}
 		}
 
@@ -310,9 +292,7 @@ export function resolveSources(
 
 			let canGoHigher = false
 			if (current === "." || current.startsWith("..")) {
-				if (currentLevels < maxLevels) {
-					canGoHigher = true
-				}
+				if (currentLevels < maxLevels) canGoHigher = true
 			} else {
 				canGoHigher = true
 			}
@@ -321,9 +301,7 @@ export function resolveSources(
 				break
 			}
 			current = getParentDir(current)
-			if (current.startsWith("..")) {
-				currentLevels++
-			}
+			if (current.startsWith("..")) currentLevels++
 		}
 
 		if (root.startsWith("/")) {
@@ -364,9 +342,7 @@ export function resolveSources(
 				for (let pi = plen - 1; pi >= 0; pi--) {
 					const res = results[pi * elen + ei]
 					if (res && res !== null) {
-						if (!("error" in res)) {
-							res.parent = lastExtractorResource
-						}
+						if (!("error" in res)) res.parent = lastExtractorResource
 						lastExtractorResource = res
 					}
 				}
@@ -384,9 +360,7 @@ export function resolveSources(
 					}
 				}
 
-				if (!dirResource) {
-					dirResource = lastResource
-				}
+				if (!dirResource) dirResource = lastResource
 
 				external.set(relDirs[pi]!, dirResource)
 				lastResource = dirResource

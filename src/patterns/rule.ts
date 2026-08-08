@@ -318,17 +318,13 @@ function cacheTest(
 	if (!rs) return null
 	try {
 		const n = lowerPath || path
-		if (!rs.re.test(path, lowerPath)) {
-			return null
-		}
+		if (!rs.re.test(path, lowerPath)) return null
 		const items = rs.compiledItems
 		if (items) {
 			const len = items.length
 			for (let i = 0; i < len; i++) {
 				const item = items[i]!
-				if (item.re.test(n)) {
-					return { pattern: item.pattern }
-				}
+				if (item.re.test(n)) return { pattern: item.pattern }
 			}
 		}
 		return { pattern: rs.pattern }
@@ -345,13 +341,10 @@ function cacheTest(
 export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 	const src = options.resource
 
-	if (src === undefined) {
-		throw new Error("view-ignored has crashed: no source cached.")
-	}
+	if (src === undefined) throw new Error("view-ignored has crashed: no source cached.")
 
-	if (src !== null && "error" in src) {
+	if (src !== null && "error" in src)
 		return { ...src, ignored: true, kind: RuleMatchKind.invalidSource }
-	}
 
 	const { entry } = options
 	const lowerPath = options.lowerEntry || entry.toLowerCase()
@@ -387,9 +380,7 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 			break
 		}
 		visited.add(currentSrc)
-		if (currentSrc.inverted) {
-			hasInverted = true
-		}
+		if (currentSrc.inverted) hasInverted = true
 		const { rules } = currentSrc
 		const rlen = rules.length
 
@@ -425,9 +416,7 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 		if (internalMatch) return internalMatch
 	}
 
-	if (src === null) {
-		return { ignored: false, kind: RuleMatchKind.missingSource }
-	}
+	if (src === null) return { ignored: false, kind: RuleMatchKind.missingSource }
 
 	return (src._noMatchCache ||= {
 		ignored: hasInverted || src.inverted || false,

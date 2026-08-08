@@ -27,9 +27,7 @@ export function extractGitignore(
 extractGitignore satisfies ExtractorFn
 
 function isCommentLineChar(content: Uint8Array, start: number, i: number): boolean {
-	if (i <= start || content[i - 1] !== 32) {
-		return false
-	}
+	if (i <= start || content[i - 1] !== 32) return false
 	let hasNonSpaceBefore = false
 	for (let j = start; j < i - 1; j++) {
 		const c = content[j]!
@@ -38,9 +36,7 @@ function isCommentLineChar(content: Uint8Array, start: number, i: number): boole
 			break
 		}
 	}
-	if (!hasNonSpaceBefore) {
-		return false
-	}
+	if (!hasNonSpaceBefore) return false
 
 	let backslashCount = 0
 	for (let j = i - 2; j >= start && content[j] === 92; j--) {
@@ -57,9 +53,7 @@ function processGitignoreLine(
 	options?: PatternCompileOptions,
 	rule?: GlobRule,
 ): GlobRule | undefined {
-	if (content[start] === 35) {
-		return rule
-	}
+	if (content[start] === 35) return rule
 
 	let isEscaped = false
 	const lineBuff = new Uint8Array(lineEnd - start)
@@ -86,9 +80,7 @@ function processGitignoreLine(
 		}
 	}
 
-	if (lineBuffIdx === 0) {
-		return rule
-	}
+	if (lineBuffIdx === 0) return rule
 
 	let actualLastRealCharIdx = -1
 	let tempIsEscaped = false
@@ -104,13 +96,9 @@ function processGitignoreLine(
 		}
 	}
 
-	if (tempIsEscaped) {
-		actualLastRealCharIdx = lineBuffIdx
-	}
+	if (tempIsEscaped) actualLastRealCharIdx = lineBuffIdx
 
-	if (actualLastRealCharIdx === -1) {
-		return rule
-	}
+	if (actualLastRealCharIdx === -1) return rule
 
 	const rawLine = new TextDecoder().decode(lineBuff.subarray(0, actualLastRealCharIdx))
 
@@ -127,13 +115,9 @@ function processGitignoreLine(
 			resolvedLine += rc
 		}
 	}
-	if (resolvedIsEscaped) {
-		resolvedLine += "\\"
-	}
+	if (resolvedIsEscaped) resolvedLine += "\\"
 
-	if (resolvedLine.length > 0) {
-		rule = resolveNegatable(resolvedLine, false, options, rule)
-	}
+	if (resolvedLine.length > 0) rule = resolveNegatable(resolvedLine, false, options, rule)
 
 	return rule
 }
@@ -171,8 +155,6 @@ export function extractGitignoreRules(
 	const rlen = source.rules.length
 	for (let i = 0; i < rlen; i++) {
 		const r = source.rules[i]!
-		if ("list" in r && r.compiled === null) {
-			ruleCompile(r, options)
-		}
+		if ("list" in r && r.compiled === null) ruleCompile(r, options)
 	}
 }
