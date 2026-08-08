@@ -276,4 +276,16 @@ describe("Yarn", () => {
 			}),
 		).toThrow()
 	})
+
+	test("list mode parses files correctly", async (done) => {
+		await testScan(
+			done,
+			{
+				"README.md": "",
+				"package.json": packageJsonNoFiles,
+			},
+			["README.md", "package.json"],
+			{ target: makeYarn("list") },
+		)
+	})
 })

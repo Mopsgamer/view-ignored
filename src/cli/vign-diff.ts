@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import type { MatcherContext } from "../patterns/matcherContext.js"
 import type { Target } from "../targets/target.js"
+import type { ScanOptions } from "../types.js"
 
 import { execSync, spawn } from "node:child_process"
 import { readFileSync, unlinkSync, existsSync } from "node:fs"
@@ -24,11 +25,17 @@ import {
 } from "../targets/index.js"
 import { unixify } from "../unixify.js"
 
+interface CommandSet {
+	cmd: string
+	parse: (out: string) => string[]
+}
+
 interface TargetDef {
 	bin: string
-	cmd: string
-	make: () => Target
-	parse: (out: string) => string[]
+	defaultSet: string
+	// oxlint-disable-next-line typescript/no-explicit-any
+	make: (mode?: any) => Target
+	sets: Record<string, CommandSet>
 }
 
 function parseDenoOrJSR(out: string): string[] {
@@ -54,135 +61,195 @@ function parseDenoOrJSR(out: string): string[] {
 const TARGETS: Record<string, TargetDef> = {
 	bun: {
 		bin: "bun",
-		cmd: "bun pm pack --dry-run --ignore-scripts",
+		defaultSet: "default",
 		make: makeBun,
-		parse: (out) => {
-			const files: string[] = []
-			for (const line of out.split(/\r?\n/)) {
-				const match = line.match(/^packed\s+\S+\s+(.+)$/)
-				if (match?.[1]) files.push(match[1].trim())
-			}
-			return files
+		sets: {
+			default: {
+				cmd: "bun pm pack --dry-run --ignore-scripts",
+				parse: (out) => {
+					const files: string[] = []
+					for (const line of out.split(/\r?\n/)) {
+						const match = line.match(/^packed\s+\S+\s+(.+)$/)
+						if (match?.[1]) files.push(match[1].trim())
+					}
+					return files
+				},
+			},
 		},
 	},
 	deno: {
 		bin: "deno",
-		cmd: "deno publish --dry-run --allow-dirty --allow-slow-types",
+		defaultSet: "default",
 		make: makeDeno,
-		parse: parseDenoOrJSR,
+		sets: {
+			default: {
+				cmd: "deno publish --dry-run --allow-dirty --allow-slow-types",
+				parse: parseDenoOrJSR,
+			},
+		},
 	},
 	git: {
 		bin: "git",
-		cmd: "git ls-files --others --exclude-standard --cached",
+		defaultSet: "all",
 		make: makeGit,
-		parse: (out) => out.trim().split(/\r?\n/).filter(Boolean),
+		sets: {
+			all: {
+				cmd: "git ls-files --others --exclude-standard --cached",
+				parse: (out) => out.trim().split(/\r?\n/).filter(Boolean),
+			},
+			ignored: {
+				cmd: "git ls-files --ignored --others --exclude-standard",
+				parse: (out) => out.trim().split(/\r?\n/).filter(Boolean),
+			},
+			tracked: {
+				cmd: "git ls-files --cached",
+				parse: (out) => out.trim().split(/\r?\n/).filter(Boolean),
+			},
+			untracked: {
+				cmd: "git ls-files --others --exclude-standard",
+				parse: (out) => out.trim().split(/\r?\n/).filter(Boolean),
+			},
+		},
 	},
 	jsr: {
 		bin: "jsr",
-		cmd: "jsr publish --dry-run --allow-dirty --allow-slow-types",
+		defaultSet: "default",
 		make: makeJSR,
-		parse: parseDenoOrJSR,
+		sets: {
+			default: {
+				cmd: "jsr publish --dry-run --allow-dirty --allow-slow-types",
+				parse: parseDenoOrJSR,
+			},
+		},
 	},
 	npm: {
 		bin: "npm",
-		cmd: "npm pack --dry-run --json --ignore-scripts",
+		defaultSet: "json",
 		make: makeNPM,
-		parse: (out) => {
-			const startIdx = out.indexOf("[")
-			const endIdx = out.lastIndexOf("]")
-			if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
-				const jsonStr = out.slice(startIdx, endIdx + 1)
-				try {
-					const parsed = JSON.parse(jsonStr)
-					const info = Array.isArray(parsed) ? parsed[0] : parsed
-					if (info && Array.isArray(info.files)) {
-						return info.files.map((f: { path: string }) => f.path)
+		sets: {
+			json: {
+				cmd: "npm pack --dry-run --json --ignore-scripts",
+				parse: (out) => {
+					const startIdx = out.indexOf("[")
+					const endIdx = out.lastIndexOf("]")
+					if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+						const jsonStr = out.slice(startIdx, endIdx + 1)
+						try {
+							const parsed = JSON.parse(jsonStr)
+							const info = Array.isArray(parsed) ? parsed[0] : parsed
+							if (info && Array.isArray(info.files)) {
+								return info.files.map((f: { path: string }) => f.path)
+							}
+						} catch {}
 					}
-				} catch {}
-			}
-			const files: string[] = []
-			let inContents = false
-			for (const line of out.split(/\r?\n/)) {
-				if (line.includes("Tarball Contents")) {
-					inContents = true
-					continue
-				}
-				if (inContents && line.includes("Tarball Details")) break
-				if (inContents) {
-					const match = line.match(/npm notice\s+\S+\s+(.+)/)
-					if (match?.[1]) files.push(match[1].trim())
-				}
-			}
-			return files
+					return []
+				},
+			},
+			text: {
+				cmd: "npm pack --dry-run --ignore-scripts",
+				parse: (out) => {
+					const files: string[] = []
+					let inContents = false
+					for (const line of out.split(/\r?\n/)) {
+						if (line.includes("Tarball Contents")) {
+							inContents = true
+							continue
+						}
+						if (inContents && line.includes("Tarball Details")) break
+						if (inContents) {
+							const match = line.match(/npm notice\s+\S+\s+(.+)/)
+							if (match?.[1]) files.push(match[1].trim())
+						}
+					}
+					return files
+				},
+			},
 		},
 	},
 	vsce: {
 		bin: "vsce",
-		cmd: "vsce ls",
+		defaultSet: "default",
 		make: makeVSCE,
-		parse: (out) =>
-			out
-				.trim()
-				.split(/\r?\n/)
-				.filter(
-					(line) =>
-						line &&
-						!line.startsWith("npm notice") &&
-						!line.includes("DeprecationWarning") &&
-						!line.startsWith("ERROR"),
-				)
-				.filter(Boolean),
+		sets: {
+			default: {
+				cmd: "vsce ls",
+				parse: (out) =>
+					out
+						.trim()
+						.split(/\r?\n/)
+						.filter(
+							(line) =>
+								line &&
+								!line.startsWith("npm notice") &&
+								!line.includes("DeprecationWarning") &&
+								!line.startsWith("ERROR"),
+						)
+						.filter(Boolean),
+			},
+		},
 	},
 	yarn: {
 		bin: "yarn",
-		cmd: "yarn pack --dry-run",
+		defaultSet: "default",
 		make: makeYarn,
-		parse: (out) => {
-			const files: string[] = []
-			for (const line of out.split(/\r?\n/)) {
-				const match = line.match(/^- (.*)$/)
-				if (match?.[1]) files.push(match[1].trim())
-			}
-			return files
+		sets: {
+			default: {
+				cmd: "yarn pack --dry-run",
+				parse: (out) => {
+					const files: string[] = []
+					for (const line of out.split(/\r?\n/)) {
+						const match = line.match(/^- (.*)$/)
+						if (match?.[1]) files.push(match[1].trim())
+					}
+					return files
+				},
+			},
 		},
 	},
 	"yarn-classic": {
 		bin: "yarn",
-		cmd: "yarn pack --filename .vign-diff.tgz",
+		defaultSet: "default",
 		make: makeYarnClassic,
-		parse: () => {
-			const files: string[] = []
-			try {
-				const data = readFileSync(".vign-diff.tgz")
-				const buffer = gunzipSync(data)
-				let offset = 0
-				while (offset + 512 <= buffer.length) {
-					const name = buffer
-						.subarray(offset, offset + 100)
-						.toString()
-						.replace(/\0/g, "")
-					if (!name) break
-					const typeflag = buffer[offset + 156]
-					offset += 512
-					const sizeStr = buffer.subarray(offset - 512 + 124, offset - 512 + 124 + 12).toString()
-					const size = parseInt(sizeStr, 8)
-					// typeflag '5' (0x35) is directory
-					if (
-						typeflag !== 0x35 &&
-						name !== "package/" &&
-						name !== "package" &&
-						!name.endsWith("/")
-					) {
-						files.push(name.replace(/^package\//, ""))
+		sets: {
+			default: {
+				cmd: "yarn pack --filename .vign-diff.tgz",
+				parse: () => {
+					const files: string[] = []
+					try {
+						const data = readFileSync(".vign-diff.tgz")
+						const buffer = gunzipSync(data)
+						let offset = 0
+						while (offset + 512 <= buffer.length) {
+							const name = buffer
+								.subarray(offset, offset + 100)
+								.toString()
+								.replace(/\0/g, "")
+							if (!name) break
+							const typeflag = buffer[offset + 156]
+							offset += 512
+							const sizeStr = buffer
+								.subarray(offset - 512 + 124, offset - 512 + 124 + 12)
+								.toString()
+							const size = parseInt(sizeStr, 8)
+							// typeflag '5' (0x35) is directory
+							if (
+								typeflag !== 0x35 &&
+								name !== "package/" &&
+								name !== "package" &&
+								!name.endsWith("/")
+							) {
+								files.push(name.replace(/^package\//, ""))
+							}
+							offset += Math.ceil(size / 512) * 512
+						}
+					} finally {
+						try {
+							unlinkSync(".vign-diff.tgz")
+						} catch {}
 					}
-					offset += Math.ceil(size / 512) * 512
-				}
-			} finally {
-				try {
-					unlinkSync(".vign-diff.tgz")
-				} catch {}
-			}
-			return files
+					return files
+				},
+			},
 		},
 	},
 }
@@ -242,14 +309,27 @@ function showHelp() {
 	console.log(`  ${targetNames.join(", ")} (or ${blue("all")})\n`)
 
 	console.log(`${b("Flags:")}`)
-	console.log(`  ${blue("-i")}, ${blue("--issue")}     Open GitHub issue on discrepancy`)
-	console.log(`  ${blue("-V")}, ${blue("--verbose")}   Show raw report`)
-	console.log(`  ${blue("-h")}, ${blue("--help")}      Show this help output`)
-	console.log(`  ${blue("-v")}, ${blue("--version")}   Show version\n`)
+	console.log(`  ${blue("-i")}, ${blue("--issue")}         Open GitHub issue on discrepancy`)
+	console.log(`  ${blue("-V")}, ${blue("--verbose")}       Show raw report`)
+	console.log(`  ${blue("-h")}, ${blue("--help")}          Show this help output`)
+	console.log(`  ${blue("-v")}, ${blue("--version")}       Show version`)
+	console.log(`  ${blue("-c")}, ${blue("--cmd")}           Override standard CLI command`)
+	console.log(
+		`  ${blue("-s")}, ${blue("--cmd-set")}       Choose alternative predefined command set`,
+	)
+	console.log(
+		`  ${blue("-m")}, ${blue("--mode")}          Target mode for NPM-like packages (publish, list, bundle)`,
+	)
+	console.log(`  ${blue("--depth")}              Depth limit for scanning`)
+	console.log(`  ${blue("--dirs")}               Include/exclude directories in scan (true/false)`)
+	console.log(`  ${blue("--skip-internal")}      Toggle skipping internal matches (true/false)`)
+	console.log(`  ${blue("--invert")}             Inverting matcher rules (true, false, or 2)\n`)
 
 	console.log(`${b("Examples:")}`)
 	console.log(`  vign-diff git          ${d("# Compare against git")}`)
 	console.log(`  vign-diff list npm     ${d("# List files for npm package")}`)
+	console.log(`  vign-diff git -s untracked ${d("# Compare untracked files only")}`)
+	console.log(`  vign-diff npm -s text  ${d("# Compare using npm pack text output format")}`)
 	console.log(`  vign-diff all -i       ${d("# Scan all and open issues")}\n`)
 
 	const repo = pkg.repository.url.replace(/^git\+/, "").replace(/\.git$/, "")
@@ -289,7 +369,18 @@ function getYarnVersion(): string | null {
 
 async function run(
 	name: string,
-	opt: { issue: boolean; list: boolean; verbose: boolean },
+	opt: {
+		cmd?: string
+		cmdSet?: string
+		depth?: string
+		dirs?: boolean
+		invert?: string
+		issue: boolean
+		list: boolean
+		mode?: string
+		skipInternal?: boolean
+		verbose: boolean
+	},
 	isExplicit: boolean,
 ): Promise<boolean> {
 	if (name === "yarn" || name === "yarn-classic") {
@@ -336,6 +427,21 @@ async function run(
 		return false
 	}
 
+	const setName = opt.cmdSet || info.defaultSet
+	const setDef = info.sets[setName]
+	if (!setDef && !opt.cmd) {
+		if (isExplicit) {
+			process.stderr.write(
+				`${styleText("red", "✖")} ${styleText("bold", "Error:")} Predefined command set "${setName}" not found for target "${name}".\n`,
+			)
+			process.exit(1)
+		}
+		return false
+	}
+
+	const cmdToRun = opt.cmd || setDef!.cmd
+	const parseFn = setDef ? setDef.parse : info.sets[info.defaultSet]!.parse
+
 	let systemFiles: string[] = []
 	try {
 		const binPath = join(process.cwd(), "node_modules", ".bin")
@@ -345,11 +451,11 @@ async function run(
 			env.PATH = `${binPath}${sep}${process.env.PATH || ""}`
 		}
 
-		const out = execSync(`${info.cmd} 2>&1`, {
+		const out = execSync(`${cmdToRun} 2>&1`, {
 			env,
 			stdio: ["ignore", "pipe", "pipe"],
 		}).toString()
-		systemFiles = info.parse(out).map((f) => unixify(f))
+		systemFiles = parseFn(out).map((f) => unixify(f))
 	} catch (err: unknown) {
 		let msg = err instanceof Error ? err.message : String(err)
 		if (err && typeof err === "object" && "stdout" in err && err.stdout) {
@@ -363,7 +469,14 @@ async function run(
 		const isMissingConfig =
 			msg.includes("Couldn't find a deno.json") ||
 			msg.includes("jsr.json configuration file") ||
-			msg.includes("No valid manifest found")
+			msg.includes("No valid manifest found") ||
+			msg.includes("Could not read package.json") ||
+			msg.includes("No package.json was found") ||
+			msg.includes("Couldn't find a package.json file") ||
+			msg.includes("Extension manifest not found") ||
+			msg.includes("not a git repository") ||
+			msg.includes("Missing vscode engine compatibility version") ||
+			msg.includes("Missing engines.vscode")
 
 		if (isMissingConfig) {
 			if (isExplicit) {
@@ -389,9 +502,53 @@ async function run(
 	const start = performance.now()
 	let ctx: MatcherContext
 	try {
-		ctx = await scan({ dirs: false, skipInternal: true, target: info.make() })
+		const modeArg = opt.mode as "publish" | "list" | "bundle" | undefined
+		// oxlint-disable-next-line typescript/no-explicit-any
+		const targetInstance = (info.make as any)(modeArg)
+
+		// Set scan options
+		const scanOptions: ScanOptions = {
+			dirs: opt.dirs !== undefined ? opt.dirs : false,
+			skipInternal: opt.skipInternal !== undefined ? opt.skipInternal : true,
+			target: targetInstance,
+		}
+
+		if (opt.depth !== undefined) {
+			scanOptions.depth = parseInt(opt.depth, 10)
+		}
+
+		if (opt.invert !== undefined) {
+			if (opt.invert === "true") {
+				scanOptions.invert = true
+			} else if (opt.invert === "false") {
+				scanOptions.invert = false
+			} else if (opt.invert === "2") {
+				scanOptions.invert = 2
+			} else {
+				// oxlint-disable-next-line typescript/no-explicit-any
+				scanOptions.invert = opt.invert as any
+			}
+		} else if (setName === "ignored") {
+			scanOptions.invert = true
+		}
+
+		ctx = await scan(scanOptions)
 	} catch (err: unknown) {
 		const msg = err instanceof Error ? err.message : `unknown error ${JSON.stringify(err)}`
+		const isNotApplicable =
+			msg.includes("No valid manifest found") || msg.includes("'package.json' not found")
+
+		if (isNotApplicable) {
+			if (isExplicit) {
+				process.stderr.write(
+					`${styleText("red", "✖")} ${styleText("bold", "Error:")} Target "${name}" is not applicable here.\n`,
+				)
+				process.stderr.write(`      ${styleText("dim", msg)}\n`)
+				process.exit(1)
+			}
+			return false
+		}
+
 		process.stderr.write(
 			`${styleText("red", "✖")} ${styleText("bold", "Error:")} Scan failed for "${name}": ${msg}\n`,
 		)
@@ -410,32 +567,73 @@ async function run(
 			.forEach((f) => console.log(`  ${styleText("dim", "•")} ${f}`))
 	}
 
-	const vignFiles = Array.from(ctx!.paths.entries())
+	let vignFiles = Array.from(ctx!.paths.entries())
 		.filter(([, m]) => !m.ignored)
 		.map(([p]) => p)
 		.sort()
+
+	// If we are looking specifically at untracked / tracked git files, we filter vignFiles using git CLI output
+	if (name === "git") {
+		if (setName === "untracked") {
+			// Filter out files that are tracked.
+			// Let's get tracked files using git ls-files --cached
+			try {
+				const trackedOut = execSync("git ls-files --cached", {
+					stdio: ["ignore", "pipe", "pipe"],
+				}).toString()
+				const trackedSet = new Set(
+					trackedOut
+						.trim()
+						.split(/\r?\n/)
+						.filter(Boolean)
+						.map((f) => unixify(f)),
+				)
+				vignFiles = vignFiles.filter((f) => !trackedSet.has(f))
+			} catch {}
+		} else if (setName === "tracked") {
+			// Filter only tracked files.
+			try {
+				const trackedOut = execSync("git ls-files --cached", {
+					stdio: ["ignore", "pipe", "pipe"],
+				}).toString()
+				const trackedSet = new Set(
+					trackedOut
+						.trim()
+						.split(/\r?\n/)
+						.filter(Boolean)
+						.map((f) => unixify(f)),
+				)
+				vignFiles = vignFiles.filter((f) => trackedSet.has(f))
+			} catch {}
+		}
+	}
+
 	const vignSet = new Set(vignFiles)
 	const sysSet = new Set(systemFiles)
 	const diffs: Diff[] = []
 
-	for (const f of systemFiles)
-		if (!vignSet.has(f))
+	for (const f of systemFiles) {
+		if (!vignSet.has(f)) {
 			diffs.push({
 				file: f,
 				issue: "Missing in view-ignored",
 				match: ctx!.paths.get(f) || { ignored: true, kind: RuleMatchKind.none },
 			})
-	for (const f of vignFiles)
-		if (!sysSet.has(f))
+		}
+	}
+	for (const f of vignFiles) {
+		if (!sysSet.has(f)) {
 			diffs.push({
 				file: f,
 				issue: "Unexpectedly included by view-ignored",
-				match: ctx!.paths.get(f)!,
+				match: ctx!.paths.get(f) || { ignored: false, kind: RuleMatchKind.none },
 			})
+		}
+	}
 
 	if (diffs.length > 0) {
 		process.stdout.write(
-			`${styleText("red", "✖")} ${styleText("bold", "Discrepancies found")} for target ${styleText("blue", name)} (${fmtTime(dur)}):\n`,
+			`${styleText("red", "✖")} ${styleText("bold", "Discrepancies found")} for target ${styleText("blue", name)} (set: ${styleText("yellow", setName)}) (${fmtTime(dur)}):\n`,
 		)
 
 		const reports = diffs.map((d) => {
@@ -509,10 +707,11 @@ async function run(
 		return true
 	}
 
-	if (!opt.list)
+	if (!opt.list) {
 		process.stdout.write(
-			`${styleText(["green", "bold"], "✔")} ${styleText("bold", "Matches system behavior")} for ${styleText("blue", name)} (${fmtTime(dur)})\n`,
+			`${styleText(["green", "bold"], "✔")} ${styleText("bold", "Matches system behavior")} for ${styleText("blue", name)} (set: ${styleText("yellow", setName)}) (${fmtTime(dur)})\n`,
 		)
+	}
 	return false
 }
 
@@ -522,8 +721,15 @@ async function main() {
 		args = parseArgs({
 			allowPositionals: true,
 			options: {
+				cmd: { short: "c", type: "string" },
+				"cmd-set": { short: "s", type: "string" },
+				depth: { type: "string" },
+				dirs: { type: "boolean" },
 				help: { short: "h", type: "boolean" },
+				invert: { type: "string" },
 				issue: { short: "i", type: "boolean" },
+				mode: { short: "m", type: "string" },
+				"skip-internal": { type: "boolean" },
 				verbose: { short: "V", type: "boolean" },
 				version: { short: "v", type: "boolean" },
 			},
@@ -553,7 +759,18 @@ async function main() {
 		process.exit(1)
 	}
 
-	const opt = { issue: !!values.issue, list: isList, verbose: !!values.verbose }
+	const opt = {
+		cmd: values.cmd,
+		cmdSet: values["cmd-set"],
+		depth: values.depth,
+		dirs: values.dirs,
+		invert: values.invert,
+		issue: !!values.issue,
+		list: isList,
+		mode: values.mode,
+		skipInternal: values["skip-internal"],
+		verbose: !!values.verbose,
+	}
 
 	let hasDiff = false
 	if (targetArg === "all") {
