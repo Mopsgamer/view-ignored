@@ -107,8 +107,10 @@ export function makeNPM(mode: "list" | "publish" | "bundle" = "publish"): Target
 				"/yarn.lock",
 				"/pnpm-lock.yaml",
 				"/bun.lockb",
+				"/bun.lock",
 				"/.npm-extension.mjs",
 				"/.npm-extension.cjs",
+				"*~",
 
 				// npm-packlist ignores files with stars when publishing
 				"*\\**",
