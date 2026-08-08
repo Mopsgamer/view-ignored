@@ -47,8 +47,8 @@ Retrieve a list of files ignored or included by Git, NPM, Yarn, JSR, Deno, Bun, 
 - [x] **Perfect API.** Designed and finalized a clean, type-safe API for scanning and stream consumption.
 - [x] **Works for common use cases.** Production-ready for general project directory walking and status reports.
 - [ ] **Follow `.gitignore` spec.** Ensure strict alignment with Git's wildmatch algorithm (character classes, brackets, and negative matches), as `ignore` does.
-- [ ] **Handle Git config.** Parse and support Git system/global settings (such as local `.git/config` reference rules and `core.excludesfile` parsing).
-- [ ] **Include node_modules bundled dependencies correctly.** Walk subdependency folders under `bundledDependencies` for accurate package manager packing emulation.
+- [x] **Handle Git config.** Parse and support Git system/global settings (such as local `.git/config` reference rules and `core.excludesfile` parsing).
+- [x] **Include node_modules bundled dependencies correctly.** Walk subdependency folders under `bundledDependencies` for accurate package manager packing emulation.
 - [ ] **Ensure compatibility and references.** Perfect self-tests and comparisons against real CLI packaging output.
 - [ ] **\*Move targets into separate packages.** Decouple individual target modules into scoped sub-packages to reduce core bundle size (optional).
 

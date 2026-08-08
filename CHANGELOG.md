@@ -8,8 +8,9 @@ and this project adheres to
 
 ## [Unreleased]
 
-- Add `SkipRule` to support skipping directory scanning and merging a custom `MatcherContext` returned by the rule.
-- Drop `PatternCache` and `patternCompile`. Use `patternListCompile` and `patternList`.
+- Add `SkipRule` to support skipping directory scanning and
+  merging a custom `MatcherContext` returned by the rule.
+- Drop `PatternCache` and `patternCompile`. Use `patternListCompile`.
 - Fix `skipInternal: true` with `inverted: true` should skip folders.
 - Replace `Buffer` with `Uint8Array`.
 - Add browser output test.
