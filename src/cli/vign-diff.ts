@@ -22,6 +22,7 @@ import {
 	makeYarn,
 	makeYarnClassic,
 } from "../targets/index.js"
+import { unixify } from "../unixify.js"
 
 interface TargetDef {
 	bin: string
@@ -53,7 +54,7 @@ function parseDenoOrJSR(out: string): string[] {
 const TARGETS: Record<string, TargetDef> = {
 	bun: {
 		bin: "bun",
-		cmd: "bun pm pack --dry-run",
+		cmd: "bun pm pack --dry-run --ignore-scripts",
 		make: makeBun,
 		parse: (out) => {
 			const files: string[] = []
@@ -84,9 +85,21 @@ const TARGETS: Record<string, TargetDef> = {
 	},
 	npm: {
 		bin: "npm",
-		cmd: "npm pack --dry-run",
+		cmd: "npm pack --dry-run --json --ignore-scripts",
 		make: makeNPM,
 		parse: (out) => {
+			const startIdx = out.indexOf("[")
+			const endIdx = out.lastIndexOf("]")
+			if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+				const jsonStr = out.slice(startIdx, endIdx + 1)
+				try {
+					const parsed = JSON.parse(jsonStr)
+					const info = Array.isArray(parsed) ? parsed[0] : parsed
+					if (info && Array.isArray(info.files)) {
+						return info.files.map((f: { path: string }) => f.path)
+					}
+				} catch {}
+			}
 			const files: string[] = []
 			let inContents = false
 			for (const line of out.split(/\r?\n/)) {
@@ -336,7 +349,7 @@ async function run(
 			env,
 			stdio: ["ignore", "pipe", "pipe"],
 		}).toString()
-		systemFiles = info.parse(out)
+		systemFiles = info.parse(out).map((f) => unixify(f))
 	} catch (err: unknown) {
 		let msg = err instanceof Error ? err.message : String(err)
 		if (err && typeof err === "object" && "stdout" in err && err.stdout) {
