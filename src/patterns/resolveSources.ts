@@ -351,42 +351,7 @@ function resolveSourcesMain(
 			continue
 		}
 
-		fs.readdir(parent, { withFileTypes: true }, (err, dirEntries) => {
-			if (resolved) return
-			if (err) {
-				// oxlint-disable-next-line typescript/no-explicit-any
-				if ((err as any).code === "ENOENT") {
-					for (let ei = 0; ei < elen; ei++) {
-						results[pi * elen + ei] = null
-					}
-					checkAll()
-					return
-				}
-				// For other readdir errors, populate results with error sources
-				for (let ei = 0; ei < elen; ei++) {
-					const extractor = extractors[ei]!
-					const epath = extractor.path
-					const isExtractorDotSlash = epath.startsWith("./")
-					if (isExtractorDotSlash && relDir !== "." && relDir !== "") {
-						results[pi * elen + ei] = null
-						continue
-					}
-					const cleanExtractor = isExtractorDotSlash ? epath.slice(2) : epath
-					results[pi * elen + ei] = {
-						error: err,
-						source: {
-							dir: relDir,
-							inverted: isExtractorDotSlash,
-							path: join(relDir, cleanExtractor),
-							rules: [],
-						},
-					}
-				}
-				checkAll()
-				return
-			}
-			runWithEntries(dirEntries as Dirent[])
-		})
+		runWithEntries(undefined)
 	}
 
 	if (plen === 0) checkAll()

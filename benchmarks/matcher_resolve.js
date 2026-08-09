@@ -31,20 +31,18 @@ barplot(() => {
 			})
 		})
 
-		bench("resolveSources (cached, root)", async () => {
-			return new Promise((resolve, reject) => {
-				resolveSources(
-					{
-						cwd,
-						dir: ".",
-						external,
-						fs,
-						signal: null,
-						target,
-					},
-					(err, res) => (err ? reject(err) : resolve(res)),
-				)
-			})
+		bench("resolveSources (cached, root)", () => {
+			resolveSources(
+				{
+					cwd,
+					dir: ".",
+					external,
+					fs,
+					signal: null,
+					target,
+				},
+				() => {},
+			)
 		})
 
 		bench("resolveSources (uncached, deep)", async () => {
@@ -64,20 +62,18 @@ barplot(() => {
 			})
 		})
 
-		bench("resolveSources (cached, deep)", async () => {
-			return new Promise((resolve, reject) => {
-				resolveSources(
-					{
-						cwd,
-						dir: "src/patterns",
-						external,
-						fs,
-						signal: null,
-						target,
-					},
-					(err, res) => (err ? reject(err) : resolve(res)),
-				)
-			})
+		bench("resolveSources (cached, deep)", () => {
+			resolveSources(
+				{
+					cwd,
+					dir: "src/patterns",
+					external,
+					fs,
+					signal: null,
+					target,
+				},
+				() => {},
+			)
 		})
 	})
 })

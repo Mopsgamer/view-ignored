@@ -3,21 +3,21 @@ import * as fs from "node:fs"
 
 import { makeGit } from "../out/targets/index.js"
 
-// Precache git target rules to avoid data skewing
-makeGit()
-
 const cwd = process.cwd()
+
+// Precache git target rules to avoid data skewing
+await new Promise((resolve) => {
+	const target = makeGit()
+	target.init({ cwd, fs, signal: null, target }, resolve)
+})
 
 console.log("Git Init benchmark")
 
 barplot(() => {
 	summary(() => {
-		bench("'view-ignored'.Git.init", async () => {
-			return new Promise((resolve) => {
-				makeGit().init({ cwd, fs, signal: null, target: makeGit() }, () => {
-					resolve()
-				})
-			})
+		bench("'view-ignored'.Git.init", () => {
+			const target = makeGit()
+			target.init({ cwd, fs, signal: null, target }, () => {})
 		})
 	})
 })
