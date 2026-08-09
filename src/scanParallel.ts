@@ -31,14 +31,35 @@ export function scanParallel(
 	let activeTasks = 0
 	let errorOccurred: Error | null = null
 
-	function walk(relPath: string, depth: number, resource?: Resource) {
+	const readdirQueue: { relPath: string; depth: number; resource?: Resource }[] = []
+	let activeReaddirs = 0
+	const CONCURRENCY_LIMIT = 32
+
+	function enqueueWalk(relPath: string, depth: number, resource?: Resource) {
+		readdirQueue.push({ depth, relPath, resource })
+		processQueue()
+	}
+
+	function processQueue() {
 		if (errorOccurred) return
-		activeTasks++
+		while (activeReaddirs < CONCURRENCY_LIMIT && readdirQueue.length > 0) {
+			const task = readdirQueue.shift()!
+			activeReaddirs++
+			activeTasks++
+			runWalk(task.relPath, task.depth, task.resource)
+		}
+	}
+
+	function runWalk(relPath: string, depth: number, resource?: Resource) {
+		if (errorOccurred) return
 
 		scanOptions.fs.readdir(
 			join(scanOptions.cwd, relPath),
 			{ withFileTypes: true },
 			(err, entries) => {
+				activeReaddirs--
+				processQueue()
+
 				if (err) {
 					handleError(err)
 					return
@@ -123,7 +144,7 @@ export function scanParallel(
 										}
 
 										if (self.isDir && self.next === 0) {
-											walk(currentRelPath, depth + 1, res)
+											enqueueWalk(currentRelPath, depth + 1, res)
 										}
 									}
 									pendingResults--
@@ -170,5 +191,5 @@ export function scanParallel(
 			if (within.charCodeAt(i) === 47) initialDepth++
 		}
 	}
-	walk(within, initialDepth, undefined)
+	enqueueWalk(within, initialDepth, undefined)
 }
