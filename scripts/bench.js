@@ -4,9 +4,13 @@ import os from "node:os"
 import path from "node:path"
 import { parseArgs, styleText as c } from "node:util"
 
+const rawArgs = Bun.argv.slice(2)
+const doubleDashIdx = rawArgs.indexOf("--")
+const parseArgsInput = doubleDashIdx !== -1 ? rawArgs.slice(0, doubleDashIdx) : rawArgs
+
 const { values, positionals } = parseArgs({
 	allowPositionals: true,
-	args: Bun.argv.slice(2),
+	args: parseArgsInput,
 	options: {
 		diff: { type: "string" },
 		help: { short: "h", type: "boolean" },
@@ -33,13 +37,29 @@ ${c("bold", "Options:")}
 	process.exit(0)
 }
 
-const forwardArgs = Bun.argv.slice(2).filter((arg) => {
-	if (arg.startsWith("--diff=") || arg === "--diff") return false
-	if (arg.startsWith("--out=") || arg === "--out") return false
-	if (arg === "-h" || arg === "--help" || arg === "--node" || arg === "--now") return false
-	if (positionals.includes(arg)) return false
-	return true
-})
+let forwardArgs
+if (doubleDashIdx !== -1) {
+	forwardArgs = rawArgs.slice(doubleDashIdx + 1)
+} else {
+	forwardArgs = []
+	for (let i = 0; i < rawArgs.length; i++) {
+		const arg = rawArgs[i]
+		if (arg === "--diff" || arg === "--out") {
+			i++ // skip the value of these string options
+			continue
+		}
+		if (arg.startsWith("--diff=") || arg.startsWith("--out=")) {
+			continue
+		}
+		if (arg === "-h" || arg === "--help" || arg === "--node" || arg === "--now") {
+			continue
+		}
+		if (positionals.includes(arg)) {
+			continue
+		}
+		forwardArgs.push(arg)
+	}
+}
 
 const benchmarkFiles =
 	positionals.length > 0
