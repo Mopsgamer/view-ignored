@@ -123,7 +123,7 @@ export function makeBun(mode: "list" | "publish" | "bundle" = "publish"): Target
 		cachedBunIncludesRule,
 	]
 
-	return <Target>{
+	return {
 		extendsRoot: "workspaces",
 		extractors,
 		ignores: ruleTest,

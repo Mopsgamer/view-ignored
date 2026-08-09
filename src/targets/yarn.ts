@@ -93,7 +93,7 @@ export function makeYarn(mode: "list" | "publish" | "bundle" = "publish"): Targe
 		cachedYarnIncludesRule,
 	]
 
-	return <Target>{
+	return {
 		extendsRoot: "workspaces",
 		extractors,
 		ignores: ruleTest,

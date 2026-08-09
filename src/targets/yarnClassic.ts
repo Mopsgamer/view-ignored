@@ -117,7 +117,7 @@ export function makeYarnClassic(mode: "list" | "publish" | "bundle" = "publish")
 		cachedYarnClassicIncludesRule,
 	]
 
-	return <Target>{
+	return {
 		extendsRoot: "workspaces",
 		extractors,
 		ignores: ruleTest,

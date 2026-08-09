@@ -35,7 +35,7 @@ export function makeJSR(): Target {
 
 	const internal: Rule[] = [cachedJSRRule]
 
-	return <Target>{
+	return {
 		extractors,
 		ignores: ruleTest,
 		init: makeJsrInit("JSR", extractors),

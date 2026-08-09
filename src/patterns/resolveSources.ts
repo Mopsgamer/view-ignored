@@ -176,17 +176,8 @@ function launchExtractor(
 	}
 
 	fs.readFile(join(parent, cleanPath), (err, buff) => {
-		if (err) {
-			// oxlint-disable-next-line typescript/no-explicit-any
-			if ((err as any).code === "ENOENT") return cb(null, null)
-			const source: Source = {
-				dir,
-				inverted: isDotSlash,
-				path: join(dir, cleanPath),
-				rules: [],
-			}
-			return cb(null, { error: err, source })
-		}
+		// oxlint-disable-next-line typescript/no-explicit-any
+		if (err && (err as any).code === "ENOENT") return cb(null, null)
 
 		const source: Source = {
 			dir,
@@ -194,6 +185,8 @@ function launchExtractor(
 			path: join(dir, cleanPath),
 			rules: [],
 		}
+
+		if (err) return cb(null, { error: err, source })
 
 		try {
 			const act = extract(source, buff!)
