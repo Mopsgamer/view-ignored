@@ -72,7 +72,7 @@ export function browserScanCb(
 	}
 
 	const stream = this as MatcherStream | undefined
-	const parallelOptions = <ScanParallelOptions>{
+	const parallelOptions: ScanParallelOptions = {
 		external: ctx.external,
 		failed: ctx.failed,
 		onResult: (result) => {

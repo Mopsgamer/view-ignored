@@ -42,7 +42,7 @@ export function makeGit(): Target {
 		before: [cachedGitRule],
 	}
 
-	return <Target>{
+	return {
 		extractors,
 		ignores: ruleTest,
 		init({ fs, cwd, signal, target }, cb) {
@@ -67,7 +67,7 @@ export function makeGit(): Target {
 
 				fs.readFile(p, (err, res) => {
 					if (!err && res) {
-						const source = <Source>{
+						const source: Source = {
 							inverted: false,
 							path: p,
 							rules: [],
@@ -81,7 +81,7 @@ export function makeGit(): Target {
 				if (excludePath) {
 					fs.readFile(excludePath, (err2, content) => {
 						if (!err2 && content) {
-							const source = <Source>{
+							const source: Source = {
 								inverted: false,
 								path: ".git/info/exclude",
 								rules: [],

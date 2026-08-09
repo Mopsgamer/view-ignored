@@ -114,7 +114,7 @@ export function makeNPM(mode: "list" | "publish" | "bundle" = "publish"): Target
 		],
 	}
 
-	return <Target>{
+	return {
 		extendsRoot: "workspaces",
 		extractors,
 		ignores: ruleTest,

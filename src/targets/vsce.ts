@@ -71,7 +71,7 @@ export function makeVSCE(): Target {
 
 	const internal: Rule[] = [cachedVSCERule]
 
-	return <Target>{
+	return {
 		extractors,
 		ignores: ruleTest,
 		init({ fs, cwd }, cb) {

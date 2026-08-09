@@ -601,19 +601,11 @@ export function initNpmContext(
 			return
 		}
 
-		if (parsedDist.dependencies) {
-			for (const dep in parsedDist.dependencies) {
-				ctx.rootDeps.add(dep)
-			}
-		}
-		if (parsedDist.devDependencies) {
-			for (const dep in parsedDist.devDependencies) {
-				ctx.rootDeps.add(dep)
-			}
-		}
-		if (parsedDist.optionalDependencies) {
-			for (const dep in parsedDist.optionalDependencies) {
-				ctx.rootDeps.add(dep)
+		const depFields = ["dependencies", "devDependencies", "optionalDependencies"] as const
+		for (let i = 0; i < depFields.length; i++) {
+			const deps = parsedDist[depFields[i]!]
+			if (deps) {
+				for (const dep in deps) ctx.rootDeps.add(dep)
 			}
 		}
 

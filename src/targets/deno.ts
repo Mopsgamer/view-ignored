@@ -45,7 +45,7 @@ export function makeDeno(): Target {
 
 	const internal: Rule[] = [cachedDenoRule]
 
-	return <Target>{
+	return {
 		extractors,
 		ignores: ruleTest,
 		init: makeJsrInit("Deno", extractors),
