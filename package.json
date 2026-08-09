@@ -124,6 +124,7 @@
 		"strip-json-comments": "^5.0.3"
 	},
 	"devDependencies": {
+		"@npmcli/arborist": "^10.0.2",
 		"@release-it/keep-a-changelog": "latest",
 		"@types/bun": "latest",
 		"@types/ignore-walk": "npm:@types/ignore-walk@^4.0.3",
@@ -135,6 +136,7 @@
 		"ignore-walk": "latest",
 		"memfs": "latest",
 		"mitata": "latest",
+		"npm-packlist": "^11.3.0",
 		"oxfmt": "latest",
 		"oxlint": "latest",
 		"oxlint-tsgolint": "latest",

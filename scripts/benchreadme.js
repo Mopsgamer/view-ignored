@@ -40,6 +40,14 @@ function extractBenchmarksFromLog(logText) {
 				if (l.startsWith("##[") || l.includes("Post Run") || l.includes("Complete job")) {
 					break
 				}
+				if (
+					l.includes("Post job cleanup") ||
+					l.startsWith("[command]") ||
+					l.includes("Cleaning up orphan processes") ||
+					l.startsWith("Post ")
+				) {
+					break
+				}
 				block.push(l)
 			}
 
@@ -116,10 +124,151 @@ function updateSection(content, startMarker, endMarker, newBlock) {
 	return `${prefix}\n\`\`\`txt\n${newBlock}\n\`\`\`\n${suffix}`
 }
 
-function formatBenchmarkOutput(stdout, commandHeader) {
+function splitBenchmarks(stdout) {
 	const lines = stdout.split(/\r?\n/).map(cleanLine)
-	const filtered = lines.filter((line) => !line.startsWith("Running benchmarks/"))
-	return [commandHeader, ...filtered].join("\n").trim()
+	const sections = []
+	let currentSection = []
+
+	for (const line of lines) {
+		const isNewSection =
+			(line.includes("target benchmark") || line.includes("Init benchmark")) &&
+			!line.includes("You can use") &&
+			!line.startsWith("Running ")
+
+		if (isNewSection) {
+			if (currentSection.length > 0) {
+				sections.push(currentSection.join("\n"))
+			}
+			currentSection = [line]
+		} else {
+			currentSection.push(line)
+		}
+	}
+	if (currentSection.length > 0) {
+		sections.push(currentSection.join("\n"))
+	}
+	return sections
+}
+
+function parseBenchmark(lines, j) {
+	const line = lines[j]
+	if (!line.includes("/iter") && !line.includes("µs/iter") && !line.includes("ms/iter")) return null
+
+	const searchIdx = line.search(/\s+\d/)
+	if (searchIdx === -1) return null
+
+	const name = line.substring(0, searchIdx).trim()
+	let timeRange = ""
+	let memRange = ""
+	let memAvg = ""
+
+	let offset = 1
+	if (j + offset < lines.length && /^\s+\(/.test(lines[j + offset])) {
+		const timeRangeLine = lines[j + offset]
+		const timeRangeMatch = timeRangeLine.match(/\(([^)]+)\)/)
+		if (timeRangeMatch) timeRange = timeRangeMatch[1].replace(/\s+/g, " ").trim()
+		offset++
+	}
+	if (j + offset < lines.length && /^\s+\(/.test(lines[j + offset])) {
+		const memRangeLine = lines[j + offset]
+		const memRangeMatch = memRangeLine.match(/\(([^)]+)\)/)
+		if (memRangeMatch) memRange = memRangeMatch[1].replace(/\s+/g, " ").trim()
+		const idx = memRangeLine.indexOf(")")
+		if (idx !== -1) {
+			const after = memRangeLine.substring(idx + 1).trim()
+			const memAvgMatch = after.match(/^(\d+(?:\.\d+)?\s*[a-zA-Z]+)/)
+			if (memAvgMatch) memAvg = memAvgMatch[1].trim()
+		}
+		offset++
+	}
+
+	return { memAvg, memRange, name, timeRange }
+}
+
+function formatBenchmarkOutput(stdout, commandHeader) {
+	const rawSections = splitBenchmarks(stdout)
+
+	const formattedSections = rawSections.map((section) => {
+		const lines = section.split(/\r?\n/).map(cleanLine)
+
+		const clk = lines.find((l) => l.startsWith("clk:"))
+		const cpu = lines.find((l) => l.startsWith("cpu:"))
+		const runtime = lines.find((l) => l.startsWith("runtime:"))
+		const [title] = lines
+
+		const benchmarks = []
+		for (let j = 0; j < lines.length; j++) {
+			const parsed = parseBenchmark(lines, j)
+			if (parsed) benchmarks.push(parsed)
+		}
+
+		const barplotLines = []
+		let inBarplot = false
+		for (const line of lines) {
+			if (line.includes("┌")) {
+				inBarplot = true
+				barplotLines.push(line)
+				continue
+			}
+			if (inBarplot) {
+				barplotLines.push(line)
+				if (line.includes("┘")) {
+					inBarplot = false
+				}
+			}
+		}
+
+		const summaryLines = []
+		let inSummary = false
+		for (const line of lines) {
+			if (line.trim() === "summary") {
+				inSummary = true
+				summaryLines.push(line)
+				continue
+			}
+			if (inSummary) {
+				if (line.trim() === "" || line.includes("target benchmark")) {
+					inSummary = false
+				} else {
+					summaryLines.push(line)
+				}
+			}
+		}
+
+		const outLines = []
+		if (title) outLines.push(title)
+		if (clk) outLines.push(clk)
+		if (cpu) outLines.push(cpu)
+		if (runtime) outLines.push(runtime)
+
+		const hasMemory = benchmarks.some((b) => b.memAvg || b.memRange)
+		if (hasMemory) {
+			outLines.push("\nMemory Usage:")
+			const maxNameLen = Math.max(...benchmarks.map((b) => b.name.length))
+			for (const b of benchmarks) {
+				if (b.memAvg || b.memRange) {
+					const paddedName = b.name.padEnd(maxNameLen)
+					const avgStr = b.memAvg ? `Avg: ${b.memAvg}` : ""
+					const rangeStr = b.memRange ? `Range: ${b.memRange}` : ""
+					outLines.push(`  ${paddedName}   ${avgStr.padEnd(15)} ${rangeStr}`)
+				}
+			}
+		}
+
+		if (barplotLines.length > 0) {
+			outLines.push("")
+			outLines.push(...barplotLines)
+		}
+
+		if (summaryLines.length > 0) {
+			outLines.push("")
+			outLines.push(...summaryLines)
+		}
+
+		return outLines.join("\n")
+	})
+
+	return [commandHeader, ...formattedSections].join("\n\n").trim()
 }
 
 async function main() {

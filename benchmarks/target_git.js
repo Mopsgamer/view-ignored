@@ -45,6 +45,24 @@ barplot(() => {
 			bench("'view-ignored'.browserScan(Git)", async () => {
 				return browserScan({ cwd, fs, target: makeGit() })
 			})
+		if (!igw)
+			bench("'view-ignored'.scan(Git, inverted)", async () => {
+				return scan({
+					cwd,
+					fs,
+					invert: true,
+					target: makeGit(),
+				})
+			})
+		if (!igw)
+			bench("'view-ignored'.browserScan(Git, inverted)", async () => {
+				return browserScan({
+					cwd,
+					fs,
+					invert: true,
+					target: makeGit(),
+				})
+			})
 		if (!vign)
 			bench("'ignore-walk'.walk(.gitignore)", async () => {
 				return walk({ ignoreFiles: [".gitignore"] })
