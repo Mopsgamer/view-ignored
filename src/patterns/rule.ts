@@ -370,14 +370,19 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 	}
 
 	let currentSrc: Resource = src
-	const visited = new Set<Resource>()
+	let runner: Resource | null = src
 	let hasInverted = false
 	while (currentSrc !== null && !("error" in currentSrc)) {
-		if (visited.has(currentSrc)) {
+		if (runner !== null && !("error" in runner)) {
+			runner = runner.parent ?? null
+			if (runner !== null && !("error" in runner)) {
+				runner = runner.parent ?? null
+			}
+		}
+		if (runner === currentSrc && currentSrc !== null) {
 			console.error("CYCLE DETECTED in currentSrc.parent chain! currentSrc path:", currentSrc.path)
 			break
 		}
-		visited.add(currentSrc)
 		if (currentSrc.inverted) hasInverted = true
 		const { rules } = currentSrc
 		const rlen = rules.length

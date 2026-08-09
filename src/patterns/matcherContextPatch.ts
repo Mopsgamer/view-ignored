@@ -5,7 +5,7 @@ import type { MatcherContext } from "./matcherContext.js"
 import type { Resource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"
 
-import { getOrInsertComputed } from "../mapUtils.js"
+import { getOrInsert } from "../mapUtils.js"
 import { type ScanParallelOptions } from "../scanParallel.js"
 import { scanParallel } from "../scanParallel.js"
 import { dirname, unixify } from "../unixify.js"
@@ -260,11 +260,11 @@ function updateTotals(
 	deltaDirs: number,
 ) {
 	for (let parent = path; ;) {
-		const total = getOrInsertComputed(ctx.total, parent, () => ({
+		const total = getOrInsert(ctx.total, parent, {
 			totalDirs: 0,
 			totalFiles: 0,
 			totalMatchedFiles: 0,
-		}))
+		})
 		total.totalDirs += deltaDirs
 		total.totalFiles += deltaFiles
 		total.totalMatchedFiles += deltaMatchedFiles
