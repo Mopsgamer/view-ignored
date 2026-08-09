@@ -17,7 +17,7 @@ const cwd = process.cwd()
 
 // Precache Arborist tree to avoid data skewing
 const arborist = new Arborist({ path: cwd })
-const tree = await arborist.loadActual()
+let tree = await arborist.loadActual()
 
 console.log("NPM target benchmark")
 console.log("You can use --igw to test ignore-walk separately")
@@ -70,12 +70,16 @@ barplot(() => {
 				})
 			})
 		if (!vign)
-			bench("'ignore-walk'.walk(.gitignore, .npmignore)", async () => {
-				return walk({ ignoreFiles: [".npmignore", ".gitignore"] })
+			bench("'npmcli/arborist'.loadActual()", async () => {
+				return arborist.loadActual()
 			})
 		if (!vign)
-			bench("'npm-packlist'.walk()", async () => {
+			bench("'npm-packlist'(preparedArbTree)", async () => {
 				return packlist(tree)
+			})
+		if (!vign)
+			bench("'ignore-walk'.walk(.gitignore, .npmignore)", async () => {
+				return walk({ ignoreFiles: [".npmignore", ".gitignore"] })
 			})
 	})
 })
