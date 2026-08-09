@@ -78,9 +78,21 @@ export function isWhitespace(code: number): boolean {
  * @since 0.12.0
  */
 export function trimLeadingDotSlash(p: string): string {
-	let current = p
-	while (current.startsWith("./") || current.startsWith("/")) {
-		current = current.startsWith("./") ? current.slice(2) : current.slice(1)
+	let start = 0
+	const len = p.length
+	while (start < len) {
+		const char = p.charCodeAt(start)
+		if (char === 47) {
+			// '/'
+			start++
+			continue
+		}
+		if (char === 46 && start + 1 < len && p.charCodeAt(start + 1) === 47) {
+			// './'
+			start += 2
+			continue
+		}
+		break
 	}
-	return current
+	return start === 0 ? p : p.slice(start)
 }
