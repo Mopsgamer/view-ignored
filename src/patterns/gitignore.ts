@@ -26,6 +26,8 @@ export function extractGitignore(
 
 extractGitignore satisfies ExtractorFn
 
+const decoder = new TextDecoder()
+
 function isCommentLineChar(content: Uint8Array, start: number, i: number): boolean {
 	if (i <= start || content[i - 1] !== 32) return false
 	let hasNonSpaceBefore = false
@@ -100,7 +102,7 @@ function processGitignoreLine(
 
 	if (actualLastRealCharIdx === -1) return rule
 
-	const rawLine = new TextDecoder().decode(lineBuff.subarray(0, actualLastRealCharIdx))
+	const rawLine = decoder.decode(lineBuff.subarray(0, actualLastRealCharIdx))
 
 	let resolvedLine = ""
 	let resolvedIsEscaped = false

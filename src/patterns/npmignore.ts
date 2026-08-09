@@ -26,6 +26,8 @@ export function extractNpmignore(
 
 extractNpmignore satisfies ExtractorFn
 
+const decoder = new TextDecoder()
+
 /**
  * Extracts and compiles patterns from the file using NPM/ignore-walk style trimming.
  *
@@ -54,7 +56,7 @@ export function extractNpmignoreRules(
 
 		if (lineStart < lineEnd && content[lineStart] !== 35) {
 			// '#' is 35
-			const pattern = new TextDecoder().decode(content.subarray(lineStart, lineEnd))
+			const pattern = decoder.decode(content.subarray(lineStart, lineEnd))
 			const nextRule = resolveNegatable(pattern, false, options, rule)
 			if (nextRule !== rule) {
 				rule = nextRule
