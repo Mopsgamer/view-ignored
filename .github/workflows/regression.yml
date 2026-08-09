@@ -8,6 +8,11 @@ on:
       - "!src/**/*.test.ts"
   workflow_dispatch:
     inputs:
+      base_ref:
+        description: "Base git ref to compare with (e.g. 0.12.0 or HEAD)"
+        required: false
+        type: string
+        default: "HEAD"
       print_only:
         description: "Without comment on PR"
         required: false
@@ -41,8 +46,12 @@ jobs:
           NO_TS_CHANGES="false"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "no_ts_changes=false" >> $GITHUB_OUTPUT
-            bun scripts/bench.js --vign --diff HEAD --out speed_report.txt || exit 1
-            bun scripts/size.js --diff HEAD --out size_report.txt || exit 1
+            BASE_REF="${{ inputs.base_ref }}"
+            if [ -z "$BASE_REF" ]; then
+              BASE_REF="HEAD"
+            fi
+            bun scripts/bench.js --vign --diff "$BASE_REF" --out speed_report.txt || exit 1
+            bun scripts/size.js --diff "$BASE_REF" --out size_report.txt || exit 1
           else
             BASE_SHA="${{ github.event.pull_request.base.sha }}"
             HEAD_SHA="${{ github.event.pull_request.head.sha }}"
