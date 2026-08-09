@@ -70,10 +70,6 @@ barplot(() => {
 				})
 			})
 		if (!vign)
-			bench("'npmcli/arborist'.loadActual()", async () => {
-				return arborist.loadActual()
-			})
-		if (!vign)
 			bench("'npm-packlist'(preparedArbTree)", async () => {
 				return packlist(tree)
 			})
@@ -82,6 +78,14 @@ barplot(() => {
 				return walk({ ignoreFiles: [".npmignore", ".gitignore"] })
 			})
 	})
+
+	if (!vign) {
+		summary(() => {
+			bench("'npmcli/arborist'.loadActual()", async () => {
+				return arborist.loadActual()
+			})
+		})
+	}
 })
 
 const stats = await run({

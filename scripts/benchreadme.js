@@ -271,105 +271,108 @@ function formatBenchmarkOutput(stdout, commandHeader) {
 	return [commandHeader, ...formattedSections].join("\n\n").trim()
 }
 
-async function main() {
-	console.log("Building view-ignored...")
-	await $`bun run prod`.quiet()
-
-	let readmeContent = ""
-	try {
-		readmeContent = fs.readFileSync(README_PATH, "utf8")
-	} catch (err) {
-		console.error(`Could not read ${README_PATH}:`, err)
-		process.exit(1)
-	}
-
-	readmeContent = ensureMarkers(readmeContent)
-
+async function remote(o) {
 	const token = process.env.GITHUB_TOKEN
 	let remoteNode = null
 	let remoteBun = null
-
-	if (token) {
-		console.log("Fetching latest run of benchmark.yml workflow...")
-		try {
-			const headers = {
-				Accept: "application/vnd.github.v3+json",
-				Authorization: `token ${token}`,
-				"User-Agent": "view-ignored-benchreadme",
-			}
-
-			const runsRes = await fetch(
-				"https://api.github.com/repos/Mopsgamer/view-ignored/actions/workflows/benchmark.yml/runs?status=success&per_page=1",
-				{ headers },
-			)
-
-			if (!runsRes.ok) {
-				throw new Error(`Failed to list workflow runs: ${runsRes.statusText}`)
-			}
-
-			const runsData = await runsRes.json()
-			const run = runsData.workflow_runs?.[0]
-
-			if (!run) {
-				throw new Error("No successful runs found for benchmark.yml")
-			}
-
-			console.log(`Found successful run ID ${run.id}. Fetching jobs...`)
-			const jobsRes = await fetch(run.jobs_url, { headers })
-
-			if (!jobsRes.ok) {
-				throw new Error(`Failed to fetch jobs: ${jobsRes.statusText}`)
-			}
-
-			const jobsData = await jobsRes.json()
-			const job = jobsData.jobs?.find((j) => j.name === "benchmark")
-
-			if (!job) {
-				throw new Error("Could not find job 'benchmark' in workflow run")
-			}
-
-			console.log(`Found job ID ${job.id}. Fetching raw log output...`)
-			const logRes = await fetch(
-				`https://api.github.com/repos/Mopsgamer/view-ignored/actions/jobs/${job.id}/logs`,
-				{ headers },
-			)
-
-			if (!logRes.ok) {
-				throw new Error(`Failed to fetch job log: ${logRes.statusText}`)
-			}
-
-			const logText = await logRes.text()
-			console.log("Parsing remote benchmark logs...")
-			const remoteResults = extractBenchmarksFromLog(logText)
-
-			if (remoteResults.node) {
-				remoteNode = formatBenchmarkOutput(
-					remoteResults.node,
-					"$ node --expose-gc benchmarks/git.js && node --expose-gc benchmarks/npm.js",
-				)
-				console.log("Successfully parsed remote Node.js benchmark.")
-			} else {
-				console.warn("Could not find remote Node.js benchmark in logs.")
-			}
-
-			if (remoteResults.bun) {
-				remoteBun = formatBenchmarkOutput(
-					remoteResults.bun,
-					"$ bun run --expose-gc benchmarks/git.js && bun run --expose-gc benchmarks/npm.js",
-				)
-				console.log("Successfully parsed remote Bun benchmark.")
-			} else {
-				console.warn("Could not find remote Bun benchmark in logs.")
-			}
-		} catch (err) {
-			console.error("Error fetching/parsing remote benchmarks:", err.message || err)
-		}
-	} else {
+	if (!token) {
 		console.warn(
 			"Warning: GITHUB_TOKEN environment variable is not set. Skipping remote benchmark updates.",
 		)
+		return
 	}
 
+	console.log("Fetching latest run of benchmark.yml workflow...")
+	try {
+		const headers = {
+			Accept: "application/vnd.github.v3+json",
+			Authorization: `token ${token}`,
+			"User-Agent": "view-ignored-benchreadme",
+		}
+
+		const runsRes = await fetch(
+			"https://api.github.com/repos/Mopsgamer/view-ignored/actions/workflows/benchmark.yml/runs?status=success&per_page=1",
+			{ headers },
+		)
+
+		if (!runsRes.ok) {
+			throw new Error(`Failed to list workflow runs: ${runsRes.statusText}`)
+		}
+
+		const runsData = await runsRes.json()
+		const run = runsData.workflow_runs?.[0]
+
+		if (!run) {
+			throw new Error("No successful runs found for benchmark.yml")
+		}
+
+		console.log(`Found successful run ID ${run.id}. Fetching jobs...`)
+		const jobsRes = await fetch(run.jobs_url, { headers })
+
+		if (!jobsRes.ok) {
+			throw new Error(`Failed to fetch jobs: ${jobsRes.statusText}`)
+		}
+
+		const jobsData = await jobsRes.json()
+		const job = jobsData.jobs?.find((j) => j.name === "benchmark")
+
+		if (!job) {
+			throw new Error("Could not find job 'benchmark' in workflow run")
+		}
+
+		console.log(`Found job ID ${job.id}. Fetching raw log output...`)
+		const logRes = await fetch(
+			`https://api.github.com/repos/Mopsgamer/view-ignored/actions/jobs/${job.id}/logs`,
+			{ headers },
+		)
+
+		if (!logRes.ok) {
+			throw new Error(`Failed to fetch job log: ${logRes.statusText}`)
+		}
+
+		const logText = await logRes.text()
+		console.log("Parsing remote benchmark logs...")
+		const remoteResults = extractBenchmarksFromLog(logText)
+
+		if (remoteResults.node) {
+			remoteNode = formatBenchmarkOutput(
+				remoteResults.node,
+				"$ node --expose-gc benchmarks/git.js && node --expose-gc benchmarks/npm.js",
+			)
+			console.log("Successfully parsed remote Node.js benchmark.")
+		} else {
+			console.warn("Could not find remote Node.js benchmark in logs.")
+		}
+
+		if (remoteResults.bun) {
+			remoteBun = formatBenchmarkOutput(
+				remoteResults.bun,
+				"$ bun run --expose-gc benchmarks/git.js && bun run --expose-gc benchmarks/npm.js",
+			)
+			console.log("Successfully parsed remote Bun benchmark.")
+		} else {
+			console.warn("Could not find remote Bun benchmark in logs.")
+		}
+	} catch (err) {
+		console.error("Error fetching/parsing remote benchmarks:", err.message || err)
+	}
+	o.readmeContent = updateSection(
+		o.readmeContent,
+		"<!-- BENCH_NODE_START -->",
+		"<!-- BENCH_NODE_END -->",
+		remoteNode,
+	)
+	o.readmeContent = updateSection(
+		o.readmeContent,
+		"<!-- BENCH_BUN_START -->",
+		"<!-- BENCH_BUN_END -->",
+		remoteBun,
+	)
+}
+
+async function local(o) {
+	console.log("Building view-ignored...")
+	await $`bun run prod`.quiet()
 	console.log("Running local Node.js benchmarks (Low-end)...")
 	const localNodeStdout = await $`bun run bench target_git target_npm --node`.text()
 	const localNode = formatBenchmarkOutput(
@@ -384,37 +387,45 @@ async function main() {
 		"$ bun run --expose-gc benchmarks/git.js && bun run --expose-gc benchmarks/npm.js",
 	)
 
-	if (remoteNode) {
-		readmeContent = updateSection(
-			readmeContent,
-			"<!-- BENCH_NODE_START -->",
-			"<!-- BENCH_NODE_END -->",
-			remoteNode,
-		)
-	}
-	if (remoteBun) {
-		readmeContent = updateSection(
-			readmeContent,
-			"<!-- BENCH_BUN_START -->",
-			"<!-- BENCH_BUN_END -->",
-			remoteBun,
-		)
-	}
-	readmeContent = updateSection(
-		readmeContent,
+	o.readmeContent = updateSection(
+		o.readmeContent,
 		"<!-- BENCH_NODE_LOW_START -->",
 		"<!-- BENCH_NODE_LOW_END -->",
 		localNode,
 	)
-	readmeContent = updateSection(
-		readmeContent,
+	o.readmeContent = updateSection(
+		o.readmeContent,
 		"<!-- BENCH_BUN_LOW_START -->",
 		"<!-- BENCH_BUN_LOW_END -->",
 		localBun,
 	)
+}
+
+async function main() {
+	if (process.argv.includes("-h") || process.argv.includes("--help")) {
+		console.log("Updates benchmarks/README.md")
+		console.log("Options: --remote and --local. None for both.")
+		return
+	}
+	const o = { readmeContent: "" }
+	try {
+		o.readmeContent = fs.readFileSync(README_PATH, "utf8")
+	} catch (err) {
+		console.error(`Could not read ${README_PATH}:`, err)
+		process.exit(1)
+	}
+
+	o.readmeContent = ensureMarkers(o.readmeContent)
+
+	if (!process.argv.includes("--remote")) {
+		await local(o)
+	}
+	if (!process.argv.includes("--local")) {
+		await remote(o)
+	}
 
 	try {
-		fs.writeFileSync(README_PATH, readmeContent, "utf8")
+		fs.writeFileSync(README_PATH, o.readmeContent, "utf8")
 		console.log(`Successfully updated ${README_PATH}`)
 	} catch (err) {
 		console.error(`Could not write to ${README_PATH}:`, err)
