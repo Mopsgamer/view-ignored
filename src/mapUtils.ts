@@ -1,11 +1,4 @@
-const proto = Map.prototype as unknown as Record<string, unknown>
-const nativeGetOrInsert = proto.getOrInsert
-const nativeGetOrInsertComputed = proto.getOrInsertComputed
-
 export function getOrInsert<K, V>(map: Map<K, V>, key: K, value: V): V {
-	if (typeof nativeGetOrInsert === "function") {
-		return (nativeGetOrInsert as Function).call(map, key, value)
-	}
 	const existing = map.get(key)
 	if (existing !== undefined || map.has(key)) {
 		return existing!
@@ -19,9 +12,6 @@ export function getOrInsertComputed<K, V>(
 	key: K,
 	callback: (key: K, map: Map<K, V>) => V,
 ): V {
-	if (typeof nativeGetOrInsertComputed === "function") {
-		return (nativeGetOrInsertComputed as Function).call(map, key, callback)
-	}
 	const existing = map.get(key)
 	if (existing !== undefined || map.has(key)) {
 		return existing!

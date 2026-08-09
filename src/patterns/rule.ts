@@ -350,9 +350,7 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 	const lowerPath = options.lowerEntry || entry.toLowerCase()
 
 	const { internalRules } = options.target
-	const [beforeInternal, afterInternal] = Array.isArray(internalRules)
-		? [internalRules, []]
-		: [internalRules.before, internalRules.after]
+	const beforeInternal = Array.isArray(internalRules) ? internalRules : internalRules.before
 
 	const ignoreOptions: IgnoresOptions = {
 		cwd: options.cwd,
@@ -411,9 +409,12 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 		currentSrc = currentSrc.parent ?? null
 	}
 
-	if (afterInternal.length > 0) {
-		const internalMatch = ruleTestInternalSync(afterInternal, ignoreOptions)
-		if (internalMatch) return internalMatch
+	if (!Array.isArray(internalRules)) {
+		const afterInternal = internalRules.after
+		if (afterInternal.length > 0) {
+			const internalMatch = ruleTestInternalSync(afterInternal, ignoreOptions)
+			if (internalMatch) return internalMatch
+		}
 	}
 
 	if (src === null) return { ignored: false, kind: RuleMatchKind.missingSource }

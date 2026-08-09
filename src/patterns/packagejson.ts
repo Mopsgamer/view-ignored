@@ -5,6 +5,8 @@ import { npmManifestParse } from "../targets/npmManifest.js"
 import { ruleCompile } from "./resolveSources.js"
 import { resolveNegatable, type Source } from "./source.js"
 
+const decoder = new TextDecoder()
+
 /**
  * Extracts and compiles patterns from the file.
  *
@@ -52,7 +54,7 @@ export function extractPackageJsonRules(
 	let dist: { files?: string[] }
 
 	try {
-		dist = npmManifestParse(new TextDecoder().decode(content), mode)
+		dist = npmManifestParse(decoder.decode(content), mode)
 	} catch (err) {
 		throw new Error("Invalid '" + source.path + "'", { cause: err })
 	}

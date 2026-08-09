@@ -6,6 +6,8 @@ import stripJsonComments from "strip-json-comments"
 import { ruleCompile } from "./resolveSources.js"
 import { resolveNegatable, type Source } from "./source.js"
 
+const decoder = new TextDecoder()
+
 interface JsrManifest {
 	exclude?: string[]
 	include?: string[]
@@ -39,7 +41,7 @@ export function extractJsrJsonRules(source: Source, content: Uint8Array): void {
 	let dist: JsrManifest
 
 	try {
-		dist = JSON.parse(stripJsonComments(new TextDecoder().decode(content)))
+		dist = JSON.parse(stripJsonComments(decoder.decode(content)))
 	} catch (e) {
 		throw new Error("Invalid JSON in '" + source.path + "'", { cause: e })
 	}
