@@ -6,7 +6,14 @@ import type { Resource } from "./patterns/resource.js"
 import type { ScanOptions } from "./types.js"
 
 import { getOrInsert } from "./mapUtils.js"
-import { isRuleMatchInvalid, type RuleMatch } from "./patterns/rule.js"
+import {
+	isRuleMatchInvalid,
+	type RuleMatch,
+	ruleTestSync,
+	type RuleTestOptions,
+	type Rule,
+	type InternalRules,
+} from "./patterns/rule.js"
 import { dirname } from "./unixify.js"
 
 export type WalkOptions = {
@@ -46,109 +53,85 @@ function isMatchExcluded(invert: boolean | 2, match: RuleMatch): boolean {
 	return invert === true ? !match.ignored : invert === 2 ? false : match.ignored
 }
 
-/**
- * @since 0.11.0
- */
-export function walkIncludes(
+function getWalkResult(match: RuleMatch, options: WalkOptions, isDir: boolean): WalkResult {
+	const { entry, scanOptions, relPath: path, parentPath, depth } = options
+	const { depth: maxDepth, invert, skipDepth, skipInternal } = scanOptions
+
+	const tooDeepFlag = skipDepth && depth > maxDepth
+	const isExcluded = isMatchExcluded(invert, match)
+	const direntPath = isDir ? path + "/" : path
+
+	const result: WalkResult = {
+		context: undefined,
+		depth,
+		entry,
+		includeParent: false,
+		isDir,
+		match,
+		next: 0,
+		parentPath,
+		path: direntPath,
+		tooDeep: tooDeepFlag,
+	}
+
+	if (isRuleMatchInvalid(match)) return result
+
+	if (isDir && skipInternal && match.ignored) result.next = 1
+
+	if (isExcluded) return result
+
+	if (tooDeepFlag) {
+		result.next = isDir ? 0 : 1
+		return result
+	}
+
+	if (depth > maxDepth) {
+		result.tooDeep = true
+		return result
+	}
+
+	if (!isDir && parentPath !== "" && parentPath !== ".") result.includeParent = true
+
+	return result
+}
+
+function handleRuleResolvedCtx(
+	resolvedCtx: MatcherContext | null,
 	options: WalkOptions,
-	cb: (err: Error | null, result: WalkResult) => void,
-): void {
+	runIgnoresSync: () => WalkResult,
+): WalkResult {
+	if (resolvedCtx === null) return runIgnoresSync()
+	const { entry, relPath: path, parentPath, depth } = options
+	return {
+		context: resolvedCtx,
+		depth,
+		entry,
+		includeParent: false,
+		isDir: true,
+		match: { ignored: true, kind: 0 },
+		next: 1,
+		parentPath,
+		path: path + "/",
+		tooDeep: false,
+	}
+}
+
+function throwErrorCallback(err: Error): never {
+	throw err
+}
+
+function checkRulesList(
+	list: Rule[] | null | undefined,
+	options: WalkOptions,
+	maxDepth: number,
+	runIgnoresSync: () => WalkResult,
+): WalkResult | Promise<WalkResult> | null {
+	if (!list) return null
 	const { entry, scanOptions, relPath: path, lowerEntry, parentPath, resource, depth } = options
-	const {
-		target,
-		depth: maxDepth,
-		invert,
-		skipDepth,
-		skipInternal,
-		fs,
-		cwd,
-		signal,
-		within,
-	} = scanOptions
-
-	const isDir = entry.isDirectory()
-
-	const runIgnores = () => {
-		target.ignores(
-			{
-				cwd,
-				depth: maxDepth - depth,
-				dirent: entry,
-				entry: path,
-				fs,
-				lowerEntry: lowerEntry || path.toLowerCase(),
-				parentPath,
-				resource,
-				signal,
-				target,
-				within: skipInternal ? undefined : within,
-			},
-			(err, match) => {
-				// oxlint-disable-next-line typescript/no-explicit-any
-				if (err) return cb(err, null as any)
-
-				const tooDeepFlag = skipDepth && depth > maxDepth
-				const isExcluded = isMatchExcluded(invert, match)
-				const direntPath = isDir ? path + "/" : path
-
-				const result: WalkResult = {
-					context: undefined,
-					depth,
-					entry,
-					includeParent: false,
-					isDir,
-					match,
-					next: 0,
-					parentPath,
-					path: direntPath,
-					tooDeep: tooDeepFlag,
-				}
-
-				if (isRuleMatchInvalid(match)) {
-					return cb(null, result)
-				}
-
-				if (isDir && skipInternal && match.ignored) {
-					result.next = 1
-				}
-
-				if (isExcluded) {
-					return cb(null, result)
-				}
-
-				if (tooDeepFlag) {
-					result.next = isDir ? 0 : 1
-					return cb(null, result)
-				}
-
-				if (depth > maxDepth) {
-					result.tooDeep = true
-					return cb(null, result)
-				}
-
-				if (!isDir && parentPath !== "" && parentPath !== ".") {
-					result.includeParent = true
-				}
-
-				cb(null, result)
-			},
-		)
-	}
-
-	if (!isDir) {
-		runIgnores()
-		return
-	}
-
-	const { internalRules } = target
-	const rules = internalRules
-		? Array.isArray(internalRules)
-			? internalRules
-			: [...(internalRules.before || []), ...(internalRules.after || [])]
-		: []
-	const len = rules.length
+	const { target, fs, cwd, signal, within } = scanOptions
+	const len = list.length
 	for (let i = 0; i < len; i++) {
-		const rule = rules[i]!
+		const rule = list[i]!
 		if (typeof rule !== "function") continue
 
 		const ignoreOptions = {
@@ -168,33 +151,12 @@ export function walkIncludes(
 		if (res === null) continue
 
 		if (res && typeof (res as Promise<unknown>).then === "function") {
-			;(res as Promise<MatcherContext | null>).then(
-				(resolvedCtx) => {
-					if (resolvedCtx === null) {
-						runIgnores()
-						return
-					}
-					cb(null, {
-						context: resolvedCtx,
-						depth,
-						entry,
-						includeParent: false,
-						isDir: true,
-						match: { ignored: true, kind: 0 },
-						next: 1,
-						parentPath,
-						path: path + "/",
-						tooDeep: false,
-					})
-				},
-				(err) => {
-					// oxlint-disable-next-line typescript/no-explicit-any
-					cb(err as Error, null as any)
-				},
+			return (res as Promise<MatcherContext | null>).then(
+				(resolvedCtx) => handleRuleResolvedCtx(resolvedCtx, options, runIgnoresSync),
+				throwErrorCallback,
 			)
-			return
 		}
-		cb(null, {
+		return {
 			context: res as MatcherContext,
 			depth,
 			entry,
@@ -205,11 +167,55 @@ export function walkIncludes(
 			parentPath,
 			path: path + "/",
 			tooDeep: false,
-		})
-		return
+		}
+	}
+	return null
+}
+
+/**
+ * @since 0.11.0
+ */
+export function walkIncludes(options: WalkOptions): WalkResult | Promise<WalkResult> {
+	const { entry, scanOptions, relPath: path, lowerEntry, parentPath, resource, depth } = options
+	const { target, depth: maxDepth, skipInternal, fs, cwd, signal, within } = scanOptions
+
+	const isDir = entry.isDirectory()
+
+	const runIgnoresSync = (): WalkResult => {
+		const match = ruleTestSync({
+			cwd,
+			depth: maxDepth - depth,
+			dirent: entry,
+			entry: path,
+			fs,
+			lowerEntry: lowerEntry || path.toLowerCase(),
+			parentPath,
+			resource,
+			signal,
+			target,
+			within: skipInternal ? undefined : within,
+		} as unknown as RuleTestOptions)
+		return getWalkResult(match, options, isDir)
 	}
 
-	runIgnores()
+	if (!isDir) {
+		return runIgnoresSync()
+	}
+
+	const { internalRules } = target
+	if (internalRules) {
+		const isArr = Array.isArray(internalRules)
+		const list1 = isArr ? (internalRules as Rule[]) : (internalRules as InternalRules).before
+		const list2 = isArr ? null : (internalRules as InternalRules).after
+
+		const res1 = checkRulesList(list1, options, maxDepth, runIgnoresSync)
+		if (res1 !== null) return res1
+
+		const res2 = checkRulesList(list2, options, maxDepth, runIgnoresSync)
+		if (res2 !== null) return res2
+	}
+
+	return runIgnoresSync()
 }
 
 function patch(

@@ -314,23 +314,19 @@ function cacheTest(
 	} | null,
 	path: string,
 	lowerPath?: string,
-): { pattern: string } | Error | null {
+): { pattern: string } | null {
 	if (!rs) return null
-	try {
-		const n = lowerPath || path
-		if (!rs.re.test(path, lowerPath)) return null
-		const items = rs.compiledItems
-		if (items) {
-			const len = items.length
-			for (let i = 0; i < len; i++) {
-				const item = items[i]!
-				if (item.re.test(n)) return { pattern: item.pattern }
-			}
+	const n = lowerPath || path
+	if (!rs.re.test(path, lowerPath)) return null
+	const items = rs.compiledItems
+	if (items) {
+		const len = items.length
+		for (let i = 0; i < len; i++) {
+			const item = items[i]!
+			if (item.re.test(n)) return { pattern: item.pattern }
 		}
-		return { pattern: rs.pattern }
-	} catch (err) {
-		return err as Error
 	}
+	return { pattern: rs.pattern }
 }
 
 /**

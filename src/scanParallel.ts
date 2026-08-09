@@ -1,3 +1,5 @@
+import type { Dirent } from "node:fs"
+
 import type { MatcherStream } from "./patterns/matcherStream.js"
 import type { Resource, InvalidSource } from "./patterns/resource.js"
 import type { ScanOptions } from "./types.js"
@@ -14,6 +16,120 @@ export interface ScanParallelOptions {
 	onResult?: (result: WalkResult | WalkTotal) => void
 }
 
+interface ScanState {
+	activeTasks: number
+	errorOccurred: Error | null
+	results: WalkResult[] | null
+}
+
+function processEntries(
+	relPath: string,
+	depth: number,
+	entries: Dirent[],
+	res: Resource | null,
+	options: ScanParallelOptions,
+	state: ScanState,
+	walk: (relPath: string, depth: number, resource?: Resource) => void,
+	handleError: (err: Error) => void,
+	taskDone: () => void,
+) {
+	const { scanOptions, stream, failed, onResult } = options
+	const { invert } = scanOptions
+
+	if (res && "error" in res && res.error) {
+		if (!failed) {
+			handleError(res.error)
+			return
+		}
+		failed.push(res)
+	}
+
+	const len = entries.length
+	const prefix = relPath === "." || relPath === "" ? "" : relPath + "/"
+
+	let pendingResults = len
+	let dirFiles = 0
+	let dirMatched = 0
+	let dirDirs = 0
+
+	if (len === 0 && onResult) {
+		onResult({ depth, dir: relPath, dirs: 0, files: 0, ignored: false, matched: 0 })
+	}
+
+	const handleResult = (self: WalkResult | null, entry: Dirent, currentRelPath: string) => {
+		if (!self || !self.match) {
+			pendingResults--
+			if (pendingResults === 0 && onResult) {
+				const dirs = dirDirs
+				const files = dirFiles
+				const matched = dirMatched
+				const tot = { depth, dir: relPath, dirs, files, ignored: false, matched }
+				onResult(tot)
+			}
+			taskDone()
+			return
+		}
+
+		if (self.isDir) {
+			dirDirs++
+		} else if (entry.isFile() || entry.isSymbolicLink()) {
+			dirFiles++
+			const isIncluded =
+				invert === true ? self.match.ignored : invert === 2 ? true : !self.match.ignored
+			if (isIncluded) dirMatched++
+		}
+
+		if (onResult) {
+			onResult(self)
+		} else {
+			state.results!.push(self)
+		}
+
+		if (self.isDir && self.next === 0) {
+			walk(currentRelPath, depth + 1, res)
+		}
+
+		pendingResults--
+		if (pendingResults === 0 && onResult) {
+			const dirs = dirDirs
+			const files = dirFiles
+			const matched = dirMatched
+			const tot = { depth, dir: relPath, dirs, files, ignored: false, matched }
+			onResult(tot)
+		}
+		taskDone()
+	}
+
+	for (let i = 0; i < len; i++) {
+		const entry = entries[i]!
+		state.activeTasks++
+		const { name } = entry
+		const currentRelPath = prefix + name
+		const lowerEntry = currentRelPath.toLowerCase()
+
+		const selfOrPromise = walkIncludes({
+			depth,
+			entry,
+			lowerEntry,
+			parentPath: relPath,
+			relPath: currentRelPath,
+			resource: res,
+			scanOptions,
+			stream,
+		})
+
+		if (selfOrPromise instanceof Promise) {
+			selfOrPromise.then(
+				(self) => handleResult(self, entry, currentRelPath),
+				(err) => handleError(err),
+			)
+		} else {
+			handleResult(selfOrPromise, entry, currentRelPath)
+		}
+	}
+	taskDone()
+}
+
 /**
  * Executes a parallel directory scan.
  *
@@ -23,144 +139,70 @@ export function scanParallel(
 	options: ScanParallelOptions,
 	cb: (err: Error | null, results: WalkResult[] | null) => void,
 ): void {
-	const { scanOptions, stream, external, failed, onResult } = options
-	const { within, invert } = scanOptions
+	const { scanOptions, external, onResult } = options
+	const { within } = scanOptions
 
-	const results: WalkResult[] | null = onResult ? null : []
-
-	let activeTasks = 0
-	let errorOccurred: Error | null = null
-
-	function walk(relPath: string, depth: number, resource?: Resource) {
-		if (errorOccurred) return
-		activeTasks++
-
-		scanOptions.fs.readdir(
-			join(scanOptions.cwd, relPath),
-			{ withFileTypes: true },
-			(err, entries) => {
-				if (err) {
-					handleError(err)
-					return
-				}
-
-				resolveSources(
-					{ ...scanOptions, dir: relPath, entries, external, resource },
-					(err, res) => {
-						if (err) {
-							handleError(err)
-							return
-						}
-						if (res && "error" in res && res.error) {
-							if (!failed) {
-								handleError(res.error)
-								return
-							}
-							failed.push(res)
-						}
-
-						const len = entries.length
-						const prefix = relPath === "." || relPath === "" ? "" : relPath + "/"
-
-						let pendingResults = len
-						let dirFiles = 0
-						let dirMatched = 0
-						let dirDirs = 0
-
-						if (len === 0 && onResult) {
-							onResult({
-								depth,
-								dir: relPath,
-								dirs: 0,
-								files: 0,
-								ignored: false,
-								matched: 0,
-							})
-						}
-
-						for (let i = 0; i < len; i++) {
-							const entry = entries[i]!
-							activeTasks++
-							const { name } = entry
-							const currentRelPath = prefix + name
-							const lowerEntry = currentRelPath.toLowerCase()
-
-							walkIncludes(
-								{
-									depth,
-									entry,
-									lowerEntry,
-									parentPath: relPath,
-									relPath: currentRelPath,
-									resource: res,
-									scanOptions,
-									stream,
-								},
-								(err, self) => {
-									if (err) {
-										handleError(err)
-										return
-									}
-
-									if (self && self.match) {
-										if (self.isDir) {
-											dirDirs++
-										} else if (entry.isFile() || entry.isSymbolicLink()) {
-											dirFiles++
-											const isIncluded =
-												invert === true
-													? self.match.ignored
-													: invert === 2
-														? true
-														: !self.match.ignored
-											if (isIncluded) dirMatched++
-										}
-
-										if (onResult) {
-											onResult(self)
-										} else {
-											results!.push(self)
-										}
-
-										if (self.isDir && self.next === 0) {
-											walk(currentRelPath, depth + 1, res)
-										}
-									}
-									pendingResults--
-									if (pendingResults === 0 && onResult) {
-										onResult({
-											depth,
-											dir: relPath,
-											dirs: dirDirs,
-											files: dirFiles,
-											ignored: false,
-											matched: dirMatched,
-										})
-									}
-									taskDone()
-								},
-							)
-						}
-						taskDone()
-					},
-				)
-			},
-		)
+	const state: ScanState = {
+		activeTasks: 0,
+		errorOccurred: null,
+		results: onResult ? null : [],
 	}
 
-	function handleError(err: Error) {
-		if (!errorOccurred) {
-			errorOccurred = err
+	const handleError = (err: Error) => {
+		if (!state.errorOccurred) {
+			state.errorOccurred = err
 			// oxlint-disable-next-line typescript/no-explicit-any
 			cb(err, null as any)
 		}
 	}
 
-	function taskDone() {
-		activeTasks--
-		if (activeTasks === 0 && !errorOccurred) {
-			cb(null, results)
+	const taskDone = () => {
+		state.activeTasks--
+		if (state.activeTasks === 0 && !state.errorOccurred) {
+			cb(null, state.results)
 		}
+	}
+
+	const handleReaddir = (
+		err: Error | null,
+		entries: Dirent[],
+		relPath: string,
+		depth: number,
+		resource?: Resource,
+	) => {
+		if (err) {
+			handleError(err)
+			return
+		}
+
+		resolveSources({ ...scanOptions, dir: relPath, entries, external, resource }, (err, res) =>
+			handleResolveSources(err, res, relPath, depth, entries),
+		)
+	}
+
+	const handleResolveSources = (
+		err: Error | null,
+		res: Resource | null,
+		relPath: string,
+		depth: number,
+		entries: Dirent[],
+	) => {
+		if (err) {
+			handleError(err)
+			return
+		}
+		processEntries(relPath, depth, entries, res, options, state, walk, handleError, taskDone)
+	}
+
+	const walk = (relPath: string, depth: number, resource?: Resource) => {
+		if (state.errorOccurred) return
+		state.activeTasks++
+
+		scanOptions.fs.readdir(
+			join(scanOptions.cwd, relPath),
+			{ withFileTypes: true },
+			(err, entries) => handleReaddir(err, entries, relPath, depth, resource),
+		)
 	}
 
 	let initialDepth = 0
