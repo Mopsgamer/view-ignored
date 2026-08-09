@@ -5,7 +5,7 @@ import type { MatcherStream } from "./patterns/matcherStream.js"
 import type { Resource } from "./patterns/resource.js"
 import type { ScanOptions } from "./types.js"
 
-import { getOrInsertComputed } from "./mapUtils.js"
+import { getOrInsert } from "./mapUtils.js"
 import { isRuleMatchInvalid, type RuleMatch } from "./patterns/rule.js"
 import { dirname } from "./unixify.js"
 
@@ -318,11 +318,11 @@ function addToTotal(
 	matched: number,
 	dirs: number,
 ): void {
-	const dirTotal = getOrInsertComputed(total, dir, () => ({
+	const dirTotal = getOrInsert(total, dir, {
 		totalDirs: 0,
 		totalFiles: 0,
 		totalMatchedFiles: 0,
-	}))
+	})
 	dirTotal.totalFiles += files
 	dirTotal.totalMatchedFiles += matched
 	dirTotal.totalDirs += dirs
