@@ -249,16 +249,8 @@ function resolveSourcesMain(
 		searchDirs.push(join(cwd, current))
 		relDirs.push(current)
 
-		let canGoHigher = false
-		if (current === "." || current.startsWith("..")) {
-			if (currentLevels < maxLevels) canGoHigher = true
-		} else {
-			canGoHigher = true
-		}
-
-		if (!canGoHigher) {
-			break
-		}
+		const canGoHigher = !(current === "." || current.startsWith("..")) || currentLevels < maxLevels
+		if (!canGoHigher) break
 		current = getParentDir(current)
 		if (current.startsWith("..")) currentLevels++
 	}
