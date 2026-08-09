@@ -9,16 +9,27 @@ import {
 	type InternalRules,
 	type Source,
 	type GlobRule,
+	type Rule,
 } from "../patterns/index.js"
 import { unixify, join, dirname } from "../unixify.js"
 import { HOME, XDG, resolvePath, loadRec, mergeConfig, getCache } from "./gitConfig.js"
 
 const findGCache = new WeakMap<FsAdapter, Map<string, string | null>>()
 const branchCache = new WeakMap<FsAdapter, Map<string, string | null>>()
+const gitIgnoreRulesCache = new WeakMap<FsAdapter, Map<string, Rule[]>>()
 
 const globalIgnore = XDG ? join(XDG, "git/ignore") : join(HOME, ".config/git/ignore")
 
 let cachedGitRule: GlobRule | null = null
+
+function getGitIgnoreRulesCache(fs: FsAdapter): Map<string, Rule[]> {
+	let m = gitIgnoreRulesCache.get(fs)
+	if (!m) {
+		m = new Map()
+		gitIgnoreRulesCache.set(fs, m)
+	}
+	return m
+}
 
 /**
  * @since 0.12.0
@@ -65,32 +76,39 @@ export function makeGit(): Target {
 					if (--pending === 0) cb(null)
 				}
 
-				fs.readFile(p, (err, res) => {
-					if (!err && res) {
+				const cache = getGitIgnoreRulesCache(fs)
+
+				const loadIgnoreFile = (filePath: string, sourcePath: string) => {
+					const cachedRules = cache.get(filePath)
+					if (cachedRules !== undefined) {
+						internal.after.push(...cachedRules)
+						done()
+						return
+					}
+
+					fs.readFile(filePath, (err, res) => {
+						if (err || !res) {
+							cache.set(filePath, [])
+							done()
+							return
+						}
+
 						const source: Source = {
 							inverted: false,
-							path: p,
+							path: sourcePath,
 							rules: [],
 						}
 						extractGitignore(source, res)
+						cache.set(filePath, source.rules)
 						internal.after.push(...source.rules)
-					}
-					done()
-				})
-
-				if (excludePath) {
-					fs.readFile(excludePath, (err2, content) => {
-						if (!err2 && content) {
-							const source: Source = {
-								inverted: false,
-								path: ".git/info/exclude",
-								rules: [],
-							}
-							extractGitignore(source, content)
-							internal.after.push(...source.rules)
-						}
 						done()
 					})
+				}
+
+				loadIgnoreFile(p, p)
+
+				if (excludePath) {
+					loadIgnoreFile(excludePath, ".git/info/exclude")
 				}
 			}
 

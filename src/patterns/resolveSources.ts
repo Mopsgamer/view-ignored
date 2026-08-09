@@ -14,9 +14,23 @@ import { patternListCompile } from "./patternList.js"
 const extendedRootCache = new Map<string, string | null>()
 
 function isParentOf(parent: string, child: string): boolean {
-	if (parent === child) return false
-	const parentWithSlash = parent.endsWith("/") ? parent : parent + "/"
-	return child.startsWith(parentWithSlash)
+	const pLen = parent.length
+	const cLen = child.length
+	if (pLen >= cLen) return false
+	if (!child.startsWith(parent)) return false
+	if (parent.charCodeAt(pLen - 1) === 47) return true // parent ends with '/'
+	return child.charCodeAt(pLen) === 47 // child has '/' right after parent
+}
+
+function countSlashes(s: string): number {
+	let count = 0
+	for (let i = 0; i < s.length; i++) {
+		if (s.charCodeAt(i) === 47) {
+			// '/'
+			count++
+		}
+	}
+	return count
 }
 
 /**
@@ -73,35 +87,6 @@ function findExtendedRoot(
 	}
 
 	next()
-}
-
-/**
- * Resolves all unique extended root properties in parallel.
- */
-function resolveAllExtendedRoots(
-	fs: FsAdapter,
-	cwd: string,
-	keys: string[],
-	cb: (err: Error | null, results: Map<string, string | null>) => void,
-): void {
-	const results = new Map<string, string | null>()
-	if (keys.length === 0) return cb(null, results)
-
-	let active = keys.length
-	let hasError = false
-
-	for (const key of keys) {
-		findExtendedRoot(fs, cwd, key, (err, path) => {
-			if (hasError) return
-			if (err) {
-				hasError = true
-				return cb(err, results)
-			}
-			results.set(key, path)
-			active--
-			if (active === 0) cb(null, results)
-		})
-	}
 }
 
 /**
@@ -238,6 +223,175 @@ function launchDirectoryExtractors(
 	}
 }
 
+function resolveSourcesMain(
+	options: ResolveSourcesOptions,
+	maxLevels: number,
+	cb: (err: Error | null, resource: Resource) => void,
+): void {
+	const { fs, external, cwd, signal, target, resource, dir, entries } = options
+	const { root, extractors } = target
+
+	const searchDirs: string[] = []
+	const relDirs: string[] = []
+	let current = dir
+	let baseResource: Resource = resource ?? null
+
+	let currentLevels = 0
+	while (true) {
+		if (signal?.aborted) return cb(signal.reason as Error, null)
+
+		const cached_ = external.get(current)
+		if (cached_ !== undefined) {
+			baseResource = cached_
+			break
+		}
+
+		searchDirs.push(join(cwd, current))
+		relDirs.push(current)
+
+		let canGoHigher = false
+		if (current === "." || current.startsWith("..")) {
+			if (currentLevels < maxLevels) canGoHigher = true
+		} else {
+			canGoHigher = true
+		}
+
+		if (!canGoHigher) {
+			break
+		}
+		current = getParentDir(current)
+		if (current.startsWith("..")) currentLevels++
+	}
+
+	if (root.startsWith("/")) {
+		let curr = root
+		while (curr.length < cwd.length && cwd.startsWith(curr)) {
+			if (!external.has(curr)) {
+				searchDirs.push(curr)
+				relDirs.push(curr)
+			}
+			const nextSlash = cwd.indexOf("/", curr.length + 1)
+			if (nextSlash === -1) break
+			curr = cwd.slice(0, nextSlash)
+		}
+	}
+
+	const elen = extractors.length
+	const plen = searchDirs.length
+	const results = new Array(plen * elen)
+	let activeDirs = plen
+	let resolved = false
+
+	const checkAll = () => {
+		if (resolved) return
+		if (signal?.aborted) {
+			resolved = true
+			return cb(signal.reason as Error, null)
+		}
+		activeDirs--
+		if (activeDirs > 0) return
+		resolved = true
+
+		const defaultParentResource: Resource =
+			baseResource && !("error" in baseResource) ? baseResource : null
+
+		// Link sources of the same extractor across parent directories
+		for (let ei = 0; ei < elen; ei++) {
+			let lastExtractorResource: Resource = defaultParentResource
+			for (let pi = plen - 1; pi >= 0; pi--) {
+				const res = results[pi * elen + ei]
+				if (res && res !== null) {
+					if (!("error" in res)) res.parent = lastExtractorResource
+					lastExtractorResource = res
+				}
+			}
+		}
+
+		let lastResource: Resource = baseResource
+
+		for (let pi = plen - 1; pi >= 0; pi--) {
+			let dirResource: Resource = null
+			for (let ei = 0; ei < elen; ei++) {
+				const res = results[pi * elen + ei]
+				if (res && res !== null) {
+					dirResource = res
+					break
+				}
+			}
+
+			if (!dirResource) dirResource = lastResource
+
+			external.set(relDirs[pi]!, dirResource)
+			lastResource = dirResource
+		}
+
+		cb(null, lastResource)
+	}
+
+	for (let pi = 0; pi < plen; pi++) {
+		const parent = searchDirs[pi]!
+		const relDir = relDirs[pi]!
+
+		const runWithEntries = (dirEntries?: Dirent[]) => {
+			launchDirectoryExtractors(fs, parent, relDir, extractors, dirEntries, (err, dirResults) => {
+				if (resolved) return
+				if (err) {
+					resolved = true
+					return cb(err, null)
+				}
+				for (let ei = 0; ei < elen; ei++) {
+					results[pi * elen + ei] = dirResults[ei]
+				}
+				checkAll()
+			})
+		}
+
+		if (pi === 0 && entries) {
+			runWithEntries(entries)
+			continue
+		}
+
+		fs.readdir(parent, { withFileTypes: true }, (err, dirEntries) => {
+			if (resolved) return
+			if (err) {
+				// oxlint-disable-next-line typescript/no-explicit-any
+				if ((err as any).code === "ENOENT") {
+					for (let ei = 0; ei < elen; ei++) {
+						results[pi * elen + ei] = null
+					}
+					checkAll()
+					return
+				}
+				// For other readdir errors, populate results with error sources
+				for (let ei = 0; ei < elen; ei++) {
+					const extractor = extractors[ei]!
+					const epath = extractor.path
+					const isExtractorDotSlash = epath.startsWith("./")
+					if (isExtractorDotSlash && relDir !== "." && relDir !== "") {
+						results[pi * elen + ei] = null
+						continue
+					}
+					const cleanExtractor = isExtractorDotSlash ? epath.slice(2) : epath
+					results[pi * elen + ei] = {
+						error: err,
+						source: {
+							dir: relDir,
+							inverted: isExtractorDotSlash,
+							path: join(relDir, cleanExtractor),
+							rules: [],
+						},
+					}
+				}
+				checkAll()
+				return
+			}
+			runWithEntries(dirEntries as Dirent[])
+		})
+	}
+
+	if (plen === 0) checkAll()
+}
+
 /**
  * @since 0.6.0
  */
@@ -245,184 +399,31 @@ export function resolveSources(
 	options: ResolveSourcesOptions,
 	cb: (err: Error | null, resource: Resource) => void,
 ): void {
-	const { fs, external, cwd, signal, target, resource, dir, entries } = options
-	const { root, extractors } = target
-
-	const cached = external.get(dir)
+	const cached = options.external.get(options.dir)
 	if (cached !== undefined) return cb(null, cached)
 
-	const extendsRootKeys = target.extendsRoot ? [target.extendsRoot] : []
+	const { fs, cwd, target } = options
 
-	resolveAllExtendedRoots(fs, cwd, extendsRootKeys, (err, extendedRoots) => {
-		if (err) return cb(err, null)
-
-		const searchDirs: string[] = []
-		const relDirs: string[] = []
-		let current = dir
-		let baseResource: Resource = resource ?? null
-
-		// Optimized segment counting difference to find max parent levels we can climb
-		let maxLevels = 0
-		for (const [_, extRoot] of extendedRoots) {
-			if (extRoot && isParentOf(extRoot, cwd)) {
-				const lv = cwd.split("/").length - extRoot.split("/").length
-				if (lv > maxLevels) maxLevels = lv
+	if (!target.extendsRoot) {
+		resolveSourcesMain(options, 0, cb)
+	} else {
+		const cacheKey = `${cwd}::${target.extendsRoot}`
+		const cachedExtRoot = extendedRootCache.get(cacheKey)
+		if (cachedExtRoot !== undefined) {
+			let lv = 0
+			if (cachedExtRoot && isParentOf(cachedExtRoot, cwd)) {
+				lv = countSlashes(cwd) - countSlashes(cachedExtRoot)
 			}
-		}
-
-		let currentLevels = 0
-		while (true) {
-			if (signal?.aborted) return cb(signal.reason as Error, null)
-
-			const cached_ = external.get(current)
-			if (cached_ !== undefined) {
-				baseResource = cached_
-				break
-			}
-
-			searchDirs.push(join(cwd, current))
-			relDirs.push(current)
-
-			let canGoHigher = false
-			if (current === "." || current.startsWith("..")) {
-				if (currentLevels < maxLevels) canGoHigher = true
-			} else {
-				canGoHigher = true
-			}
-
-			if (!canGoHigher) {
-				break
-			}
-			current = getParentDir(current)
-			if (current.startsWith("..")) currentLevels++
-		}
-
-		if (root.startsWith("/")) {
-			let curr = root
-			while (curr.length < cwd.length && cwd.startsWith(curr)) {
-				if (!external.has(curr)) {
-					searchDirs.push(curr)
-					relDirs.push(curr)
+			resolveSourcesMain(options, lv, cb)
+		} else {
+			findExtendedRoot(fs, cwd, target.extendsRoot, (err, extRoot) => {
+				if (err) return cb(err, null)
+				let lv = 0
+				if (extRoot && isParentOf(extRoot, cwd)) {
+					lv = countSlashes(cwd) - countSlashes(extRoot)
 				}
-				const nextSlash = cwd.indexOf("/", curr.length + 1)
-				if (nextSlash === -1) break
-				curr = cwd.slice(0, nextSlash)
-			}
-		}
-
-		const elen = extractors.length
-		const plen = searchDirs.length
-		const results = new Array(plen * elen)
-		let activeDirs = plen
-		let resolved = false
-
-		const checkAll = () => {
-			if (resolved) return
-			if (signal?.aborted) {
-				resolved = true
-				return cb(signal.reason as Error, null)
-			}
-			activeDirs--
-			if (activeDirs > 0) return
-			resolved = true
-
-			const defaultParentResource: Resource =
-				baseResource && !("error" in baseResource) ? baseResource : null
-
-			// Link sources of the same extractor across parent directories
-			for (let ei = 0; ei < elen; ei++) {
-				let lastExtractorResource: Resource = defaultParentResource
-				for (let pi = plen - 1; pi >= 0; pi--) {
-					const res = results[pi * elen + ei]
-					if (res && res !== null) {
-						if (!("error" in res)) res.parent = lastExtractorResource
-						lastExtractorResource = res
-					}
-				}
-			}
-
-			let lastResource: Resource = baseResource
-
-			for (let pi = plen - 1; pi >= 0; pi--) {
-				let dirResource: Resource = null
-				for (let ei = 0; ei < elen; ei++) {
-					const res = results[pi * elen + ei]
-					if (res && res !== null) {
-						dirResource = res
-						break
-					}
-				}
-
-				if (!dirResource) dirResource = lastResource
-
-				external.set(relDirs[pi]!, dirResource)
-				lastResource = dirResource
-			}
-
-			cb(null, lastResource)
-		}
-
-		for (let pi = 0; pi < plen; pi++) {
-			const parent = searchDirs[pi]!
-			const relDir = relDirs[pi]!
-
-			const runWithEntries = (dirEntries?: Dirent[]) => {
-				launchDirectoryExtractors(fs, parent, relDir, extractors, dirEntries, (err, dirResults) => {
-					if (resolved) return
-					if (err) {
-						resolved = true
-						return cb(err, null)
-					}
-					for (let ei = 0; ei < elen; ei++) {
-						results[pi * elen + ei] = dirResults[ei]
-					}
-					checkAll()
-				})
-			}
-
-			if (pi === 0 && entries) {
-				runWithEntries(entries)
-				continue
-			}
-
-			fs.readdir(parent, { withFileTypes: true }, (err, dirEntries) => {
-				if (resolved) return
-				if (err) {
-					// oxlint-disable-next-line typescript/no-explicit-any
-					if ((err as any).code === "ENOENT") {
-						for (let ei = 0; ei < elen; ei++) {
-							results[pi * elen + ei] = null
-						}
-						checkAll()
-						return
-					}
-					// For other readdir errors, populate results with error sources
-					for (let ei = 0; ei < elen; ei++) {
-						const extractor = extractors[ei]!
-						const epath = extractor.path
-						const isExtractorDotSlash = epath.startsWith("./")
-						if (isExtractorDotSlash && relDir !== "." && relDir !== "") {
-							results[pi * elen + ei] = null
-							continue
-						}
-						const cleanExtractor = isExtractorDotSlash ? epath.slice(2) : epath
-						results[pi * elen + ei] = {
-							error: err,
-							source: {
-								dir: relDir,
-								inverted: isExtractorDotSlash,
-								path: join(relDir, cleanExtractor),
-								rules: [],
-							},
-						}
-					}
-					checkAll()
-					return
-				}
-				runWithEntries(dirEntries as Dirent[])
+				resolveSourcesMain(options, lv, cb)
 			})
 		}
-
-		if (plen === 0) checkAll()
-	})
+	}
 }
