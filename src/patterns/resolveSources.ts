@@ -25,10 +25,7 @@ function isParentOf(parent: string, child: string): boolean {
 function countSlashes(s: string): number {
 	let count = 0
 	for (let i = 0; i < s.length; i++) {
-		if (s.charCodeAt(i) === 47) {
-			// '/'
-			count++
-		}
+		if (s.charCodeAt(i) === 47) count++
 	}
 	return count
 }
@@ -38,9 +35,7 @@ function countSlashes(s: string): number {
  */
 function getParentDir(p: string): string {
 	if (p === "" || p === ".") return ".."
-	if (p.startsWith("..")) {
-		return p + "/.."
-	}
+	if (p.startsWith("..")) return p + "/.."
 	const lastSlash = p.lastIndexOf("/")
 	if (lastSlash === -1) return "."
 	if (lastSlash === 0) return "/"
@@ -363,24 +358,26 @@ export function resolveSources(
 
 	if (!target.extendsRoot) {
 		resolveSourcesMain(options, 0, cb)
-	} else {
-		const cacheKey = `${cwd}::${target.extendsRoot}`
-		const cachedExtRoot = extendedRootCache.get(cacheKey)
-		if (cachedExtRoot !== undefined) {
-			let lv = 0
-			if (cachedExtRoot && isParentOf(cachedExtRoot, cwd)) {
-				lv = countSlashes(cwd) - countSlashes(cachedExtRoot)
-			}
-			resolveSourcesMain(options, lv, cb)
-		} else {
-			findExtendedRoot(fs, cwd, target.extendsRoot, (err, extRoot) => {
-				if (err) return cb(err, null)
-				let lv = 0
-				if (extRoot && isParentOf(extRoot, cwd)) {
-					lv = countSlashes(cwd) - countSlashes(extRoot)
-				}
-				resolveSourcesMain(options, lv, cb)
-			})
-		}
+		return
 	}
+
+	const cacheKey = `${cwd}::${target.extendsRoot}`
+	const cachedExtRoot = extendedRootCache.get(cacheKey)
+	if (cachedExtRoot !== undefined) {
+		let lv = 0
+		if (cachedExtRoot && isParentOf(cachedExtRoot, cwd))
+			lv = countSlashes(cwd) - countSlashes(cachedExtRoot)
+		resolveSourcesMain(options, lv, cb)
+		return
+	}
+
+	findExtendedRoot(fs, cwd, target.extendsRoot, (err, extRoot) => {
+		if (err) {
+			cb(err, null)
+			return
+		}
+		let lv = 0
+		if (extRoot && isParentOf(extRoot, cwd)) lv = countSlashes(cwd) - countSlashes(extRoot)
+		resolveSourcesMain(options, lv, cb)
+	})
 }
