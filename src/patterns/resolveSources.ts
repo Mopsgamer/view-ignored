@@ -1,7 +1,7 @@
 import type { Dirent } from "node:fs"
 
 import type { FsAdapter } from "../types.js"
-import type { Extractor, ExtractorFn, PatternFinderOptions } from "./extractor.js"
+import type { Extractor, PatternFinderOptions } from "./extractor.js"
 import type { PatternCompileOptions } from "./patternList.js"
 import type { Resource } from "./resource.js"
 import type { GlobRule } from "./rule.js"
@@ -57,7 +57,8 @@ function findExtendedRoot(
 	cb: (err: Error | null, path: string | null) => void,
 ): void {
 	const cacheKey = `${cwd}::${extendsRoot}`
-	if (extendedRootCache.has(cacheKey)) return cb(null, extendedRootCache.get(cacheKey)!)
+	const cachedVal = extendedRootCache.get(cacheKey)
+	if (cachedVal !== undefined) return cb(null, cachedVal)
 
 	let current = cwd
 
@@ -143,12 +144,12 @@ export interface ResolveSourcesOptions extends PatternFinderOptions {
 function launchExtractor(
 	fs: FsAdapter,
 	parent: string,
-	epath: string,
-	extract: ExtractorFn,
+	extractor: Extractor,
 	entries_: Dirent[] | undefined,
 	dir: string,
 	cb: (err: Error | null, res: Resource) => void,
 ): void {
+	const epath = extractor.path
 	const isDotSlash = epath.startsWith("./")
 	if (isDotSlash && dir !== "." && dir !== "") return cb(null, null)
 
@@ -157,7 +158,14 @@ function launchExtractor(
 	if (entries_) {
 		const slashIdx = cleanPath.indexOf("/")
 		const firstSegment = slashIdx === -1 ? cleanPath : cleanPath.slice(0, slashIdx)
-		if (!entries_.some((e) => e.name === firstSegment)) return cb(null, null)
+		let found = false
+		for (let i = 0, len = entries_.length; i < len; i++) {
+			if (entries_[i]!.name === firstSegment) {
+				found = true
+				break
+			}
+		}
+		if (!found) return cb(null, null)
 	}
 
 	fs.readFile(join(parent, cleanPath), (err, buff) => {
@@ -174,7 +182,7 @@ function launchExtractor(
 		if (err) return cb(null, { error: err, source })
 
 		try {
-			const act = extract(source, buff!)
+			const act = extractor.extract(source, buff!)
 			if (act === null) return cb(null, null)
 			if (act === undefined) return cb(null, source)
 			return cb(null, { error: act as Error, source })
@@ -210,7 +218,7 @@ function launchDirectoryExtractors(
 
 	for (let ei = 0; ei < elen; ei++) {
 		const extractor = extractors[ei]!
-		launchExtractor(fs, parent, extractor.path, extractor.extract, entries_, dir, (err, res) => {
+		launchExtractor(fs, parent, extractor, entries_, dir, (err, res) => {
 			if (hasError) return
 			if (err) {
 				hasError = true
