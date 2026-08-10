@@ -348,17 +348,10 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 	const { internalRules } = options.target
 	const beforeInternal = Array.isArray(internalRules) ? internalRules : internalRules.before
 
-	const ignoreOptionsRef = { val: null as IgnoresOptions | null }
+	let ignoreOptions: IgnoresOptions | null = null
 
 	if (beforeInternal.length > 0) {
-		const internalMatch = ruleTestInternalSync(
-			beforeInternal,
-			options,
-			src,
-			entry,
-			lowerPath,
-			ignoreOptionsRef,
-		)
+		const internalMatch = ruleTestInternalSync(beforeInternal, options, src, entry, lowerPath)
 		if (internalMatch) return internalMatch
 	}
 
@@ -384,20 +377,18 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 			const rule = rules[i]!
 			if (typeof rule === "function") continue
 			if ("match" in rule) {
-				if (ignoreOptionsRef.val === null) {
-					ignoreOptionsRef.val = {
-						cwd: options.cwd,
-						dirent: options.dirent,
-						entry,
-						fs: options.fs,
-						lowerEntry: lowerPath,
-						parentPath: options.parentPath,
-						resource: src,
-						signal: options.signal,
-						target: options.target,
-					}
+				ignoreOptions ??= {
+					cwd: options.cwd,
+					dirent: options.dirent,
+					entry,
+					fs: options.fs,
+					lowerEntry: lowerPath,
+					parentPath: options.parentPath,
+					resource: src,
+					signal: options.signal,
+					target: options.target,
 				}
-				const res = rule.match(ignoreOptionsRef.val!)
+				const res = rule.match(ignoreOptions)
 				if (res === null) continue
 				if (res instanceof Error) {
 					return {
@@ -432,14 +423,7 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 	if (!Array.isArray(internalRules)) {
 		const afterInternal = internalRules.after
 		if (afterInternal.length > 0) {
-			const internalMatch = ruleTestInternalSync(
-				afterInternal,
-				options,
-				src,
-				entry,
-				lowerPath,
-				ignoreOptionsRef,
-			)
+			const internalMatch = ruleTestInternalSync(afterInternal, options, src, entry, lowerPath)
 			if (internalMatch) return internalMatch
 		}
 	}
@@ -459,26 +443,24 @@ function ruleTestInternalSync(
 	src: Resource,
 	entry: string,
 	lowerPath: string,
-	ignoreOptionsRef: { val: IgnoresOptions | null },
 ): RuleMatch | void {
+	let ignoreOptions: IgnoresOptions | null = null
 	for (let i = 0, len = rules.length; i < len; i++) {
 		const rule = rules[i]!
 		if (typeof rule === "function") continue
 		if ("match" in rule) {
-			if (ignoreOptionsRef.val === null) {
-				ignoreOptionsRef.val = {
-					cwd: options.cwd,
-					dirent: options.dirent,
-					entry,
-					fs: options.fs,
-					lowerEntry: lowerPath,
-					parentPath: options.parentPath,
-					resource: src,
-					signal: options.signal,
-					target: options.target,
-				}
+			ignoreOptions ??= {
+				cwd: options.cwd,
+				dirent: options.dirent,
+				entry,
+				fs: options.fs,
+				lowerEntry: lowerPath,
+				parentPath: options.parentPath,
+				resource: src,
+				signal: options.signal,
+				target: options.target,
 			}
-			const res = rule.match(ignoreOptionsRef.val!)
+			const res = rule.match(ignoreOptions)
 			if (res === null) continue
 			if (res instanceof Error) {
 				return {
