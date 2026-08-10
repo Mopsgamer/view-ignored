@@ -198,9 +198,7 @@ export function walkIncludes(options: WalkOptions): WalkResult | Promise<WalkRes
 		return getWalkResult(match, options, isDir)
 	}
 
-	if (!isDir) {
-		return runIgnoresSync()
-	}
+	if (!isDir) return runIgnoresSync()
 
 	const { internalRules } = target
 	if (internalRules) {
@@ -227,9 +225,8 @@ function patch(
 ): void {
 	if (ctx.paths.has(path)) return
 	ctx.paths.set(path, match)
-	if (stream) {
+	if (stream)
 		stream.dispatchEvent(new CustomEvent("dirent", { detail: { dirent: entry, match, path } }))
-	}
 }
 
 function patchMerged(
@@ -262,12 +259,8 @@ function patchMerged(
 			new CustomEvent("dirent", { detail: { dirent: mockEntry, match: m, path: p } }),
 		)
 	}
-	for (const [p, r] of mergedCtx.external) {
-		ctx.external.set(p, r)
-	}
-	if (mergedCtx.failed.length > 0) {
-		ctx.failed.push(...mergedCtx.failed)
-	}
+	for (const [p, r] of mergedCtx.external) ctx.external.set(p, r)
+	if (mergedCtx.failed.length > 0) ctx.failed.push(...mergedCtx.failed)
 	for (const [p, t] of mergedCtx.total) {
 		const existing = ctx.total.get(p)
 		if (!existing) {
@@ -294,27 +287,21 @@ export function walkPatchResult(
 
 	const isExcluded = isMatchExcluded(invert, match)
 
-	if (context) {
-		patchMerged(ctx, stream, context)
-	}
+	if (context) patchMerged(ctx, stream, context)
 
 	if (isExcluded) {
 		if (
 			isRuleMatchInvalid(match) &&
 			stream &&
 			(dirs || (!isDir && (entry.isFile() || entry.isSymbolicLink())))
-		) {
+		)
 			patch(ctx, stream, path, entry, match)
-		}
 		return
 	}
 
-	if (!tooDeep && (dirs || (!isDir && (entry.isFile() || entry.isSymbolicLink())))) {
+	if (!tooDeep && (dirs || (!isDir && (entry.isFile() || entry.isSymbolicLink()))))
 		patch(ctx, stream, path, entry, match)
-	}
-	if (includeParent && dirs) {
-		patch(ctx, stream, parentPath + "/", entry, match)
-	}
+	if (includeParent && dirs) patch(ctx, stream, parentPath + "/", entry, match)
 }
 
 function addToTotal(

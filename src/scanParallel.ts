@@ -52,9 +52,8 @@ function processEntries(
 	let dirMatched = 0
 	let dirDirs = 0
 
-	if (len === 0 && onResult) {
+	if (len === 0 && onResult)
 		onResult({ depth, dir: relPath, dirs: 0, files: 0, ignored: false, matched: 0 })
-	}
 
 	const handleResult = (self: WalkResult | null, entry: Dirent, currentRelPath: string) => {
 		if (!self || !self.match) {
@@ -70,24 +69,18 @@ function processEntries(
 			return
 		}
 
-		if (self.isDir) {
-			dirDirs++
-		} else if (entry.isFile() || entry.isSymbolicLink()) {
+		if (self.isDir) dirDirs++
+		else if (entry.isFile() || entry.isSymbolicLink()) {
 			dirFiles++
 			const isIncluded =
 				invert === true ? self.match.ignored : invert === 2 ? true : !self.match.ignored
 			if (isIncluded) dirMatched++
 		}
 
-		if (onResult) {
-			onResult(self)
-		} else {
-			state.results!.push(self)
-		}
+		if (onResult) onResult(self)
+		else state.results!.push(self)
 
-		if (self.isDir && self.next === 0) {
-			walk(currentRelPath, depth + 1, res)
-		}
+		if (self.isDir && self.next === 0) walk(currentRelPath, depth + 1, res)
 
 		pendingResults--
 		if (pendingResults === 0 && onResult) {
@@ -158,9 +151,7 @@ export function scanParallel(
 
 	const taskDone = () => {
 		state.activeTasks--
-		if (state.activeTasks === 0 && !state.errorOccurred) {
-			cb(null, state.results)
-		}
+		if (state.activeTasks === 0 && !state.errorOccurred) cb(null, state.results)
 	}
 
 	const handleReaddir = (
