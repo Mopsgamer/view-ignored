@@ -4,13 +4,14 @@
 	"description": "Retrieve list of files ignored/included by Git, NPM, Yarn, JSR, Deno, Bun, VSCode extension CLI and other tools.",
 	"keywords": [
 		"arborist",
-		"content",
 		"diff",
 		"exclude",
 		"files",
 		"git",
 		"gitignore",
+		"glob",
 		"ignore",
+		"ignorematch",
 		"include",
 		"ls",
 		"match",
@@ -25,6 +26,7 @@
 		"vscodeignore",
 		"vsix",
 		"walk",
+		"wildmatch",
 		"yarnignore"
 	],
 	"bugs": {
