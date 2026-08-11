@@ -107,9 +107,7 @@ export function makeGit(): Target {
 
 				loadIgnoreFile(p, p)
 
-				if (excludePath) {
-					loadIgnoreFile(excludePath, ".git/info/exclude")
-				}
+				if (excludePath) loadIgnoreFile(excludePath, ".git/info/exclude")
 			}
 
 			const findG = (cur: string, callback: (g: string | null) => void) => {

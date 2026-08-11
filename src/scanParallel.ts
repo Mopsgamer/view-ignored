@@ -56,7 +56,7 @@ function processEntries(
 		onResult({ depth, dir: relPath, dirs: 0, files: 0, ignored: false, matched: 0 })
 
 	const handleResult = (self: WalkResult | null, entry: Dirent, currentRelPath: string) => {
-		if (!self || !self.match) {
+		const finish = () => {
 			pendingResults--
 			if (pendingResults === 0 && onResult) {
 				const dirs = dirDirs
@@ -66,6 +66,10 @@ function processEntries(
 				onResult(tot)
 			}
 			taskDone()
+		}
+
+		if (!self || !self.match) {
+			finish()
 			return
 		}
 
@@ -82,15 +86,7 @@ function processEntries(
 
 		if (self.isDir && self.next === 0) walk(currentRelPath, depth + 1, res)
 
-		pendingResults--
-		if (pendingResults === 0 && onResult) {
-			const dirs = dirDirs
-			const files = dirFiles
-			const matched = dirMatched
-			const tot = { depth, dir: relPath, dirs, files, ignored: false, matched }
-			onResult(tot)
-		}
-		taskDone()
+		finish()
 	}
 
 	for (let i = 0; i < len; i++) {

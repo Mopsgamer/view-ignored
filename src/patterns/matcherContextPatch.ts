@@ -210,9 +210,7 @@ export async function matcherContextRemovePath(
 				const failedEntryIndex = ctx.failed.findIndex(
 					(fail) => dirname(fail.source.path) === element,
 				)
-				if (failedEntryIndex >= 0) {
-					ctx.failed.splice(failedEntryIndex, 1)
-				}
+				if (failedEntryIndex >= 0) ctx.failed.splice(failedEntryIndex, 1)
 			}
 		}
 		return removed
@@ -243,9 +241,7 @@ export async function matcherContextRemovePath(
 	}
 
 	const deleted = ctx.paths.delete(entry)
-	if (deleted) {
-		removed.push(entry)
-	}
+	if (deleted) removed.push(entry)
 
 	updateTotals(ctx, parentPath, -1, deleted ? -1 : 0, 0)
 

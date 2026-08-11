@@ -71,9 +71,7 @@ function processGitignoreLine(
 			lineBuff[lineBuffIdx++] = c
 		} else if (c === 35) {
 			if (isCommentLineChar(content, start, i)) {
-				if (lineBuffIdx > 0 && lineBuff[lineBuffIdx - 1] === 32) {
-					lineBuffIdx--
-				}
+				if (lineBuffIdx > 0 && lineBuff[lineBuffIdx - 1] === 32) lineBuffIdx--
 				break
 			}
 			lineBuff[lineBuffIdx++] = c

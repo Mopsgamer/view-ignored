@@ -85,11 +85,8 @@ export function parseGit(text: string): any {
 			const res = parseKeyValuePair(text, i, len)
 			i = res.nextIdx
 			if (res.key) {
-				if (res.key === "path") {
-					handlePathKey(section, sectionName, res, order)
-				} else {
-					section[res.key] = res.val
-				}
+				if (res.key === "path") handlePathKey(section, sectionName, res, order)
+				else section[res.key] = res.val
 			}
 			continue
 		}
@@ -250,9 +247,7 @@ export function getIncludes(parsed: any, gitDir: string | null, branch: string |
 					? testPattern(condition.slice(9), branch, MatchMode.wildmatch)
 					: condition.startsWith("hasconfig:") && hasConfig(parsed, condition.slice(10))
 
-		if (matched) {
-			res.push(parsed[sectionName].path[idx])
-		}
+		if (matched) res.push(parsed[sectionName].path[idx])
 	}
 	return res
 }
@@ -331,9 +326,7 @@ export function loadRec(
 		cache.set(path, parsed)
 
 		const includes = getIncludes(parsed, gitDir, branch)
-		if (includes.length === 0) {
-			mCache.set(mKey, parsed)
-		}
+		if (includes.length === 0) mCache.set(mKey, parsed)
 
 		processParsed(parsed, includes)
 	})

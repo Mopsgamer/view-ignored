@@ -34,9 +34,7 @@ export function makeDirectPathsRule(directPathsInclude: Record<string, string>):
 		excludes: false,
 		match({ entry }) {
 			for (const [manifestProp, path] of Object.entries(directPathsInclude)) {
-				if (entry === path) {
-					return "//'" + manifestProp + "' property is " + path
-				}
+				if (entry === path) return "//'" + manifestProp + "' property is " + path
 			}
 			return null
 		},
@@ -238,9 +236,8 @@ export function extractManifestIncludes(manifest: PackageJson, dist: Record<stri
 	addDirectPath(manifest.module, dist, "module")
 	addDirectPath(manifest.browser, dist, "browser")
 
-	if (typeof manifest.bin === "string") {
-		addDirectPath(manifest.bin, dist, "bin")
-	} else if (typeof manifest.bin === "object" && manifest.bin !== null) {
+	if (typeof manifest.bin === "string") addDirectPath(manifest.bin, dist, "bin")
+	else if (typeof manifest.bin === "object" && manifest.bin !== null) {
 		Object.entries(manifest.bin).forEach(([key, binPath]) => {
 			addDirectPath(binPath, dist, "bin." + key)
 		})
@@ -250,9 +247,7 @@ export function extractManifestIncludes(manifest: PackageJson, dist: Record<stri
 function addDirectPath(p: string | undefined, dist: Record<string, string>, key: string) {
 	if (typeof p !== "string") return
 	const normalized = trimLeadingDotSlash(p)
-	if (normalized && !normalized.startsWith("../") && normalized !== "..") {
-		dist[key] = normalized
-	}
+	if (normalized && !normalized.startsWith("../") && normalized !== "..") dist[key] = normalized
 }
 
 export function findDependencyPackageJson(
@@ -267,9 +262,8 @@ export function findDependencyPackageJson(
 	while (current && current !== "." && current !== "/") {
 		const idx = current.lastIndexOf("/")
 		const segment = idx === -1 ? current : current.slice(idx + 1)
-		if (segment !== "node_modules") {
+		if (segment !== "node_modules")
 			candidates.push(current + "/node_modules/" + depName + "/package.json")
-		}
 		if (idx === -1) break
 		current = current.slice(0, idx)
 	}
@@ -382,9 +376,7 @@ export function resolveBundledDeps(
 			const subDir = dirname(foundRelPath)
 			const onSubDone = () => {
 				pending--
-				if (pending === 0) {
-					done()
-				}
+				if (pending === 0) done()
 			}
 			if (deps) {
 				for (const subDep in deps) {
@@ -456,9 +448,7 @@ export function makePatchedDepsRule(ctx: NpmContext): CustomRule {
 	return {
 		excludes: true,
 		match({ entry }) {
-			if (ctx.patchedDepsExclude.has(entry)) {
-				return "//patchedDependencies exclusion"
-			}
+			if (ctx.patchedDepsExclude.has(entry)) return "//patchedDependencies exclusion"
 			return null
 		},
 	} satisfies CustomRule as CustomRule
