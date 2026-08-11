@@ -5,6 +5,7 @@ const { values } = parseArgs({
 	args: Bun.argv.slice(2),
 	options: {
 		"body-file": { type: "string" },
+		check: { type: "boolean" },
 		owner: { type: "string" },
 		pr: { type: "string" },
 		repo: { type: "string" },
@@ -12,7 +13,7 @@ const { values } = parseArgs({
 	},
 })
 
-const { token, pr, owner, repo, "body-file": bodyFile } = values
+const { token, pr, owner, repo, "body-file": bodyFile, check } = values
 
 if (!token || !pr || !owner || !repo) {
 	console.error("Missing required arguments")
@@ -40,7 +41,21 @@ async function main() {
 		process.exit(1)
 	}
 	const comments = await listRes.json()
-	const botComment = comments.find((c) => c.body.includes(commentHeader))
+	const botComment = comments.find((c) => c.body && c.body.includes(commentHeader))
+
+	if (check) {
+		const exists = botComment !== undefined
+		console.log(`Comment exists: ${exists}`)
+		if (process.env.GITHUB_OUTPUT) {
+			fs.appendFileSync(process.env.GITHUB_OUTPUT, `exists=${exists}\n`)
+		}
+		return
+	}
+
+	if (!bodyFile) {
+		console.error("Missing --body-file argument")
+		process.exit(1)
+	}
 
 	const body = fs.readFileSync(bodyFile, "utf8")
 	const fullBody = body
