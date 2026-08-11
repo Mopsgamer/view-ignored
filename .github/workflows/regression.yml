@@ -40,18 +40,16 @@ jobs:
       - name: Build current
         run: bun run prod
 
-      - name: Run regression comparison
-        id: bench
+      - name: Setup environment and determine changes
+        id: setup_env
         run: |
-          NO_TS_CHANGES="false"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "no_ts_changes=false" >> $GITHUB_OUTPUT
             BASE_REF="${{ inputs.base_ref }}"
             if [ -z "$BASE_REF" ]; then
               BASE_REF="HEAD"
             fi
-            bun scripts/bench.js --vign --diff "$BASE_REF" --out speed_report.txt || exit 1
-            bun scripts/size.js --diff "$BASE_REF" --out size_report.txt || exit 1
+            echo "base_ref=$BASE_REF" >> $GITHUB_OUTPUT
           else
             BASE_SHA="${{ github.event.pull_request.base.sha }}"
             HEAD_SHA="${{ github.event.pull_request.head.sha }}"
@@ -59,35 +57,16 @@ jobs:
 
             if [ -z "$TS_CHANGES" ]; then
               echo "no_ts_changes=true" >> $GITHUB_OUTPUT
-              NO_TS_CHANGES="true"
             else
               echo "no_ts_changes=false" >> $GITHUB_OUTPUT
               git fetch origin ${{ github.event.pull_request.base.ref }} || exit 1
-              bun scripts/bench.js --vign --diff origin/${{ github.event.pull_request.base.ref }} --out speed_report.txt || exit 1
-              bun scripts/size.js --diff origin/${{ github.event.pull_request.base.ref }} --out size_report.txt || exit 1
+              echo "base_ref=origin/${{ github.event.pull_request.base.ref }}" >> $GITHUB_OUTPUT
             fi
           fi
 
-          if [ "$NO_TS_CHANGES" != "true" ]; then
-            echo "## Speed Regression Report" > regression_output.txt
-            echo "" >> regression_output.txt
-            echo '```txt' >> regression_output.txt
-            cat speed_report.txt >> regression_output.txt
-            echo '```' >> regression_output.txt
-            echo "" >> regression_output.txt
-            echo "## Size Regression Report" >> regression_output.txt
-            echo "" >> regression_output.txt
-            echo '```txt' >> regression_output.txt
-            cat size_report.txt >> regression_output.txt
-            echo '```' >> regression_output.txt
-          fi
-
-      - name: Print benchmark results to log
-        if: ${{ inputs.print_only == true || github.event_name == 'workflow_dispatch' }}
-        run: cat regression_output.txt
-
-      - name: Comment PR
-        if: ${{ github.event_name == 'pull_request' && inputs.print_only != true && steps.bench.outputs.no_ts_changes != 'true' }}
+      - name: Check if PR comment exists
+        id: check_comment
+        if: ${{ github.event_name == 'pull_request' && inputs.print_only != true && steps.setup_env.outputs.no_ts_changes != 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -96,4 +75,67 @@ jobs:
             --owner ${{ github.repository_owner }} \
             --repo ${{ github.event.repository.name }} \
             --pr ${{ github.event.pull_request.number }} \
-            --body-file regression_output.txt
+            --check
+
+      - name: Run size comparison
+        if: ${{ steps.setup_env.outputs.no_ts_changes != 'true' }}
+        run: |
+          bun scripts/size.js --diff "${{ steps.setup_env.outputs.base_ref }}" --out size_report.txt || exit 1
+
+      - name: Post initial size report
+        if: ${{ github.event_name == 'pull_request' && inputs.print_only != true && steps.setup_env.outputs.no_ts_changes != 'true' && steps.check_comment.outputs.exists != 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "## Speed Regression Report" > size_only_output.txt
+          echo "" >> size_only_output.txt
+          echo "⏳ *Running speed benchmarks...*" >> size_only_output.txt
+          echo "" >> size_only_output.txt
+          echo "## Size Regression Report" >> size_only_output.txt
+          echo "" >> size_only_output.txt
+          echo '```txt' >> size_only_output.txt
+          cat size_report.txt >> size_only_output.txt
+          echo '```' >> size_only_output.txt
+
+          bun scripts/comment.js \
+            --token $GITHUB_TOKEN \
+            --owner ${{ github.repository_owner }} \
+            --repo ${{ github.event.repository.name }} \
+            --pr ${{ github.event.pull_request.number }} \
+            --body-file size_only_output.txt
+
+      - name: Run benchmark comparison
+        if: ${{ steps.setup_env.outputs.no_ts_changes != 'true' }}
+        run: |
+          bun scripts/bench.js --vign --diff "${{ steps.setup_env.outputs.base_ref }}" --out speed_report.txt || exit 1
+
+      - name: Generate final report
+        if: ${{ steps.setup_env.outputs.no_ts_changes != 'true' }}
+        run: |
+          echo "## Speed Regression Report" > final_regression_output.txt
+          echo "" >> final_regression_output.txt
+          echo '```txt' >> final_regression_output.txt
+          cat speed_report.txt >> final_regression_output.txt
+          echo '```' >> final_regression_output.txt
+          echo "" >> final_regression_output.txt
+          echo "## Size Regression Report" >> final_regression_output.txt
+          echo "" >> final_regression_output.txt
+          echo '```txt' >> final_regression_output.txt
+          cat size_report.txt >> final_regression_output.txt
+          echo '```' >> final_regression_output.txt
+
+      - name: Print benchmark results to log
+        if: ${{ (inputs.print_only == true || github.event_name == 'workflow_dispatch') && steps.setup_env.outputs.no_ts_changes != 'true' }}
+        run: cat final_regression_output.txt
+
+      - name: Comment PR (Final)
+        if: ${{ github.event_name == 'pull_request' && inputs.print_only != true && steps.setup_env.outputs.no_ts_changes != 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          bun scripts/comment.js \
+            --token $GITHUB_TOKEN \
+            --owner ${{ github.repository_owner }} \
+            --repo ${{ github.event.repository.name }} \
+            --pr ${{ github.event.pull_request.number }} \
+            --body-file final_regression_output.txt
