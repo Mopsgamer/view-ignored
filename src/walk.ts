@@ -325,9 +325,7 @@ function addToTotal(
  * Patches the {@link MatcherContext} with the given total.
  */
 export function walkPatchTotal(ctx: MatcherContext, maxDepth: number, t: WalkTotal): void {
-	if (t.depth <= maxDepth && !t.ignored) {
-		addToTotal(ctx.total, t.dir, t.files, t.matched, t.dirs)
-	}
+	if (t.depth <= maxDepth && !t.ignored) addToTotal(ctx.total, t.dir, t.files, t.matched, t.dirs)
 }
 
 /**
