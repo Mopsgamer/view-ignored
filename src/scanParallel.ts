@@ -140,8 +140,7 @@ export function scanParallel(
 	const handleError = (err: Error) => {
 		if (!state.errorOccurred) {
 			state.errorOccurred = err
-			// oxlint-disable-next-line typescript/no-explicit-any
-			cb(err, null as any)
+			cb(err, null)
 		}
 	}
 

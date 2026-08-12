@@ -467,24 +467,26 @@ export function makePackageResolutionRule(ctx: NpmContext): SkipRule {
 		const pkgPath = join(options.cwd, entry + "/package.json")
 		return new Promise<MatcherContext | null>((resolve) => {
 			options.fs.readFile(pkgPath, (err, content) => {
-				if (!err && content) {
-					try {
-						const pkg = JSON.parse(content.toString())
-						if (
-							pkg &&
-							(isWorkspace || (typeof pkg.name === "string" && ctx.rootDeps.has(pkg.name)))
-						) {
-							resolve({
-								external: new Map(),
-								failed: [],
-								paths: new Map(),
-								total: new Map(),
-							})
-							return
-						}
-					} catch {
-						// ignore parse error
+				if (err || !content) {
+					resolve(null)
+					return
+				}
+				try {
+					const pkg = JSON.parse(content.toString())
+					if (
+						pkg &&
+						(isWorkspace || (typeof pkg.name === "string" && ctx.rootDeps.has(pkg.name)))
+					) {
+						resolve({
+							external: new Map(),
+							failed: [],
+							paths: new Map(),
+							total: new Map(),
+						})
+						return
 					}
+				} catch {
+					// ignore parse error
 				}
 				resolve(null)
 			})

@@ -30,6 +30,10 @@ function countSlashes(s: string): number {
 	return count
 }
 
+function getLv(cwd: string, extRoot: string | null): number {
+	return extRoot && isParentOf(extRoot, cwd) ? countSlashes(cwd) - countSlashes(extRoot) : 0
+}
+
 /**
  * Robustly goes up one directory level for relative paths like ".", "..", "../.."
  */
@@ -333,12 +337,7 @@ function resolveSourcesMain(
 			})
 		}
 
-		if (pi === 0 && entries) {
-			runWithEntries(entries)
-			continue
-		}
-
-		runWithEntries(undefined)
+		runWithEntries(pi === 0 ? entries : undefined)
 	}
 
 	if (plen === 0) checkAll()
@@ -364,10 +363,7 @@ export function resolveSources(
 	const cacheKey = `${cwd}::${target.extendsRoot}`
 	const cachedExtRoot = extendedRootCache.get(cacheKey)
 	if (cachedExtRoot !== undefined) {
-		let lv = 0
-		if (cachedExtRoot && isParentOf(cachedExtRoot, cwd))
-			lv = countSlashes(cwd) - countSlashes(cachedExtRoot)
-		resolveSourcesMain(options, lv, cb)
+		resolveSourcesMain(options, getLv(cwd, cachedExtRoot), cb)
 		return
 	}
 
@@ -376,8 +372,6 @@ export function resolveSources(
 			cb(err, null)
 			return
 		}
-		let lv = 0
-		if (extRoot && isParentOf(extRoot, cwd)) lv = countSlashes(cwd) - countSlashes(extRoot)
-		resolveSourcesMain(options, lv, cb)
+		resolveSourcesMain(options, getLv(cwd, extRoot), cb)
 	})
 }

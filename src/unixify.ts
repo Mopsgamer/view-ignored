@@ -45,9 +45,7 @@ export function dirname(p: string): string {
  */
 export function strip(p: string): string {
 	const res = unixify(p)
-	if (res.length > 1 && res.charCodeAt(1) === 58) {
-		return res.slice(2)
-	}
+	if (res.length > 1 && res.charCodeAt(1) === 58) return res.slice(2)
 	return res
 }
 
