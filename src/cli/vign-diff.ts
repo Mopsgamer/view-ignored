@@ -417,6 +417,78 @@ async function run(
 		return false
 	}
 
+	if (opt.list) {
+		const start = performance.now()
+		let ctx: MatcherContext
+		try {
+			const modeArg = opt.mode as "publish" | "list" | "bundle" | undefined
+			// oxlint-disable-next-line typescript/no-explicit-any
+			const targetInstance = (info.make as any)(modeArg)
+
+			const setName = opt.cmdSet || info.defaultSet
+			const isInvert = opt.invert === "true" || setName === "ignored"
+
+			let scanInvert: boolean | 2 = false
+			if (opt.invert !== undefined) {
+				if (opt.invert === "true") {
+					scanInvert = true
+				} else if (opt.invert === "false") {
+					scanInvert = false
+				} else if (opt.invert === "2") {
+					scanInvert = 2
+				} else {
+					// oxlint-disable-next-line typescript/no-explicit-any
+					scanInvert = opt.invert as any
+				}
+			} else if (setName === "ignored") {
+				scanInvert = true
+			}
+
+			// Set scan options
+			const scanOptions: ScanOptions = {
+				dirs: opt.dirs !== undefined ? opt.dirs : false,
+				invert: scanInvert,
+				skipInternal: opt.skipInternal !== undefined ? opt.skipInternal : !isInvert,
+				target: targetInstance,
+			}
+
+			if (opt.depth !== undefined) {
+				scanOptions.depth = parseInt(opt.depth, 10)
+			}
+
+			ctx = await scan(scanOptions)
+		} catch (err: unknown) {
+			const msg = err instanceof Error ? err.message : `unknown error ${JSON.stringify(err)}`
+			const isNotApplicable =
+				msg.includes("No valid manifest found") || msg.includes("'package.json' not found")
+
+			if (isNotApplicable) {
+				if (isExplicit) {
+					process.stderr.write(
+						`${styleText("red", "✖")} ${styleText("bold", "Error:")} Target "${name}" is not applicable here.\n`,
+					)
+					process.stderr.write(`      ${styleText("dim", msg)}\n`)
+					process.exit(1)
+				}
+				return false
+			}
+
+			process.stderr.write(
+				`${styleText("red", "✖")} ${styleText("bold", "Error:")} Scan failed for "${name}": ${msg}\n`,
+			)
+			return false
+		}
+		const dur = performance.now() - start
+
+		process.stdout.write(
+			`${styleText(["blue", "bold"], "→")} ${styleText("bold", "Included files")} for ${styleText("blue", name)} (${fmtTime(dur)}):\n`,
+		)
+		Array.from(ctx!.paths.keys())
+			.sort()
+			.forEach((f) => console.log(`  ${styleText("dim", "•")} ${f}`))
+		return false
+	}
+
 	if (!hasBin(info.bin)) {
 		if (isExplicit) {
 			process.stderr.write(
@@ -506,30 +578,34 @@ async function run(
 		// oxlint-disable-next-line typescript/no-explicit-any
 		const targetInstance = (info.make as any)(modeArg)
 
+		const isInvert = opt.invert === "true" || setName === "ignored"
+
+		let scanInvert: boolean | 2 = false
+		if (opt.invert !== undefined) {
+			if (opt.invert === "true") {
+				scanInvert = true
+			} else if (opt.invert === "false") {
+				scanInvert = false
+			} else if (opt.invert === "2") {
+				scanInvert = 2
+			} else {
+				// oxlint-disable-next-line typescript/no-explicit-any
+				scanInvert = opt.invert as any
+			}
+		} else if (setName === "ignored") {
+			scanInvert = true
+		}
+
 		// Set scan options
 		const scanOptions: ScanOptions = {
 			dirs: opt.dirs !== undefined ? opt.dirs : false,
-			skipInternal: opt.skipInternal !== undefined ? opt.skipInternal : true,
+			invert: scanInvert,
+			skipInternal: opt.skipInternal !== undefined ? opt.skipInternal : !isInvert,
 			target: targetInstance,
 		}
 
 		if (opt.depth !== undefined) {
 			scanOptions.depth = parseInt(opt.depth, 10)
-		}
-
-		if (opt.invert !== undefined) {
-			if (opt.invert === "true") {
-				scanOptions.invert = true
-			} else if (opt.invert === "false") {
-				scanOptions.invert = false
-			} else if (opt.invert === "2") {
-				scanOptions.invert = 2
-			} else {
-				// oxlint-disable-next-line typescript/no-explicit-any
-				scanOptions.invert = opt.invert as any
-			}
-		} else if (setName === "ignored") {
-			scanOptions.invert = true
 		}
 
 		ctx = await scan(scanOptions)
@@ -560,17 +636,12 @@ async function run(
 		process.stdout.write(
 			`${styleText(["blue", "bold"], "→")} ${styleText("bold", "Included files")} for ${styleText("blue", name)} (${fmtTime(dur)}):\n`,
 		)
-		Array.from(ctx!.paths.entries())
-			.filter(([, m]) => !m.ignored)
-			.map(([p]) => p)
+		Array.from(ctx!.paths.keys())
 			.sort()
 			.forEach((f) => console.log(`  ${styleText("dim", "•")} ${f}`))
 	}
 
-	let vignFiles = Array.from(ctx!.paths.entries())
-		.filter(([, m]) => !m.ignored)
-		.map(([p]) => p)
-		.sort()
+	let vignFiles = Array.from(ctx!.paths.keys()).sort()
 
 	// If we are looking specifically at untracked / tracked git files, we filter vignFiles using git CLI output
 	if (name === "git") {
@@ -718,8 +789,40 @@ async function run(
 async function main() {
 	let args
 	try {
+		const processedArgv = [...process.argv]
+		// If "--invert" is after "--", we move it before "--"
+		const dDashIdx = processedArgv.indexOf("--")
+		if (dDashIdx !== -1) {
+			const invertIdx = processedArgv.indexOf("--invert", dDashIdx)
+			if (invertIdx !== -1) {
+				processedArgv.splice(invertIdx, 1)
+				let value: string | undefined
+				const nextArg = invertIdx < processedArgv.length ? processedArgv[invertIdx] : undefined
+				if (nextArg && !nextArg.startsWith("-")) {
+					value = nextArg
+					processedArgv.splice(invertIdx, 1)
+				}
+				processedArgv.splice(dDashIdx, 0, "--invert")
+				if (value !== undefined) {
+					processedArgv.splice(dDashIdx + 1, 0, value)
+				}
+			}
+		}
+
+		// Detect "--invert" as a boolean flag and map it to "--invert true"
+		for (let i = 2; i < processedArgv.length; i++) {
+			const arg = processedArgv[i]
+			if (arg === "--invert") {
+				const next = processedArgv[i + 1]
+				if (next === undefined || next.startsWith("-")) {
+					processedArgv.splice(i + 1, 0, "true")
+				}
+			}
+		}
+
 		args = parseArgs({
 			allowPositionals: true,
+			args: processedArgv.slice(2),
 			options: {
 				cmd: { short: "c", type: "string" },
 				"cmd-set": { short: "s", type: "string" },
