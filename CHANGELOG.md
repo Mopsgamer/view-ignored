@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+- Support Git's `core.ignorecase` configuration option for dynamic case-insensitive matching of ignore rules.
+
 ## [0.12.0] - 2026-08-08
 
 - Add `SkipRule` to support skipping directory scanning and
