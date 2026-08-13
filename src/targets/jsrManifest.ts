@@ -13,10 +13,7 @@ export function makeJsrInit(name: string, extractors: Extractor[]): InitCb {
 			}
 			const extractor = extractors[i++]!
 			fs.readFile(cwd + "/" + extractor.path, (err, data) => {
-				if (err) {
-					next()
-					return
-				}
+				if (err) return next()
 				try {
 					jsrManifestParse(data!.toString())
 				} catch (error) {

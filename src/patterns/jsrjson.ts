@@ -47,9 +47,8 @@ export function extractJsrJsonRules(source: Source, content: Uint8Array): void {
 	}
 
 	// Basic runtime check to ensure dist is an object
-	if (!dist || typeof dist !== "object" || Array.isArray(dist)) {
+	if (!dist || typeof dist !== "object" || Array.isArray(dist))
 		throw new Error("Invalid '" + source.path + "': Root must be an object")
-	}
 
 	let rule: GlobRule | undefined
 

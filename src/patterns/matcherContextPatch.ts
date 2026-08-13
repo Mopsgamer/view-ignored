@@ -42,14 +42,10 @@ export async function matcherContextAddPath(
 	entry: string,
 ): Promise<string[]> {
 	const added: string[] = []
-	if (ctx.paths.has(entry)) {
-		return added
-	}
+	if (ctx.paths.has(entry)) return added
 
 	const isDir = entry.endsWith("/")
-	if (isDir && entry === "./") {
-		return added
-	}
+	if (isDir && entry === "./") return added
 	const direntPath = isDir ? entry.slice(0, -1) : entry
 	const parentPath = dirname(direntPath)
 	const name = direntPath.slice(direntPath.lastIndexOf("/") + 1)
@@ -83,9 +79,8 @@ export async function matcherContextAddPath(
 		}
 
 		updateTotals(ctx, parentPath, 0, 0, 1)
-		if (parentPath !== ".") {
+		if (parentPath !== ".")
 			added.push(...(await matcherContextAddPath(ctx, options, parentPath + "/")))
-		}
 
 		return added
 	}
@@ -119,9 +114,8 @@ export async function matcherContextAddPath(
 		propagateTotals(ctx.total)
 	}
 
-	if (parentPath !== ".") {
+	if (parentPath !== ".")
 		added.push(...(await matcherContextAddPath(ctx, options, parentPath + "/")))
-	}
 
 	const resource = await promResolve({
 		cwd,
