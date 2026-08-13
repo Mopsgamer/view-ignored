@@ -12,6 +12,10 @@ import { patternListCompile } from "./patternList.js"
 
 // Cache for resolved extended roots per cwd and extendsRoot field to avoid redundant filesystem lookups
 const extendedRootCache = new Map<string, string | null>()
+const pendingExtendedRootLookups = new Map<
+	string,
+	((err: Error | null, path: string | null) => void)[]
+>()
 
 function isParentOf(parent: string, child: string): boolean {
 	const pLen = parent.length
@@ -56,7 +60,19 @@ function findExtendedRoot(
 	cb: (err: Error | null, path: string | null) => void,
 ): void {
 	const cacheKey = `${cwd}::${extendsRoot}`
-	if (extendedRootCache.has(cacheKey)) return cb(null, extendedRootCache.get(cacheKey)!)
+	if (extendedRootCache.has(cacheKey)) {
+		cb(null, extendedRootCache.get(cacheKey)!)
+		return
+	}
+
+	const pending = pendingExtendedRootLookups.get(cacheKey)
+	if (pending !== undefined) {
+		pending.push(cb)
+		return
+	}
+
+	const callbackList = [cb]
+	pendingExtendedRootLookups.set(cacheKey, callbackList)
 
 	let current = cwd
 
@@ -68,7 +84,11 @@ function findExtendedRoot(
 					const pkg = JSON.parse(content.toString())
 					if (pkg && pkg[extendsRoot] !== undefined) {
 						extendedRootCache.set(cacheKey, current)
-						return cb(null, current)
+						pendingExtendedRootLookups.delete(cacheKey)
+						for (let i = 0, len = callbackList.length; i < len; i++) {
+							callbackList[i]!(null, current)
+						}
+						return
 					}
 				} catch {
 					// Treat invalid JSON as non-existent field
@@ -78,7 +98,11 @@ function findExtendedRoot(
 			const parent = dirname(current)
 			if (parent === current || parent === "/" || parent === ".") {
 				extendedRootCache.set(cacheKey, null)
-				return cb(null, null)
+				pendingExtendedRootLookups.delete(cacheKey)
+				for (let i = 0, len = callbackList.length; i < len; i++) {
+					callbackList[i]!(null, null)
+				}
+				return
 			}
 			current = parent
 			next()

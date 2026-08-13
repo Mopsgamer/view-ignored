@@ -206,7 +206,19 @@ function hasConfig(obj: any, cond: string): boolean {
 }
 
 // oxlint-disable-next-line typescript/no-explicit-any
+const getIncludesCache = new WeakMap<any, Map<string, string[]>>()
+
+// oxlint-disable-next-line typescript/no-explicit-any
 export function getIncludes(parsed: any, gitDir: string | null, branch: string | null): string[] {
+	let cache = getIncludesCache.get(parsed)
+	if (!cache) {
+		cache = new Map()
+		getIncludesCache.set(parsed, cache)
+	}
+	const cacheKey = `${gitDir}::${branch}`
+	const cached = cache.get(cacheKey)
+	if (cached !== undefined) return cached
+
 	const order = parsed.__order
 	const res: string[] = []
 	if (!order) {
@@ -215,6 +227,7 @@ export function getIncludes(parsed: any, gitDir: string | null, branch: string |
 			if (Array.isArray(inc.path)) res.push(...inc.path)
 			else res.push(inc.path)
 		}
+		cache.set(cacheKey, res)
 		return res
 	}
 
@@ -249,6 +262,7 @@ export function getIncludes(parsed: any, gitDir: string | null, branch: string |
 
 		if (matched) res.push(parsed[sectionName].path[idx])
 	}
+	cache.set(cacheKey, res)
 	return res
 }
 

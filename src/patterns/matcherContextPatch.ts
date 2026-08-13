@@ -192,7 +192,7 @@ export async function matcherContextRemovePath(
 		}
 
 		const direntPathLen = direntPath.length
-		for (const [element] of ctx.external) {
+		for (const element of ctx.external.keys()) {
 			if (
 				element.length < direntPathLen ||
 				(element !== direntPath && !element.startsWith(direntPath + "/"))
