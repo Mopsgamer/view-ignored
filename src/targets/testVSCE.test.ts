@@ -57,4 +57,29 @@ describe("VSCE", () => {
 			),
 		).not.toThrow()
 	})
+
+	test("supports case-insensitive extension names with uppercase characters", async (done) => {
+		expect(() =>
+			testScan(
+				done,
+				{
+					"package.json":
+						'{ "name": "My-Awesome-Extension", "version": "1.0.0", "engines": { "vscode": "^1.120.0" } }',
+				},
+				() => {},
+				{ target: makeVSCE() },
+			),
+		).not.toThrow()
+		expect(() =>
+			testScan(
+				done,
+				{
+					"package.json":
+						'{ "name": "invalid_name_@", "version": "1.0.0", "engines": { "vscode": "^1.120.0" } }',
+				},
+				() => {},
+				{ target: makeVSCE() },
+			),
+		).toThrow()
+	})
 })
