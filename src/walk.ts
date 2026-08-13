@@ -201,17 +201,17 @@ export function walkIncludes(options: WalkOptions): WalkResult | Promise<WalkRes
 	if (!isDir) return runIgnoresSync()
 
 	const { internalRules } = target
-	if (internalRules) {
-		const isArr = Array.isArray(internalRules)
-		const list1 = isArr ? (internalRules as Rule[]) : (internalRules as InternalRules).before
-		const list2 = isArr ? null : (internalRules as InternalRules).after
+	if (!internalRules) return runIgnoresSync()
 
-		const res1 = checkRulesList(list1, options, maxDepth, runIgnoresSync)
-		if (res1 !== null) return res1
+	const isArr = Array.isArray(internalRules)
+	const list1 = isArr ? (internalRules as Rule[]) : (internalRules as InternalRules).before
+	const list2 = isArr ? null : (internalRules as InternalRules).after
 
-		const res2 = checkRulesList(list2, options, maxDepth, runIgnoresSync)
-		if (res2 !== null) return res2
-	}
+	const res1 = checkRulesList(list1, options, maxDepth, runIgnoresSync)
+	if (res1 !== null) return res1
+
+	const res2 = checkRulesList(list2, options, maxDepth, runIgnoresSync)
+	if (res2 !== null) return res2
 
 	return runIgnoresSync()
 }

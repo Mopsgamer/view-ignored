@@ -410,12 +410,9 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 		currentSrc = currentSrc.parent ?? null
 	}
 
-	if (!Array.isArray(internalRules)) {
-		const afterInternal = internalRules.after
-		if (afterInternal.length > 0) {
-			const internalMatch = ruleTestInternalSync(afterInternal, ignoreOptions)
-			if (internalMatch) return internalMatch
-		}
+	if (!Array.isArray(internalRules) && internalRules.after.length > 0) {
+		const internalMatch = ruleTestInternalSync(internalRules.after, ignoreOptions)
+		if (internalMatch) return internalMatch
 	}
 
 	if (src === null) return { ignored: false, kind: RuleMatchKind.missingSource }

@@ -59,7 +59,7 @@ export function extractPackageJsonRules(
 		throw new Error("Invalid '" + source.path + "'", { cause: err })
 	}
 
-	if (!dist?.files || !Array.isArray(dist.files)) return null
+	if (!dist || !Array.isArray(dist.files)) return null
 
 	source.inverted = true
 	let rule: GlobRule | undefined

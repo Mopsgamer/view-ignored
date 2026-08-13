@@ -291,10 +291,9 @@ function resolveSourcesMain(
 			let lastExtractorResource: Resource = defaultParentResource
 			for (let pi = plen - 1; pi >= 0; pi--) {
 				const res = results[pi * elen + ei]
-				if (res && res !== null) {
-					if (!("error" in res)) res.parent = lastExtractorResource
-					lastExtractorResource = res
-				}
+				if (!res) continue
+				if (!("error" in res)) res.parent = lastExtractorResource
+				lastExtractorResource = res
 			}
 		}
 
