@@ -347,4 +347,34 @@ describe("Git", () => {
 			{ depth: 1, target: makeGit(), within: "a/b" },
 		)
 	})
+
+	test("ignores file (case File match) with ignorecase = true", async (done) => {
+		await testScan(
+			done,
+			{
+				".git": {
+					config: "[core]\n\tignorecase = true",
+				},
+				".gitignore": "File",
+				file: "",
+			},
+			[".gitignore"],
+			{ target: makeGit() },
+		)
+	})
+
+	test("does not ignore file (case File no match) with ignorecase = false", async (done) => {
+		await testScan(
+			done,
+			{
+				".git": {
+					config: "[core]\n\tignorecase = false",
+				},
+				".gitignore": "File",
+				file: "",
+			},
+			[".gitignore", "file"],
+			{ target: makeGit() },
+		)
+	})
 })

@@ -56,6 +56,15 @@ export function makeGit(): Target {
 				gDir: string | null,
 			) => {
 				const { core } = conf
+				const ignorecase = core
+					? String(core["ignorecase"]).toLowerCase() === "true" || core["ignorecase"] === true
+					: false
+
+				if (ignorecase) {
+					target.extractors[0]!.extract = (source, content) =>
+						extractGitignore(source, content, { nocase: true })
+				}
+
 				const ex = core ? core["excludesfile"] : null
 				const p = ex ? resolvePath(gDir || nCwd, ex) : resolvePath(gDir || nCwd, globalIgnore)
 
@@ -77,7 +86,7 @@ export function makeGit(): Target {
 							path: sourcePath,
 							rules: [],
 						}
-						extractGitignore(source, res)
+						extractGitignore(source, res, { nocase: ignorecase })
 						internal.after.push(...source.rules)
 						done()
 					})
