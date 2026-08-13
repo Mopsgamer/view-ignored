@@ -341,7 +341,6 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 		return { ...src, ignored: true, kind: RuleMatchKind.invalidSource }
 
 	const { entry } = options
-	let computedLowerEntry: string | undefined = options.lowerEntry
 
 	const { internalRules } = options.target
 	const beforeInternal = Array.isArray(internalRules) ? internalRules : internalRules.before
@@ -351,9 +350,7 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 		dirent: options.dirent,
 		entry,
 		fs: options.fs,
-		get lowerEntry() {
-			return computedLowerEntry || (computedLowerEntry = entry.toLowerCase())
-		},
+		lowerEntry: options.lowerEntry,
 		parentPath: options.parentPath,
 		resource: src,
 		signal: options.signal,

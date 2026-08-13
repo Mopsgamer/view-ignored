@@ -134,16 +134,13 @@ function checkRulesList(
 		const rule = list[i]!
 		if (typeof rule !== "function") continue
 
-		let computedLowerEntry = lowerEntry
 		const ignoreOptions = {
 			cwd,
 			depth: maxDepth - depth,
 			dirent: entry,
 			entry: path,
 			fs,
-			get lowerEntry() {
-				return computedLowerEntry || (computedLowerEntry = path.toLowerCase())
-			},
+			lowerEntry,
 			parentPath,
 			resource,
 			signal,
