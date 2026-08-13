@@ -5,7 +5,6 @@ import type { MatcherStream } from "./patterns/matcherStream.js"
 import type { Resource } from "./patterns/resource.js"
 import type { ScanOptions } from "./types.js"
 
-import { getOrInsert } from "./mapUtils.js"
 import {
 	isRuleMatchInvalid,
 	type RuleMatch,
@@ -126,27 +125,29 @@ function checkRulesList(
 	maxDepth: number,
 	runIgnoresSync: () => WalkResult,
 ): WalkResult | Promise<WalkResult> | null {
-	if (!list) return null
+	if (!list || list.length === 0) return null
 	const { entry, scanOptions, relPath: path, lowerEntry, parentPath, resource, depth } = options
 	const { target, fs, cwd, signal, within } = scanOptions
+
+	const ignoreOptions = {
+		cwd,
+		depth: maxDepth - depth,
+		dirent: entry,
+		entry: path,
+		fs,
+		lowerEntry,
+		parentPath,
+		resource,
+		signal,
+		target,
+		within,
+	}
+
 	const len = list.length
 	for (let i = 0; i < len; i++) {
 		const rule = list[i]!
 		if (typeof rule !== "function") continue
 
-		const ignoreOptions = {
-			cwd,
-			depth: maxDepth - depth,
-			dirent: entry,
-			entry: path,
-			fs,
-			lowerEntry,
-			parentPath,
-			resource,
-			signal,
-			target,
-			within,
-		}
 		const res = rule(ignoreOptions)
 		if (res === null) continue
 
@@ -234,10 +235,10 @@ function patchMerged(
 	stream: MatcherStream | undefined,
 	mergedCtx: MatcherContext,
 ): void {
-	for (const [p, m] of mergedCtx.paths.entries()) {
-		if (ctx.paths.has(p)) continue
+	mergedCtx.paths.forEach((m, p) => {
+		if (ctx.paths.has(p)) return
 		ctx.paths.set(p, m)
-		if (!stream) continue
+		if (!stream) return
 
 		const isDir = p.endsWith("/")
 		const cleanPath = isDir ? p.slice(0, -1) : p
@@ -258,19 +259,22 @@ function patchMerged(
 		stream.dispatchEvent(
 			new CustomEvent("dirent", { detail: { dirent: mockEntry, match: m, path: p } }),
 		)
-	}
-	for (const [p, r] of mergedCtx.external) ctx.external.set(p, r)
+	})
+
+	mergedCtx.external.forEach((r, p) => ctx.external.set(p, r))
+
 	if (mergedCtx.failed.length > 0) ctx.failed.push(...mergedCtx.failed)
-	for (const [p, t] of mergedCtx.total) {
+
+	mergedCtx.total.forEach((t, p) => {
 		const existing = ctx.total.get(p)
 		if (!existing) {
 			ctx.total.set(p, { ...t })
-			continue
+			return
 		}
 		existing.totalDirs += t.totalDirs
 		existing.totalFiles += t.totalFiles
 		existing.totalMatchedFiles += t.totalMatchedFiles
-	}
+	})
 }
 
 /**
@@ -289,18 +293,14 @@ export function walkPatchResult(
 
 	if (context) patchMerged(ctx, stream, context)
 
+	const shouldPatch = dirs || (!isDir && (entry.isFile() || entry.isSymbolicLink()))
+
 	if (isExcluded) {
-		if (
-			isRuleMatchInvalid(match) &&
-			stream &&
-			(dirs || (!isDir && (entry.isFile() || entry.isSymbolicLink())))
-		)
-			patch(ctx, stream, path, entry, match)
+		if (isRuleMatchInvalid(match) && stream && shouldPatch) patch(ctx, stream, path, entry, match)
 		return
 	}
 
-	if (!tooDeep && (dirs || (!isDir && (entry.isFile() || entry.isSymbolicLink()))))
-		patch(ctx, stream, path, entry, match)
+	if (!tooDeep && shouldPatch) patch(ctx, stream, path, entry, match)
 	if (includeParent && dirs) patch(ctx, stream, parentPath + "/", entry, match)
 }
 
@@ -311,14 +311,18 @@ function addToTotal(
 	matched: number,
 	dirs: number,
 ): void {
-	const dirTotal = getOrInsert(total, dir, {
-		totalDirs: 0,
-		totalFiles: 0,
-		totalMatchedFiles: 0,
-	})
-	dirTotal.totalFiles += files
-	dirTotal.totalMatchedFiles += matched
-	dirTotal.totalDirs += dirs
+	const dirTotal = total.get(dir)
+	if (dirTotal) {
+		dirTotal.totalFiles += files
+		dirTotal.totalMatchedFiles += matched
+		dirTotal.totalDirs += dirs
+	} else {
+		total.set(dir, {
+			totalDirs: dirs,
+			totalFiles: files,
+			totalMatchedFiles: matched,
+		})
+	}
 }
 
 /**
