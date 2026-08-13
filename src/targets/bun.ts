@@ -5,7 +5,7 @@ import {
 	ruleTest,
 	type Rule,
 	ruleCompile,
-	extractGitignore,
+	extractNpmignore,
 	type GlobRule,
 } from "../patterns/index.js"
 import { makePackageJsonExtractor } from "../patterns/packagejson.js"
@@ -31,11 +31,11 @@ export function makeBun(mode: "list" | "publish" | "bundle" = "publish"): Target
 	const extractors: Extractor[] = [
 		makePackageJsonExtractor(mode),
 		{
-			extract: extractGitignore,
+			extract: extractNpmignore,
 			path: ".npmignore",
 		},
 		{
-			extract: extractGitignore,
+			extract: extractNpmignore,
 			path: ".gitignore",
 		},
 	]
