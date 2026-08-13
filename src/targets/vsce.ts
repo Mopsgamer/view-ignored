@@ -5,7 +5,7 @@ import {
 	ruleTest,
 	type Rule,
 	ruleCompile,
-	extractGitignore,
+	extractNpmignore,
 	packageJsonExtractor,
 	type GlobRule,
 } from "../patterns/index.js"
@@ -20,11 +20,11 @@ export function makeVSCE(): Target {
 	const extractors: Extractor[] = [
 		packageJsonExtractor,
 		{
-			extract: extractGitignore,
+			extract: extractNpmignore,
 			path: ".vscodeignore",
 		},
 		{
-			extract: extractGitignore,
+			extract: extractNpmignore,
 			path: ".gitignore",
 		},
 	]
