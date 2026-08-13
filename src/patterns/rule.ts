@@ -307,23 +307,21 @@ export interface RuleTestOptions extends PatternFinderOptions {
 
 function cacheTest(
 	rs: {
-		re: { test(string: string, lowerPath?: string): boolean }
+		re: { test(string: string): boolean }
 		pattern: string
 		list: PatternList
 		compiledItems?: { pattern: string; re: RegExp }[]
 	} | null,
 	path: string,
-	lowerPath?: string,
 ): { pattern: string } | null {
 	if (!rs) return null
-	const n = lowerPath || path
-	if (!rs.re.test(path, lowerPath)) return null
+	if (!rs.re.test(path)) return null
 	const items = rs.compiledItems
 	if (items) {
 		const len = items.length
 		for (let i = 0; i < len; i++) {
 			const item = items[i]!
-			if (item.re.test(n)) return { pattern: item.pattern }
+			if (item.re.test(path)) return { pattern: item.pattern }
 		}
 	}
 	return { pattern: rs.pattern }
@@ -343,7 +341,7 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 		return { ...src, ignored: true, kind: RuleMatchKind.invalidSource }
 
 	const { entry } = options
-	const lowerPath = options.lowerEntry || entry.toLowerCase()
+	let computedLowerEntry: string | undefined = options.lowerEntry
 
 	const { internalRules } = options.target
 	const beforeInternal = Array.isArray(internalRules) ? internalRules : internalRules.before
@@ -353,7 +351,9 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 		dirent: options.dirent,
 		entry,
 		fs: options.fs,
-		lowerEntry: lowerPath,
+		get lowerEntry() {
+			return computedLowerEntry || (computedLowerEntry = entry.toLowerCase())
+		},
 		parentPath: options.parentPath,
 		resource: src,
 		signal: options.signal,
@@ -386,8 +386,7 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 		for (let i = 0; i < rlen; i++) {
 			const rule = rules[i]!
 			if (typeof rule === "function") continue
-			const res =
-				"match" in rule ? rule.match(ignoreOptions) : cacheTest(rule.compiled!, entry, lowerPath)
+			const res = "match" in rule ? rule.match(ignoreOptions) : cacheTest(rule.compiled!, entry)
 			if (res === null) continue
 			if (res instanceof Error) {
 				return {
@@ -431,10 +430,7 @@ function ruleTestInternalSync(rules: Rule[], options: IgnoresOptions): RuleMatch
 	for (let i = 0, len = rules.length; i < len; i++) {
 		const rule = rules[i]!
 		if (typeof rule === "function") continue
-		const res =
-			"match" in rule
-				? rule.match(options)
-				: cacheTest(rule.compiled!, options.entry, options.lowerEntry)
+		const res = "match" in rule ? rule.match(options) : cacheTest(rule.compiled!, options.entry)
 		if (res === null) continue
 		if (res instanceof Error) {
 			return {

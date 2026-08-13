@@ -134,13 +134,16 @@ function checkRulesList(
 		const rule = list[i]!
 		if (typeof rule !== "function") continue
 
+		let computedLowerEntry = lowerEntry
 		const ignoreOptions = {
 			cwd,
 			depth: maxDepth - depth,
 			dirent: entry,
 			entry: path,
 			fs,
-			lowerEntry: lowerEntry || path.toLowerCase(),
+			get lowerEntry() {
+				return computedLowerEntry || (computedLowerEntry = path.toLowerCase())
+			},
 			parentPath,
 			resource,
 			signal,
@@ -188,7 +191,7 @@ export function walkIncludes(options: WalkOptions): WalkResult | Promise<WalkRes
 			dirent: entry,
 			entry: path,
 			fs,
-			lowerEntry: lowerEntry || path.toLowerCase(),
+			lowerEntry,
 			parentPath,
 			resource,
 			signal,
