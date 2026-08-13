@@ -368,9 +368,7 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 	while (currentSrc !== null && !("error" in currentSrc)) {
 		if (runner !== null && !("error" in runner)) {
 			runner = runner.parent ?? null
-			if (runner !== null && !("error" in runner)) {
-				runner = runner.parent ?? null
-			}
+			if (runner !== null && !("error" in runner)) runner = runner.parent ?? null
 		}
 		if (runner === currentSrc && currentSrc !== null) {
 			console.error("CYCLE DETECTED in currentSrc.parent chain! currentSrc path:", currentSrc.path)

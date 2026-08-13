@@ -329,9 +329,7 @@ function resolveSourcesMain(
 					resolved = true
 					return cb(err, null)
 				}
-				for (let ei = 0; ei < elen; ei++) {
-					results[pi * elen + ei] = dirResults[ei]
-				}
+				for (let ei = 0; ei < elen; ei++) results[pi * elen + ei] = dirResults[ei]
 				checkAll()
 			})
 		}
