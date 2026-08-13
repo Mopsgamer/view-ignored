@@ -94,12 +94,10 @@ function processEntries(
 		state.activeTasks++
 		const { name } = entry
 		const currentRelPath = prefix + name
-		const lowerEntry = currentRelPath.toLowerCase()
 
 		const selfOrPromise = walkIncludes({
 			depth,
 			entry,
-			lowerEntry,
 			parentPath: relPath,
 			relPath: currentRelPath,
 			resource: res,

@@ -114,9 +114,8 @@ export function patternListCompile(options: PatternCompileOptions & { list: Patt
 	const combinedRegex = new RegExp(combinedSource, nocase ? "i" : "")
 
 	const re = {
-		test(str: string, lowerPath?: string): boolean {
-			const n = nocase ? lowerPath || str.toLowerCase() : str
-			return combinedRegex.test(n)
+		test(str: string): boolean {
+			return combinedRegex.test(str)
 		},
 	}
 
