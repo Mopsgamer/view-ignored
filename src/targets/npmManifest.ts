@@ -120,94 +120,97 @@ const SEMVER_REGEX =
 
 export function npmManifestParse(
 	s: string,
-	mode: "list" | "publish" | "bundle" = "publish",
+	mode: "list" | "publish" | "bundle" | "vsce" = "publish",
 ): PackageJson {
 	// oxlint-disable-next-line typescript/no-explicit-any
 	let parsed: any
 	try {
 		parsed = JSON.parse(s)
 	} catch (err) {
-		if (mode !== "publish") return {} as PackageJson
+		if (mode === "list" || mode === "bundle") return {} as PackageJson
 		throw err
 	}
 
 	if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-		if (mode !== "publish") return {} as PackageJson
+		if (mode === "list" || mode === "bundle") return {} as PackageJson
 		throw new Error("npm manifest must be a JSON object")
 	}
 
 	if ("private" in parsed && typeof parsed.private !== "boolean") {
-		if (mode !== "publish") return {} as PackageJson
+		if (mode === "list" || mode === "bundle") return {} as PackageJson
 		throw new Error("'private' field must be a boolean")
 	}
 
 	if (!parsed.private) {
 		if (typeof parsed.name !== "string") {
-			if (mode !== "publish") return {} as PackageJson
+			if (mode === "list" || mode === "bundle") return {} as PackageJson
 			throw new Error("Manifest must have a non-empty string 'name'")
 		}
 		if (typeof parsed.version !== "string") {
-			if (mode !== "publish") return {} as PackageJson
+			if (mode === "list" || mode === "bundle") return {} as PackageJson
 			throw new Error("Manifest must have a non-empty string 'version'")
 		}
-		if (!isValidNpmName(parsed.name)) {
-			if (mode !== "publish") return {} as PackageJson
+		if (mode === "vsce") {
+			if (!/^[a-z0-9][a-z0-9-]*$/i.test(parsed.name))
+				throw new Error(`Invalid extension "name": "${parsed.name}" in package.json`)
+		} else if (!isValidNpmName(parsed.name)) {
+			if (mode === "list" || mode === "bundle") return {} as PackageJson
 			throw new Error(`'${parsed.name}' is not a valid npm package name`)
 		}
 
 		// Strict SemVer verification
 		if (!SEMVER_REGEX.test(parsed.version)) {
-			if (mode !== "publish") return {} as PackageJson
+			if (mode === "list" || mode === "bundle") return {} as PackageJson
 			throw new Error(`'${parsed.version}' is not a valid SemVer version (expected format: X.Y.Z)`)
 		}
 	}
 
 	if ("bundleDependencies" in parsed && "bundledDependencies" in parsed) {
-		if (mode !== "publish") return {} as PackageJson
+		if (mode === "list" || mode === "bundle") return {} as PackageJson
 		throw new Error("Manifest cannot contain both 'bundleDependencies' and 'bundledDependencies'")
 	}
 
 	const stringFields: (keyof PackageJson)[] = ["browser", "main", "module"]
 	for (const field of stringFields) {
 		if (field in parsed && typeof parsed[field] !== "string") {
-			if (mode !== "publish") return {} as PackageJson
+			if (mode === "list" || mode === "bundle") return {} as PackageJson
 			throw new Error(`'${field}' field must be a string`)
 		}
 	}
 
 	if (parsed.engines !== undefined && !isRecordOfStrings(parsed.engines)) {
-		if (mode !== "publish") return {} as PackageJson
+		if (mode === "list" || mode === "bundle") return {} as PackageJson
 		throw new Error("'engines' field must be an object with string values")
 	}
 	if (parsed.scripts !== undefined && !isRecordOfStrings(parsed.scripts)) {
-		if (mode !== "publish") return {} as PackageJson
+		if (mode === "list" || mode === "bundle") return {} as PackageJson
 		throw new Error("'scripts' field must be an object with string values")
 	}
 	if (parsed.dependencies !== undefined && !isRecordOfStrings(parsed.dependencies)) {
-		if (mode !== "publish") return {} as PackageJson
+		if (mode === "list" || mode === "bundle") return {} as PackageJson
 		throw new Error("'dependencies' field must be an object with string values")
 	}
 	if (parsed.devDependencies !== undefined && !isRecordOfStrings(parsed.devDependencies)) {
-		if (mode !== "publish") return {} as PackageJson
+		if (mode === "list" || mode === "bundle") return {} as PackageJson
 		throw new Error("'devDependencies' field must be an object with string values")
 	}
 	if (
 		parsed.optionalDependencies !== undefined &&
 		!isRecordOfStrings(parsed.optionalDependencies)
 	) {
-		if (mode !== "publish") return {} as PackageJson
+		if (mode === "list" || mode === "bundle") return {} as PackageJson
 		throw new Error("'optionalDependencies' field must be an object with string values")
 	}
 
 	if ("files" in parsed && !isArrayOfStrings(parsed.files)) {
-		if (mode !== "publish") return {} as PackageJson
+		if (mode === "list" || mode === "bundle") return {} as PackageJson
 		throw new Error("'files' field must be an array of strings")
 	}
 
 	const bundleFields: (keyof PackageJson)[] = ["bundleDependencies", "bundledDependencies"]
 	for (const field of bundleFields) {
 		if (field in parsed && typeof parsed[field] !== "boolean" && !isArrayOfStrings(parsed[field])) {
-			if (mode !== "publish") return {} as PackageJson
+			if (mode === "list" || mode === "bundle") return {} as PackageJson
 			throw new Error(`'${field}' field must be a boolean or an array of strings`)
 		}
 	}
@@ -216,7 +219,7 @@ export function npmManifestParse(
 		const binValue = parsed.bin
 		const isValidBin = typeof binValue === "string" || isRecordOfStrings(binValue)
 		if (!isValidBin) {
-			if (mode !== "publish") return {} as PackageJson
+			if (mode === "list" || mode === "bundle") return {} as PackageJson
 			throw new Error("'bin' field must be a string or an object with string values")
 		}
 	}
