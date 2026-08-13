@@ -540,10 +540,8 @@ export function makeBundledDepsRule(
 						target: makeTarget("bundle"),
 					}).then(
 						(subCtx) => {
-							if (subCtx.paths) {
-								for (const [p, m] of subCtx.paths.entries()) {
-									mergedCtx.paths.set(depPath + "/" + p, m)
-								}
+							for (const [p, m] of subCtx.paths) {
+								mergedCtx.paths.set(depPath + "/" + p, m)
 							}
 							resolve()
 						},
