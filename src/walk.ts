@@ -234,7 +234,7 @@ function patchMerged(
 	stream: MatcherStream | undefined,
 	mergedCtx: MatcherContext,
 ): void {
-	for (const [p, m] of mergedCtx.paths) {
+	for (const [p, m] of mergedCtx.paths.entries()) {
 		if (ctx.paths.has(p)) continue
 		ctx.paths.set(p, m)
 		if (!stream) continue

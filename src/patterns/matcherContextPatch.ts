@@ -155,7 +155,7 @@ export async function matcherContextRemovePath(
 	const isDir = entry.endsWith("/")
 	const direntPath = isDir ? entry.slice(0, -1) : entry
 	if (isDir && direntPath === ".") {
-		for (const [path] of ctx.paths) {
+		for (const path of ctx.paths.keys()) {
 			removed.push(path)
 		}
 		ctx.paths.clear()
@@ -184,7 +184,7 @@ export async function matcherContextRemovePath(
 		updateTotals(ctx, parentPath, -deletedFiles, -deletedMatchedFiles, -deletedDirs)
 
 		const entryLen = entry.length
-		for (const [element] of ctx.paths) {
+		for (const element of ctx.paths.keys()) {
 			if (element.length >= entryLen && element.startsWith(entry)) {
 				ctx.paths.delete(element)
 				removed.push(element)

@@ -541,7 +541,7 @@ export function makeBundledDepsRule(
 					}).then(
 						(subCtx) => {
 							if (subCtx.paths) {
-								for (const [p, m] of subCtx.paths) {
+								for (const [p, m] of subCtx.paths.entries()) {
 									mergedCtx.paths.set(depPath + "/" + p, m)
 								}
 							}
