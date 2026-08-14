@@ -23,6 +23,11 @@ let cachedBunExcludesRule: GlobRule | null = null
 let cachedBunIncludesRule: GlobRule | null = null
 
 /**
+ * Creates a Bun target where `mode` controls default rules:
+ * - `'publish'`: applies Bun's default exclusions (e.g. `.git`, lockfiles).
+ * - `'bundle'`: omits default exclusions so bundled dependencies remain included.
+ * - `'list'`: lists files without applying packing exclusions.
+ *
  * @since 0.12.0
  */
 export function makeBun(mode: "list" | "publish" | "bundle" = "publish"): Target {

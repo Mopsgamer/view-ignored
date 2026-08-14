@@ -113,9 +113,7 @@ function findExtendedRoot(
 }
 
 /**
- * Compiles the {@link Rule} (forced).
- * Can be compiled at any time.
- * Extractors are compiling it.
+ * Mutates `rule.compiled` by compiling `rule.list` patterns into regular expression matchers.
  *
  * @see {@link patternListCompile}
  *
@@ -127,6 +125,8 @@ export function ruleCompile(rule: GlobRule, options?: PatternCompileOptions): Gl
 }
 
 /**
+ * Options for resolving and finding source patterns.
+ *
  * @see {@link resolveSources}
  *
  * @since 0.6.0
@@ -365,6 +365,9 @@ function resolveSourcesMain(
 }
 
 /**
+ * Resolves pattern sources for `options.dir`, climbing parent directories
+ * up to workspace root when `target.extendsRoot` is configured.
+ *
  * @since 0.6.0
  */
 export function resolveSources(

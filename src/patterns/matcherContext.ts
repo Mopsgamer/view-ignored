@@ -9,7 +9,7 @@ import type { RuleMatch } from "./rule.js"
 export interface MatcherContext {
 	/**
 	 * Paths and their corresponding sources.
-	 * Directory paths are having the slash suffix.
+	 * Directory paths end with a trailing slash.
 	 *
 	 * @since 0.6.0
 	 */

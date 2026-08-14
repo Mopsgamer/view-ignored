@@ -83,6 +83,11 @@ const cachedNpmBeforeIncludesRule = ruleCompile(
 )
 
 /**
+ * Creates an NPM target where `mode` controls default rules:
+ * - `'publish'`: applies default exclusions (e.g. `.git`, `node_modules`, lockfiles).
+ * - `'bundle'`: omits default exclusions so bundled dependencies remain included.
+ * - `'list'`: lists files without applying publish-specific exclusions.
+ *
  * @since 0.12.0
  */
 export function makeNPM(mode: "list" | "publish" | "bundle" = "publish"): Target {

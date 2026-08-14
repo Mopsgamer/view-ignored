@@ -1,5 +1,9 @@
 /**
- * Replaces backslashes with forward slashes.
+ * Normalizes paths by replacing backslashes with forward slashes,
+ * trimming leading "./" and trailing "/" segments, and defaulting to "." for empty paths.
+ *
+ * @param p The path to normalize.
+ * @returns The normalized path.
  *
  * @since 0.6.0
  */
