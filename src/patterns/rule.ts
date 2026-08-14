@@ -65,6 +65,8 @@ export type GlobRule = {
 		re: { test(string: string, lowerPath?: string): boolean }
 		pattern: string
 		list: PatternList
+		nocase?: boolean
+		patternSources?: string[]
 		compiledItems?: { pattern: string; re: RegExp }[]
 	}
 }
@@ -306,25 +308,56 @@ export interface RuleTestOptions extends PatternFinderOptions {
 }
 
 function cacheTest(
-	rs: {
-		re: { test(string: string): boolean }
+	rs: null | {
+		re: { test(string: string, lowerPath?: string): boolean }
 		pattern: string
 		list: PatternList
+		nocase?: boolean
+		patternSources?: string[]
 		compiledItems?: { pattern: string; re: RegExp }[]
-	} | null,
+	},
 	path: string,
-): { pattern: string } | null {
+): string | null {
 	if (!rs) return null
 	if (!rs.re.test(path)) return null
-	const items = rs.compiledItems
+
+	let items = rs.compiledItems
+	if (!items && rs.patternSources) {
+		const len = rs.list.length
+		items = new Array(len)
+		const { nocase, list, patternSources: sources } = rs
+		const flags = nocase ? "i" : ""
+		for (let i = 0; i < len; i++) {
+			items[i] = {
+				pattern: list[i]!,
+				re: new RegExp(sources![i]!, flags),
+			}
+		}
+		rs.compiledItems = items
+	}
+
 	if (items) {
 		const len = items.length
 		for (let i = 0; i < len; i++) {
 			const item = items[i]!
-			if (item.re.test(path)) return { pattern: item.pattern }
+			if (item.re.test(path)) return item.pattern
 		}
 	}
-	return { pattern: rs.pattern }
+	return rs.pattern
+}
+
+function getIgnoreOptions(options: RuleTestOptions, src: Resource): IgnoresOptions {
+	return {
+		cwd: options.cwd,
+		dirent: options.dirent,
+		entry: options.entry,
+		fs: options.fs,
+		lowerEntry: options.lowerEntry,
+		parentPath: options.parentPath,
+		resource: src,
+		signal: options.signal,
+		target: options.target,
+	}
 }
 
 /**
@@ -345,22 +378,12 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 	const { internalRules } = options.target
 	const beforeInternal = Array.isArray(internalRules) ? internalRules : internalRules.before
 
-	const ignoreOptions: IgnoresOptions = {
-		cwd: options.cwd,
-		dirent: options.dirent,
-		entry,
-		fs: options.fs,
-		lowerEntry: options.lowerEntry,
-		parentPath: options.parentPath,
-		resource: src,
-		signal: options.signal,
-		target: options.target,
-	}
-
 	if (beforeInternal.length > 0) {
-		const internalMatch = ruleTestInternalSync(beforeInternal, ignoreOptions)
+		const internalMatch = ruleTestInternalSync(beforeInternal, options, src)
 		if (internalMatch) return internalMatch
 	}
+
+	let ignoreOpts: IgnoresOptions | null = null
 
 	let currentSrc: Resource = src
 	let runner: Resource | null = src
@@ -381,7 +404,10 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 		for (let i = 0; i < rlen; i++) {
 			const rule = rules[i]!
 			if (typeof rule === "function") continue
-			const res = "match" in rule ? rule.match(ignoreOptions) : cacheTest(rule.compiled!, entry)
+			const res =
+				"match" in rule
+					? rule.match(ignoreOpts || (ignoreOpts = getIgnoreOptions(options, src)))
+					: cacheTest(rule.compiled!, entry)
 			if (res === null) continue
 			if (res instanceof Error) {
 				return {
@@ -396,7 +422,7 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 			return {
 				ignored: rule.excludes,
 				kind: RuleMatchKind.external,
-				pattern: typeof res === "string" ? res : res.pattern,
+				pattern: res,
 				source: currentSrc,
 			}
 		}
@@ -405,7 +431,7 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 	}
 
 	if (!Array.isArray(internalRules) && internalRules.after.length > 0) {
-		const internalMatch = ruleTestInternalSync(internalRules.after, ignoreOptions)
+		const internalMatch = ruleTestInternalSync(internalRules.after, options, src)
 		if (internalMatch) return internalMatch
 	}
 
@@ -418,11 +444,19 @@ export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 	})
 }
 
-function ruleTestInternalSync(rules: Rule[], options: IgnoresOptions): RuleMatch | void {
+function ruleTestInternalSync(
+	rules: Rule[],
+	options: RuleTestOptions,
+	src: Resource,
+): RuleMatch | void {
+	let ignoreOpts: IgnoresOptions | null = null
 	for (let i = 0, len = rules.length; i < len; i++) {
 		const rule = rules[i]!
 		if (typeof rule === "function") continue
-		const res = "match" in rule ? rule.match(options) : cacheTest(rule.compiled!, options.entry)
+		const res =
+			"match" in rule
+				? rule.match(ignoreOpts || (ignoreOpts = getIgnoreOptions(options, src)))
+				: cacheTest(rule.compiled!, options.entry)
 		if (res === null) continue
 		if (res instanceof Error) {
 			return {
@@ -436,7 +470,7 @@ function ruleTestInternalSync(rules: Rule[], options: IgnoresOptions): RuleMatch
 		return {
 			ignored: rule.excludes,
 			kind: RuleMatchKind.internal,
-			pattern: typeof res === "string" ? res : res.pattern,
+			pattern: res,
 		}
 	}
 }

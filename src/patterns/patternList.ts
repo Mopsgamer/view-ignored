@@ -40,6 +40,8 @@ export function patternListCompile(options: PatternCompileOptions & { list: Patt
 	re: { test(string: string, lowerPath?: string): boolean }
 	pattern: string
 	list: PatternList
+	nocase?: boolean
+	patternSources?: string[]
 	compiledItems?: { pattern: string; re: RegExp }[]
 } {
 	const nocase = !!options.nocase
@@ -57,7 +59,6 @@ export function patternListCompile(options: PatternCompileOptions & { list: Patt
 	}
 
 	const patternSources: string[] = new Array(len)
-	const compiledItems: { pattern: string; re: RegExp }[] = new Array(len)
 
 	for (let i = 0; i < len; i++) {
 		const pattern = list[i]!
@@ -103,11 +104,6 @@ export function patternListCompile(options: PatternCompileOptions & { list: Patt
 
 		const source = (isAnchored ? "^" : "(?:^|\\/)") + part + "(?:\\/|$)"
 		patternSources[i] = source
-
-		compiledItems[i] = {
-			pattern,
-			re: new RegExp(source, nocase ? "i" : ""),
-		}
 	}
 
 	const combinedSource = patternSources.join("|")
@@ -120,9 +116,10 @@ export function patternListCompile(options: PatternCompileOptions & { list: Patt
 	}
 
 	return {
-		compiledItems,
 		list,
+		nocase,
 		pattern: list.join(","),
+		patternSources,
 		re,
 	}
 }
