@@ -67,10 +67,9 @@ export function extractPackageJsonRules(
 	const options = { nocase: true }
 	for (const pattern of dist.files) {
 		const nextRule = resolveNegatable(pattern, true, options, rule)
-		if (nextRule !== rule) {
-			rule = nextRule
-			source.rules.unshift(rule)
-		}
+		if (nextRule === rule) continue
+		rule = nextRule
+		source.rules.unshift(rule)
 	}
 
 	const rlen = source.rules.length
