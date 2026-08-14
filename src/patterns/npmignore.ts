@@ -7,8 +7,7 @@ import { ruleCompile } from "./resolveSources.js"
 import { resolveNegatable, type Source } from "./source.js"
 
 /**
- * Extracts and compiles patterns from the file with space-trimming behavior.
- * Used for NPM-related targets (like npm, yarn, bun).
+ * Populates `source.rules` from ignore content using NPM/ignore-walk whitespace trimming.
  *
  * @since 0.12.0
  */
@@ -29,7 +28,7 @@ extractNpmignore satisfies ExtractorFn
 const decoder = new TextDecoder()
 
 /**
- * Extracts and compiles patterns from the file using NPM/ignore-walk style trimming.
+ * Populates `source.rules` from ignore content using NPM/ignore-walk whitespace trimming without catching errors.
  *
  * @since 0.12.0
  */

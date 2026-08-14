@@ -23,6 +23,11 @@ let cachedYarnExcludesRule: GlobRule | null = null
 let cachedYarnIncludesRule: GlobRule | null = null
 
 /**
+ * Creates a Yarn Berry target where `mode` controls default rules:
+ * - `'publish'`: applies default exclusions (e.g. `.git`, `node_modules`).
+ * - `'bundle'`: omits default exclusions so bundled dependencies remain included.
+ * - `'list'`: lists files without applying publish-specific exclusions.
+ *
  * @since 0.12.0
  */
 export function makeYarn(mode: "list" | "publish" | "bundle" = "publish"): Target {

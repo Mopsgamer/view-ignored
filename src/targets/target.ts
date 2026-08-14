@@ -17,7 +17,9 @@ export interface Target {
 	 */
 	extendsRoot?: string
 	/**
-	 * Should be compiled. If an array, it will be treated *high*.
+	 * Built-in/internal rules for the target.
+	 * If specified as an array, the rules are treated as high priority (evaluated before any external user-defined rules).
+	 * If specified as an object, allows splitting rules into high priority (before) and low priority (after) categories.
 	 *
 	 * @since 0.10.0
 	 */

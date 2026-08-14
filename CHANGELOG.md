@@ -9,6 +9,10 @@ and this project adheres to
 ## [Unreleased]
 
 - Support Git's `core.ignorecase` configuration option for dynamic case-insensitive matching of ignore rules.
+- Improve performance and memory usage of directory scanning and walking algorithm.
+- Optimize internal `walk.ts` matching loops and `scanParallel.ts` parallel walks.
+- Clean up control flow, flatten nested loops, and refactor manifest parsing error handling.
+- Clarify and enhance JSDoc documentation of public APIs and options.
 
 ## [0.12.0] - 2026-08-08
 

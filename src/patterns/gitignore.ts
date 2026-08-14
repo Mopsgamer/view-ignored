@@ -6,7 +6,7 @@ import { ruleCompile } from "./resolveSources.js"
 import { resolveNegatable, type Source } from "./source.js"
 
 /**
- * Extracts and compiles patterns from the file.
+ * Populates `source.rules` from gitignore byte content, respecting Git comment and escape rules.
  *
  * @see {@link ruleCompile}
  *
@@ -123,7 +123,7 @@ function processGitignoreLine(
 }
 
 /**
- * Extracts and compiles patterns from the file.
+ * Populates `source.rules` from gitignore byte content without catching errors.
  *
  * @since 0.12.0
  */

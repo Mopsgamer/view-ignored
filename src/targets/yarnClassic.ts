@@ -23,6 +23,11 @@ let cachedYarnClassicExcludesRule: GlobRule | null = null
 let cachedYarnClassicIncludesRule: GlobRule | null = null
 
 /**
+ * Creates a Yarn Classic (v1) target where `mode` controls default rules:
+ * - `'publish'`: applies default exclusions (e.g. `.git`, `.yarnignore`, `.npmignore`).
+ * - `'bundle'`: omits default exclusions so bundled dependencies remain included.
+ * - `'list'`: lists files without applying publish-specific exclusions.
+ *
  * @since 0.12.0
  */
 export function makeYarnClassic(mode: "list" | "publish" | "bundle" = "publish"): Target {
