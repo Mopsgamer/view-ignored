@@ -84,4 +84,14 @@ describe(".gitignore patternListCompile", () => {
 	test("stringCompile .git/ .github", () => {
 		expect(patternCacheTest(patternListCompile({ list: [".git/"] }), ".github")).toBeFalse()
 	})
+
+	test("case-insensitive compilation preserves ASCII range casing like [A-\\]", () => {
+		const list = ["[A-\\\\]"]
+		const compiled = patternListCompile({ list, nocase: true })
+		expect(patternCacheTest(compiled, "G")).toBeTrue()
+		expect(patternCacheTest(compiled, "g")).toBeTrue()
+		expect(patternCacheTest(compiled, "[")).toBeTrue()
+		expect(patternCacheTest(compiled, "A")).toBeTrue()
+		expect(patternCacheTest(compiled, "a")).toBeTrue()
+	})
 })

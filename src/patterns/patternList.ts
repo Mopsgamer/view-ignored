@@ -71,7 +71,7 @@ export function patternListCompile(options: PatternCompileOptions & { list: Patt
 		if (cleaned.charCodeAt(cleaned.length - 1) === 47) cleaned = cleaned.slice(0, -1)
 		if (isRoot) cleaned = cleaned.slice(1)
 
-		const lowerCleaned = nocase ? cleaned.toLowerCase() : cleaned
+		const lowerCleaned = cleaned
 
 		let part = ""
 		let isGlob = false
