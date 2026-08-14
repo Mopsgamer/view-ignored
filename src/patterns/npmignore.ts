@@ -53,16 +53,17 @@ export function extractNpmignoreRules(
 		// Trim trailing spaces
 		while (lineEnd > lineStart && isWhitespace(content[lineEnd - 1]!)) lineEnd--
 
-		if (lineStart < lineEnd && content[lineStart] !== 35) {
-			// '#' is 35
-			const pattern = decoder.decode(content.subarray(lineStart, lineEnd))
-			const nextRule = resolveNegatable(pattern, false, options, rule)
-			if (nextRule !== rule) {
-				rule = nextRule
-				source.rules.unshift(rule)
-			}
+		// '#' is 35
+		if (lineStart >= lineEnd || content[lineStart] === 35) {
+			start = end + 1
+			continue
 		}
-
+		const pattern = decoder.decode(content.subarray(lineStart, lineEnd))
+		const nextRule = resolveNegatable(pattern, false, options, rule)
+		if (nextRule !== rule) {
+			rule = nextRule
+			source.rules.unshift(rule)
+		}
 		start = end + 1
 	}
 

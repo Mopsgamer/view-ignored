@@ -25,13 +25,12 @@ export class MatcherStream extends EventTarget {
 	constructor(options: ScanBrowserOptions & { noTimeout?: boolean }) {
 		super()
 		this.#options = options
-		if (!options.noTimeout) {
-			this.#timeout = setTimeout(() => {
-				throw new Error(
-					"Stream did not start within 5 seconds. Call MatcherStream.start() or enable noTimeout.",
-				)
-			}, 5e3)
-		}
+		if (options.noTimeout) return
+		const message =
+			"Stream did not start within 5 seconds. Call MatcherStream.start() or enable noTimeout."
+		this.#timeout = setTimeout(() => {
+			throw new Error(message)
+		}, 5e3)
 	}
 
 	override addEventListener<K extends keyof EventMap>(
@@ -64,10 +63,7 @@ export class MatcherStream extends EventTarget {
 	start(): Promise<void> {
 		const { resolve, reject, promise } = Promise.withResolvers<void>()
 		this.startCb((err) => {
-			if (err) {
-				reject(err)
-				return
-			}
+			if (err) return reject(err)
 			resolve()
 		})
 		return promise

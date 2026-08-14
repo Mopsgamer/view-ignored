@@ -9,7 +9,13 @@ import { getOrInsert } from "../mapUtils.js"
 import { type ScanParallelOptions } from "../scanParallel.js"
 import { scanParallel } from "../scanParallel.js"
 import { dirname, unixify } from "../unixify.js"
-import { walkPatchResult, walkPatchTotal, propagateTotals, type WalkResult } from "../walk.js"
+import {
+	walkPatchResult,
+	walkPatchTotal,
+	propagateTotals,
+	type WalkResult,
+	type WalkTotal,
+} from "../walk.js"
 import { type IgnoresOptions } from "./ignores.js"
 import { type ResolveSourcesOptions, resolveSources } from "./resolveSources.js"
 
@@ -23,14 +29,15 @@ const promScanParallel = (options: ScanParallelOptions): Promise<WalkResult[] | 
 	new Promise((res, rej) => scanParallel(options, (err, r) => (err ? rej(err) : res(r))))
 
 function mockDirent(name: string, parentPath: string, isDir: boolean): Dirent {
+	const ffalse = () => false
 	return {
-		isBlockDevice: () => false,
-		isCharacterDevice: () => false,
+		isBlockDevice: ffalse,
+		isCharacterDevice: ffalse,
 		isDirectory: () => isDir,
-		isFIFO: () => false,
+		isFIFO: ffalse,
 		isFile: () => !isDir,
-		isSocket: () => false,
-		isSymbolicLink: () => false,
+		isSocket: ffalse,
+		isSymbolicLink: ffalse,
 		name,
 		parentPath,
 	} as Dirent
@@ -89,26 +96,28 @@ export async function matcherContextAddPath(
 		(e) => (e.path.startsWith("./") ? e.path.slice(2) : e.path) === entry,
 	)
 	if (isSource) {
-		const resultPromise = promScanParallel({
+		function onResult(result: WalkResult | WalkTotal) {
+			if ("dir" in result) {
+				walkPatchTotal(ctx, maxDepth, result)
+				return
+			}
+			const { path, parentPath: rParentPath, includeParent } = result
+			if (!ctx.paths.has(path)) {
+				added.push(path)
+			}
+			if (includeParent && !ctx.paths.has(rParentPath + "/")) {
+				added.push(rParentPath + "/")
+			}
+			walkPatchResult(ctx, result, options)
+		}
+		const o: ScanParallelOptions = {
 			external: ctx.external,
 			failed: ctx.failed,
-			onResult: (result) => {
-				if ("dir" in result) {
-					walkPatchTotal(ctx, maxDepth, result)
-					return
-				}
-				const { path, parentPath: rParentPath, includeParent } = result
-				if (!ctx.paths.has(path)) {
-					added.push(path)
-				}
-				if (includeParent && !ctx.paths.has(rParentPath + "/")) {
-					added.push(rParentPath + "/")
-				}
-				walkPatchResult(ctx, result, options)
-			},
+			onResult: onResult,
 			scanOptions: { ...options, within: unixify(parentPath) },
 			stream: undefined,
-		})
+		}
+		const resultPromise = promScanParallel(o)
 		await matcherContextRemovePath(ctx, options, parentPath + "/")
 		await resultPromise
 		propagateTotals(ctx.total)
@@ -192,13 +201,14 @@ export async function matcherContextRemovePath(
 		}
 
 		const direntPathLen = direntPath.length
+		const direntDir = direntPath + "/"
 		for (const element of ctx.external.keys()) {
 			if (
 				element.length < direntPathLen ||
-				(element !== direntPath && !element.startsWith(direntPath + "/"))
-			) {
+				(element !== direntPath && !element.startsWith(direntDir))
+			)
 				continue
-			}
+
 			const isDeleted = ctx.external.delete(element)
 			if (isDeleted && ctx.failed.length) {
 				const failedEntryIndex = ctx.failed.findIndex(
@@ -213,32 +223,29 @@ export async function matcherContextRemovePath(
 	const isSource = options.target.extractors.some(
 		(e) => (e.path.startsWith("./") ? e.path.slice(2) : e.path) === entry,
 	)
-	if (isSource) {
-		const maxDepth = options.depth
-		const resultPromise = promScanParallel({
-			external: ctx.external,
-			failed: ctx.failed,
-			onResult: (result) => {
-				if ("dir" in result) {
-					walkPatchTotal(ctx, maxDepth, result)
-					return
-				}
-				walkPatchResult(ctx, result, options)
-			},
-			scanOptions: { ...options, within: unixify(parentPath) },
-			stream: undefined,
-		})
-		removed.push(...(await matcherContextRemovePath(ctx, options, parentPathDir)))
-		await resultPromise
-		propagateTotals(ctx.total)
+	if (!isSource) {
+		const deleted = ctx.paths.delete(entry)
+		if (deleted) removed.push(entry)
+		updateTotals(ctx, parentPath, -1, deleted ? -1 : 0, 0)
 		return removed
 	}
-
-	const deleted = ctx.paths.delete(entry)
-	if (deleted) removed.push(entry)
-
-	updateTotals(ctx, parentPath, -1, deleted ? -1 : 0, 0)
-
+	const maxDepth = options.depth
+	const resultPromise = promScanParallel({
+		external: ctx.external,
+		failed: ctx.failed,
+		onResult: (result) => {
+			if ("dir" in result) {
+				walkPatchTotal(ctx, maxDepth, result)
+				return
+			}
+			walkPatchResult(ctx, result, options)
+		},
+		scanOptions: { ...options, within: unixify(parentPath) },
+		stream: undefined,
+	})
+	removed.push(...(await matcherContextRemovePath(ctx, options, parentPathDir)))
+	await resultPromise
+	propagateTotals(ctx.total)
 	return removed
 }
 

@@ -80,13 +80,7 @@ export function resolveNegatable(
 	const excludes = negated === invert
 	if (negated) pattern = pattern.slice(1)
 	const iff = reuse && excludes === reuse.excludes
-	const rule: GlobRule = iff
-		? reuse
-		: {
-				compiled: null,
-				excludes,
-				list: [],
-			}
+	const rule: GlobRule = iff ? reuse : { compiled: null, excludes, list: [] }
 	rule.list.push(pattern)
 	return rule
 }

@@ -336,12 +336,11 @@ function cacheTest(
 		rs.compiledItems = items
 	}
 
-	if (items) {
-		const len = items.length
-		for (let i = 0; i < len; i++) {
-			const item = items[i]!
-			if (item.re.test(path)) return item.pattern
-		}
+	if (!items) return rs.pattern
+	const len = items.length
+	for (let i = 0; i < len; i++) {
+		const item = items[i]!
+		if (item.re.test(path)) return item.pattern
 	}
 	return rs.pattern
 }

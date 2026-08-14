@@ -531,10 +531,8 @@ async function run(
 	} catch (err: unknown) {
 		let msg = err instanceof Error ? err.message : String(err)
 		if (err && typeof err === "object" && "stdout" in err && err.stdout) {
-			msg =
-				Buffer.isBuffer(err.stdout) || typeof err.stdout === "string"
-					? err.stdout.toString()
-					: (JSON.stringify(err.stdout) ?? "")
+			const isBuf = Buffer.isBuffer(err.stdout) || typeof err.stdout === "string"
+			msg = isBuf ? err.stdout.toString() : (JSON.stringify(err.stdout) ?? "")
 		}
 		msg = stripVTControlCharacters(msg)
 
@@ -551,14 +549,12 @@ async function run(
 			msg.includes("Missing engines.vscode")
 
 		if (isMissingConfig) {
-			if (isExplicit) {
-				process.stderr.write(
-					`${styleText("red", "✖")} ${styleText("bold", "Error:")} Target "${name}" is not applicable here.\n`,
-				)
-				process.stderr.write(`      ${styleText("dim", msg.split(/\r?\n/)[0] || msg)}\n`)
-				process.exit(1)
-			}
-			return false
+			if (!isExplicit) return false
+			process.stderr.write(
+				`${styleText("red", "✖")} ${styleText("bold", "Error:")} Target "${name}" is not applicable here.\n`,
+			)
+			process.stderr.write(`      ${styleText("dim", msg.split(/\r?\n/)[0] || msg)}\n`)
+			process.exit(1)
 		}
 
 		if (isExplicit) {
@@ -693,20 +689,18 @@ async function run(
 		}
 	}
 	for (const f of vignFiles) {
-		if (!sysSet.has(f)) {
-			diffs.push({
-				file: f,
-				issue: "Unexpectedly included by view-ignored",
-				match: ctx!.paths.get(f) || { ignored: false, kind: RuleMatchKind.none },
-			})
-		}
+		if (sysSet.has(f)) continue
+		diffs.push({
+			file: f,
+			issue: "Unexpectedly included by view-ignored",
+			match: ctx!.paths.get(f) || { ignored: false, kind: RuleMatchKind.none },
+		})
 	}
 
 	if (diffs.length > 0) {
 		process.stdout.write(
 			`${styleText("red", "✖")} ${styleText("bold", "Discrepancies found")} for target ${styleText("blue", name)} (set: ${styleText("yellow", setName)}) (${fmtTime(dur)}):\n`,
 		)
-
 		const reports = diffs.map((d) => {
 			const m = d.match as RuleMatch
 			const origin =
@@ -812,11 +806,10 @@ async function main() {
 		// Detect "--invert" as a boolean flag and map it to "--invert true"
 		for (let i = 2; i < processedArgv.length; i++) {
 			const arg = processedArgv[i]
-			if (arg === "--invert") {
-				const next = processedArgv[i + 1]
-				if (next === undefined || next.startsWith("-")) {
-					processedArgv.splice(i + 1, 0, "true")
-				}
+			if (arg !== "--invert") continue
+			const next = processedArgv[i + 1]
+			if (next === undefined || next.startsWith("-")) {
+				processedArgv.splice(i + 1, 0, "true")
 			}
 		}
 

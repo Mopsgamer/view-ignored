@@ -76,10 +76,7 @@ export function browserScanCb(
 		external: ctx.external,
 		failed: ctx.failed,
 		onResult: (result) => {
-			if ("dir" in result) {
-				walkPatchTotal(ctx, scanOptions.depth, result)
-				return
-			}
+			if ("dir" in result) return walkPatchTotal(ctx, scanOptions.depth, result)
 			walkPatchResult(ctx, result, scanOptions, stream)
 		},
 		scanOptions,
@@ -87,21 +84,15 @@ export function browserScanCb(
 	}
 
 	const parallelHandle = (err: Error | null) => {
-		if (err) {
-			// oxlint-disable-next-line typescript/no-explicit-any
-			cb(err, null as any)
-			return
-		}
+		// oxlint-disable-next-line typescript/no-explicit-any
+		if (err) return cb(err, null as any)
 		propagateTotals(ctx.total)
 		cb(null, ctx)
 	}
 
 	const scanHandle = (err: Error | null) => {
-		if (err) {
-			// oxlint-disable-next-line typescript/no-explicit-any
-			cb(err, null as any)
-			return
-		}
+		// oxlint-disable-next-line typescript/no-explicit-any
+		if (err) return cb(err, null as any)
 		scanParallel(parallelOptions, parallelHandle)
 	}
 

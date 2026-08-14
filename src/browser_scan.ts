@@ -18,10 +18,7 @@ export type * from "./types.js"
 export function scan(options: ScanBrowserOptions): Promise<MatcherContext> {
 	const { promise, resolve, reject } = Promise.withResolvers<MatcherContext>()
 	browserScanCb(options, (err, ctx) => {
-		if (err) {
-			reject(err)
-			return
-		}
+		if (err) return reject(err)
 		resolve(ctx)
 	})
 	return promise

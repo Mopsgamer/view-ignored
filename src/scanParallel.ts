@@ -37,10 +37,7 @@ function processEntries(
 	const { invert } = scanOptions
 
 	if (res && "error" in res && res.error) {
-		if (!failed) {
-			handleError(res.error)
-			return
-		}
+		if (!failed) return handleError(res.error)
 		failed.push(res)
 	}
 
@@ -59,19 +56,20 @@ function processEntries(
 		const finish = () => {
 			pendingResults--
 			if (pendingResults === 0 && onResult) {
-				const dirs = dirDirs
-				const files = dirFiles
-				const matched = dirMatched
-				const tot = { depth, dir: relPath, dirs, files, ignored: false, matched }
+				const tot = {
+					depth,
+					dir: relPath,
+					dirs: dirDirs,
+					files: dirFiles,
+					ignored: false,
+					matched: dirMatched,
+				}
 				onResult(tot)
 			}
 			taskDone()
 		}
 
-		if (!self || !self.match) {
-			finish()
-			return
-		}
+		if (!self || !self.match) return finish()
 
 		if (self.isDir) dirDirs++
 		else if (entry.isFile() || entry.isSymbolicLink()) {
@@ -85,7 +83,6 @@ function processEntries(
 		else state.results!.push(self)
 
 		if (self.isDir && self.next === 0) walk(currentRelPath, depth + 1, res)
-
 		finish()
 	}
 
