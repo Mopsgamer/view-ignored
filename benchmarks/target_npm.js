@@ -1,6 +1,7 @@
 import Arborist from "@npmcli/arborist"
 import walk from "ignore-walk"
 import { barplot, bench, run, summary } from "mitata"
+import { execSync } from "node:child_process"
 import * as fs from "node:fs"
 import packlist from "npm-packlist"
 
@@ -23,6 +24,7 @@ console.log("NPM target benchmark")
 console.log("You can use --igw to test ignore-walk separately")
 console.log("You can use --vign to test view-ignored separately")
 
+// Run the normal benchmarks first (excluding the inverted browserScan which runs on real files)
 barplot(() => {
 	summary(async () => {
 		if (!igw)
@@ -60,15 +62,6 @@ barplot(() => {
 					target: makeNPM(),
 				})
 			})
-		if (!igw)
-			bench("'view-ignored'.browserScan(NPM, inverted)", async () => {
-				return browserScan({
-					cwd,
-					fs,
-					invert: true,
-					target: makeNPM(),
-				})
-			})
 		if (!vign)
 			bench("'npm-packlist'(preparedArbTree)", async () => {
 				return packlist(tree)
@@ -94,4 +87,40 @@ const stats = await run({
 
 if (process.argv.includes("--json")) {
 	process.stdout.write(JSON.stringify(stats))
+}
+
+// Run the inverted browserScan benchmark on real files
+let stats2 = null
+if (!igw) {
+	console.log(
+		"\nPreparing real node_modules files using bun for the inverted browserScan benchmark...",
+	)
+	try {
+		execSync("bun install --linker hoisted --no-global-store --backend=copyfile", {
+			stdio: "inherit",
+		})
+		barplot(() => {
+			summary(async () => {
+				bench("'view-ignored'.browserScan(NPM, inverted)", async () => {
+					return browserScan({
+						cwd,
+						fs,
+						invert: true,
+						target: makeNPM(),
+					})
+				})
+			})
+		})
+
+		stats2 = await run({
+			format: process.argv.includes("--json") ? "json" : "mitata",
+		})
+	} finally {
+		console.log("Restoring symlinks in node_modules using bun...")
+		execSync("bun install", { stdio: "inherit" })
+	}
+}
+
+if (stats2 && process.argv.includes("--json")) {
+	process.stdout.write(JSON.stringify(stats2))
 }

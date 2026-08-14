@@ -17,6 +17,7 @@ import {
 	symlinkRule,
 	makeDirectPathsRule,
 	extractNoCaseNpmignore,
+	makeNodeModulesIgnoreRule,
 } from "./npmManifest.js"
 
 let cachedYarnClassicExcludesRule: GlobRule | null = null
@@ -107,6 +108,7 @@ export function makeYarnClassic(mode: "list" | "publish" | "bundle" = "publish")
 	)
 
 	const internal: Rule[] = [
+		makeNodeModulesIgnoreRule(ctx),
 		makeBundledDepsRule(ctx, makeYarnClassic),
 		makePackageResolutionRule(ctx),
 		symlinkRule,

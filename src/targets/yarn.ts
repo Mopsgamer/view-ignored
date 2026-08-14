@@ -17,6 +17,7 @@ import {
 	symlinkRule,
 	makeDirectPathsRule,
 	extractNoCaseNpmignore,
+	makeNodeModulesIgnoreRule,
 } from "./npmManifest.js"
 
 let cachedYarnExcludesRule: GlobRule | null = null
@@ -83,6 +84,7 @@ export function makeYarn(mode: "list" | "publish" | "bundle" = "publish"): Targe
 	)
 
 	const internal: Rule[] = [
+		makeNodeModulesIgnoreRule(ctx),
 		makeBundledDepsRule(ctx, makeYarn),
 		makePackageResolutionRule(ctx),
 		symlinkRule,

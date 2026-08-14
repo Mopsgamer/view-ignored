@@ -16,6 +16,7 @@ import {
 	makeBundledDepsRule,
 	symlinkRule,
 	makeDirectPathsRule,
+	makeNodeModulesIgnoreRule,
 } from "./npmManifest.js"
 
 const cachedNpmAfterExcludesRule = ruleCompile(
@@ -103,6 +104,7 @@ export function makeNPM(mode: "list" | "publish" | "bundle" = "publish"): Target
 	const internal: InternalRules = {
 		after: [cachedNpmAfterExcludesRule],
 		before: [
+			makeNodeModulesIgnoreRule(ctx),
 			makeBundledDepsRule(ctx, makeNPM),
 			makePackageResolutionRule(ctx),
 			symlinkRule,

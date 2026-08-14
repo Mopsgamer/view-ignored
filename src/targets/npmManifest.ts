@@ -41,6 +41,39 @@ export function makeDirectPathsRule(directPathsInclude: Record<string, string>):
 	} satisfies CustomRule as CustomRule
 }
 
+export function makeNodeModulesIgnoreRule(ctx: NpmContext): CustomRule {
+	return {
+		excludes: true,
+		match({ entry }) {
+			const isNodeModules = entry === "node_modules" || entry.startsWith("node_modules/")
+			if (!isNodeModules) return null
+
+			if (ctx.bundledDeps.length === 0) {
+				return "//ignored dependency under node_modules"
+			}
+
+			const idx = entry.indexOf("node_modules/")
+			const sub = entry.slice(idx + 13)
+			if (sub === "") {
+				return "//ignored dependency under node_modules"
+			}
+
+			const firstSlash = sub.indexOf("/")
+			let depName = firstSlash === -1 ? sub : sub.slice(0, firstSlash)
+			if (sub.startsWith("@") && firstSlash !== -1) {
+				const secondSlash = sub.indexOf("/", firstSlash + 1)
+				depName = secondSlash === -1 ? sub : sub.slice(0, secondSlash)
+			}
+
+			if (ctx.bundledDeps.includes(depName)) {
+				return null
+			}
+
+			return "//ignored dependency under node_modules"
+		},
+	} satisfies CustomRule as CustomRule
+}
+
 export interface PackageJson {
 	name: string
 	version: string
