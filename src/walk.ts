@@ -74,23 +74,17 @@ function getWalkResult(match: RuleMatch, options: WalkOptions, isDir: boolean): 
 	}
 
 	if (isRuleMatchInvalid(match)) return result
-
 	if (isDir && skipInternal && match.ignored) result.next = 1
-
 	if (isExcluded) return result
-
 	if (tooDeepFlag) {
 		result.next = isDir ? 0 : 1
 		return result
 	}
-
 	if (depth > maxDepth) {
 		result.tooDeep = true
 		return result
 	}
-
 	if (!isDir && parentPath !== "" && parentPath !== ".") result.includeParent = true
-
 	return result
 }
 
@@ -234,34 +228,32 @@ function patchMerged(
 	stream: MatcherStream | undefined,
 	mergedCtx: MatcherContext,
 ): void {
-	mergedCtx.paths.forEach((m, p) => {
-		if (ctx.paths.has(p)) return
-		ctx.paths.set(p, m)
+	mergedCtx.paths.forEach((match, path) => {
+		if (ctx.paths.has(path)) return
+		ctx.paths.set(path, match)
 		if (!stream) return
 
-		const isDir = p.endsWith("/")
-		const cleanPath = isDir ? p.slice(0, -1) : p
+		const isDir = path.endsWith("/")
+		const cleanPath = isDir ? path.slice(0, -1) : path
 		const lastSlash = cleanPath.lastIndexOf("/")
 		const parentPath = lastSlash === -1 ? "." : cleanPath.slice(0, lastSlash)
 		const name = lastSlash === -1 ? cleanPath : cleanPath.slice(lastSlash + 1)
-		const mockEntry = {
-			isBlockDevice: () => false,
-			isCharacterDevice: () => false,
+		const ffalse = () => false
+		const dirent = {
+			isBlockDevice: ffalse,
+			isCharacterDevice: ffalse,
 			isDirectory: () => isDir,
-			isFIFO: () => false,
+			isFIFO: ffalse,
 			isFile: () => !isDir,
-			isSocket: () => false,
-			isSymbolicLink: () => false,
+			isSocket: ffalse,
+			isSymbolicLink: ffalse,
 			name,
 			parentPath,
 		} as Dirent
-		stream.dispatchEvent(
-			new CustomEvent("dirent", { detail: { dirent: mockEntry, match: m, path: p } }),
-		)
+		stream.dispatchEvent(new CustomEvent("dirent", { detail: { dirent, match, path } }))
 	})
 
 	mergedCtx.external.forEach((r, p) => ctx.external.set(p, r))
-
 	if (mergedCtx.failed.length > 0) ctx.failed.push(...mergedCtx.failed)
 
 	mergedCtx.total.forEach((t, p) => {
@@ -289,16 +281,12 @@ export function walkPatchResult(
 	const { dirs, invert } = options
 
 	const isExcluded = isMatchExcluded(invert, match)
-
 	if (context) patchMerged(ctx, stream, context)
-
 	const shouldPatch = dirs || (!isDir && (entry.isFile() || entry.isSymbolicLink()))
-
 	if (isExcluded) {
 		if (isRuleMatchInvalid(match) && stream && shouldPatch) patch(ctx, stream, path, entry, match)
 		return
 	}
-
 	if (!tooDeep && shouldPatch) patch(ctx, stream, path, entry, match)
 	if (includeParent && dirs) patch(ctx, stream, parentPath + "/", entry, match)
 }
@@ -315,13 +303,13 @@ function addToTotal(
 		dirTotal.totalFiles += files
 		dirTotal.totalMatchedFiles += matched
 		dirTotal.totalDirs += dirs
-	} else {
-		total.set(dir, {
-			totalDirs: dirs,
-			totalFiles: files,
-			totalMatchedFiles: matched,
-		})
+		return
 	}
+	total.set(dir, {
+		totalDirs: dirs,
+		totalFiles: files,
+		totalMatchedFiles: matched,
+	})
 }
 
 /**

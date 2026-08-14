@@ -141,14 +141,16 @@ export function extractGitignoreRules(
 
 		const lineEnd = end > start && content[end - 1] === 13 ? end - 1 : end
 
-		if (start < lineEnd) {
-			const nextRule = processGitignoreLine(source, content, start, lineEnd, options, rule)
-			if (nextRule && nextRule !== rule) {
-				rule = nextRule
-				source.rules.unshift(rule)
-			}
+		if (start >= lineEnd) {
+			start = end + 1
+			continue
 		}
 
+		const nextRule = processGitignoreLine(source, content, start, lineEnd, options, rule)
+		if (nextRule && nextRule !== rule) {
+			rule = nextRule
+			source.rules.unshift(rule)
+		}
 		start = end + 1
 	}
 
