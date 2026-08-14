@@ -151,12 +151,11 @@ function checkRulesList(
 		const res = rule(ignoreOptions)
 		if (res === null) continue
 
-		if (res && typeof (res as Promise<unknown>).then === "function") {
+		if (res && typeof (res as Promise<unknown>).then === "function")
 			return (res as Promise<MatcherContext | null>).then(
 				(resolvedCtx) => handleRuleResolvedCtx(resolvedCtx, options, runIgnoresSync),
 				throwErrorCallback,
 			)
-		}
 		return {
 			context: res as MatcherContext,
 			depth,
@@ -340,15 +339,14 @@ export function propagateTotals(total: Map<string, Total>): void {
 	const dirs = Array.from(total.keys()).sort((a, b) => b.length - a.length)
 	for (let i = 0, len = dirs.length; i < len; i++) {
 		const dir = dirs[i]!
-		if (dir !== "." && dir !== "/") {
-			const dirTotal = total.get(dir)!
-			addToTotal(
-				total,
-				dirname(dir),
-				dirTotal.totalFiles,
-				dirTotal.totalMatchedFiles,
-				dirTotal.totalDirs,
-			)
-		}
+		if (dir === "." || dir === "/") continue
+		const dirTotal = total.get(dir)!
+		addToTotal(
+			total,
+			dirname(dir),
+			dirTotal.totalFiles,
+			dirTotal.totalMatchedFiles,
+			dirTotal.totalDirs,
+		)
 	}
 }
