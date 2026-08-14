@@ -1,11 +1,11 @@
-import type { Dirent } from "node:fs"
+import type { Dirent, Stats } from "node:fs"
 
 import type { MatcherStream } from "./patterns/matcherStream.js"
 import type { Resource, InvalidSource } from "./patterns/resource.js"
 import type { ScanOptions } from "./types.js"
 
 import { resolveSources } from "./patterns/resolveSources.js"
-import { join } from "./unixify.js"
+import { dirname, join } from "./unixify.js"
 import { walkIncludes, type WalkResult, type WalkTotal } from "./walk.js"
 
 export interface ScanParallelOptions {
@@ -20,6 +20,111 @@ interface ScanState {
 	activeTasks: number
 	errorOccurred: Error | null
 	results: WalkResult[] | null
+}
+
+function processSingleFile(
+	within: string,
+	stat: Stats,
+	options: ScanParallelOptions,
+	state: ScanState,
+	handleError: (err: Error) => void,
+	taskDone: () => void,
+) {
+	const { scanOptions, external, failed, onResult, stream } = options
+	const { invert } = scanOptions
+
+	const parentPath = dirname(within)
+	const lastSlash = within.lastIndexOf("/")
+	const name = lastSlash === -1 ? within : within.slice(lastSlash + 1)
+
+	let depth = 0
+	if (parentPath !== "." && parentPath !== "") {
+		depth = 1
+		for (let i = 0; i < parentPath.length; i++) {
+			if (parentPath.charCodeAt(i) === 47) depth++
+		}
+	}
+
+	const ffalse = () => false
+	const entry = {
+		isBlockDevice: typeof stat.isBlockDevice === "function" ? () => stat.isBlockDevice() : ffalse,
+		isCharacterDevice:
+			typeof stat.isCharacterDevice === "function" ? () => stat.isCharacterDevice() : ffalse,
+		isDirectory: () => false,
+		isFIFO: typeof stat.isFIFO === "function" ? () => stat.isFIFO() : ffalse,
+		isFile: typeof stat.isFile === "function" ? () => stat.isFile() : ffalse,
+		isSocket: typeof stat.isSocket === "function" ? () => stat.isSocket() : ffalse,
+		isSymbolicLink:
+			typeof stat.isSymbolicLink === "function" ? () => stat.isSymbolicLink() : ffalse,
+		name,
+		parentPath,
+	} as Dirent
+
+	resolveSources(
+		{ ...scanOptions, dir: parentPath, entries: undefined, external, resource: undefined },
+		(err, res) => {
+			if (err) {
+				handleError(err)
+				taskDone()
+				return
+			}
+
+			if (res && "error" in res && res.error) {
+				if (!failed) {
+					handleError(res.error)
+					taskDone()
+					return
+				}
+				failed.push(res)
+			}
+
+			const selfOrPromise = walkIncludes({
+				depth,
+				entry,
+				parentPath,
+				relPath: within,
+				resource: res,
+				scanOptions,
+				stream,
+			})
+
+			const handleResult = (self: WalkResult | null) => {
+				if (self && self.match) {
+					let dirFiles = 0
+					let dirMatched = 0
+					if (entry.isFile() || entry.isSymbolicLink()) {
+						dirFiles = 1
+						const isIncluded =
+							invert === true ? self.match.ignored : invert === 2 ? true : !self.match.ignored
+						if (isIncluded) dirMatched = 1
+					}
+
+					if (onResult) {
+						onResult(self)
+						onResult({
+							depth,
+							dir: parentPath,
+							dirs: 0,
+							files: dirFiles,
+							ignored: false,
+							matched: dirMatched,
+						})
+					} else if (state.results) state.results.push(self)
+				}
+				taskDone()
+			}
+
+			if (selfOrPromise instanceof Promise) {
+				selfOrPromise.then(
+					(self) => handleResult(self),
+					(err) => {
+						handleError(err)
+						taskDone()
+					},
+				)
+			} else handleResult(selfOrPromise)
+		},
+	)
 }
 
 function processEntries(
@@ -107,9 +212,7 @@ function processEntries(
 				(self) => handleResult(self, entry, currentRelPath),
 				(err) => handleError(err),
 			)
-		} else {
-			handleResult(selfOrPromise, entry, currentRelPath)
-		}
+		} else handleResult(selfOrPromise, entry, currentRelPath)
 	}
 	taskDone()
 }
@@ -186,12 +289,37 @@ export function scanParallel(
 		)
 	}
 
-	let initialDepth = 0
-	if (within !== "." && within !== "") {
-		const len = within.length
-		for (let i = 0; i < len; i++) {
-			if (within.charCodeAt(i) === 47) initialDepth++
-		}
+	const withinList = Array.isArray(within) ? within : [within]
+	if (withinList.length === 0) {
+		cb(null, state.results)
+		return
 	}
-	walk(within, initialDepth, undefined)
+
+	for (let i = 0; i < withinList.length; i++) {
+		const item = withinList[i]!
+		let initialDepth = 0
+		if (item !== "." && item !== "") {
+			const len = item.length
+			for (let j = 0; j < len; j++) {
+				if (item.charCodeAt(j) === 47) initialDepth++
+			}
+		}
+
+		if (item !== "." && item !== "" && !item.endsWith("/")) {
+			state.activeTasks++
+			scanOptions.fs.stat(join(scanOptions.cwd, item), (err, stat) => {
+				if (err) {
+					handleError(err)
+					taskDone()
+					return
+				}
+				if (stat.isDirectory()) {
+					walk(item, initialDepth, undefined)
+					taskDone()
+					return
+				}
+				processSingleFile(item, stat as Stats, options, state, handleError, taskDone)
+			})
+		} else walk(item, initialDepth, undefined)
+	}
 }

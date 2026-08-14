@@ -219,8 +219,30 @@ function patch(
 ): void {
 	if (ctx.paths.has(path)) return
 	ctx.paths.set(path, match)
-	if (stream)
-		stream.dispatchEvent(new CustomEvent("dirent", { detail: { dirent: entry, match, path } }))
+	if (!stream) return
+
+	if (path.endsWith("/") && !entry.isDirectory()) {
+		const cleanPath = path.slice(0, -1)
+		const lastSlash = cleanPath.lastIndexOf("/")
+		const parentPath = lastSlash === -1 ? "." : cleanPath.slice(0, lastSlash)
+		const name = lastSlash === -1 ? cleanPath : cleanPath.slice(lastSlash + 1)
+		const ffalse = () => false
+		const dirDirent = {
+			isBlockDevice: ffalse,
+			isCharacterDevice: ffalse,
+			isDirectory: () => true,
+			isFIFO: ffalse,
+			isFile: ffalse,
+			isSocket: ffalse,
+			isSymbolicLink: ffalse,
+			name,
+			parentPath,
+		} as Dirent
+		stream.dispatchEvent(new CustomEvent("dirent", { detail: { dirent: dirDirent, match, path } }))
+		return
+	}
+
+	stream.dispatchEvent(new CustomEvent("dirent", { detail: { dirent: entry, match, path } }))
 }
 
 function patchMerged(

@@ -46,8 +46,8 @@ export type ScanOptions = {
 	cwd?: string
 
 	/**
-	 * Limits the scan to a subdirectory of `cwd`.
-	 * Traversal starts from this subdirectory, but returned paths
+	 * Limits the scan to subdirectories or files of `cwd`.
+	 * Traversal starts from these subdirectories/files, but returned paths
 	 * remain relative to `cwd`, and ignore files from `cwd`
 	 * are still applied.
 	 *
@@ -55,7 +55,7 @@ export type ScanOptions = {
 	 *
 	 * @since 0.6.0
 	 */
-	within?: string
+	within?: string | string[]
 
 	/**
 	 * If enabled, the scan will return files that are ignored by the target matcher.

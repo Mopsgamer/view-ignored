@@ -485,7 +485,11 @@ export function makeBundledDepsRule(
 ): SkipRule {
 	return (options: IgnoresOptions) => {
 		const { entry } = options
-		if (entry !== join(options.within || "", "node_modules")) return null
+		const isWithinMatch = (w: string) => entry === join(w || "", "node_modules")
+		const matchedWithin = Array.isArray(options.within)
+			? options.within.some(isWithinMatch)
+			: isWithinMatch(options.within || "")
+		if (!matchedWithin) return null
 
 		const remainingDepth = (options.depth ?? Infinity) - 2
 
