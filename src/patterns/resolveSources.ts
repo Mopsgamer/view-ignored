@@ -177,10 +177,17 @@ function launchExtractor(
 
 	const cleanPath = isDotSlash ? epath.slice(2) : epath
 
-	if (entries_) {
+	if (entries_ !== undefined) {
 		const slashIdx = cleanPath.indexOf("/")
 		const firstSegment = slashIdx === -1 ? cleanPath : cleanPath.slice(0, slashIdx)
-		if (!entries_.some((e) => e.name === firstSegment)) return cb(null, null)
+		let found = false
+		for (let i = 0, len = entries_.length; i < len; i++) {
+			if (entries_[i]!.name === firstSegment) {
+				found = true
+				break
+			}
+		}
+		if (!found) return cb(null, null)
 	}
 
 	fs.readFile(join(parent, cleanPath), (err, buff) => {
