@@ -462,6 +462,13 @@ describe("matcherContextAddPath", () => {
 			}
 			expect(c).toMatchObject(newc)
 		})
+		test("array of included files is added", async () => {
+			const c = await scan(opt)
+			expect(await matcherContextAddPath(c, opt, ["out/test1", "out/test2"])).toEqual([
+				"out/test1",
+				"out/test2",
+			])
+		})
 		test("included file is added", async () => {
 			const c = await scan(opt)
 			expect(await matcherContextAddPath(c, opt, "out/test")).toEqual(["out/test"])
@@ -653,6 +660,14 @@ describe("matcherContextRemovePath", () => {
 			const c = await scan(opt)
 			expect(await matcherContextRemovePath(c, opt, "out/test")).toEqual([])
 			expect(await matcherContextRemovePath(c, opt, "out/testdir/testsubdir/test")).toEqual([])
+		})
+		test("array of included files is removed", async () => {
+			const c = await scan(opt)
+			await matcherContextAddPath(c, opt, ["out/test1", "out/test2"])
+			expect(await matcherContextRemovePath(c, opt, ["out/test1", "out/test2"])).toEqual([
+				"out/test1",
+				"out/test2",
+			])
 		})
 		test("included file is removed", async () => {
 			const c = await scan(opt)
