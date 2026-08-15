@@ -46,8 +46,13 @@ function mockDirent(name: string, parentPath: string, isDir: boolean): Dirent {
 export async function matcherContextAddPath(
 	ctx: MatcherContext,
 	options: Required<ScanOptions>,
-	entry: string,
+	entry: string | string[],
 ): Promise<string[]> {
+	if (Array.isArray(entry)) {
+		const results = await Promise.all(entry.map((e) => matcherContextAddPath(ctx, options, e)))
+		return results.flat()
+	}
+
 	const added: string[] = []
 	if (ctx.paths.has(entry)) return added
 
@@ -102,12 +107,8 @@ export async function matcherContextAddPath(
 				return
 			}
 			const { path, parentPath: rParentPath, includeParent } = result
-			if (!ctx.paths.has(path)) {
-				added.push(path)
-			}
-			if (includeParent && !ctx.paths.has(rParentPath + "/")) {
-				added.push(rParentPath + "/")
-			}
+			if (!ctx.paths.has(path)) added.push(path)
+			if (includeParent && !ctx.paths.has(rParentPath + "/")) added.push(rParentPath + "/")
 			walkPatchResult(ctx, result, options)
 		}
 		const o: ScanParallelOptions = {
@@ -158,15 +159,18 @@ export async function matcherContextAddPath(
 export async function matcherContextRemovePath(
 	ctx: MatcherContext,
 	options: Required<ScanOptions>,
-	entry: string,
+	entry: string | string[],
 ): Promise<string[]> {
+	if (Array.isArray(entry)) {
+		const results = await Promise.all(entry.map((e) => matcherContextRemovePath(ctx, options, e)))
+		return results.flat()
+	}
+
 	const removed: string[] = []
 	const isDir = entry.endsWith("/")
 	const direntPath = isDir ? entry.slice(0, -1) : entry
 	if (isDir && direntPath === ".") {
-		for (const path of ctx.paths.keys()) {
-			removed.push(path)
-		}
+		for (const path of ctx.paths.keys()) removed.push(path)
 		ctx.paths.clear()
 		ctx.external.clear()
 		ctx.failed.length = 0
@@ -186,9 +190,7 @@ export async function matcherContextRemovePath(
 			deletedFiles = total.totalFiles
 			deletedMatchedFiles = total.totalMatchedFiles
 			ctx.total.delete(direntPath)
-		} else {
-			deletedDirs = 1
-		}
+		} else deletedDirs = 1
 
 		updateTotals(ctx, parentPath, -deletedFiles, -deletedMatchedFiles, -deletedDirs)
 

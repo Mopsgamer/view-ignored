@@ -47,7 +47,7 @@ export interface IgnoresOptions extends InitState {
 	/**
 	 * within option of the parent scan.
 	 */
-	within?: string
+	within?: string | string[]
 }
 
 /**

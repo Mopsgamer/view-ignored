@@ -8,6 +8,8 @@ and this project adheres to
 
 ## [Unreleased]
 
+- Allow `ScanOptions.within` to accept file paths and arrays of file or directory paths.
+- Allow `matcherContextAddPath` and `matcherContextRemovePath` to accept arrays of paths.
 - Support Git's `core.ignorecase` configuration option for dynamic case-insensitive matching of ignore rules.
 - Improve performance and memory usage of directory scanning and walking algorithm.
 - Optimize internal `walk.ts` matching loops and `scanParallel.ts` parallel walks.

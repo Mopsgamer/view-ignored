@@ -56,7 +56,7 @@ export function browserScanCb(
 	}
 
 	const normalCwd = unixify(cwd)
-	const normalWithin = unixify(within)
+	const normalWithin = Array.isArray(within) ? within.map((w) => unixify(w)) : unixify(within)
 
 	const scanOptions: Required<ScanOptions> = {
 		cwd: normalCwd,
