@@ -62,10 +62,12 @@ export function extractNpmignoreRules(
 		const nextRule = resolveNegatable(pattern, false, options, rule)
 		if (nextRule !== rule) {
 			rule = nextRule
-			source.rules.unshift(rule)
+			source.rules.push(rule)
 		}
 		start = end + 1
 	}
+
+	if (source.rules.length > 1) source.rules.reverse()
 
 	const rlen = source.rules.length
 	for (let i = 0; i < rlen; i++) {

@@ -57,6 +57,28 @@ function processGitignoreLine(
 ): GlobRule | undefined {
 	if (content[start] === 35) return rule
 
+	let hasSpecial = false
+	for (let i = start; i < lineEnd; i++) {
+		const c = content[i]!
+		if (c === 35 || c === 92) {
+			hasSpecial = true
+			break
+		}
+	}
+
+	if (!hasSpecial) {
+		let endIdx = lineEnd
+		while (endIdx > start) {
+			const c = content[endIdx - 1]!
+			if (c !== 32 && c !== 9 && c !== 13) break
+			endIdx--
+		}
+		if (endIdx <= start) return rule
+		const resolvedLine = decoder.decode(content.subarray(start, endIdx))
+		if (resolvedLine.length > 0) rule = resolveNegatable(resolvedLine, false, options, rule)
+		return rule
+	}
+
 	let isEscaped = false
 	const lineBuff = new Uint8Array(lineEnd - start)
 	let lineBuffIdx = 0
@@ -149,10 +171,12 @@ export function extractGitignoreRules(
 		const nextRule = processGitignoreLine(source, content, start, lineEnd, options, rule)
 		if (nextRule && nextRule !== rule) {
 			rule = nextRule
-			source.rules.unshift(rule)
+			source.rules.push(rule)
 		}
 		start = end + 1
 	}
+
+	if (source.rules.length > 1) source.rules.reverse()
 
 	const rlen = source.rules.length
 	for (let i = 0; i < rlen; i++) {

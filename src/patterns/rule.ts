@@ -320,6 +320,7 @@ function cacheTest(
 ): string | null {
 	if (!rs) return null
 	if (!rs.re.test(path)) return null
+	if (rs.list.length === 1) return rs.list[0]!
 
 	let items = rs.compiledItems
 	if (!items && rs.patternSources) {
