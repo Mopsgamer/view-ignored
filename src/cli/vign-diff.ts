@@ -532,7 +532,7 @@ async function run(
 		let msg = err instanceof Error ? err.message : String(err)
 		if (err && typeof err === "object" && "stdout" in err && err.stdout) {
 			const isBuf = Buffer.isBuffer(err.stdout) || typeof err.stdout === "string"
-			msg = isBuf ? err.stdout.toString() : (JSON.stringify(err.stdout) ?? "")
+			msg = isBuf ? (err.stdout as Buffer).toString() : (JSON.stringify(err.stdout) ?? "")
 		}
 		msg = stripVTControlCharacters(msg)
 
