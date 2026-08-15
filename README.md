@@ -283,8 +283,9 @@ vign-diff all -i       # Scan all and open issues
 - There are references in our implementations.
 - https://jsr.io/@m234/path - Utility to sort, convert and format paths.
 - https://github.com/git/git/blob/master/wildmatch.c - The original wildmatch implementation.
-- https://npmx.dev/package/ignore-walk - A Node.js module for walking directories while respecting ignore files. (It does it incorrectly for Git).
-- https://npmx.dev/package/npm-packlist - A Node.js module for listing files to be included in an npm package. (Heavy)
+- https://npmx.dev/package/ignore-walk - A Node.js module for walking directories while respecting ignore files. Not good when Git's spec needed.
+- https://npmx.dev/package/npm-packlist - A Node.js module for listing files to be included in an npm package. Heavy.
+- https://npmx.dev/package/ignore - A Node.js module for parsing gitignore files according to spec (wildmatch's pathname mode). Git configs are ignored.
 
 ## Benchmarks
 
