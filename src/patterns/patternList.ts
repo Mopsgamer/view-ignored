@@ -61,6 +61,7 @@ export function patternListCompile(options: PatternCompileOptions & { list: Patt
 	}
 
 	const patternSources: string[] = new Array(len)
+	let fastRootPrefix: string | null = null
 
 	for (let i = 0; i < len; i++) {
 		const pattern = list[i]!
@@ -81,7 +82,20 @@ export function patternListCompile(options: PatternCompileOptions & { list: Patt
 		const clen = cleaned.length
 		for (let j = 0; j < clen; j++) {
 			const c = cleaned.charCodeAt(j)
-			if (c === 42 || c === 63 || c === 91 || c === 40 || c === 41 || c === 33) {
+			if (
+				c === 42 ||
+				c === 63 ||
+				c === 91 ||
+				c === 93 ||
+				c === 40 ||
+				c === 41 ||
+				c === 33 ||
+				c === 123 ||
+				c === 125 ||
+				c === 43 ||
+				c === 64 ||
+				c === 92
+			) {
 				isGlob = true
 				break
 			}
@@ -102,6 +116,9 @@ export function patternListCompile(options: PatternCompileOptions & { list: Patt
 			}
 		} else {
 			part = lowerCleaned.replace(REGEX_SPECIAL_CHARS, "\\$&")
+			if (len === 1 && isAnchored && clen > 0) {
+				fastRootPrefix = cleaned
+			}
 		}
 
 		const source = (isAnchored ? "^" : "(?:^|\\/)") + part + "(?:\\/|$)"
@@ -111,9 +128,45 @@ export function patternListCompile(options: PatternCompileOptions & { list: Patt
 	const combinedSource = patternSources.join("|")
 	const combinedRegex = new RegExp(combinedSource, nocase ? "i" : "")
 
+	let testFn: (str: string) => boolean
+
+	if (fastRootPrefix !== null) {
+		const prefix = fastRootPrefix
+		const plen = prefix.length
+
+		if (nocase) {
+			const prefixLower = prefix.toLowerCase()
+			testFn = (str: string): boolean => {
+				const slen = str.length
+				if (slen < plen) return false
+				if (slen === plen) {
+					if (str.toLowerCase() !== prefixLower) return false
+				} else {
+					if (str.charCodeAt(plen) !== 47) return false
+					if (str.slice(0, plen).toLowerCase() !== prefixLower) return false
+				}
+				return combinedRegex.test(str)
+			}
+		} else {
+			testFn = (str: string): boolean => {
+				const slen = str.length
+				if (slen < plen) return false
+				if (slen === plen) {
+					if (str !== prefix) return false
+				} else {
+					if (str.charCodeAt(plen) !== 47) return false
+					if (str.slice(0, plen) !== prefix) return false
+				}
+				return combinedRegex.test(str)
+			}
+		}
+	} else {
+		testFn = (str: string): boolean => combinedRegex.test(str)
+	}
+
 	const re = {
 		test(str: string): boolean {
-			return combinedRegex.test(str)
+			return testFn(str)
 		},
 	}
 
