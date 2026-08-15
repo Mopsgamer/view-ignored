@@ -29,6 +29,8 @@ export type PatternCompileOptions = {
  */
 export type PatternList = string[]
 
+const REGEX_SPECIAL_CHARS = /[.*+?^${}()|[\]\\]/g
+
 /**
  * Compiles the {@link PatternList}.
  *
@@ -99,7 +101,7 @@ export function patternListCompile(options: PatternCompileOptions & { list: Patt
 				part = part.slice(1, -1)
 			}
 		} else {
-			part = lowerCleaned.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+			part = lowerCleaned.replace(REGEX_SPECIAL_CHARS, "\\$&")
 		}
 
 		const source = (isAnchored ? "^" : "(?:^|\\/)") + part + "(?:\\/|$)"
