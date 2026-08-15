@@ -88,9 +88,12 @@ function isValidNpmName(name: string): boolean {
 	return isValidNameComponent(name)
 }
 
+const INVALID_NAME_CHAR_REGEX = /[~!'()* ]/
+const VSCE_NAME_REGEX = /^[a-z0-9][a-z0-9-]*$/i
+
 function isValidNameComponent(part: string): boolean {
 	if (part.startsWith(".") || part.startsWith("_") || hasUppercase(part)) return false
-	if (/[~!'()* ]/.test(part)) return false
+	if (INVALID_NAME_CHAR_REGEX.test(part)) return false
 	try {
 		return encodeURIComponent(part) === part
 	} catch {
@@ -132,7 +135,7 @@ function doNpmManifestParse(
 			throw new Error("Manifest must have a non-empty string 'version'")
 		}
 		if (mode === "vsce") {
-			if (!/^[a-z0-9][a-z0-9-]*$/i.test(parsed.name)) {
+			if (!VSCE_NAME_REGEX.test(parsed.name)) {
 				throw new Error(`Invalid extension "name": "${parsed.name}" in package.json`)
 			}
 		} else if (!isValidNpmName(parsed.name)) {

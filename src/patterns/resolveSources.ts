@@ -345,20 +345,17 @@ function resolveSourcesMain(
 	for (let pi = 0; pi < plen; pi++) {
 		const parent = searchDirs[pi]!
 		const relDir = relDirs[pi]!
+		const dirEntries = pi === 0 ? entries : undefined
 
-		const runWithEntries = (dirEntries?: Dirent[]) => {
-			launchDirectoryExtractors(fs, parent, relDir, extractors, dirEntries, (err, dirResults) => {
-				if (resolved) return
-				if (err) {
-					resolved = true
-					return cb(err, null)
-				}
-				for (let ei = 0; ei < elen; ei++) results[pi * elen + ei] = dirResults[ei]
-				checkAll()
-			})
-		}
-
-		runWithEntries(pi === 0 ? entries : undefined)
+		launchDirectoryExtractors(fs, parent, relDir, extractors, dirEntries, (err, dirResults) => {
+			if (resolved) return
+			if (err) {
+				resolved = true
+				return cb(err, null)
+			}
+			for (let ei = 0; ei < elen; ei++) results[pi * elen + ei] = dirResults[ei]
+			checkAll()
+		})
 	}
 
 	if (plen === 0) checkAll()
