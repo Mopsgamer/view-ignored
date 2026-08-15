@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import type { MatcherContext } from "../patterns/matcherContext.js"
+import type { ScanOptions } from "../scan.js"
 import type { Target } from "../targets/target.js"
-import type { ScanOptions } from "../types.js"
 
 import { execSync, spawn } from "node:child_process"
 import { readFileSync, unlinkSync, existsSync } from "node:fs"
@@ -13,16 +13,14 @@ import { gunzipSync } from "node:zlib"
 import pkg from "../../package.json" with { type: "json" }
 import { RuleMatchKind, type RuleMatch } from "../patterns/rule.js"
 import { scan } from "../scan.js"
-import {
-	makeGit,
-	makeNPM,
-	makeBun,
-	makeVSCE,
-	makeDeno,
-	makeJSR,
-	makeYarn,
-	makeYarnClassic,
-} from "../targets/index.js"
+import { makeBun } from "../targets/bun.js"
+import { makeDeno } from "../targets/deno.js"
+import { makeGit } from "../targets/git.js"
+import { makeJSR } from "../targets/jsr.js"
+import { makeNPM } from "../targets/npm.js"
+import { makeVSCE } from "../targets/vsce.js"
+import { makeYarn } from "../targets/yarn.js"
+import { makeYarnClassic } from "../targets/yarnClassic.js"
 import { unixify } from "../unixify.js"
 
 interface CommandSet {
@@ -530,9 +528,13 @@ async function run(
 		systemFiles = parseFn(out).map((f) => unixify(f))
 	} catch (err: unknown) {
 		let msg = err instanceof Error ? err.message : String(err)
-		if (err && typeof err === "object" && "stdout" in err && err.stdout) {
-			const isBuf = Buffer.isBuffer(err.stdout) || typeof err.stdout === "string"
-			msg = isBuf ? err.stdout.toString() : (JSON.stringify(err.stdout) ?? "")
+		if (err && typeof err === "object" && err !== null && "stdout" in err && err.stdout) {
+			const stdoutVal = (err as { stdout: unknown }).stdout
+			msg = Buffer.isBuffer(stdoutVal)
+				? stdoutVal.toString()
+				: typeof stdoutVal === "string"
+					? stdoutVal
+					: String(err)
 		}
 		msg = stripVTControlCharacters(msg)
 

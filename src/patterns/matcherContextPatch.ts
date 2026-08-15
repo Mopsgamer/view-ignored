@@ -1,6 +1,6 @@
 import type { Dirent } from "fs"
 
-import type { ScanOptions } from "../types.js"
+import type { ScanOptions } from "../scan.js"
 import type { MatcherContext } from "./matcherContext.js"
 import type { Resource } from "./resource.js"
 import type { RuleMatch } from "./rule.js"

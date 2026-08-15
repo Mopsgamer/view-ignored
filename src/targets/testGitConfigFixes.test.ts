@@ -1,4 +1,4 @@
-import type { FsAdapter } from "../types.js"
+import type { FsAdapter } from "../scan.js"
 
 import { expect, test } from "bun:test"
 

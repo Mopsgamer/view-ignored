@@ -1,7 +1,7 @@
 import v8 from "node:v8"
 
 import { scan } from "../out/scan.js"
-import * as Targets from "../out/targets/index.js"
+import * as Targets from "../out/targets/git.js"
 
 // Helper to format bytes to MB
 const toMB = (bytes) => (bytes / 1024 / 1024).toFixed(2) + " MB"

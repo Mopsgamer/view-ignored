@@ -2,7 +2,7 @@ import type { MatcherContext, Total } from "./patterns/matcherContext.js"
 import type { MatcherStream } from "./patterns/matcherStream.js"
 import type { Resource } from "./patterns/resource.js"
 import type { RuleMatch } from "./patterns/rule.js"
-import type { ScanOptions, FsAdapter, ScanBrowserOptions } from "./types.js"
+import type { ScanOptions, FsAdapter, ScanBrowserOptions } from "./scan.js"
 
 import { scanParallel, type ScanParallelOptions } from "./scanParallel.js"
 import { unixify } from "./unixify.js"

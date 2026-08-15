@@ -1,6 +1,6 @@
 import type { MatcherContext } from "./patterns/matcherContext.js"
 import type { RuleMatch } from "./patterns/rule.js"
-import type { ScanOptions, FsAdapter, ScanBrowserOptions } from "./types.js"
+import type { ScanOptions, FsAdapter, ScanBrowserOptions } from "./scan.js"
 
 import { expect } from "bun:test"
 import { createFsFromVolume, Volume, type NestedDirectoryJSON } from "memfs"

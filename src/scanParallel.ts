@@ -2,7 +2,7 @@ import type { Dirent, Stats } from "node:fs"
 
 import type { MatcherStream } from "./patterns/matcherStream.js"
 import type { Resource, InvalidSource } from "./patterns/resource.js"
-import type { ScanOptions } from "./types.js"
+import type { ScanOptions } from "./scan.js"
 
 import { resolveSources } from "./patterns/resolveSources.js"
 import { dirname, join } from "./unixify.js"

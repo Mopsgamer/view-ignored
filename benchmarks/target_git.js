@@ -4,7 +4,7 @@ import * as fs from "node:fs"
 
 import { scan as browserScan } from "../out/browser.js"
 import { scan } from "../out/index.js"
-import { makeGit } from "../out/targets/index.js"
+import { makeGit } from "../out/targets/git.js"
 
 // Precache git target rules to avoid data skewing
 makeGit()

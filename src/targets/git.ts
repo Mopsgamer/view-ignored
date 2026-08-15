@@ -1,15 +1,11 @@
-import type { FsAdapter } from "../types.js"
+import type { Extractor } from "../patterns/extractor.js"
+import type { Source } from "../patterns/source.js"
+import type { FsAdapter } from "../scan.js"
 import type { Target } from "./target.js"
 
-import {
-	type Extractor,
-	extractGitignore,
-	ruleTest,
-	ruleCompile,
-	type InternalRules,
-	type Source,
-	type GlobRule,
-} from "../patterns/index.js"
+import { extractGitignore } from "../patterns/gitignore.js"
+import { ruleCompile } from "../patterns/resolveSources.js"
+import { ruleTest, type InternalRules, type GlobRule } from "../patterns/rule.js"
 import { unixify, join, dirname } from "../unixify.js"
 import { HOME, XDG, resolvePath, loadRec, mergeConfig, getCache } from "./gitConfig.js"
 

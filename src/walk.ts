@@ -3,7 +3,7 @@ import type { Dirent } from "node:fs"
 import type { MatcherContext, Total } from "./patterns/matcherContext.js"
 import type { MatcherStream } from "./patterns/matcherStream.js"
 import type { Resource } from "./patterns/resource.js"
-import type { ScanOptions } from "./types.js"
+import type { ScanOptions } from "./scan.js"
 
 import {
 	isRuleMatchInvalid,

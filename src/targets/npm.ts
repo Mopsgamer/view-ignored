@@ -1,13 +1,10 @@
+import type { Extractor } from "../patterns/extractor.js"
 import type { Target } from "./target.js"
 
-import {
-	type Extractor,
-	ruleTest,
-	ruleCompile,
-	extractNpmignore,
-	type InternalRules,
-} from "../patterns/index.js"
+import { extractNpmignore } from "../patterns/npmignore.js"
 import { makePackageJsonExtractor } from "../patterns/packagejson.js"
+import { ruleCompile } from "../patterns/resolveSources.js"
+import { ruleTest, type InternalRules } from "../patterns/rule.js"
 import {
 	createNpmContext,
 	initNpmContext,

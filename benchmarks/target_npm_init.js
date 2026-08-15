@@ -1,7 +1,7 @@
 import { barplot, bench, run, summary } from "mitata"
 import * as fs from "node:fs"
 
-import { makeNPM } from "../out/targets/index.js"
+import { makeNPM } from "../out/targets/npm.js"
 
 const cwd = process.cwd()
 

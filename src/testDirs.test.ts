@@ -1,4 +1,4 @@
-import type { FsAdapter, ScanOptions } from "./types.js"
+import type { FsAdapter, ScanOptions } from "./scan.js"
 
 import { describe, test, expect } from "bun:test"
 import * as nodefs from "node:fs"

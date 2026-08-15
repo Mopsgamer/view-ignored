@@ -1,4 +1,4 @@
-import type { GlobRule } from "./index.js"
+import type { GlobRule } from "./rule.js"
 
 import { describe, test, expect } from "bun:test"
 

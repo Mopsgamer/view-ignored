@@ -61,6 +61,10 @@
 			"types": "./out/stream.d.ts",
 			"default": "./out/stream.js"
 		},
+		"./shared": {
+			"types": "./out/shared.d.ts",
+			"default": "./out/shared.js"
+		},
 		"./browser": {
 			"types": "./out/browser.d.ts",
 			"default": "./out/browser.js"
@@ -73,13 +77,85 @@
 			"types": "./out/browser_stream.d.ts",
 			"default": "./out/browser_stream.js"
 		},
-		"./patterns": {
-			"types": "./out/patterns/index.d.ts",
-			"default": "./out/patterns/index.js"
+		"./targets/bun": {
+			"types": "./out/targets/bun.d.ts",
+			"default": "./out/targets/bun.js"
 		},
-		"./targets": {
-			"types": "./out/targets/index.d.ts",
-			"default": "./out/targets/index.js"
+		"./targets/deno": {
+			"types": "./out/targets/deno.d.ts",
+			"default": "./out/targets/deno.js"
+		},
+		"./targets/git": {
+			"types": "./out/targets/git.d.ts",
+			"default": "./out/targets/git.js"
+		},
+		"./targets/jsr": {
+			"types": "./out/targets/jsr.d.ts",
+			"default": "./out/targets/jsr.js"
+		},
+		"./targets/npm": {
+			"types": "./out/targets/npm.d.ts",
+			"default": "./out/targets/npm.js"
+		},
+		"./targets/target": {
+			"types": "./out/targets/target.d.ts",
+			"default": "./out/targets/target.js"
+		},
+		"./targets/vsce": {
+			"types": "./out/targets/vsce.d.ts",
+			"default": "./out/targets/vsce.js"
+		},
+		"./targets/yarn": {
+			"types": "./out/targets/yarn.d.ts",
+			"default": "./out/targets/yarn.js"
+		},
+		"./targets/yarnClassic": {
+			"types": "./out/targets/yarnClassic.d.ts",
+			"default": "./out/targets/yarnClassic.js"
+		},
+		"./patterns/extractor": {
+			"types": "./out/patterns/extractor.d.ts",
+			"default": "./out/patterns/extractor.js"
+		},
+		"./patterns/gitignore": {
+			"types": "./out/patterns/gitignore.d.ts",
+			"default": "./out/patterns/gitignore.js"
+		},
+		"./patterns/ignores": {
+			"types": "./out/patterns/ignores.d.ts",
+			"default": "./out/patterns/ignores.js"
+		},
+		"./patterns/jsrjson": {
+			"types": "./out/patterns/jsrjson.d.ts",
+			"default": "./out/patterns/jsrjson.js"
+		},
+		"./patterns/matcherContext": {
+			"types": "./out/patterns/matcherContext.d.ts",
+			"default": "./out/patterns/matcherContext.js"
+		},
+		"./patterns/matcherContextPatch": {
+			"types": "./out/patterns/matcherContextPatch.d.ts",
+			"default": "./out/patterns/matcherContextPatch.js"
+		},
+		"./patterns/matcherStream": {
+			"types": "./out/patterns/matcherStream.d.ts",
+			"default": "./out/patterns/matcherStream.js"
+		},
+		"./patterns/npmignore": {
+			"types": "./out/patterns/npmignore.d.ts",
+			"default": "./out/patterns/npmignore.js"
+		},
+		"./patterns/packagejson": {
+			"types": "./out/patterns/packagejson.d.ts",
+			"default": "./out/patterns/packagejson.js"
+		},
+		"./patterns/rule": {
+			"types": "./out/patterns/rule.d.ts",
+			"default": "./out/patterns/rule.js"
+		},
+		"./patterns/source": {
+			"types": "./out/patterns/source.d.ts",
+			"default": "./out/patterns/source.js"
 		}
 	},
 	"publishConfig": {

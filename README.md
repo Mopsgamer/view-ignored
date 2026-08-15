@@ -73,8 +73,8 @@ import * as vign from "view-ignored"
 // also available:
 // "/scan", "/stream"
 // "/browser", "/browser/scan", "/browser/stream"
-import { makeGit } from "view-ignored/targets"
-import { RuleMatchKind } from "view-ignored/patterns"
+import { makeGit } from "view-ignored/targets/git"
+import { RuleMatchKind } from "view-ignored/patterns/rule"
 
 const ctx = await vign.scan({ target: makeGit() })
 ctx.paths.has(".git/HEAD") // false
@@ -93,16 +93,12 @@ You can create custom targets by implementing the `Target` interface.
 This example demonstrates a Docker-like target that caches its compiled glob rules to avoid redundant parsing across runs:
 
 ```ts
-import type { Target } from "view-ignored/targets"
+import type { Target } from "view-ignored/targets/target"
 
-import {
-	type Extractor,
-	extractGitignore,
-	ruleTest,
-	ruleCompile,
-	type InternalRules,
-	type GlobRule,
-} from "view-ignored/patterns"
+import type { Extractor } from "view-ignored/patterns/extractor"
+import { extractGitignore } from "view-ignored/patterns/gitignore"
+import { ruleTest, type InternalRules, type GlobRule } from "view-ignored/patterns/rule"
+import { ruleCompile } from "view-ignored/shared"
 
 let cachedDockerRule: GlobRule | null = null
 
@@ -139,7 +135,7 @@ export function makeDocker(): Target {
 ```ts
 import * as vign from "view-ignored"
 // or import * as vign from "view-ignored/stream"
-import { makeNPM } from "view-ignored/targets"
+import { makeNPM } from "view-ignored/targets/npm"
 
 const stream = vign.scanStream({ target: makeNPM() })
 
@@ -163,7 +159,7 @@ To eliminate dependency on Node.js built-in modules (`node:fs` and `node:process
 ```ts
 import * as vign from "view-ignored/browser"
 // or "/browser/scan"
-import { makeGit } from "view-ignored/targets"
+import { makeGit } from "view-ignored/targets/git"
 import { readFile, readdir } from "original-fs"
 
 export const cwd = process.cwd()
@@ -179,7 +175,10 @@ You can use the built-in context patchers to incrementally update the scan resul
 > Directory paths must have a trailing slash.
 
 ```ts
-import { matcherContextAddPath, matcherContextRemovePath } from "view-ignored/patterns"
+import {
+	matcherContextAddPath,
+	matcherContextRemovePath,
+} from "view-ignored/patterns/matcherContextPatch"
 
 // Handle "created"
 await matcherContextAddPath(ctx, options, "src/new-file.ts")

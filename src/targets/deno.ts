@@ -1,14 +1,10 @@
+import type { Extractor } from "../patterns/extractor.js"
 import type { Target } from "./target.js"
 
-import {
-	type Extractor,
-	ruleTest,
-	type Rule,
-	ruleCompile,
-	extractJsrJson,
-	packageJsonExtractor,
-	type GlobRule,
-} from "../patterns/index.js"
+import { extractJsrJson } from "../patterns/jsrjson.js"
+import { packageJsonExtractor } from "../patterns/packagejson.js"
+import { ruleCompile } from "../patterns/resolveSources.js"
+import { ruleTest, type Rule, type GlobRule } from "../patterns/rule.js"
 import { makeJsrInit } from "./jsrManifest.js"
 
 let cachedDenoRule: GlobRule | null = null

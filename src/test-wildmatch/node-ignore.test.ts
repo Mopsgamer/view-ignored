@@ -3,7 +3,7 @@
 // Reference: https://github.com/kaelzhang/node-ignore/blob/3823b5f14bb16b358397c94172bd5741dd2d7bec/test/fixtures/cases.js
 // Reference: https://github.com/kaelzhang/node-ignore/blob/3823b5f14bb16b358397c94172bd5741dd2d7bec/test/ignore.test.js
 
-import type { FsAdapter } from "../types.js"
+import type { FsAdapter } from "../scan.js"
 
 import { describe, test, expect } from "bun:test"
 import { createFsFromVolume, Volume } from "memfs"

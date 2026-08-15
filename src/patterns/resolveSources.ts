@@ -1,6 +1,6 @@
 import type { Dirent } from "node:fs"
 
-import type { FsAdapter } from "../types.js"
+import type { FsAdapter } from "../scan.js"
 import type { Extractor, ExtractorFn, PatternFinderOptions } from "./extractor.js"
 import type { PatternCompileOptions } from "./patternList.js"
 import type { Resource } from "./resource.js"

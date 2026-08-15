@@ -6,7 +6,7 @@ import packlist from "npm-packlist"
 
 import { scan as browserScan } from "../out/browser.js"
 import { scan } from "../out/index.js"
-import { makeNPM } from "../out/targets/index.js"
+import { makeNPM } from "../out/targets/npm.js"
 
 // Precache npm target rules to avoid data skewing
 makeNPM()

@@ -8,6 +8,8 @@ import type { Source } from "./source.js"
 
 import { type PatternList } from "./patternList.js"
 
+export type { IgnoresOptions } from "./ignores.js"
+
 /**
  * @since 0.12.0
  */

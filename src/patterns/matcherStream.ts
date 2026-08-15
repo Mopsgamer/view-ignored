@@ -1,5 +1,5 @@
 import type { MatcherContext } from "../patterns/matcherContext.js"
-import type { ScanBrowserOptions } from "../types.js"
+import type { ScanBrowserOptions } from "../scan.js"
 import type { EventMap, EventListener, EventListenerObject } from "./matcherStreamTypes.js"
 
 import { browserScanCb } from "../browserScanCb.js"

@@ -1,5 +1,5 @@
 import { scan } from "../out/scan.js"
-import * as Targets from "../out/targets/index.js"
+import * as Targets from "../out/targets/git.js"
 
 const args = process.argv.slice(2)
 const targetFlag = args.find((a) => a.startsWith("--target="))

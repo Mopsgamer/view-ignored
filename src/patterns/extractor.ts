@@ -1,5 +1,5 @@
+import type { FsAdapter } from "../scan.js"
 import type { Target } from "../targets/target.js"
-import type { FsAdapter } from "../types.js"
 import type { Resource } from "./resource.js"
 import type { Source } from "./source.js"
 

@@ -1,9 +1,8 @@
 import type { MatcherContext } from "./patterns/matcherContext.js"
-import type { ScanBrowserOptions } from "./types.js"
+import type { ScanBrowserOptions } from "./scan.js"
 
 import { browserScanCb } from "./browserScanCb.js"
 export { browserScanCb as scanCb } from "./browserScanCb.js"
-export type * from "./types.js"
 
 /**
  * Scan the directory for included files based on the provided targets.

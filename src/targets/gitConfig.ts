@@ -1,6 +1,6 @@
-import type { FsAdapter } from "../types.js"
+import type { FsAdapter } from "../scan.js"
 
-import { patternListCompile } from "../patterns/index.js"
+import { patternListCompile } from "../patterns/patternList.js"
 import { dirname, join, strip } from "../unixify.js"
 
 const enum MatchMode {

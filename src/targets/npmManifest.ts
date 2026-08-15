@@ -1,14 +1,9 @@
 import type { Stats } from "node:fs"
 
-import type {
-	CustomRule,
-	GlobRule,
-	IgnoresOptions,
-	MatcherContext,
-	SkipRule,
-} from "../patterns/index.js"
+import type { MatcherContext } from "../patterns/matcherContext.js"
+import type { CustomRule, GlobRule, IgnoresOptions, SkipRule } from "../patterns/rule.js"
 import type { Source } from "../patterns/source.js"
-import type { FsAdapter } from "../types.js"
+import type { FsAdapter } from "../scan.js"
 import type { Target } from "./target.js"
 
 import glob from "picomatch"

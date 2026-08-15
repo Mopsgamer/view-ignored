@@ -1,11 +1,10 @@
 import type { MatcherStream } from "./patterns/matcherStream.js"
-import type { ScanOptions } from "./types.js"
+import type { ScanOptions } from "./scan.js"
 
 import * as nodefs from "node:fs"
 import * as process from "node:process"
 
 import { scanStream as browserStream } from "./browser_stream.js"
-export type * from "./types.js"
 
 /**
  * Scan the directory for included files based on the provided targets.

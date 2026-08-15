@@ -2,7 +2,7 @@
 // Port of the complete Git wildmatch unit test suite.
 // Reference: https://github.com/git/git/blob/13c7afec212fc97ce257d15601659314c6673d6c/t/t3070-wildmatch.sh
 
-import type { FsAdapter } from "../types.js"
+import type { FsAdapter } from "../scan.js"
 
 import { describe, test, expect } from "bun:test"
 import { createFsFromVolume, Volume } from "memfs"
