@@ -28,8 +28,9 @@ const promIgnores = (options: IgnoresOptions): Promise<RuleMatch> =>
 const promScanParallel = (options: ScanParallelOptions): Promise<WalkResult[] | null> =>
 	new Promise((res, rej) => scanParallel(options, (err, r) => (err ? rej(err) : res(r))))
 
+const ffalse = () => false
+
 function mockDirent(name: string, parentPath: string, isDir: boolean): Dirent {
-	const ffalse = () => false
 	return {
 		isBlockDevice: ffalse,
 		isCharacterDevice: ffalse,
@@ -41,6 +42,16 @@ function mockDirent(name: string, parentPath: string, isDir: boolean): Dirent {
 		name,
 		parentPath,
 	} as Dirent
+}
+
+function isExtractorSource(target: { extractors: { path: string }[] }, entry: string): boolean {
+	const { extractors } = target
+	for (let i = 0; i < extractors.length; i++) {
+		const { path } = extractors[i]!
+		const cleanPath = path.charCodeAt(0) === 46 && path.charCodeAt(1) === 47 ? path.slice(2) : path
+		if (cleanPath === entry) return true
+	}
+	return false
 }
 
 export async function matcherContextAddPath(
@@ -97,9 +108,7 @@ export async function matcherContextAddPath(
 		return added
 	}
 
-	const isSource = target.extractors.some(
-		(e) => (e.path.startsWith("./") ? e.path.slice(2) : e.path) === entry,
-	)
+	const isSource = isExtractorSource(target, entry)
 	if (isSource) {
 		function onResult(result: WalkResult | WalkTotal) {
 			if ("dir" in result) {
@@ -178,7 +187,6 @@ export async function matcherContextRemovePath(
 		return removed
 	}
 	const parentPath = dirname(direntPath)
-	const parentPathDir = parentPath + "/"
 
 	if (isDir) {
 		let deletedDirs = 0,
@@ -222,9 +230,7 @@ export async function matcherContextRemovePath(
 		return removed
 	}
 
-	const isSource = options.target.extractors.some(
-		(e) => (e.path.startsWith("./") ? e.path.slice(2) : e.path) === entry,
-	)
+	const isSource = isExtractorSource(options.target, entry)
 	if (!isSource) {
 		const deleted = ctx.paths.delete(entry)
 		if (deleted) removed.push(entry)
@@ -245,6 +251,7 @@ export async function matcherContextRemovePath(
 		scanOptions: { ...options, within: unixify(parentPath) },
 		stream: undefined,
 	})
+	const parentPathDir = parentPath + "/"
 	removed.push(...(await matcherContextRemovePath(ctx, options, parentPathDir)))
 	await resultPromise
 	propagateTotals(ctx.total)
@@ -258,6 +265,7 @@ function updateTotals(
 	deltaMatchedFiles: number,
 	deltaDirs: number,
 ) {
+	if (deltaFiles === 0 && deltaMatchedFiles === 0 && deltaDirs === 0) return
 	for (let parent = path; ;) {
 		const total = getOrInsert(ctx.total, parent, {
 			totalDirs: 0,
