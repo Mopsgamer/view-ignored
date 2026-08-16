@@ -396,10 +396,7 @@ export function resolveSources(
 	}
 
 	findExtendedRoot(fs, cwd, target.extendsRoot, (err, extRoot) => {
-		if (err) {
-			cb(err, null)
-			return
-		}
+		if (err) return cb(err, null)
 		resolveSourcesMain(options, getLv(cwd, extRoot), cb)
 	})
 }

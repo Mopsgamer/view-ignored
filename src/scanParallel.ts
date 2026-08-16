@@ -236,10 +236,9 @@ export function scanParallel(
 	}
 
 	const handleError = (err: Error) => {
-		if (!state.errorOccurred) {
-			state.errorOccurred = err
-			cb(err, null)
-		}
+		if (state.errorOccurred) return
+		state.errorOccurred = err
+		cb(err, null)
 	}
 
 	const taskDone = () => {
