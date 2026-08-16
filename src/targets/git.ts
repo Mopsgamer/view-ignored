@@ -34,7 +34,7 @@ export function makeGit(): Target {
 	cachedGitRule ||= ruleCompile({
 		compiled: null,
 		excludes: true,
-		list: [".git", ".DS_Store"],
+		list: [".git"],
 	})
 
 	const internal: InternalRules = {
