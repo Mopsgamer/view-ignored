@@ -97,9 +97,7 @@ export function patternListCompile(options: PatternCompileOptions & { list: Patt
 				nonegate: true,
 			})
 			part = isMatchRe.source
-			if (part.startsWith("^") && part.endsWith("$")) {
-				part = part.slice(1, -1)
-			}
+			if (part.startsWith("^") && part.endsWith("$")) part = part.slice(1, -1)
 		} else {
 			part = lowerCleaned.replace(REGEX_SPECIAL_CHARS, "\\$&")
 		}
