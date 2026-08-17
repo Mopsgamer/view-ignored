@@ -76,10 +76,7 @@ export function makeGit(): Target {
 
 				const loadIgnoreFile = (filePath: string, sourcePath: string) => {
 					fs.readFile(filePath, (err, res) => {
-						if (err || !res) {
-							done()
-							return
-						}
+						if (err || !res) return done()
 
 						const source: Source = {
 							inverted: false,
