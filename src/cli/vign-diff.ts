@@ -220,16 +220,28 @@ const TARGETS: Record<string, TargetDef> = {
 						const buffer = gunzipSync(data)
 						let offset = 0
 						while (offset + 512 <= buffer.length) {
-							const name = buffer
-								.subarray(offset, offset + 100)
-								.toString()
-								.replace(/\0/g, "")
-							if (!name) break
+							const nameSub = buffer.subarray(offset, offset + 100)
+							const nameNullIdx = nameSub.indexOf(0)
+							const rawName = (
+								nameNullIdx === -1 ? nameSub : nameSub.subarray(0, nameNullIdx)
+							).toString()
+							if (!rawName) break
+
 							const typeflag = buffer[offset + 156]
+
+							const prefixSub = buffer.subarray(offset + 345, offset + 500)
+							const prefixNullIdx = prefixSub.indexOf(0)
+							const prefix = (
+								prefixNullIdx === -1 ? prefixSub : prefixSub.subarray(0, prefixNullIdx)
+							).toString()
+
+							const name = prefix ? prefix + "/" + rawName : rawName
 							offset += 512
-							const sizeStr = buffer
-								.subarray(offset - 512 + 124, offset - 512 + 124 + 12)
-								.toString()
+							const sizeSub = buffer.subarray(offset - 512 + 124, offset - 512 + 124 + 12)
+							const sizeNullIdx = sizeSub.indexOf(0)
+							const sizeStr = (
+								sizeNullIdx === -1 ? sizeSub : sizeSub.subarray(0, sizeNullIdx)
+							).toString()
 							const size = parseInt(sizeStr, 8)
 							// typeflag '5' (0x35) is directory
 							if (

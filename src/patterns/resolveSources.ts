@@ -7,7 +7,7 @@ import type { Resource } from "./resource.js"
 import type { GlobRule } from "./rule.js"
 import type { Source } from "./source.js"
 
-import { dirname, join } from "../unixify.js"
+import { dirname, join, trimLeadingDotSlash } from "../unixify.js"
 import { patternListCompile } from "./patternList.js"
 
 // Cache for resolved extended roots per cwd and extendsRoot field to avoid redundant filesystem lookups
@@ -175,7 +175,7 @@ function launchExtractor(
 	const isDotSlash = epath.startsWith("./")
 	if (isDotSlash && dir !== "." && dir !== "") return cb(null, null)
 
-	const cleanPath = isDotSlash ? epath.slice(2) : epath
+	const cleanPath = isDotSlash ? trimLeadingDotSlash(epath) : epath
 
 	if (entries_ !== undefined) {
 		const slashIdx = cleanPath.indexOf("/")

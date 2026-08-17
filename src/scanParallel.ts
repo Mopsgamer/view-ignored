@@ -161,15 +161,14 @@ function processEntries(
 		const finish = () => {
 			pendingResults--
 			if (pendingResults === 0 && onResult) {
-				const tot = {
+				onResult({
 					depth,
 					dir: relPath,
 					dirs: dirDirs,
 					files: dirFiles,
 					ignored: false,
 					matched: dirMatched,
-				}
-				onResult(tot)
+				})
 			}
 			taskDone()
 		}

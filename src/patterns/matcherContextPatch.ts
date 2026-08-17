@@ -48,7 +48,7 @@ function isExtractorSource(target: { extractors: { path: string }[] }, entry: st
 	const { extractors } = target
 	for (let i = 0; i < extractors.length; i++) {
 		const { path } = extractors[i]!
-		const cleanPath = path.charCodeAt(0) === 46 && path.charCodeAt(1) === 47 ? path.slice(2) : path
+		const cleanPath = path.startsWith("./") ? path.slice(2) : path
 		if (cleanPath === entry) return true
 	}
 	return false

@@ -1,7 +1,7 @@
 import type { FsAdapter } from "../types.js"
 
 import { patternListCompile } from "../patterns/index.js"
-import { dirname, join, strip } from "../unixify.js"
+import { dirname, join, strip, trimLeadingDotSlash } from "../unixify.js"
 
 const enum MatchMode {
 	normal = 0,
@@ -26,7 +26,7 @@ export function resolvePath(base: string, p: string): string {
 	const resolved = resolveHome(p)
 	const c0 = resolved.charCodeAt(0)
 	if (c0 === 47 || resolved.includes(":")) return resolved
-	const path = c0 === 46 && resolved.charCodeAt(1) === 47 ? resolved.slice(2) : resolved
+	const path = trimLeadingDotSlash(resolved)
 	return join(base, path)
 }
 
