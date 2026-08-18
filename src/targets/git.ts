@@ -38,8 +38,7 @@ export function makeGit(): Target {
 	})
 
 	const internal: InternalRules = {
-		// oxlint-disable-next-line typescript/no-explicit-any
-		after: null as any,
+		after: [],
 		before: [cachedGitRule],
 	}
 
