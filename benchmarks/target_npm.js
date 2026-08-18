@@ -19,6 +19,34 @@ const cwd = process.cwd()
 const arborist = new Arborist({ path: cwd })
 let tree = await arborist.loadActual()
 
+if (!igw) {
+	for (let i = 0; i < 10; i++) {
+		// oxlint-disable-next-line eslint/no-await-in-loop
+		await scan({ cwd, fs, skipInternal: true, target: makeNPM() })
+		// oxlint-disable-next-line eslint/no-await-in-loop
+		await browserScan({ cwd, fs, skipInternal: true, target: makeNPM() })
+		// oxlint-disable-next-line eslint/no-await-in-loop
+		await scan({ cwd, fs, target: makeNPM() })
+		// oxlint-disable-next-line eslint/no-await-in-loop
+		await browserScan({ cwd, fs, target: makeNPM() })
+		// oxlint-disable-next-line eslint/no-await-in-loop
+		await scan({ cwd, fs, invert: true, target: makeNPM() })
+		// oxlint-disable-next-line eslint/no-await-in-loop
+		await browserScan({ cwd, fs, invert: true, target: makeNPM() })
+	}
+}
+if (!vign) {
+	for (let i = 0; i < 5; i++) {
+		// oxlint-disable-next-line eslint/no-await-in-loop
+		await packlist(tree)
+		// oxlint-disable-next-line eslint/no-await-in-loop
+		await walk({ ignoreFiles: [".npmignore", ".gitignore"] })
+		// oxlint-disable-next-line eslint/no-await-in-loop
+		await arborist.loadActual()
+	}
+}
+globalThis.gc?.()
+
 console.log("NPM target benchmark")
 console.log("You can use --igw to test ignore-walk separately")
 console.log("You can use --vign to test view-ignored separately")
@@ -33,7 +61,7 @@ barplot(() => {
 					skipInternal: true,
 					target: makeNPM(),
 				})
-			})
+			}).gc(true)
 		if (!igw)
 			bench("'view-ignored'.browserScan(NPM, skipInternal)", async () => {
 				return browserScan({
@@ -42,15 +70,15 @@ barplot(() => {
 					skipInternal: true,
 					target: makeNPM(),
 				})
-			})
+			}).gc(true)
 		if (!igw)
 			bench("'view-ignored'.scan(NPM)", async () => {
 				return scan({ cwd, fs, target: makeNPM() })
-			})
+			}).gc(true)
 		if (!igw)
 			bench("'view-ignored'.browserScan(NPM)", async () => {
 				return browserScan({ cwd, fs, target: makeNPM() })
-			})
+			}).gc(true)
 		if (!igw)
 			bench("'view-ignored'.scan(NPM, inverted)", async () => {
 				return scan({
@@ -59,7 +87,7 @@ barplot(() => {
 					invert: true,
 					target: makeNPM(),
 				})
-			})
+			}).gc(true)
 		if (!igw)
 			bench("'view-ignored'.browserScan(NPM, inverted)", async () => {
 				return browserScan({
@@ -68,22 +96,22 @@ barplot(() => {
 					invert: true,
 					target: makeNPM(),
 				})
-			})
+			}).gc(true)
 		if (!vign)
 			bench("'npm-packlist'(preparedArbTree)", async () => {
 				return packlist(tree)
-			})
+			}).gc(true)
 		if (!vign)
 			bench("'ignore-walk'.walk(.gitignore, .npmignore)", async () => {
 				return walk({ ignoreFiles: [".npmignore", ".gitignore"] })
-			})
+			}).gc(true)
 	})
 
 	if (!vign) {
 		summary(() => {
 			bench("'npmcli/arborist'.loadActual()", async () => {
 				return arborist.loadActual()
-			})
+			}).gc(true)
 		})
 	}
 })

@@ -6,23 +6,24 @@ import { makeNPM } from "../out/targets/index.js"
 const cwd = process.cwd()
 
 // Precache npm target rules to avoid data skewing
-await new Promise((resolve) => {
-	const target = makeNPM()
-	target.init({ cwd, fs, signal: null, target }, resolve)
-})
-
-const npmInitPromise = Object.create(Promise.prototype)
-// oxlint-disable-next-line unicorn/no-thenable
-npmInitPromise.then = function then(resolve) {
-	const target = makeNPM()
-	target.init({ cwd, fs, signal: null, target }, resolve)
+for (let i = 0; i < 50; i++) {
+	// oxlint-disable-next-line eslint/no-await-in-loop
+	await new Promise((resolve) => {
+		const target = makeNPM()
+		target.init({ cwd, fs, signal: null, target }, resolve)
+	})
 }
+globalThis.gc?.()
 
 console.log("NPM Init benchmark")
 
 barplot(() => {
 	summary(() => {
-		bench("'view-ignored'.NPM.init", () => npmInitPromise)
+		bench("'view-ignored'.NPM.init", () =>
+			new Promise((resolve) => {
+				const target = makeNPM()
+				target.init({ cwd, fs, signal: null, target }, resolve)
+			})).gc(true)
 	})
 })
 

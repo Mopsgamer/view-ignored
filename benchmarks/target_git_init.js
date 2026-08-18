@@ -6,23 +6,24 @@ import { makeGit } from "../out/targets/index.js"
 const cwd = process.cwd()
 
 // Precache git target rules to avoid data skewing
-await new Promise((resolve) => {
-	const target = makeGit()
-	target.init({ cwd, fs, signal: null, target }, resolve)
-})
-
-const gitInitPromise = Object.create(Promise.prototype)
-// oxlint-disable-next-line unicorn/no-thenable
-gitInitPromise.then = function then(resolve) {
-	const target = makeGit()
-	target.init({ cwd, fs, signal: null, target }, resolve)
+for (let i = 0; i < 50; i++) {
+	// oxlint-disable-next-line eslint/no-await-in-loop
+	await new Promise((resolve) => {
+		const target = makeGit()
+		target.init({ cwd, fs, signal: null, target }, resolve)
+	})
 }
+globalThis.gc?.()
 
 console.log("Git Init benchmark")
 
 barplot(() => {
 	summary(() => {
-		bench("'view-ignored'.Git.init", () => gitInitPromise)
+		bench("'view-ignored'.Git.init", () =>
+			new Promise((resolve) => {
+				const target = makeGit()
+				target.init({ cwd, fs, signal: null, target }, resolve)
+			})).gc(true)
 	})
 })
 

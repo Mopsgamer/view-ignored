@@ -13,6 +13,27 @@ const igw = process.argv.includes("--igw")
 const vign = process.argv.includes("--vign")
 const cwd = process.cwd()
 
+if (!igw) {
+	for (let i = 0; i < 10; i++) {
+		// oxlint-disable-next-line eslint/no-await-in-loop
+		await scan({ cwd, fs, skipInternal: true, target: makeGit() })
+		// oxlint-disable-next-line eslint/no-await-in-loop
+		await browserScan({ cwd, fs, skipInternal: true, target: makeGit() })
+		// oxlint-disable-next-line eslint/no-await-in-loop
+		await scan({ cwd, fs, target: makeGit() })
+		// oxlint-disable-next-line eslint/no-await-in-loop
+		await browserScan({ cwd, fs, target: makeGit() })
+		// oxlint-disable-next-line eslint/no-await-in-loop
+		await scan({ cwd, fs, invert: true, target: makeGit() })
+		// oxlint-disable-next-line eslint/no-await-in-loop
+		await browserScan({ cwd, fs, invert: true, target: makeGit() })
+	}
+}
+if (!vign) {
+	await walk({ ignoreFiles: [".gitignore"] })
+}
+globalThis.gc?.()
+
 console.log("Git target benchmark")
 console.log("You can use --igw to test ignore-walk separately")
 console.log("You can use --vign to test view-ignored separately")
@@ -27,7 +48,7 @@ barplot(() => {
 					skipInternal: true,
 					target: makeGit(),
 				})
-			})
+			}).gc(true)
 		if (!igw)
 			bench("'view-ignored'.browserScan(Git, skipInternal)", async () => {
 				return browserScan({
@@ -36,15 +57,15 @@ barplot(() => {
 					skipInternal: true,
 					target: makeGit(),
 				})
-			})
+			}).gc(true)
 		if (!igw)
 			bench("'view-ignored'.scan(Git)", async () => {
 				return scan({ cwd, fs, target: makeGit() })
-			})
+			}).gc(true)
 		if (!igw)
 			bench("'view-ignored'.browserScan(Git)", async () => {
 				return browserScan({ cwd, fs, target: makeGit() })
-			})
+			}).gc(true)
 		if (!igw)
 			bench("'view-ignored'.scan(Git, inverted)", async () => {
 				return scan({
@@ -53,7 +74,7 @@ barplot(() => {
 					invert: true,
 					target: makeGit(),
 				})
-			})
+			}).gc(true)
 		if (!igw)
 			bench("'view-ignored'.browserScan(Git, inverted)", async () => {
 				return browserScan({
@@ -62,11 +83,11 @@ barplot(() => {
 					invert: true,
 					target: makeGit(),
 				})
-			})
+			}).gc(true)
 		if (!vign)
 			bench("'ignore-walk'.walk(.gitignore)", async () => {
 				return walk({ ignoreFiles: [".gitignore"] })
-			})
+			}).gc(true)
 	})
 })
 

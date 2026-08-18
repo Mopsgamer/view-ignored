@@ -46,6 +46,7 @@ export function makeGit(): Target {
 		extractors,
 		ignores: ruleTest,
 		init({ fs, cwd, signal, target }, cb) {
+			internal.after = []
 			const nCwd = unixify(cwd)
 
 			// Loads standard user excludes and repository-specific info/exclude patterns, mirroring Git's setup_standard_excludes function.
