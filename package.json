@@ -86,7 +86,7 @@
 		"access": "public"
 	},
 	"scripts": {
-		"prerelease": "bun check && bun run test && bun run prod && bun run lint && bun run fmt --check && bun run ts-compat && bun run node-compat && bun publint --pack bun --strict && bun run badges --check",
+		"prerelease": "bun check && bun run test && bun run prod && bun run lint && bun run fmt --check && bun run ts-compat && bun run node-compat && bun publint --pack npm --strict && bun run badges --check",
 		"heap": "bun scripts/scanHeap.js --snapshot",
 		"heap:node": "node scripts/scanHeap.js --snapshot",
 		"cpu": "bun run --expose-gc --cpu-prof --cpu-prof-md --cpu-prof-name CPU.me scripts/scan.js --skipInternal",

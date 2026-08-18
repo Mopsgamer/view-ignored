@@ -290,11 +290,17 @@ function compareBenchmarks(current, base) {
 			const low = diffPercent - half
 			const high = diffPercent + half
 
+			const absDeltaNs = Math.abs(currStats.mean - baseStats.mean)
+			const currRsd = currStats.mean > 0 ? currStats.stdDev / currStats.mean : 0
+			const baseRsd = baseStats.mean > 0 ? baseStats.stdDev / baseStats.mean : 0
+			const isStable = currRsd <= 0.15 && baseRsd <= 0.15 && half < 10
+			const allowEmoji = isSig && isStable && absDeltaNs >= 1000
+
 			if (diffPercent > 0) {
-				if (isSig && diffPercent >= 10) emoji = "💩"
+				if (allowEmoji && diffPercent >= 10) emoji = "💩"
 				ratioStr = ` +${diffPercent.toFixed(1)}% (${low.toFixed(1)}% … ${high.toFixed(1)}%)`
 			} else if (diffPercent < 0) {
-				if (isSig && diffPercent <= -10) emoji = "⚡"
+				if (allowEmoji && diffPercent <= -10) emoji = "⚡"
 				ratioStr = ` -${Math.abs(diffPercent).toFixed(1)}% (${low.toFixed(1)}% … ${high.toFixed(1)}%)`
 			} else {
 				diffPercent = 0
