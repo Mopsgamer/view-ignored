@@ -6,3 +6,7 @@ dist
 CPU.*.*
 HEAP.*.*
 coverage
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+deno.lock
