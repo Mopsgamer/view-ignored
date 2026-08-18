@@ -35,7 +35,7 @@ describe("Yarn Classic", () => {
 				".npm-extension.mjs": "export {}\n",
 				lib: { "index.js": "" },
 				"package.json": JSON.stringify({
-					files: ["lib", ".npm-extension.mjs", ".npm-extension.cjs"],
+					files: [".npm-extension.cjs", ".npm-extension.mjs", "lib"],
 					name: "yarn-classic-test",
 					version: "1.0.0",
 				}),

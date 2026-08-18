@@ -38,7 +38,8 @@ export function makeGit(): Target {
 	})
 
 	const internal: InternalRules = {
-		after: [],
+		// oxlint-disable-next-line typescript/no-explicit-any
+		after: null as any,
 		before: [cachedGitRule],
 	}
 
@@ -46,7 +47,6 @@ export function makeGit(): Target {
 		extractors,
 		ignores: ruleTest,
 		init({ fs, cwd, signal, target }, cb) {
-			internal.after = []
 			const nCwd = unixify(cwd)
 
 			// Loads standard user excludes and repository-specific info/exclude patterns, mirroring Git's setup_standard_excludes function.
@@ -85,7 +85,7 @@ export function makeGit(): Target {
 							rules: [],
 						}
 						extractGitignore(source, res, { nocase: ignorecase })
-						internal.after.push(...source.rules)
+						internal.after = source.rules
 						done()
 					})
 				}
