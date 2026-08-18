@@ -29,7 +29,7 @@
 	},
 	"overrides": [
 		{
-			"files": ["src/test-npm-packlist/**/*.ts"],
+			"files": ["src/test-npm-packlist/**/*.ts", "src/targets/**/*.test.ts"],
 			"rules": {
 				"sort-keys": "off"
 			}

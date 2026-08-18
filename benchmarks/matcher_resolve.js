@@ -12,6 +12,25 @@ const cwd = unixify(process.cwd())
 const target = makeNPM()
 const external = new Map()
 
+// Warmup loop to stabilize CPU frequency and JIT compilation
+for (let i = 0; i < 20; i++) {
+	external.clear()
+	// oxlint-disable-next-line eslint/no-await-in-loop
+	await new Promise((resolve, reject) => {
+		resolveSources({ cwd, dir: ".", external, fs, signal: null, target }, (err, res) =>
+			err ? reject(err) : resolve(res),
+		)
+	})
+	external.clear()
+	// oxlint-disable-next-line eslint/no-await-in-loop
+	await new Promise((resolve, reject) => {
+		resolveSources({ cwd, dir: "src/patterns", external, fs, signal: null, target }, (err, res) =>
+			err ? reject(err) : resolve(res),
+		)
+	})
+}
+globalThis.gc?.()
+
 barplot(() => {
 	summary(async () => {
 		bench("resolveSources (uncached, root)", async () => {
@@ -31,18 +50,20 @@ barplot(() => {
 			})
 		})
 
-		bench("resolveSources (cached, root)", () => {
-			resolveSources(
-				{
-					cwd,
-					dir: ".",
-					external,
-					fs,
-					signal: null,
-					target,
-				},
-				() => {},
-			)
+		bench("resolveSources (cached, root)", (state) => {
+			for (const _ of state) {
+				resolveSources(
+					{
+						cwd,
+						dir: ".",
+						external,
+						fs,
+						signal: null,
+						target,
+					},
+					() => {},
+				)
+			}
 		})
 
 		bench("resolveSources (uncached, deep)", async () => {
@@ -62,18 +83,20 @@ barplot(() => {
 			})
 		})
 
-		bench("resolveSources (cached, deep)", () => {
-			resolveSources(
-				{
-					cwd,
-					dir: "src/patterns",
-					external,
-					fs,
-					signal: null,
-					target,
-				},
-				() => {},
-			)
+		bench("resolveSources (cached, deep)", (state) => {
+			for (const _ of state) {
+				resolveSources(
+					{
+						cwd,
+						dir: "src/patterns",
+						external,
+						fs,
+						signal: null,
+						target,
+					},
+					() => {},
+				)
+			}
 		})
 	})
 })

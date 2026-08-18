@@ -84,7 +84,7 @@ export function makeGit(): Target {
 							rules: [],
 						}
 						extractGitignore(source, res, { nocase: ignorecase })
-						internal.after.push(...source.rules)
+						internal.after = source.rules
 						done()
 					})
 				}

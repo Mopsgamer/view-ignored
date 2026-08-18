@@ -38,30 +38,52 @@ const pathToAdd = "src/walk.ts"
 const dirToRem = "src/patterns/"
 const dirToAdd = "src/patterns/"
 
+// Warmup loop to stabilize CPU frequency and JIT compilation
+const warmupEnd = Date.now() + 100
+while (Date.now() < warmupEnd) {
+	// oxlint-disable-next-line eslint/no-await-in-loop
+	await matcherContextRemovePath(ctx, options, pathToRem)
+	// oxlint-disable-next-line eslint/no-await-in-loop
+	await matcherContextAddPath(ctx, options, pathToAdd)
+}
+globalThis.gc?.()
+
 barplot(() => {
 	summary(async () => {
-		bench("matcherContextRemovePath (file)", async () => {
-			await matcherContextRemovePath(ctx, options, pathToRem)
-			// add it back for next iteration
-			await matcherContextAddPath(ctx, options, pathToRem)
+		bench("matcherContextRemovePath (file)", async (state) => {
+			for (const _ of state) {
+				// oxlint-disable-next-line eslint/no-await-in-loop
+				await matcherContextRemovePath(ctx, options, pathToRem)
+				// oxlint-disable-next-line eslint/no-await-in-loop
+				await matcherContextAddPath(ctx, options, pathToRem)
+			}
 		})
 
-		bench("matcherContextAddPath (file)", async () => {
-			// Ensure it's removed first
-			await matcherContextRemovePath(ctx, options, pathToRem)
-			await matcherContextAddPath(ctx, options, pathToAdd)
+		bench("matcherContextAddPath (file)", async (state) => {
+			for (const _ of state) {
+				// oxlint-disable-next-line eslint/no-await-in-loop
+				await matcherContextRemovePath(ctx, options, pathToRem)
+				// oxlint-disable-next-line eslint/no-await-in-loop
+				await matcherContextAddPath(ctx, options, pathToAdd)
+			}
 		})
 
-		bench("matcherContextRemovePath (dir)", async () => {
-			await matcherContextRemovePath(ctx, options, dirToRem)
-			// add it back for next iteration
-			await matcherContextAddPath(ctx, options, dirToAdd)
+		bench("matcherContextRemovePath (dir)", async (state) => {
+			for (const _ of state) {
+				// oxlint-disable-next-line eslint/no-await-in-loop
+				await matcherContextRemovePath(ctx, options, dirToRem)
+				// oxlint-disable-next-line eslint/no-await-in-loop
+				await matcherContextAddPath(ctx, options, dirToAdd)
+			}
 		})
 
-		bench("matcherContextAddPath (dir)", async () => {
-			// Ensure it's removed first
-			await matcherContextRemovePath(ctx, options, dirToRem)
-			await matcherContextAddPath(ctx, options, dirToAdd)
+		bench("matcherContextAddPath (dir)", async (state) => {
+			for (const _ of state) {
+				// oxlint-disable-next-line eslint/no-await-in-loop
+				await matcherContextRemovePath(ctx, options, dirToRem)
+				// oxlint-disable-next-line eslint/no-await-in-loop
+				await matcherContextAddPath(ctx, options, dirToAdd)
+			}
 		})
 	})
 })

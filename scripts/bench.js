@@ -102,94 +102,100 @@ function tryParseBenchmarkChunk(chunk, actualEnd, fileResults) {
 	}
 }
 
-async function runBenchmarks() {
-	const results = []
-	const needsTable = values.diff || values.out || values.now
+function combineResults(res1, res2) {
+	if (!res1 || res1.length === 0) return res2 || []
+	if (!res2 || res2.length === 0) return res1 || []
 
-	if (!needsTable) {
-		for (const file of benchmarkFiles) {
-			console.log(`\nRunning ${file} ${forwardArgs.join(" ")}`)
-			try {
-				const cmd = values.node
-					? $`node --expose-gc ${file} ${forwardArgs}`
-					: $`bun --expose-gc ${file} ${forwardArgs}`
-				// oxlint-disable-next-line no-await-in-loop
-				await cmd
-			} catch {
-				process.exitCode = 1
+	const combined = JSON.parse(JSON.stringify(res1))
+	for (const group2 of res2) {
+		const matchingGroup1 = combined.find((g1) => g1.name === group2.name)
+		if (!matchingGroup1 || !matchingGroup1.benchmarks) continue
+
+		for (const b2 of group2.benchmarks || []) {
+			const b2Name = b2.name || b2.alias
+			const matchingB1 = matchingGroup1.benchmarks.find((b1) => (b1.name || b1.alias) === b2Name)
+			if (!matchingB1) continue
+
+			const samples1 = matchingB1.stats?.samples || matchingB1.runs?.[0]?.stats?.samples
+			const samples2 = b2.stats?.samples || b2.runs?.[0]?.stats?.samples
+
+			if (samples1 && samples2) {
+				const mergedSamples = [...samples1, ...samples2]
+				if (matchingB1.stats) matchingB1.stats.samples = mergedSamples
+				else if (matchingB1.runs?.[0]?.stats) matchingB1.runs[0].stats.samples = mergedSamples
 			}
-		}
-		return results
-	}
-
-	const extraArgs = ["--json", ...forwardArgs]
-	for (const file of benchmarkFiles) {
-		if (!fs.existsSync(file)) {
-			process.stderr.write(`Skipping ${file} (not found)\n`)
-			continue
-		}
-		process.stderr.write(`Running ${file} ${extraArgs.join(" ")}...\n`)
-		try {
-			const cmd = values.node
-				? $`node --expose-gc ${file} ${extraArgs}`.quiet()
-				: $`bun --expose-gc ${file} ${extraArgs}`.quiet()
-
-			// oxlint-disable-next-line no-await-in-loop
-			const out = await cmd.text()
-			const startIdx = out.indexOf('{"layout":')
-			if (startIdx !== -1) {
-				const jsonContent = out.substring(startIdx)
-				const regex = /\{"layout":/g
-				let match
-				const indices = []
-				while ((match = regex.exec(jsonContent)) !== null) {
-					indices.push(match.index)
-				}
-
-				const fileResults = []
-				for (let i = 0; i < indices.length; i++) {
-					const start = indices[i]
-					const end = i + 1 < indices.length ? indices[i + 1] : jsonContent.length
-					const chunk = jsonContent.substring(start, end).trim()
-
-					const actualEnd = findActualEnd(chunk)
-					tryParseBenchmarkChunk(chunk, actualEnd, fileResults)
-				}
-				results.push({ file, results: fileResults })
-			}
-
-			if (results.length === 0 || results[results.length - 1].results.length === 0) {
-				process.stderr.write(`No JSON found in output of ${file}\n`)
-			}
-		} catch (e) {
-			process.stderr.write(`Failed to run ${file}: ${e}\n`)
-			process.exitCode = 1
-			return results
 		}
 	}
-	return results
+	return combined
+}
+
+async function runBenchmarkFile(file, extraArgs = []) {
+	if (!fs.existsSync(file)) {
+		process.stderr.write(`Skipping ${file} (not found)\n`)
+		return []
+	}
+	process.stderr.write(`Running ${file} ${extraArgs.join(" ")}...\n`)
+	try {
+		const cmd = values.node
+			? $`node --expose-gc ${file} ${extraArgs}`.quiet()
+			: $`bun --expose-gc ${file} ${extraArgs}`.quiet()
+
+		// oxlint-disable-next-line no-await-in-loop
+		const out = await cmd.text()
+		const startIdx = out.indexOf('{"layout":')
+		if (startIdx !== -1) {
+			const jsonContent = out.substring(startIdx)
+			const regex = /\{"layout":/g
+			let match
+			const indices = []
+			while ((match = regex.exec(jsonContent)) !== null) {
+				indices.push(match.index)
+			}
+
+			const fileResults = []
+			for (let i = 0; i < indices.length; i++) {
+				const start = indices[i]
+				const end = i + 1 < indices.length ? indices[i + 1] : jsonContent.length
+				const chunk = jsonContent.substring(start, end).trim()
+
+				const actualEnd = findActualEnd(chunk)
+				tryParseBenchmarkChunk(chunk, actualEnd, fileResults)
+			}
+			return fileResults
+		}
+	} catch (e) {
+		process.stderr.write(`Failed to run ${file}: ${e}\n`)
+		process.exitCode = 1
+	}
+	return []
 }
 
 function getStats(samples) {
-	samples.sort((a, b) => a - b)
-	const n = samples.length
-	const mean = samples.reduce((a, b) => a + b, 0) / n
-	const sqDiff = samples.map((x) => (x - mean) ** 2)
-	const stdDev = Math.sqrt(sqDiff.reduce((a, b) => a + b, 0) / Math.max(1, n - 1)) || 0
+	const sorted = samples.slice().sort((a, b) => a - b)
+	const n = sorted.length
+	if (n === 0)
+		return { max: 0, mean: 0, min: 0, outliers: 0, sampleCount: 0, samples: [], stdDev: 0 }
 
-	const q1 = samples[Math.floor(n * 0.25)] || 0
-	const q3 = samples[Math.floor(n * 0.75)] || 0
+	const q1 = sorted[Math.floor(n * 0.25)] || 0
+	const q3 = sorted[Math.floor(n * 0.75)] || 0
 	const iqr = q3 - q1
 	const low = q1 - 1.5 * iqr
 	const high = q3 + 1.5 * iqr
-	const outliers = samples.filter((x) => x < low || x > high).length
+
+	const valid = sorted.filter((x) => x >= low && x <= high)
+	const useList = valid.length > 0 ? valid : sorted
+	const vN = useList.length
+	const mean = useList.reduce((a, b) => a + b, 0) / vN
+	const sqDiff = useList.map((x) => (x - mean) ** 2)
+	const stdDev = Math.sqrt(sqDiff.reduce((a, b) => a + b, 0) / Math.max(1, vN - 1)) || 0
 
 	return {
-		max: samples[n - 1] || 0,
+		max: sorted[n - 1] || 0,
 		mean,
-		min: samples[0] || 0,
-		outliers,
+		min: sorted[0] || 0,
+		outliers: n - valid.length,
 		sampleCount: n,
+		samples,
 		stdDev,
 	}
 }
@@ -287,9 +293,12 @@ function compareBenchmarks(current, base) {
 			if (diffPercent > 0) {
 				if (isSig && diffPercent >= 10) emoji = "💩"
 				ratioStr = ` +${diffPercent.toFixed(1)}% (${low.toFixed(1)}% … ${high.toFixed(1)}%)`
-			} else {
+			} else if (diffPercent < 0) {
 				if (isSig && diffPercent <= -10) emoji = "⚡"
 				ratioStr = ` -${Math.abs(diffPercent).toFixed(1)}% (${low.toFixed(1)}% … ${high.toFixed(1)}%)`
+			} else {
+				diffPercent = 0
+				ratioStr = ` 0.0% (${low.toFixed(1)}% … ${high.toFixed(1)}%)`
 			}
 		}
 
@@ -438,51 +447,50 @@ function getTable(rows, isTerminal) {
 	return out
 }
 
-if (values.diff && !values.now) {
-	try {
-		process.stderr.write(`Building current branch...\n`)
-		const build = await $`bun install && bun run prod`.nothrow().quiet()
-		if (build.exitCode !== 0) {
-			process.stderr.write(`Failed to build current branch\n`)
-			process.exit(1)
+const needsTable = values.diff || values.out || values.now
+
+if (!needsTable) {
+	for (const file of benchmarkFiles) {
+		console.log(`\nRunning ${file} ${forwardArgs.join(" ")}`)
+		try {
+			const cmd = values.node
+				? $`node --expose-gc ${file} ${forwardArgs}`
+				: $`bun --expose-gc ${file} ${forwardArgs}`
+			// oxlint-disable-next-line eslint/no-await-in-loop
+			await cmd
+		} catch {
+			process.exitCode = 1
 		}
-	} catch (e) {
-		process.stderr.write(`Failed to build current branch: ${e}\n`)
-		process.exit(1)
 	}
+	process.exit(process.exitCode || 0)
 }
 
-let currentResults
-if (values.now) {
-	currentResults = [
-		{
-			file: "benchmarks/git.js",
-			results: [
-				{
-					benchmarks: [
-						{
-							name: "test1",
-							runs: [{ stats: { samples: [100, 110, 120] } }],
-						},
-						{
-							name: "test-speedup",
-							runs: [{ stats: { samples: [50, 55, 60] } }],
-						},
-						{
-							name: "test-slowdown",
-							runs: [{ stats: { samples: [200, 210, 220] } }],
-						},
-					],
-				},
-			],
-		},
-	]
-} else {
-	currentResults = await runBenchmarks()
-}
-
+const currentResults = []
 let baseResults = null
+
 if (values.now) {
+	currentResults.push({
+		file: "benchmarks/git.js",
+		results: [
+			{
+				benchmarks: [
+					{
+						name: "test1",
+						runs: [{ stats: { samples: [100, 110, 120] } }],
+					},
+					{
+						name: "test-speedup",
+						runs: [{ stats: { samples: [50, 55, 60] } }],
+					},
+					{
+						name: "test-slowdown",
+						runs: [{ stats: { samples: [200, 210, 220] } }],
+					},
+				],
+			},
+		],
+	})
+
 	baseResults = [
 		{
 			file: "benchmarks/git.js",
@@ -507,38 +515,74 @@ if (values.now) {
 		},
 	]
 } else if (values.diff) {
-	const tmpDir = path.join(os.tmpdir(), `view-ignored-bench-${Date.now()}`)
+	baseResults = []
+	const tmpDirCurr = path.join(os.tmpdir(), `view-ignored-bench-curr-${Date.now()}`)
+	const tmpDirBase = path.join(os.tmpdir(), `view-ignored-bench-base-${Date.now()}`)
 
 	try {
-		process.stderr.write(`Creating local worktree for ${values.diff}...\n`)
-		const worktreeAdd = await $`git worktree add --detach ${tmpDir} ${values.diff}`
+		process.stderr.write(`Creating worktree for current branch...\n`)
+		const currWorktree = await $`git worktree add --detach ${tmpDirCurr} HEAD`.nothrow().quiet()
+		if (currWorktree.exitCode !== 0) {
+			throw new Error(`Failed to create worktree for current branch`)
+		}
+
+		const currBuild = await $`cd ${tmpDirCurr} && bun install && bun run prod`.nothrow().quiet()
+		if (currBuild.exitCode !== 0) {
+			throw new Error(`Failed to build current branch`)
+		}
+
+		process.stderr.write(`Creating worktree for ${values.diff}...\n`)
+		const baseWorktree = await $`git worktree add --detach ${tmpDirBase} ${values.diff}`
 			.nothrow()
 			.quiet()
 
-		if (worktreeAdd.exitCode !== 0) {
+		if (baseWorktree.exitCode !== 0) {
 			throw new Error(`Failed to create worktree for ${values.diff}`)
 		}
 
-		const worktreeBuild = await $`cd ${tmpDir} && bun install && bun run prod`.nothrow().quiet()
+		const baseBuild = await $`cd ${tmpDirBase} && bun install && bun run prod`.nothrow().quiet()
 
-		if (worktreeBuild.exitCode !== 0) {
+		if (baseBuild.exitCode !== 0) {
 			throw new Error(`Failed to build worktree for ${values.diff}`)
 		}
 
-		const originalFiles = [...benchmarkFiles]
-		benchmarkFiles.length = 0
-		benchmarkFiles.push(...originalFiles.map((f) => path.join(tmpDir, f)))
+		try {
+			const extraArgs = ["--json", ...forwardArgs]
+			for (const file of benchmarkFiles) {
+				const currFile = path.join(tmpDirCurr, file)
+				const baseFile = path.join(tmpDirBase, file)
 
-		baseResults = await runBenchmarks()
+				// ABAB interleaved execution to balance process position and cache state
+				// oxlint-disable-next-line eslint/no-await-in-loop
+				const curr1 = await runBenchmarkFile(currFile, extraArgs)
+				// oxlint-disable-next-line eslint/no-await-in-loop
+				const base1 = await runBenchmarkFile(baseFile, extraArgs)
+				// oxlint-disable-next-line eslint/no-await-in-loop
+				const curr2 = await runBenchmarkFile(currFile, extraArgs)
+				// oxlint-disable-next-line eslint/no-await-in-loop
+				const base2 = await runBenchmarkFile(baseFile, extraArgs)
 
-		benchmarkFiles.length = 0
-		benchmarkFiles.push(...originalFiles)
+				const combinedCurr = combineResults(curr1, curr2)
+				const combinedBase = combineResults(base1, base2)
+
+				currentResults.push({ file: currFile, results: combinedCurr })
+				baseResults.push({ file: baseFile, results: combinedBase })
+			}
+		} finally {
+			process.stderr.write(`Cleaning up local worktrees...\n`)
+			await $`git worktree remove --force ${tmpDirCurr}`.nothrow().quiet()
+			await $`git worktree remove --force ${tmpDirBase}`.nothrow().quiet()
+		}
 	} catch (e) {
 		process.stderr.write(`${e.message || e}\n`)
 		process.exitCode = 1
-	} finally {
-		process.stderr.write(`Cleaning up local worktree...\n`)
-		await $`git worktree remove --force ${tmpDir}`.nothrow().quiet()
+	}
+} else {
+	const extraArgs = ["--json", ...forwardArgs]
+	for (const file of benchmarkFiles) {
+		// oxlint-disable-next-line eslint/no-await-in-loop
+		const currRes = await runBenchmarkFile(file, extraArgs)
+		currentResults.push({ file, results: currRes })
 	}
 }
 
