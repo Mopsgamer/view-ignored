@@ -9,6 +9,7 @@ and this project adheres to
 ## [Unreleased]
 
 - Do not ignore `.DS_Store` automatically.
+- Handle Classic Yarn correctly (dotignore files).
 
 ## [0.12.1] - 2026-08-15
 

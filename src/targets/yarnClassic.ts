@@ -3,9 +3,9 @@ import type { Target } from "./target.js"
 import {
 	type Extractor,
 	ruleTest,
-	type Rule,
 	ruleCompile,
 	type GlobRule,
+	type InternalRules,
 } from "../patterns/index.js"
 import { makePackageJsonExtractor } from "../patterns/packagejson.js"
 import {
@@ -19,6 +19,7 @@ import {
 	extractNoCaseNpmignore,
 } from "./npmManifest.js"
 
+let cachedYarnClassicAfterExcludesRule: GlobRule | null = null
 let cachedYarnClassicExcludesRule: GlobRule | null = null
 let cachedYarnClassicIncludesRule: GlobRule | null = null
 
@@ -48,6 +49,15 @@ export function makeYarnClassic(mode: "list" | "publish" | "bundle" = "publish")
 			path: ".gitignore",
 		},
 	]
+
+	cachedYarnClassicAfterExcludesRule ||= ruleCompile(
+		{
+			compiled: null,
+			excludes: true,
+			list: [".npmignore", ".gitignore"],
+		},
+		{ nocase: true },
+	)
 
 	cachedYarnClassicExcludesRule ||= ruleCompile(
 		{
@@ -82,8 +92,6 @@ export function makeYarnClassic(mode: "list" | "publish" | "bundle" = "publish")
 				".npmrc",
 				".yarnrc",
 				".yarnrc.yml",
-				".npmignore",
-				".gitignore",
 				".DS_Store",
 				"/.npm-extension.mjs",
 				"/.npm-extension.cjs",
@@ -111,16 +119,19 @@ export function makeYarnClassic(mode: "list" | "publish" | "bundle" = "publish")
 		{ nocase: true },
 	)
 
-	const internal: Rule[] = [
-		makeBundledDepsRule(ctx, makeYarnClassic),
-		makePackageResolutionRule(ctx),
-		symlinkRule,
-		makePatchedDepsRule(ctx),
-		ctx.npmIgnoreExcludeGlobRule,
-		makeDirectPathsRule(ctx.directPathsInclude),
-		cachedYarnClassicExcludesRule,
-		cachedYarnClassicIncludesRule,
-	]
+	const internal: InternalRules = {
+		after: [cachedYarnClassicAfterExcludesRule],
+		before: [
+			makeBundledDepsRule(ctx, makeYarnClassic),
+			makePackageResolutionRule(ctx),
+			symlinkRule,
+			makePatchedDepsRule(ctx),
+			ctx.npmIgnoreExcludeGlobRule,
+			makeDirectPathsRule(ctx.directPathsInclude),
+			cachedYarnClassicExcludesRule,
+			cachedYarnClassicIncludesRule,
+		],
+	}
 
 	return {
 		extendsRoot: "workspaces",

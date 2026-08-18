@@ -27,6 +27,21 @@ describe("Yarn Classic", () => {
 		)
 	})
 
+	test("excludes .gitignore and .npmignore after evaluating nested rules", async (done) => {
+		await testScan(
+			done,
+			{
+				sub: {
+					".gitignore": "*\n!file.txt",
+					"file.txt": "hello",
+				},
+				"package.json": packageJson,
+			},
+			["package.json", "sub/file.txt"],
+			{ dirs: false, target: makeYarnClassic() },
+		)
+	})
+
 	test("excludes .npm-extension files", async (done) => {
 		await testScan(
 			done,
