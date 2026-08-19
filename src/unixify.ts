@@ -74,12 +74,14 @@ export function isWhitespace(code: number): boolean {
 	)
 }
 
-const leadingSlash = /^\.?\//
 /**
  * Trims leading "./" and "/" from a path segment.
  *
  * @since 0.12.0
  */
 export function trimLeadingDotSlash(p: string): string {
-	return p.replace(leadingSlash, "")
+	const c0 = p.charCodeAt(0)
+	if (c0 === 47) return p.slice(1)
+	if (c0 === 46 && p.charCodeAt(1) === 47) return p.slice(2)
+	return p
 }
