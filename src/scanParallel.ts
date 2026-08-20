@@ -61,7 +61,16 @@ function processSingleFile(
 	} as Dirent
 
 	resolveSources(
-		{ ...scanOptions, dir: parentPath, entries: undefined, external, resource: undefined },
+		{
+			cwd: scanOptions.cwd,
+			dir: parentPath,
+			entries: undefined,
+			external,
+			fs: scanOptions.fs,
+			resource: undefined,
+			signal: scanOptions.signal,
+			target: scanOptions.target,
+		},
 		(err, res) => {
 			if (err) {
 				handleError(err)
@@ -257,8 +266,18 @@ export function scanParallel(
 			return
 		}
 
-		resolveSources({ ...scanOptions, dir: relPath, entries, external, resource }, (err, res) =>
-			handleResolveSources(err, res, relPath, depth, entries),
+		resolveSources(
+			{
+				cwd: scanOptions.cwd,
+				dir: relPath,
+				entries,
+				external,
+				fs: scanOptions.fs,
+				resource,
+				signal: scanOptions.signal,
+				target: scanOptions.target,
+			},
+			(err, res) => handleResolveSources(err, res, relPath, depth, entries),
 		)
 	}
 
