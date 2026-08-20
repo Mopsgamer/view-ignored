@@ -321,17 +321,17 @@ function addToTotal(
 	dirs: number,
 ): void {
 	const dirTotal = total.get(dir)
-	if (dirTotal) {
-		dirTotal.totalFiles += files
-		dirTotal.totalMatchedFiles += matched
-		dirTotal.totalDirs += dirs
+	if (!dirTotal) {
+		total.set(dir, {
+			totalDirs: dirs,
+			totalFiles: files,
+			totalMatchedFiles: matched,
+		})
 		return
 	}
-	total.set(dir, {
-		totalDirs: dirs,
-		totalFiles: files,
-		totalMatchedFiles: matched,
-	})
+	dirTotal.totalFiles += files
+	dirTotal.totalMatchedFiles += matched
+	dirTotal.totalDirs += dirs
 }
 
 /**

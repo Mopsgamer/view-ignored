@@ -38,8 +38,7 @@ export function join(a: string, b: string): string {
 export function dirname(p: string): string {
 	const lastSlash = p.lastIndexOf("/")
 	if (lastSlash === -1) return "."
-	if (lastSlash === 0) return "/"
-	return p.slice(0, lastSlash)
+	return lastSlash === 0 ? "/" : p.slice(0, lastSlash)
 }
 
 /**
