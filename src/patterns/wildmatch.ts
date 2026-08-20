@@ -160,7 +160,7 @@ function parseBracket(
 /**
  * Converts a wildmatch pattern to regex source string under WM_PATHNAME / gitignore semantics.
  */
-export function wildmatchToRegexpSource(pattern: string): string {
+function wildmatchToRegexpSource(pattern: string): string {
 	const isRoot = pattern.startsWith("/")
 	const isRelative = pattern.startsWith("./")
 
