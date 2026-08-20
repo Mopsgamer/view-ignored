@@ -59,7 +59,7 @@ export function extractNpmignoreRules(
 			continue
 		}
 		const pattern = decoder.decode(content.subarray(lineStart, lineEnd))
-		const nextRule = resolveNegatable(pattern, false, options, rule)
+		const nextRule = resolveNegatable(pattern, false, rule)
 		if (nextRule !== rule) {
 			rule = nextRule
 			source.rules.push(rule)

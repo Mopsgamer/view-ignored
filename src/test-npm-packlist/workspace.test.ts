@@ -6,7 +6,7 @@ import { describe, test } from "bun:test"
 import { makeNPM } from "../targets/npm.js"
 import { testScan } from "../testScan.test.js"
 
-describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist workspace", () => {
+describe.skipIf(process.env.TEST_PACKLIST == "0")("npm-packlist workspace", () => {
 	test("respects workspace root ignore files", async (done) => {
 		const tree = {
 			".gitignore": "ignore-me",

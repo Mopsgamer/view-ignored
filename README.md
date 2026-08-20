@@ -9,8 +9,8 @@
 ![ts-v5-or-later](https://img.shields.io/badge/ts->=5.7-salad?repo=Mopsgamer/view-ignored)
 [![speed-fast](https://img.shields.io/badge/speed-fast-salad?repo=Mopsgamer/view-ignored.svg)](https://github.com/Mopsgamer/view-ignored/tree/main/benchmarks)
 [![npm-packlist-tests](https://img.shields.io/badge/npm--packlist-68%2F68-blue)](https://github.com/Mopsgamer/view-ignored/tree/main/src/test-npm-packlist/)
-[![wildmatch-tests](https://img.shields.io/badge/wildmatch-288%2F346-blue)](https://github.com/Mopsgamer/view-ignored/tree/main/src/test-wildmatch/)
-[![ignore-tests](https://img.shields.io/badge/ignore-56%2F84-blue)](https://github.com/Mopsgamer/view-ignored/tree/main/src/test-wildmatch/)
+[![wildmatch-tests](https://img.shields.io/badge/wildmatch-346%2F346-blue)](https://github.com/Mopsgamer/view-ignored/tree/main/src/test-wildmatch/)
+[![ignore-tests](https://img.shields.io/badge/ignore-66%2F84-blue)](https://github.com/Mopsgamer/view-ignored/tree/main/src/test-wildmatch/)
 
 Retrieve a list of files ignored or included by Git, NPM, Yarn, JSR, Deno, Bun, VS Code extension CLI, and other tools.
 
@@ -47,7 +47,7 @@ Retrieve a list of files ignored or included by Git, NPM, Yarn, JSR, Deno, Bun, 
 
 - [x] **Perfect API.** Designed and finalized a clean, type-safe API for scanning and stream consumption.
 - [x] **Works for common use cases.** Production-ready for general project directory walking and status reports.
-- [ ] **Follow `.gitignore` spec.** Ensure strict alignment with Git's wildmatch algorithm (character classes, brackets, and negative matches), as `ignore` does.
+- [x] **Follow `.gitignore` spec.** Ensure strict alignment with Git's wildmatch algorithm (character classes, brackets, and negative matches), as `ignore` does.
 - [x] **Handle Git config.** Parse and support Git system/global settings (such as local `.git/config` reference rules and `core.excludesfile` parsing).
 - [x] **Include node_modules bundled dependencies correctly.** Walk subdependency folders under `bundledDependencies` for accurate package manager packing emulation.
 - [ ] **Ensure compatibility and references.** Perfect self-tests and comparisons against real CLI packaging output.

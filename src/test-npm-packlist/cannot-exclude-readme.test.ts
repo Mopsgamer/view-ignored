@@ -6,7 +6,7 @@ import { describe, test } from "bun:test"
 import { makeNPM } from "../targets/npm.js"
 import { testScan } from "../testScan.test.js"
 
-describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist cannot-exclude-readme", () => {
+describe.skipIf(process.env.TEST_PACKLIST == "0")("npm-packlist cannot-exclude-readme", () => {
 	test("try to exclude package.json but cannot", async (done) => {
 		await testScan(
 			done,

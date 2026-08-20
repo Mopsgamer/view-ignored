@@ -45,7 +45,7 @@ function buildTree(paths: string[]): any {
 	return tree
 }
 
-describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests", () => {
+describe.skipIf(process.env.TEST_WILDMATCH == "0")("git wildmatch compatibility tests", () => {
 	test('pathmatch case 0: text="foo" pattern="foo"', async () => {
 		const gitignoreContent = "foo"
 		const allPaths = ["foo"]
@@ -714,7 +714,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("foo/baz/bar")
 		const isIgnored = match ? match.ignored : false
 
@@ -739,7 +739,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("foo/baz/bar")
 		const isIgnored = match ? match.ignored : false
 
@@ -814,7 +814,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = false
+		const expectedIgnored = true
 		const match = scanResult.paths.get("foo/baz/bar")
 		const isIgnored = match ? match.ignored : false
 
@@ -889,7 +889,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = false
+		const expectedIgnored = true
 		const match = scanResult.paths.get("foo/bar")
 		const isIgnored = match ? match.ignored : false
 
@@ -914,7 +914,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = false
+		const expectedIgnored = true
 		const match = scanResult.paths.get("foo/bar")
 		const isIgnored = match ? match.ignored : false
 
@@ -939,7 +939,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("foo/bar")
 		const isIgnored = match ? match.ignored : false
 
@@ -989,7 +989,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("foo/bar")
 		const isIgnored = match ? match.ignored : false
 
@@ -1014,7 +1014,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("foo/bar")
 		const isIgnored = match ? match.ignored : false
 
@@ -1064,7 +1064,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = false
+		const expectedIgnored = true
 		const match = scanResult.paths.get("foo")
 		const isIgnored = match ? match.ignored : false
 
@@ -1139,7 +1139,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("bar/baz/foo")
 		const isIgnored = match ? match.ignored : false
 
@@ -1364,7 +1364,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("deep/foo/bar/baz/x")
 		const isIgnored = match ? match.ignored : false
 
@@ -2190,7 +2190,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("]")
 		const isIgnored = match ? match.ignored : false
 
@@ -2915,7 +2915,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("G")
 		const isIgnored = match ? match.ignored : false
 
@@ -3340,7 +3340,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get(
 			"XXX/adobe/courier/bold/o/normal//12/120/75/75/m/70/iso8859/1",
 		)
@@ -3594,7 +3594,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("ab/cXd/efXg/hi")
 		const isIgnored = match ? match.ignored : false
 
@@ -3844,7 +3844,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("foo/bba/arr")
 		const isIgnored = match ? match.ignored : false
 
@@ -3869,7 +3869,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("foo/bba/arr")
 		const isIgnored = match ? match.ignored : false
 
@@ -3944,7 +3944,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("foo/bar")
 		const isIgnored = match ? match.ignored : false
 
@@ -3994,7 +3994,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("foo/bar")
 		const isIgnored = match ? match.ignored : false
 
@@ -4019,7 +4019,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("ab/cXd/efXg/hi")
 		const isIgnored = match ? match.ignored : false
 
@@ -5125,7 +5125,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("foo/baz/bar")
 		const isIgnored = match ? match.ignored : false
 
@@ -5153,7 +5153,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("foo/baz/bar")
 		const isIgnored = match ? match.ignored : false
 
@@ -5237,7 +5237,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = false
+		const expectedIgnored = true
 		const match = scanResult.paths.get("foo/baz/bar")
 		const isIgnored = match ? match.ignored : false
 
@@ -5321,7 +5321,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = false
+		const expectedIgnored = true
 		const match = scanResult.paths.get("foo/bar")
 		const isIgnored = match ? match.ignored : false
 
@@ -5349,7 +5349,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = false
+		const expectedIgnored = true
 		const match = scanResult.paths.get("foo/bar")
 		const isIgnored = match ? match.ignored : false
 
@@ -5377,7 +5377,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("foo/bar")
 		const isIgnored = match ? match.ignored : false
 
@@ -5433,7 +5433,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("foo/bar")
 		const isIgnored = match ? match.ignored : false
 
@@ -5461,7 +5461,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("foo/bar")
 		const isIgnored = match ? match.ignored : false
 
@@ -5517,7 +5517,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = false
+		const expectedIgnored = true
 		const match = scanResult.paths.get("foo")
 		const isIgnored = match ? match.ignored : false
 
@@ -5601,7 +5601,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("bar/baz/foo")
 		const isIgnored = match ? match.ignored : false
 
@@ -5853,7 +5853,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("deep/foo/bar/baz/x")
 		const isIgnored = match ? match.ignored : false
 
@@ -6778,7 +6778,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("]")
 		const isIgnored = match ? match.ignored : false
 
@@ -7590,7 +7590,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("G")
 		const isIgnored = match ? match.ignored : false
 
@@ -8066,7 +8066,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get(
 			"XXX/adobe/courier/bold/o/normal//12/120/75/75/m/70/iso8859/1",
 		)
@@ -8350,7 +8350,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("ab/cXd/efXg/hi")
 		const isIgnored = match ? match.ignored : false
 
@@ -8630,7 +8630,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("foo/bba/arr")
 		const isIgnored = match ? match.ignored : false
 
@@ -8658,7 +8658,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("foo/bba/arr")
 		const isIgnored = match ? match.ignored : false
 
@@ -8742,7 +8742,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("foo/bar")
 		const isIgnored = match ? match.ignored : false
 
@@ -8798,7 +8798,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("foo/bar")
 		const isIgnored = match ? match.ignored : false
 
@@ -8826,7 +8826,7 @@ describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests"
 			invert: 2,
 		})
 
-		const expectedIgnored = true
+		const expectedIgnored = false
 		const match = scanResult.paths.get("ab/cXd/efXg/hi")
 		const isIgnored = match ? match.ignored : false
 

@@ -6,7 +6,7 @@ import { describe, test } from "bun:test"
 import { makeNPM } from "../targets/npm.js"
 import { testScan } from "../testScan.test.js"
 
-describe.skipIf(!process.env.TEST_PACKLIST)(
+describe.skipIf(process.env.TEST_PACKLIST == "0")(
 	"npm-packlist strip-slash-from-package-files-list-entries",
 	() => {
 		test("should strip / from package.json files array entry results", async (done) => {

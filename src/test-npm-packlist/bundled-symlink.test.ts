@@ -11,7 +11,7 @@ module.exports = elf =>
   console.log("i'm a elf")
 `
 
-describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist bundled-symlink", () => {
+describe.skipIf(process.env.TEST_PACKLIST == "0")("npm-packlist bundled-symlink", () => {
 	test("includes bundled dependency that is a symlink", async (done) => {
 		await testScan(
 			done,

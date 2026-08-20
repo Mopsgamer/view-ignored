@@ -8,10 +8,15 @@ and this project adheres to
 
 ## [Unreleased]
 
+- Implement Git's spec-compliant matcher.
+- Public function signatures changes:
+  - `patternListCompile(options: PatternCompileOptions & { list: PatternList }): PatternListCompiled | null` - Updated return type to `PatternListCompiled | null` and added optional `spec?: PatternSpec` to options.
+  - `resolveNegatable(pattern: string, invert: boolean, reuse?: GlobRule): GlobRule` - Removed unused `_options?: PatternCompileOptions` parameter.
+  - `wildmatchCompile(options: PatternCompileOptions & { list: PatternList }): PatternListCompiled` - Added new exported function to compile wildmatch pattern list.
+- Added `PatternSpec` enum (`gitignore`, `npmignore`)
+- Added `PatternListCompiled` type.
 - Do not ignore `.DS_Store` automatically.
-- Handle Git's escape of `\!`.
 - Handle Classic Yarn correctly (dotignore files).
-- Change `GlobRule.compiled.re` type to `RegExp` and `compiledItems` to `RegExp[]`.
 
 ## [0.12.1] - 2026-08-15
 

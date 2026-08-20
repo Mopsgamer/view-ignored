@@ -6,7 +6,7 @@ import { describe, test } from "bun:test"
 import { makeNPM } from "../targets/npm.js"
 import { testScan } from "../testScan.test.js"
 
-describe.skipIf(!process.env.TEST_PACKLIST)(
+describe.skipIf(process.env.TEST_PACKLIST == "0")(
 	"npm-packlist cannot-include-non-file-or-directory",
 	() => {
 		test("cannot include something that exists but is neither a file nor a directory", async (done) => {

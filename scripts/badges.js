@@ -32,7 +32,7 @@ function updateBadge() {
 
 	const packlistValue = runTestSuite(PACKLIST_DIR, "TEST_PACKLIST")
 	const wildmatchValue = runTestSuite(WILDMATCH_FILE, "TEST_WILDMATCH")
-	const ignoreValue = runTestSuite(IGNORE_FILE, "TEST_WILDMATCH")
+	const ignoreValue = runTestSuite(IGNORE_FILE, "TEST_NODEIGNORE")
 
 	console.log(`npm-packlist Test Results: ${packlistValue}`)
 	console.log(`wildmatch Test Results: ${wildmatchValue}`)

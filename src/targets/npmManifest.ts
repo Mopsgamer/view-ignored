@@ -394,9 +394,8 @@ export function resolveBundledDeps(
 	for (const dep of initialBundledDeps) {
 		resolveTransitive(".", dep, () => {
 			pendingInitial--
-			if (pendingInitial === 0) {
-				cb(null, Array.from(resolvedBundledDeps))
-			}
+			if (pendingInitial !== 0) return
+			cb(null, Array.from(resolvedBundledDeps))
 		})
 	}
 }
@@ -422,14 +421,12 @@ export function createNpmContext(mode: "list" | "publish" | "bundle" = "publish"
 		dist: undefined,
 		explicitRootFiles: new Set<string>(),
 		mode,
-		npmIgnoreExcludeGlobRule: ruleCompile(
-			{
-				compiled: null,
-				excludes: true,
-				list: [],
-			},
-			{ nocase: true },
-		),
+		npmIgnoreExcludeGlobRule: {
+			compiled: null,
+			excludes: true,
+			// oxlint-disable-next-line typescript/no-explicit-any
+			list: null as any,
+		},
 		patchedDepsExclude: new Set<string>(),
 		rootDeps: new Set<string>(),
 		whitelistedPaths: new Set<string>(),

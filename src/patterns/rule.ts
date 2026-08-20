@@ -6,7 +6,7 @@ import type { MatcherContext } from "./matcherContext.js"
 import type { Resource } from "./resource.js"
 import type { Source } from "./source.js"
 
-import { type PatternList } from "./patternList.js"
+import { type PatternList, type PatternListCompiled } from "./patternList.js"
 
 /**
  * @since 0.12.0
@@ -61,14 +61,7 @@ export type GlobRule = {
 	 *
 	 * @since 0.6.0
 	 */
-	compiled: null | {
-		re: { test(string: string, lowerPath?: string): boolean }
-		pattern: string
-		list: PatternList
-		nocase?: boolean
-		patternSources?: string[]
-		compiledItems?: RegExp[]
-	}
+	compiled: null | PatternListCompiled
 }
 
 export type CustomRule = {
@@ -307,39 +300,20 @@ export interface RuleTestOptions extends PatternFinderOptions {
 	dirent: Dirent
 }
 
-function cacheTest(
-	rs: null | {
-		re: { test(string: string, lowerPath?: string): boolean }
-		pattern: string
-		list: PatternList
-		nocase?: boolean
-		patternSources?: string[]
-		compiledItems?: RegExp[]
-	},
-	path: string,
-): string | null {
+function cacheTest(rs: null | PatternListCompiled, path: string): string | null {
 	if (!rs) return null
 	if (!rs.re.test(path)) return null
 	if (rs.list.length === 1) return rs.list[0]!
 
 	let items = rs.compiledItems
-	if (!items && rs.patternSources) {
-		const len = rs.list.length
-		items = new Array(len)
-		const { nocase, patternSources: sources } = rs
-		const flags = nocase ? "i" : ""
-		for (let i = 0; i < len; i++) {
-			items[i] = new RegExp(sources![i]!, flags)
-		}
-		rs.compiledItems = items
-	}
 
-	if (!items) return rs.pattern
 	const len = items.length
 	for (let i = 0; i < len; i++) {
 		if (items[i]!.test(path)) return rs.list[i]!
 	}
-	return rs.pattern
+	throw new Error("view-ignored has crashed: expected sub-pattern", {
+		cause: rs,
+	})
 }
 
 function getIgnoreOptions(options: RuleTestOptions, src: Resource): IgnoresOptions {
@@ -364,7 +338,7 @@ function getIgnoreOptions(options: RuleTestOptions, src: Resource): IgnoresOptio
 export function ruleTestSync(options: RuleTestOptions): RuleMatch {
 	const src = options.resource
 
-	if (src === undefined) throw new Error("view-ignored has crashed: no source cached.")
+	if (src === undefined) throw new Error("view-ignored has crashed: no source cached")
 
 	if (src !== null && "error" in src)
 		return { ...src, ignored: true, kind: RuleMatchKind.invalidSource }

@@ -11,7 +11,7 @@ module.exports = elf =>
   console.log("i'm a elf")
 `
 
-describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist package-json", () => {
+describe.skipIf(process.env.TEST_PACKLIST == "0")("npm-packlist package-json", () => {
 	test("follows npm package ignoring rules", async (done) => {
 		await testScan(
 			done,

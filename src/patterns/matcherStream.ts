@@ -27,7 +27,7 @@ export class MatcherStream extends EventTarget {
 		this.#options = options
 		if (options.noTimeout) return
 		const message =
-			"Stream did not start within 5 seconds. Call MatcherStream.start() or enable noTimeout."
+			"Stream did not start within 5 seconds. Call MatcherStream.start() or enable noTimeout"
 		this.#timeout = setTimeout(() => {
 			throw new Error(message)
 		}, 5e3)

@@ -6,7 +6,7 @@ import { describe, test } from "bun:test"
 import { makeNPM } from "../targets/npm.js"
 import { testScan } from "../testScan.test.js"
 
-describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist star-names", () => {
+describe.skipIf(process.env.TEST_PACKLIST == "0")("npm-packlist star-names", () => {
 	test("follows npm package ignoring rules", async (done) => {
 		const elfJS = `
 module.exports = elf =>
