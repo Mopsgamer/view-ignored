@@ -74,8 +74,6 @@ export function patternListCompile(options: PatternCompileOptions & { list: Patt
 		if (cleaned.charCodeAt(cleaned.length - 1) === 47) cleaned = cleaned.slice(0, -1)
 		if (isRoot) cleaned = cleaned.slice(1)
 
-		const lowerCleaned = cleaned
-
 		let part = ""
 		let isGlob = false
 		const clen = cleaned.length
@@ -88,7 +86,7 @@ export function patternListCompile(options: PatternCompileOptions & { list: Patt
 		}
 
 		if (isGlob) {
-			const isMatchRe = glob.makeRe(lowerCleaned, {
+			const isMatchRe = glob.makeRe(cleaned, {
 				contains: true,
 				dot: true,
 				matchBase: false,
@@ -99,7 +97,7 @@ export function patternListCompile(options: PatternCompileOptions & { list: Patt
 			part = isMatchRe.source
 			if (part.startsWith("^") && part.endsWith("$")) part = part.slice(1, -1)
 		} else {
-			part = lowerCleaned.replace(REGEX_SPECIAL_CHARS, "\\$&")
+			part = cleaned.replace(REGEX_SPECIAL_CHARS, "\\$&")
 		}
 
 		const source = (isAnchored ? "^" : "(?:^|\\/)") + part + "(?:\\/|$)"
