@@ -8,7 +8,7 @@ and this project adheres to
 
 ## [Unreleased]
 
-- Add `PatternListCompiled`.
+- Add `PatternListCompiled` and deslop it.
 - Implement Git's spec-compliant matcher.
   Implement `PatternSpec` and options.
   Do not ignore `.DS_Store` automatically.

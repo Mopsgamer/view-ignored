@@ -318,11 +318,11 @@ export function wildmatchCompile(
 		combinedRegex = /(?!)/
 	}
 
+	const compiledItems = patternSources.map((s) => new RegExp(s, nocase ? "i" : ""))
+
 	return {
+		compiledItems,
 		list,
-		nocase,
-		pattern: -1, // TODO: return pattern
-		patternSources,
 		re: combinedRegex,
 	}
 }

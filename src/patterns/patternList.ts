@@ -5,7 +5,7 @@ import { wildmatchCompile } from "./wildmatch.js"
 /**
  * Pattern specification standard.
  *
- * @since 0.13.0
+ * @since 0.12.2
  */
 export const enum PatternSpec {
 	gitignore,
@@ -27,7 +27,7 @@ export type PatternCompileOptions = {
 	/**
 	 * The specification standard used for pattern compilation.
 	 *
-	 * @since 0.13.0
+	 * @since 0.12.2
 	 */
 	spec?: PatternSpec
 	/**
@@ -66,10 +66,7 @@ export type PatternListCompiled = {
 	 * @since 0.12.2
 	 */
 	list: PatternList
-	pattern: number
-	patternSources: string[]
-	nocase: boolean
-	compiledItems?: RegExp[]
+	compiledItems: RegExp[]
 }
 
 const REGEX_SPECIAL_CHARS = /[.*+?^${}()|[\]\\]/g
@@ -139,11 +136,11 @@ export function patternListCompile(
 	const combinedSource = patternSources.join("|")
 	const combinedRegex = new RegExp(combinedSource, nocase ? "i" : "")
 
+	const compiledItems = patternSources.map((s) => new RegExp(s, nocase ? "i" : ""))
+
 	return {
+		compiledItems,
 		list,
-		nocase,
-		pattern: -1, // TODO: return pattern
-		patternSources,
 		re: combinedRegex,
 	}
 }
