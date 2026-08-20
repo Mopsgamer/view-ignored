@@ -126,7 +126,12 @@ function processGitignoreLine(
 
 	let resolvedLine = ""
 	let resolvedIsEscaped = false
-	for (let m = 0; m < rawLine.length; m++) {
+	const startsWithEscapedBang =
+		rawLine.length > 1 && rawLine.charCodeAt(0) === 92 && rawLine.charCodeAt(1) === 33
+	if (startsWithEscapedBang) {
+		resolvedLine = "\\!"
+	}
+	for (let m = startsWithEscapedBang ? 2 : 0; m < rawLine.length; m++) {
 		const rc = rawLine[m]!
 		if (resolvedIsEscaped) {
 			resolvedLine += rc

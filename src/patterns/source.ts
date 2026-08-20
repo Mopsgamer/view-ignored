@@ -76,9 +76,16 @@ export function resolveNegatable(
 	_options?: PatternCompileOptions,
 	reuse?: GlobRule,
 ): GlobRule {
-	const negated = pattern.charCodeAt(0) === 33
+	const isEscapedBang =
+		pattern.length > 1 && pattern.charCodeAt(0) === 92 && pattern.charCodeAt(1) === 33
+	let negated = false
+	if (isEscapedBang) {
+		pattern = pattern.slice(1)
+	} else if (pattern.charCodeAt(0) === 33) {
+		negated = true
+		pattern = pattern.slice(1)
+	}
 	const excludes = negated === invert
-	if (negated) pattern = pattern.slice(1)
 	const iff = reuse && excludes === reuse.excludes
 	const rule: GlobRule = iff ? reuse : { compiled: null, excludes, list: [] }
 	rule.list.push(pattern)
