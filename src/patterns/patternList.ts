@@ -44,7 +44,7 @@ export function patternListCompile(options: PatternCompileOptions & { list: Patt
 	list: PatternList
 	nocase?: boolean
 	patternSources?: string[]
-	compiledItems?: { pattern: string; re: RegExp }[]
+	compiledItems?: RegExp[]
 } {
 	const nocase = !!options.nocase
 	const { list } = options
@@ -107,17 +107,11 @@ export function patternListCompile(options: PatternCompileOptions & { list: Patt
 	const combinedSource = patternSources.join("|")
 	const combinedRegex = new RegExp(combinedSource, nocase ? "i" : "")
 
-	const re = {
-		test(str: string): boolean {
-			return combinedRegex.test(str)
-		},
-	}
-
 	return {
 		list,
 		nocase,
 		pattern: list.join(","),
 		patternSources,
-		re,
+		re: combinedRegex,
 	}
 }

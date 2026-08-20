@@ -67,7 +67,7 @@ export type GlobRule = {
 		list: PatternList
 		nocase?: boolean
 		patternSources?: string[]
-		compiledItems?: { pattern: string; re: RegExp }[]
+		compiledItems?: RegExp[]
 	}
 }
 
@@ -314,7 +314,7 @@ function cacheTest(
 		list: PatternList
 		nocase?: boolean
 		patternSources?: string[]
-		compiledItems?: { pattern: string; re: RegExp }[]
+		compiledItems?: RegExp[]
 	},
 	path: string,
 ): string | null {
@@ -326,13 +326,10 @@ function cacheTest(
 	if (!items && rs.patternSources) {
 		const len = rs.list.length
 		items = new Array(len)
-		const { nocase, list, patternSources: sources } = rs
+		const { nocase, patternSources: sources } = rs
 		const flags = nocase ? "i" : ""
 		for (let i = 0; i < len; i++) {
-			items[i] = {
-				pattern: list[i]!,
-				re: new RegExp(sources![i]!, flags),
-			}
+			items[i] = new RegExp(sources![i]!, flags)
 		}
 		rs.compiledItems = items
 	}
@@ -340,8 +337,7 @@ function cacheTest(
 	if (!items) return rs.pattern
 	const len = items.length
 	for (let i = 0; i < len; i++) {
-		const item = items[i]!
-		if (item.re.test(path)) return item.pattern
+		if (items[i]!.test(path)) return rs.list[i]!
 	}
 	return rs.pattern
 }
