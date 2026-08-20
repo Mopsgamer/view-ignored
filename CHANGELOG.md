@@ -10,6 +10,7 @@ and this project adheres to
 
 - Do not ignore `.DS_Store` automatically.
 - Handle Classic Yarn correctly (dotignore files).
+- Change `GlobRule.compiled.re` type to `RegExp` and `compiledItems` to `RegExp[]`.
 
 ## [0.12.1] - 2026-08-15
 
