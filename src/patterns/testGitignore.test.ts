@@ -45,6 +45,12 @@ describe("gitignore parsing compliance", () => {
 		expect(rules[0]?.list).toContain("#foo")
 	})
 
+	test("escaped ! is an exclude rule for literal ! file", () => {
+		const rules = parse("\\!important.txt")
+		expect(rules[0]?.excludes).toBeTrue()
+		expect(rules[0]?.list).toContain("!important.txt")
+	})
+
 	test("gitignore escaping - hash and comment", () => {
 		const rules = parse("file\\#withhash # and comment")
 		expect(rules[0]?.excludes).toBeTrue()
