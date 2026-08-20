@@ -33,7 +33,8 @@ export function makeDirectPathsRule(directPathsInclude: Record<string, string>):
 	return {
 		excludes: false,
 		match({ entry }) {
-			for (const [manifestProp, path] of Object.entries(directPathsInclude)) {
+			for (const manifestProp in directPathsInclude) {
+				const path = directPathsInclude[manifestProp]
 				if (entry === path) return "//'" + manifestProp + "' property is " + path
 			}
 			return null
@@ -81,9 +82,13 @@ function isValidNpmName(name: string): boolean {
 		return false
 
 	if (name.startsWith("@")) {
-		const parts = name.slice(1).split("/")
-		if (parts.length !== 2 || parts[0] === "" || parts[1] === "") return false
-		return isValidNameComponent(parts[0]!) && isValidNameComponent(parts[1]!)
+		const slashIdx = name.indexOf("/", 1)
+		if (slashIdx === -1 || slashIdx === 1 || slashIdx === len - 1) return false
+		if (name.indexOf("/", slashIdx + 1) !== -1) return false
+		return (
+			isValidNameComponent(name.slice(1, slashIdx)) &&
+			isValidNameComponent(name.slice(slashIdx + 1))
+		)
 	}
 	return isValidNameComponent(name)
 }
@@ -103,11 +108,18 @@ function isValidNameComponent(part: string): boolean {
 
 function isRecordOfStrings(value: unknown): value is Record<string, string> {
 	if (!value || typeof value !== "object" || Array.isArray(value)) return false
-	return Object.values(value).every((v) => typeof v === "string")
+	for (const k in value) {
+		if (typeof (value as Record<string, unknown>)[k] !== "string") return false
+	}
+	return true
 }
 
 export function isArrayOfStrings(value: unknown): value is string[] {
-	return Array.isArray(value) && value.every((v) => typeof v === "string")
+	if (!Array.isArray(value)) return false
+	for (let i = 0; i < value.length; i++) {
+		if (typeof value[i] !== "string") return false
+	}
+	return true
 }
 
 const SEMVER_REGEX =
@@ -583,12 +595,17 @@ export function initNpmContext(
 			return
 		}
 
-		const depFields = ["dependencies", "devDependencies", "optionalDependencies"] as const
-		for (let i = 0; i < depFields.length; i++) {
-			const deps = parsedDist[depFields[i]!]
-			if (deps) {
-				for (const dep in deps) ctx.rootDeps.add(dep)
-			}
+		const dep1 = parsedDist.dependencies
+		if (dep1) {
+			for (const dep in dep1) ctx.rootDeps.add(dep)
+		}
+		const dep2 = parsedDist.devDependencies
+		if (dep2) {
+			for (const dep in dep2) ctx.rootDeps.add(dep)
+		}
+		const dep3 = parsedDist.optionalDependencies
+		if (dep3) {
+			for (const dep in dep3) ctx.rootDeps.add(dep)
 		}
 
 		if (parsedDist.files) {
