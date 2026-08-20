@@ -1,8 +1,6 @@
 import type { Resource } from "./resource.js"
 import type { GlobRule, Rule, RuleMatch } from "./rule.js"
 
-import { type PatternCompileOptions } from "./patternList.js"
-
 /**
  * Represents a source of external patterns.
  *
@@ -70,12 +68,7 @@ export type Source = {
  *
  * @since 0.6.0
  */
-export function resolveNegatable(
-	pattern: string,
-	invert: boolean,
-	_options?: PatternCompileOptions,
-	reuse?: GlobRule,
-): GlobRule {
+export function resolveNegatable(pattern: string, invert: boolean, reuse?: GlobRule): GlobRule {
 	const isEscapedBang =
 		pattern.length > 1 && pattern.charCodeAt(0) === 92 && pattern.charCodeAt(1) === 33
 	let negated = false

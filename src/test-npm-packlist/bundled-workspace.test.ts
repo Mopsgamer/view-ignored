@@ -6,7 +6,7 @@ import { describe, test } from "bun:test"
 import { makeNPM } from "../targets/npm.js"
 import { testScan } from "../testScan.test.js"
 
-describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist bundled-workspace", () => {
+describe.skipIf(process.env.TEST_PACKLIST == "0")("npm-packlist bundled-workspace", () => {
 	test("includes bundled dependency that is also a workspace", async (done) => {
 		await testScan(
 			done,

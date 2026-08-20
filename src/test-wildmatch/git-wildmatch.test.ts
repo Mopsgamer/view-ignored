@@ -45,7 +45,7 @@ function buildTree(paths: string[]): any {
 	return tree
 }
 
-describe.skipIf(!process.env.TEST_WILDMATCH)("git wildmatch compatibility tests", () => {
+describe.skipIf(process.env.TEST_WILDMATCH == "0")("git wildmatch compatibility tests", () => {
 	test('pathmatch case 0: text="foo" pattern="foo"', async () => {
 		const gitignoreContent = "foo"
 		const allPaths = ["foo"]

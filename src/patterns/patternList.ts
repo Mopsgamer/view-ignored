@@ -47,6 +47,31 @@ export type PatternCompileOptions = {
  */
 export type PatternList = string[]
 
+/**
+ * Provides regexes and sources.
+ * @see {patternListCompile}
+ *
+ * @since 0.12.2
+ */
+export type PatternListCompiled = {
+	/**
+	 * The matcher.
+	 *
+	 * @since 0.12.2
+	 */
+	re: { test(string: string, lowerPath?: string): boolean }
+	/**
+	 * The matcher.
+	 *
+	 * @since 0.12.2
+	 */
+	list: PatternList
+	pattern: number
+	patternSources: string[]
+	nocase: boolean
+	compiledItems?: RegExp[]
+}
+
 const REGEX_SPECIAL_CHARS = /[.*+?^${}()|[\]\\]/g
 
 /**
@@ -56,29 +81,16 @@ const REGEX_SPECIAL_CHARS = /[.*+?^${}()|[\]\\]/g
  *
  * @since 0.6.0
  */
-export function patternListCompile(options: PatternCompileOptions & { list: PatternList }): {
-	re: { test(string: string, lowerPath?: string): boolean }
-	pattern: string
-	list: PatternList
-	nocase?: boolean
-	patternSources?: string[]
-	compiledItems?: RegExp[]
-} {
+export function patternListCompile(
+	options: PatternCompileOptions & { list: PatternList },
+): PatternListCompiled | null {
 	if (options.spec === PatternSpec.gitignore) return wildmatchCompile(options)
 
 	const nocase = !!options.nocase
 	const { list } = options
 	const len = list.length
 
-	if (len === 0) {
-		return {
-			list,
-			pattern: "",
-			re: {
-				test: () => false,
-			},
-		}
-	}
+	if (len === 0) throw new TypeError("Empty pattern is useless and wastes memory")
 
 	const patternSources: string[] = new Array(len)
 
@@ -117,7 +129,7 @@ export function patternListCompile(options: PatternCompileOptions & { list: Patt
 			part = isMatchRe.source
 			if (part.startsWith("^") && part.endsWith("$")) part = part.slice(1, -1)
 		} else {
-			part = cleaned.replace(REGEX_SPECIAL_CHARS, "\\$&")
+			part = cleaned.replaceAll(REGEX_SPECIAL_CHARS, "\\$&")
 		}
 
 		const source = (isAnchored ? "^" : "(?:^|\\/)") + part + "(?:\\/|$)"
@@ -130,7 +142,7 @@ export function patternListCompile(options: PatternCompileOptions & { list: Patt
 	return {
 		list,
 		nocase,
-		pattern: list[0] ?? "",
+		pattern: -1, // TODO: return pattern
 		patternSources,
 		re: combinedRegex,
 	}

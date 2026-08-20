@@ -8,11 +8,11 @@ and this project adheres to
 
 ## [Unreleased]
 
-- Implement regex-based wildmatch pattern compiler (`src/patterns/wildmatch.ts`) with `PatternSpec.gitignore` support.
-- Do not ignore `.DS_Store` automatically.
-- Handle Git's escape of `\!`.
+- Add `PatternListCompiled`.
+- Implement Git's spec-compliant matcher.
+  Implement `PatternSpec` and options.
+  Do not ignore `.DS_Store` automatically.
 - Handle Classic Yarn correctly (dotignore files).
-- Change `GlobRule.compiled.re` type to `RegExp` and `compiledItems` to `RegExp[]`.
 
 ## [0.12.1] - 2026-08-15
 

@@ -52,7 +52,6 @@ function processGitignoreLine(
 	content: Uint8Array,
 	start: number,
 	lineEnd: number,
-	options?: PatternCompileOptions,
 	rule?: GlobRule,
 ): GlobRule | undefined {
 	if (content[start] === 35) return rule
@@ -75,7 +74,7 @@ function processGitignoreLine(
 		}
 		if (endIdx <= start) return rule
 		const resolvedLine = decoder.decode(content.subarray(start, endIdx))
-		if (resolvedLine.length > 0) rule = resolveNegatable(resolvedLine, false, options, rule)
+		if (resolvedLine.length > 0) rule = resolveNegatable(resolvedLine, false, rule)
 		return rule
 	}
 
@@ -148,7 +147,7 @@ function processGitignoreLine(
 	}
 	if (resolvedIsEscaped) resolvedLine += "\\"
 
-	if (resolvedLine.length > 0) rule = resolveNegatable(resolvedLine, false, options, rule)
+	if (resolvedLine.length > 0) rule = resolveNegatable(resolvedLine, false, rule)
 
 	return rule
 }
@@ -182,7 +181,7 @@ export function extractGitignoreRules(
 			continue
 		}
 
-		const nextRule = processGitignoreLine(source, content, start, lineEnd, compileOpts, rule)
+		const nextRule = processGitignoreLine(source, content, start, lineEnd, rule)
 		if (nextRule && nextRule !== rule) {
 			rule = nextRule
 			source.rules.push(rule)

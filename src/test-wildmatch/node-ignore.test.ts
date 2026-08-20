@@ -115,7 +115,7 @@ function buildTree(paths: string[]): any {
 	return tree
 }
 
-describe.skipIf(!process.env.TEST_WILDMATCH)("node-ignore compatibility tests", () => {
+describe.skipIf(!process.env.TEST_NODEIGNORE)("node-ignore compatibility tests", () => {
 	test("#153: reinclude issue", async () => {
 		const patterns = ["/a/**", "!/a/**/b.js "]
 		const gitignoreContent = patterns.join("\n")

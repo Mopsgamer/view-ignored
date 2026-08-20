@@ -6,7 +6,7 @@ import { describe, test } from "bun:test"
 import { makeNPM } from "../targets/npm.js"
 import { testScan } from "../testScan.test.js"
 
-describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist patched-dependencies", () => {
+describe.skipIf(process.env.TEST_PACKLIST == "0")("npm-packlist patched-dependencies", () => {
 	test('a dedicated patch dir is dropped even when listed in "files"', async (done) => {
 		await testScan(
 			done,

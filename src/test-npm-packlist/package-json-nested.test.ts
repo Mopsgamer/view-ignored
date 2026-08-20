@@ -6,7 +6,7 @@ import { describe, test } from "bun:test"
 import { makeNPM } from "../targets/npm.js"
 import { testScan } from "../testScan.test.js"
 
-describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist package-json-nested", () => {
+describe.skipIf(process.env.TEST_PACKLIST == "0")("npm-packlist package-json-nested", () => {
 	test("includes nested package.json file", async (done) => {
 		await testScan(
 			done,

@@ -2,7 +2,11 @@ import { describe, test, expect } from "bun:test"
 
 import { patternListCompile, PatternSpec } from "./patternList.js"
 
-function patternCacheTest(compiled: { re: { test(str: string): boolean } }, str: string): boolean {
+function patternCacheTest(
+	compiled: { re: { test(str: string): boolean } } | null,
+	str: string,
+): boolean {
+	if (compiled === null) return false
 	return compiled.re.test(str)
 }
 

@@ -6,7 +6,7 @@ import { describe, test } from "bun:test"
 import { makeNPM } from "../targets/npm.js"
 import { testScan } from "../testScan.test.js"
 
-describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist bundled-cycle", () => {
+describe.skipIf(process.env.TEST_PACKLIST == "0")("npm-packlist bundled-cycle", () => {
 	test("correctly bundles cyclic deps", async (done) => {
 		await testScan(
 			done,

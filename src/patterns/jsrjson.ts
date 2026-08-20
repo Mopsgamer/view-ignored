@@ -59,7 +59,7 @@ export function extractJsrJsonRules(source: Source, content: Uint8Array): void {
 	const options = { nocase: true }
 	if (Array.isArray(target.exclude)) {
 		for (const pattern of target.exclude) {
-			const nextRule = resolveNegatable(pattern, false, options, rule)
+			const nextRule = resolveNegatable(pattern, false, rule)
 			if (nextRule === rule) continue
 			rule = nextRule
 			source.rules.push(rule)
@@ -68,7 +68,7 @@ export function extractJsrJsonRules(source: Source, content: Uint8Array): void {
 
 	if (Array.isArray(target.include)) {
 		for (const pattern of target.include) {
-			const nextRule = resolveNegatable(pattern, true, options, rule)
+			const nextRule = resolveNegatable(pattern, true, rule)
 			if (nextRule === rule) continue
 			rule = nextRule
 			source.rules.push(rule)

@@ -11,7 +11,7 @@ module.exports = elf =>
   console.log("i'm a elf")
 `
 
-describe.skipIf(!process.env.TEST_PACKLIST)("npm-packlist bundled", () => {
+describe.skipIf(process.env.TEST_PACKLIST == "0")("npm-packlist bundled", () => {
 	test("includes bundled dependency using bundleDependencies", async (done) => {
 		await testScan(
 			done,

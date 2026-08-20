@@ -1,4 +1,4 @@
-import type { PatternCompileOptions, PatternList } from "./patternList.js"
+import type { PatternCompileOptions, PatternList, PatternListCompiled } from "./patternList.js"
 
 const REGEX_SPECIAL_CHARS = /[.*+?^${}()|[\]\\]/g
 
@@ -295,27 +295,14 @@ export function wildmatchToRegexpSource(pattern: string): string {
 /**
  * Compiles a list of wildmatch patterns into a single matcher object.
  */
-export function wildmatchCompile(options: PatternCompileOptions & { list: PatternList }): {
-	re: { test(string: string, lowerPath?: string): boolean }
-	pattern: string
-	list: PatternList
-	nocase?: boolean
-	patternSources?: string[]
-	compiledItems?: RegExp[]
-} {
+export function wildmatchCompile(
+	options: PatternCompileOptions & { list: PatternList },
+): PatternListCompiled {
 	const nocase = !!options.nocase
 	const { list } = options
 	const len = list.length
 
-	if (len === 0) {
-		return {
-			list,
-			pattern: "",
-			re: {
-				test: () => false,
-			},
-		}
-	}
+	if (len === 0) throw new TypeError("Empty pattern is useless and wastes memory")
 
 	const patternSources: string[] = new Array(len)
 	for (let i = 0; i < len; i++) {
@@ -334,10 +321,8 @@ export function wildmatchCompile(options: PatternCompileOptions & { list: Patter
 	return {
 		list,
 		nocase,
-		pattern: list[0] ?? "",
+		pattern: -1, // TODO: return pattern
 		patternSources,
-		re: {
-			test: (s: string) => combinedRegex.test(s),
-		},
+		re: combinedRegex,
 	}
 }
