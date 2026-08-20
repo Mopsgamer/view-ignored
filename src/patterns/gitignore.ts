@@ -1,7 +1,7 @@
 import type { ExtractorFn } from "./extractor.js"
-import type { PatternCompileOptions } from "./patternList.js"
 import type { GlobRule } from "./rule.js"
 
+import { PatternSpec, type PatternCompileOptions } from "./patternList.js"
 import { ruleCompile } from "./resolveSources.js"
 import { resolveNegatable, type Source } from "./source.js"
 
@@ -134,7 +134,11 @@ function processGitignoreLine(
 	for (let m = startsWithEscapedBang ? 2 : 0; m < rawLine.length; m++) {
 		const rc = rawLine[m]!
 		if (resolvedIsEscaped) {
-			resolvedLine += rc
+			if (rc === "#" || rc === " " || rc === "\\") {
+				resolvedLine += rc
+			} else {
+				resolvedLine += "\\" + rc
+			}
 			resolvedIsEscaped = false
 		} else if (rc === "\\") {
 			resolvedIsEscaped = true
@@ -159,6 +163,11 @@ export function extractGitignoreRules(
 	content: Uint8Array,
 	options?: PatternCompileOptions,
 ): void {
+	const compileOpts: PatternCompileOptions = options
+		? options.spec === PatternSpec.gitignore
+			? options
+			: { list: options.list, nocase: options.nocase, spec: PatternSpec.gitignore }
+		: { spec: PatternSpec.gitignore }
 	let rule: GlobRule | undefined
 	let start = 0
 	const len = content.length
@@ -173,7 +182,7 @@ export function extractGitignoreRules(
 			continue
 		}
 
-		const nextRule = processGitignoreLine(source, content, start, lineEnd, options, rule)
+		const nextRule = processGitignoreLine(source, content, start, lineEnd, compileOpts, rule)
 		if (nextRule && nextRule !== rule) {
 			rule = nextRule
 			source.rules.push(rule)
@@ -186,6 +195,6 @@ export function extractGitignoreRules(
 	const rlen = source.rules.length
 	for (let i = 0; i < rlen; i++) {
 		const r = source.rules[i]!
-		if ("list" in r && r.compiled === null) ruleCompile(r, options)
+		if ("list" in r && r.compiled === null) ruleCompile(r, compileOpts)
 	}
 }

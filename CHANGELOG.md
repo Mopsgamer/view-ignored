@@ -8,6 +8,7 @@ and this project adheres to
 
 ## [Unreleased]
 
+- Implement regex-based wildmatch pattern compiler (`src/patterns/wildmatch.ts`) with `PatternSpec.gitignore` support.
 - Do not ignore `.DS_Store` automatically.
 - Handle Git's escape of `\!`.
 - Handle Classic Yarn correctly (dotignore files).

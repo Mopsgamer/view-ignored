@@ -1,5 +1,17 @@
 import glob from "picomatch"
 
+import { wildmatchCompile } from "./wildmatch.js"
+
+/**
+ * Pattern specification standard.
+ *
+ * @since 0.13.0
+ */
+export const enum PatternSpec {
+	gitignore,
+	npmignore,
+}
+
 /**
  * @since 0.8.0
  */
@@ -12,6 +24,12 @@ export type PatternCompileOptions = {
 	 * @since 0.8.0
 	 */
 	nocase?: boolean
+	/**
+	 * The specification standard used for pattern compilation.
+	 *
+	 * @since 0.13.0
+	 */
+	spec?: PatternSpec
 	/**
 	 * The list of patterns to use as context for matching.
 	 *
@@ -46,6 +64,8 @@ export function patternListCompile(options: PatternCompileOptions & { list: Patt
 	patternSources?: string[]
 	compiledItems?: RegExp[]
 } {
+	if (options.spec === PatternSpec.gitignore) return wildmatchCompile(options)
+
 	const nocase = !!options.nocase
 	const { list } = options
 	const len = list.length
@@ -110,7 +130,7 @@ export function patternListCompile(options: PatternCompileOptions & { list: Patt
 	return {
 		list,
 		nocase,
-		pattern: list.join(","),
+		pattern: list[0] ?? "",
 		patternSources,
 		re: combinedRegex,
 	}
