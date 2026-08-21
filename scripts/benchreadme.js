@@ -372,7 +372,7 @@ async function remote(o) {
 
 async function local(o) {
 	console.log("Building view-ignored...")
-	await $`bun run prod`.quiet()
+	if (!process.argv.includes("--no-build")) await $`bun run prod`.quiet()
 	console.log("Running local Node.js benchmarks (Low-end)...")
 	const localNodeStdout = await $`bun run bench target_git target_npm --node`.text()
 	const localNode = formatBenchmarkOutput(
@@ -423,6 +423,7 @@ async function main() {
 	if (!process.argv.includes("--local")) {
 		await remote(o)
 	}
+	await Bun.$`bun run fmt benchmarks/README.md`
 
 	try {
 		fs.writeFileSync(README_PATH, o.readmeContent, "utf8")
