@@ -210,4 +210,26 @@ describe("NPM", () => {
 			{ target: makeNPM("list") },
 		)
 	})
+
+	test("anchors root file entries in package.json files array", async (done) => {
+		await testScan(
+			done,
+			{
+				"README.md": "root readme",
+				demo: {
+					git: {
+						"README.md": "nested readme",
+					},
+					"runkit.js": "demo script",
+				},
+				"package.json": JSON.stringify({
+					files: ["README.md", "demo/runkit.js"],
+					name: "test-pkg",
+					version: "1.0.0",
+				}),
+			},
+			["README.md", "demo/runkit.js", "package.json"],
+			{ dirs: false, target: makeNPM() },
+		)
+	})
 })
