@@ -2,7 +2,8 @@ import type { GlobRule } from "./index.js"
 
 import { describe, test, expect } from "bun:test"
 
-import { extractGitignoreRules } from "./gitignore.js"
+import { extractGitignore, extractGitignoreRules } from "./gitignore.js"
+import { PatternSpec } from "./patternList.js"
 import { type Source } from "./source.js"
 
 describe("gitignore parsing compliance", () => {
@@ -113,5 +114,16 @@ describe("gitignore parsing compliance", () => {
 		const rules = parse("🚀\\ ")
 		expect(rules[0]?.excludes).toBeTrue()
 		expect(rules[0]?.list).toContain("🚀 ")
+	})
+
+	test("extractGitignore options and error handling", () => {
+		const source: Source = { dir: ".", inverted: false, path: ".gitignore", rules: [] }
+		extractGitignore(source, Buffer.from("foo"), { spec: PatternSpec.packageJsonFiles })
+		expect(source.rules.length).toBeGreaterThan(0)
+
+		// oxlint-disable-next-line typescript/no-explicit-any
+		const badSource = null as unknown as Source
+		const err = extractGitignore(badSource, Buffer.from("foo"))
+		expect(err).toBeInstanceOf(Error)
 	})
 })

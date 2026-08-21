@@ -2,6 +2,7 @@ import { describe, test, expect } from "bun:test"
 
 import { testScan } from "../testScan.test.js"
 import { makeVSCE } from "./vsce.js"
+import { vsceManifestParse } from "./vsceManifest.js"
 
 const packageJson = JSON.stringify({
 	engines: { vscode: "^1.0.0" },
@@ -81,5 +82,34 @@ describe("VSCE", () => {
 				{ target: makeVSCE() },
 			),
 		).toThrow()
+	})
+
+	test("vsceTarget.init error on invalid package.json", (done) => {
+		const vsceTarget = makeVSCE()
+		// oxlint-disable-next-line typescript/no-explicit-any
+		const mockFs: any = {
+			// oxlint-disable-next-line typescript/no-explicit-any
+			readFile: (_p: string, cb: any) => {
+				cb(null, Buffer.from("{ invalid json"))
+			},
+		}
+
+		vsceTarget.init!({ cwd: "/ext", fs: mockFs, signal: null, target: vsceTarget }, (err) => {
+			expect(err).toBeInstanceOf(Error)
+			expect(err?.message).toBe("Invalid 'package.json'")
+			done()
+		})
+	})
+
+	test("vsceManifestParse invalid engine format", () => {
+		expect(() =>
+			vsceManifestParse(
+				JSON.stringify({
+					engines: { vscode: "invalid-version" },
+					name: "my-ext",
+					version: "1.0.0",
+				}),
+			),
+		).toThrow("Invalid 'engines.vscode' version format")
 	})
 })

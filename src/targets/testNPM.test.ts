@@ -2,6 +2,14 @@ import { describe, test, expect } from "bun:test"
 
 import { testScan } from "../testScan.test.js"
 import { makeNPM } from "./npm.js"
+import {
+	npmManifestParse,
+	resolveBundledDeps,
+	initNpmContext,
+	createNpmContext,
+	extractManifestIncludes,
+	type PackageJson,
+} from "./npmManifest.js"
 
 const packageJsonNoFiles = JSON.stringify({
 	name: "me",
@@ -231,5 +239,197 @@ describe("NPM", () => {
 			["README.md", "demo/runkit.js", "package.json"],
 			{ dirs: false, target: makeNPM() },
 		)
+	})
+
+	describe("npmManifestParse detailed validation rules", () => {
+		test("validates private, semver, bundle, engines, scripts, and bin fields", () => {
+			expect(() => npmManifestParse(JSON.stringify({ private: "invalid" }))).toThrow(
+				"'private' field must be a boolean",
+			)
+
+			expect(() =>
+				npmManifestParse(JSON.stringify({ name: "INVALID_NAME", version: "1.0.0" })),
+			).toThrow("is not a valid npm package name")
+
+			expect(() =>
+				npmManifestParse(JSON.stringify({ name: "valid-name", version: "invalid-semver" })),
+			).toThrow("is not a valid SemVer version")
+
+			expect(() =>
+				npmManifestParse(
+					JSON.stringify({
+						bundleDependencies: true,
+						bundledDependencies: true,
+						name: "pkg",
+						version: "1.0.0",
+					}),
+				),
+			).toThrow("cannot contain both")
+
+			expect(() =>
+				npmManifestParse(
+					JSON.stringify({
+						engines: "invalid",
+						name: "pkg",
+						version: "1.0.0",
+					}),
+				),
+			).toThrow("'engines' field must be an object")
+
+			expect(() =>
+				npmManifestParse(
+					JSON.stringify({
+						name: "pkg",
+						scripts: { test: 123 },
+						version: "1.0.0",
+					}),
+				),
+			).toThrow("'scripts' field must be an object with string values")
+
+			expect(() =>
+				npmManifestParse(
+					JSON.stringify({
+						dependencies: { dep: 123 },
+						name: "pkg",
+						version: "1.0.0",
+					}),
+				),
+			).toThrow("'dependencies' field must be an object with string values")
+
+			expect(() =>
+				npmManifestParse(
+					JSON.stringify({
+						devDependencies: { dep: 123 },
+						name: "pkg",
+						version: "1.0.0",
+					}),
+				),
+			).toThrow("'devDependencies' field must be an object with string values")
+
+			expect(() =>
+				npmManifestParse(
+					JSON.stringify({
+						name: "pkg",
+						optionalDependencies: { dep: 123 },
+						version: "1.0.0",
+					}),
+				),
+			).toThrow("'optionalDependencies' field must be an object with string values")
+
+			expect(() =>
+				npmManifestParse(
+					JSON.stringify({
+						files: "invalid",
+						name: "pkg",
+						version: "1.0.0",
+					}),
+				),
+			).toThrow("'files' field must be an array of strings")
+
+			expect(() =>
+				npmManifestParse(
+					JSON.stringify({
+						bundleDependencies: "invalid",
+						name: "pkg",
+						version: "1.0.0",
+					}),
+				),
+			).toThrow("'bundleDependencies' field must be a boolean or an array of strings")
+
+			expect(() =>
+				npmManifestParse(
+					JSON.stringify({
+						bin: 123,
+						name: "pkg",
+						version: "1.0.0",
+					}),
+				),
+			).toThrow("'bin' field must be a string or an object with string values")
+
+			expect(npmManifestParse("invalid json", "list")).toEqual({} as PackageJson)
+			expect(npmManifestParse("invalid json", "bundle")).toEqual({} as PackageJson)
+		})
+	})
+
+	test("resolveBundledDeps with invalid dependency package.json", (done) => {
+		// oxlint-disable-next-line typescript/no-explicit-any
+		const mockFs: any = {
+			// oxlint-disable-next-line typescript/no-explicit-any
+			readFile: (p: string, cb: any) => {
+				if (p.includes("node_modules/dep-a/package.json")) {
+					cb(null, Buffer.from("{ invalid json"))
+				} else {
+					cb(new Error("ENOENT"))
+				}
+			},
+		}
+
+		// oxlint-disable-next-line typescript/no-explicit-any
+		const manifest: any = {
+			bundleDependencies: ["dep-a"],
+			dependencies: { "dep-a": "^1.0.0" },
+		}
+
+		resolveBundledDeps("/root", mockFs, manifest, (err, deps) => {
+			expect(err).toBeNull()
+			expect(deps).toContain("dep-a")
+			done()
+		})
+	})
+
+	test("initNpmContext error reading package.json and patchedDependencies", (done) => {
+		const ctx = createNpmContext("publish")
+		// oxlint-disable-next-line typescript/no-explicit-any
+		const mockFs: any = {
+			// oxlint-disable-next-line typescript/no-explicit-any
+			readFile: (_p: string, cb: any) => {
+				const err = new Error("ENOENT")
+				// oxlint-disable-next-line typescript/no-explicit-any
+				;(err as any).code = "ENOENT"
+				cb(err)
+			},
+		}
+
+		initNpmContext(ctx, { cwd: "/nonexistent", fs: mockFs }, (err) => {
+			expect(err).toBeInstanceOf(Error)
+			expect(err?.message).toContain("package.json' not found")
+
+			const ctx2 = createNpmContext("publish")
+			// oxlint-disable-next-line typescript/no-explicit-any
+			const mockFs2: any = {
+				// oxlint-disable-next-line typescript/no-explicit-any
+				readFile: (_p: string, cb: any) => {
+					cb(
+						null,
+						Buffer.from(
+							JSON.stringify({
+								name: "my-pkg",
+								patchedDependencies: { "some-dep": "./patches/some-dep.patch" },
+								version: "1.0.0",
+							}),
+						),
+					)
+				},
+			}
+
+			initNpmContext(ctx2, { cwd: "/pkg", fs: mockFs2 }, (err2) => {
+				expect(err2).toBeNull()
+				expect(ctx2.patchedDepsExclude.has("patches/some-dep.patch")).toBeTrue()
+				done()
+			})
+		})
+	})
+
+	test("extractManifestIncludes with object bin field", () => {
+		const dist: Record<string, string> = {}
+		extractManifestIncludes(
+			{
+				bin: { tool1: "./bin/tool1.js", tool2: "bin/tool2.js" },
+				main: "index.js",
+			} as unknown as PackageJson,
+			dist,
+		)
+		expect(dist["bin.tool1"]).toBe("bin/tool1.js")
+		expect(dist["bin.tool2"]).toBe("bin/tool2.js")
 	})
 })
