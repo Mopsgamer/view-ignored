@@ -57,8 +57,11 @@ function findExtendedRoot(
 	fs: FsAdapter,
 	cwd: string,
 	extendsRoot: string,
+	signal: AbortSignal | null | undefined,
 	cb: (err: Error | null, path: string | null) => void,
 ): void {
+	if (signal?.aborted) return cb(signal.reason as Error, null)
+
 	const cacheKey = `${cwd}::${extendsRoot}`
 	if (extendedRootCache.has(cacheKey)) {
 		cb(null, extendedRootCache.get(cacheKey)!)
@@ -77,8 +80,22 @@ function findExtendedRoot(
 	let current = cwd
 
 	const next = () => {
+		if (signal?.aborted) {
+			pendingExtendedRootLookups.delete(cacheKey)
+			for (let i = 0, len = callbackList.length; i < len; i++) {
+				callbackList[i]!(signal.reason as Error, null)
+			}
+			return
+		}
 		const pkgPath = join(current, "package.json")
 		fs.readFile(pkgPath, (err, content) => {
+			if (signal?.aborted) {
+				pendingExtendedRootLookups.delete(cacheKey)
+				for (let i = 0, len = callbackList.length; i < len; i++) {
+					callbackList[i]!(signal.reason as Error, null)
+				}
+				return
+			}
 			if (!err && content) {
 				try {
 					const pkg = JSON.parse(content.toString())
@@ -170,8 +187,12 @@ function launchExtractor(
 	extract: ExtractorFn,
 	entries_: Dirent[] | undefined,
 	dir: string,
+	signal: AbortSignal | null | undefined,
 	cb: (err: Error | null, res: Resource) => void,
 ): void {
+	// oxlint-disable-next-line typescript/no-explicit-any
+	if (signal?.aborted) return cb(signal.reason as Error, null as any)
+
 	const isDotSlash = epath.startsWith("./")
 	if (isDotSlash && dir !== "." && dir !== "") return cb(null, null)
 
@@ -191,6 +212,8 @@ function launchExtractor(
 	}
 
 	fs.readFile(join(parent, cleanPath), (err, buff) => {
+		// oxlint-disable-next-line typescript/no-explicit-any
+		if (signal?.aborted) return cb(signal.reason as Error, null as any)
 		// oxlint-disable-next-line typescript/no-explicit-any
 		if (err && (err as any).code === "ENOENT") return cb(null, null)
 
@@ -223,8 +246,12 @@ function launchDirectoryExtractors(
 	dir: string,
 	extractors: Extractor[],
 	entries_: Dirent[] | undefined,
+	signal: AbortSignal | null | undefined,
 	cb: (err: Error | null, results: Resource[]) => void,
 ): void {
+	// oxlint-disable-next-line typescript/no-explicit-any
+	if (signal?.aborted) return cb(signal.reason as Error, null as any)
+
 	const elen = extractors.length
 	const results = new Array(elen)
 	if (elen === 0) return cb(null, results)
@@ -234,22 +261,41 @@ function launchDirectoryExtractors(
 
 	const check = () => {
 		if (hasError) return
+		if (signal?.aborted) {
+			hasError = true
+			// oxlint-disable-next-line typescript/no-explicit-any
+			return cb(signal.reason as Error, null as any)
+		}
 		active--
 		if (active === 0) cb(null, results)
 	}
 
 	for (let ei = 0; ei < elen; ei++) {
 		const extractor = extractors[ei]!
-		launchExtractor(fs, parent, extractor.path, extractor.extract, entries_, dir, (err, res) => {
-			if (hasError) return
-			if (err) {
-				hasError = true
-				// oxlint-disable-next-line typescript/no-explicit-any
-				return cb(err, null as any)
-			}
-			results[ei] = res
-			check()
-		})
+		launchExtractor(
+			fs,
+			parent,
+			extractor.path,
+			extractor.extract,
+			entries_,
+			dir,
+			signal,
+			(err, res) => {
+				if (hasError) return
+				if (signal?.aborted) {
+					hasError = true
+					// oxlint-disable-next-line typescript/no-explicit-any
+					return cb(signal.reason as Error, null as any)
+				}
+				if (err) {
+					hasError = true
+					// oxlint-disable-next-line typescript/no-explicit-any
+					return cb(err, null as any)
+				}
+				results[ei] = res
+				check()
+			},
+		)
 	}
 }
 
@@ -354,15 +400,27 @@ function resolveSourcesMain(
 		const relDir = relDirs[pi]!
 		const dirEntries = pi === 0 ? entries : undefined
 
-		launchDirectoryExtractors(fs, parent, relDir, extractors, dirEntries, (err, dirResults) => {
-			if (resolved) return
-			if (err) {
-				resolved = true
-				return cb(err, null)
-			}
-			for (let ei = 0; ei < elen; ei++) results[pi * elen + ei] = dirResults[ei]
-			checkAll()
-		})
+		launchDirectoryExtractors(
+			fs,
+			parent,
+			relDir,
+			extractors,
+			dirEntries,
+			signal,
+			(err, dirResults) => {
+				if (resolved) return
+				if (signal?.aborted) {
+					resolved = true
+					return cb(signal.reason as Error, null)
+				}
+				if (err) {
+					resolved = true
+					return cb(err, null)
+				}
+				for (let ei = 0; ei < elen; ei++) results[pi * elen + ei] = dirResults[ei]
+				checkAll()
+			},
+		)
 	}
 
 	if (plen === 0) checkAll()
@@ -378,10 +436,12 @@ export function resolveSources(
 	options: ResolveSourcesOptions,
 	cb: (err: Error | null, resource: Resource) => void,
 ): void {
+	if (options.signal?.aborted) return cb(options.signal.reason as Error, null)
+
 	const cached = options.external.get(options.dir)
 	if (cached !== undefined) return cb(null, cached)
 
-	const { fs, cwd, target } = options
+	const { fs, cwd, target, signal } = options
 
 	if (!target.extendsRoot) {
 		resolveSourcesMain(options, 0, cb)
@@ -395,8 +455,9 @@ export function resolveSources(
 		return
 	}
 
-	findExtendedRoot(fs, cwd, target.extendsRoot, (err, extRoot) => {
+	findExtendedRoot(fs, cwd, target.extendsRoot, signal, (err, extRoot) => {
 		if (err) return cb(err, null)
+		if (signal?.aborted) return cb(signal.reason as Error, null)
 		resolveSourcesMain(options, getLv(cwd, extRoot), cb)
 	})
 }

@@ -31,7 +31,12 @@ function processSingleFile(
 	taskDone: () => void,
 ) {
 	const { scanOptions, external, failed, onResult, stream } = options
-	const { invert } = scanOptions
+	const { invert, signal } = scanOptions
+
+	if (state.errorOccurred || signal?.aborted) {
+		taskDone()
+		return
+	}
 
 	const parentPath = dirname(within)
 	const lastSlash = within.lastIndexOf("/")
@@ -72,6 +77,11 @@ function processSingleFile(
 			target: scanOptions.target,
 		},
 		(err, res) => {
+			if (state.errorOccurred || signal?.aborted) {
+				taskDone()
+				return
+			}
+
 			if (err) {
 				handleError(err)
 				taskDone()
@@ -98,6 +108,11 @@ function processSingleFile(
 			})
 
 			const handleResult = (self: WalkResult | null) => {
+				if (state.errorOccurred || signal?.aborted) {
+					taskDone()
+					return
+				}
+
 				if (self && self.match) {
 					let dirFiles = 0
 					let dirMatched = 0
@@ -148,7 +163,9 @@ function processEntries(
 	taskDone: () => void,
 ) {
 	const { scanOptions, stream, failed, onResult } = options
-	const { invert } = scanOptions
+	const { invert, signal } = scanOptions
+
+	if (state.errorOccurred || signal?.aborted) return
 
 	if (res && "error" in res && res.error) {
 		if (!failed) return handleError(res.error)
@@ -169,7 +186,7 @@ function processEntries(
 	const handleResult = (self: WalkResult | null, entry: Dirent, currentRelPath: string) => {
 		const finish = () => {
 			pendingResults--
-			if (pendingResults === 0 && onResult) {
+			if (pendingResults === 0 && onResult && !state.errorOccurred && !signal?.aborted) {
 				onResult({
 					depth,
 					dir: relPath,
@@ -181,6 +198,8 @@ function processEntries(
 			}
 			taskDone()
 		}
+
+		if (state.errorOccurred || signal?.aborted) return finish()
 
 		if (!self || !self.match) return finish()
 
@@ -200,6 +219,7 @@ function processEntries(
 	}
 
 	for (let i = 0; i < len; i++) {
+		if (state.errorOccurred || signal?.aborted) break
 		const entry = entries[i]!
 		state.activeTasks++
 		const { name } = entry
@@ -235,7 +255,7 @@ export function scanParallel(
 	cb: (err: Error | null, results: WalkResult[] | null) => void,
 ): void {
 	const { scanOptions, external, onResult } = options
-	const { within } = scanOptions
+	const { within, signal } = scanOptions
 
 	const state: ScanState = {
 		activeTasks: 0,
@@ -243,15 +263,35 @@ export function scanParallel(
 		results: onResult ? null : [],
 	}
 
+	const removeAbortListener = () => {
+		if (signal) signal.removeEventListener("abort", onAbort)
+	}
+
 	const handleError = (err: Error) => {
 		if (state.errorOccurred) return
 		state.errorOccurred = err
+		removeAbortListener()
 		cb(err, null)
+	}
+
+	const onAbort = () => {
+		handleError((signal?.reason as Error) ?? new Error("Aborted"))
+	}
+
+	if (signal) {
+		if (signal.aborted) {
+			handleError((signal.reason as Error) ?? new Error("Aborted"))
+			return
+		}
+		signal.addEventListener("abort", onAbort, { once: true })
 	}
 
 	const taskDone = () => {
 		state.activeTasks--
-		if (state.activeTasks === 0 && !state.errorOccurred) cb(null, state.results)
+		if (state.activeTasks === 0 && !state.errorOccurred) {
+			removeAbortListener()
+			cb(null, state.results)
+		}
 	}
 
 	const handleReaddir = (
@@ -261,8 +301,14 @@ export function scanParallel(
 		depth: number,
 		resource?: Resource,
 	) => {
+		if (state.errorOccurred || signal?.aborted) {
+			taskDone()
+			return
+		}
+
 		if (err) {
 			handleError(err)
+			taskDone()
 			return
 		}
 
@@ -288,15 +334,21 @@ export function scanParallel(
 		depth: number,
 		entries: Dirent[],
 	) => {
+		if (state.errorOccurred || signal?.aborted) {
+			taskDone()
+			return
+		}
+
 		if (err) {
 			handleError(err)
+			taskDone()
 			return
 		}
 		processEntries(relPath, depth, entries, res, options, state, walk, handleError, taskDone)
 	}
 
 	const walk = (relPath: string, depth: number, resource?: Resource) => {
-		if (state.errorOccurred) return
+		if (state.errorOccurred || signal?.aborted) return
 		state.activeTasks++
 
 		scanOptions.fs.readdir(
