@@ -10,6 +10,7 @@ import { wildmatchCompile } from "./wildmatch.js"
 export const enum PatternSpec {
 	gitignore,
 	npmignore,
+	packageJsonFiles,
 }
 
 /**
@@ -95,7 +96,7 @@ export function patternListCompile(
 		const pattern = list[i]!
 		const isRoot = pattern.startsWith("/")
 		const isRelative = pattern.startsWith("./")
-		const isAnchored = isRoot || isRelative
+		const isAnchored = isRoot || isRelative || options.spec === PatternSpec.packageJsonFiles
 
 		let cleaned = pattern
 		if (isRelative) cleaned = cleaned.slice(2)
