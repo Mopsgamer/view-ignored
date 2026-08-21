@@ -110,6 +110,7 @@ Memory Usage:
 #### Low-end
 
 <!-- BENCH_NODE_LOW_START -->
+
 ```txt
 $ node --expose-gc benchmarks/git.js && node --expose-gc benchmarks/npm.js
 
@@ -188,6 +189,7 @@ summary
    34.84x faster than 'npm-packlist'(preparedArbTree)
    460.52x faster than 'ignore-walk'.walk(.gitignore, .npmignore)
 ```
+
 <!-- BENCH_NODE_LOW_END -->
 
 ### Bun
@@ -300,6 +302,7 @@ Memory Usage:
 #### Low-end
 
 <!-- BENCH_BUN_LOW_START -->
+
 ```txt
 $ bun run --expose-gc benchmarks/git.js && bun run --expose-gc benchmarks/npm.js
 
@@ -378,4 +381,5 @@ summary
    39.91x faster than 'npm-packlist'(preparedArbTree)
    541.37x faster than 'ignore-walk'.walk(.gitignore, .npmignore)
 ```
+
 <!-- BENCH_BUN_LOW_END -->

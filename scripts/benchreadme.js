@@ -423,10 +423,10 @@ async function main() {
 	if (!process.argv.includes("--local")) {
 		await remote(o)
 	}
-	await Bun.$`bun run fmt benchmarks/README.md`
 
 	try {
 		fs.writeFileSync(README_PATH, o.readmeContent, "utf8")
+		await Bun.$`bun run fmt benchmarks/README.md`
 		console.log(`Successfully updated ${README_PATH}`)
 	} catch (err) {
 		console.error(`Could not write to ${README_PATH}:`, err)
