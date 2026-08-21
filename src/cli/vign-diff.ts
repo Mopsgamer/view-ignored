@@ -725,7 +725,12 @@ async function run(
 				m.kind === RuleMatchKind.external || m.kind === RuleMatchKind.internal
 					? m.pattern
 					: undefined
-			return { ...d, origin, pattern }
+			const match = {
+				ignored: m.ignored,
+				kind: m.kind,
+				pattern: "pattern" in m ? m.pattern : undefined,
+			}
+			return { file: d.file, issue: d.issue, match, origin, pattern }
 		})
 
 		const groups: Record<string, typeof reports> = {}

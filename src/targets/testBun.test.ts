@@ -70,4 +70,24 @@ describe("Bun", () => {
 			{ target: makeBun("list") },
 		)
 	})
+
+	test("matches default includes case-sensitively", async (done) => {
+		await testScan(
+			done,
+			{
+				LICENSE: "",
+				"README.md": "",
+				"index.js": "",
+				license: "",
+				"package.json": JSON.stringify({
+					files: ["index.js"],
+					name: "bun-test",
+					version: "1.0.0",
+				}),
+				"readme.md": "",
+			},
+			["LICENSE", "README.md", "index.js", "package.json"],
+			{ target: makeBun() },
+		)
+	})
 })

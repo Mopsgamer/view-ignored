@@ -95,27 +95,24 @@ export function makeBun(mode: "list" | "publish" | "bundle" = "publish"): Target
 		],
 	})
 
-	cachedBunIncludesRule ||= ruleCompile(
-		{
-			compiled: null,
-			excludes: false,
-			list: [
-				// Forces the inclusion of package.json and other files that must always be packed by Bun.
-				// https://github.com/oven-sh/bun/blob/bbe3f6a2629adf808adbd0da199ae8c94a3c0d47/src/runtime/cli/pack_command.rs#L1605
-				"/package.json",
+	cachedBunIncludesRule ||= ruleCompile({
+		compiled: null,
+		excludes: false,
+		list: [
+			// Forces the inclusion of package.json and other files that must always be packed by Bun.
+			// https://github.com/oven-sh/bun/blob/bbe3f6a2629adf808adbd0da199ae8c94a3c0d47/src/runtime/cli/pack_command.rs#L1605
+			"/package.json",
 
-				// Matches special filenames like LICENSE, LICENCE, README, and their extension variants to unconditionally pack them.
-				// https://github.com/oven-sh/bun/blob/bbe3f6a2629adf808adbd0da199ae8c94a3c0d47/src/runtime/cli/pack_command.rs#L3944
-				"/LICENSE",
-				"/LICENSE.*",
-				"/LICENCE",
-				"/LICENCE.*",
-				"/README",
-				"/README.*",
-			],
-		},
-		{ nocase: true },
-	)
+			// Matches special filenames like LICENSE, LICENCE, README, and their extension variants to unconditionally pack them.
+			// https://github.com/oven-sh/bun/blob/bbe3f6a2629adf808adbd0da199ae8c94a3c0d47/src/runtime/cli/pack_command.rs#L3944
+			"/LICENSE",
+			"/LICENSE.*",
+			"/LICENCE",
+			"/LICENCE.*",
+			"/README",
+			"/README.*",
+		],
+	})
 
 	const internal: Rule[] = [
 		makeBundledDepsRule(ctx, makeBun),
