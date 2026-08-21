@@ -9,6 +9,7 @@ and this project adheres to
 ## [Unreleased]
 
 - Handle mid-flight `AbortSignal` cancellation during directory scanning and source resolution.
+- Fix Bun's rule case-sensitivity mistake.
 
 ## [0.12.2] - 2026-08-21
 
