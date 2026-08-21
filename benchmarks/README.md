@@ -110,86 +110,84 @@ Memory Usage:
 #### Low-end
 
 <!-- BENCH_NODE_LOW_START -->
-
 ```txt
 $ node --expose-gc benchmarks/git.js && node --expose-gc benchmarks/npm.js
 
 
 
 Git target benchmark
-clk: ~1.95 GHz
+clk: ~1.85 GHz
 cpu: Intel(R) Pentium(R) Silver N6000 @ 1.10GHz
 runtime: node 26.7.0 (x64-win32)
 
 Memory Usage:
-  'view-ignored'.scan(Git, skipInternal)          Avg: 313.25 kb  Range: 21.70 kb … 2.22 mb
-  'view-ignored'.browserScan(Git, skipInternal)   Avg: 255.41 kb  Range: 52.05 kb … 761.80 kb
-  'view-ignored'.scan(Git)                        Avg: 8.10 mb    Range: 6.92 mb … 9.53 mb
-  'view-ignored'.browserScan(Git)                 Avg: 8.04 mb    Range: 7.69 mb … 8.32 mb
-  'view-ignored'.scan(Git, inverted)              Avg: 9.44 mb    Range: 9.40 mb … 9.51 mb
-  'view-ignored'.browserScan(Git, inverted)       Avg: 9.43 mb    Range: 9.40 mb … 9.47 mb
-  'ignore-walk'.walk(.gitignore)                  Avg: 14.87 mb   Range: 14.33 mb … 15.63 mb
+  'view-ignored'.scan(Git, skipInternal)          Avg: 304.85 kb  Range: 1.48 kb … 2.35 mb
+  'view-ignored'.browserScan(Git, skipInternal)   Avg: 261.70 kb  Range: 1.89 kb … 2.36 mb
+  'view-ignored'.scan(Git)                        Avg: 8.20 mb    Range: 6.07 mb … 10.90 mb
+  'view-ignored'.browserScan(Git)                 Avg: 8.13 mb    Range: 8.10 mb … 8.21 mb
+  'view-ignored'.scan(Git, inverted)              Avg: 9.49 mb    Range: 9.47 mb … 9.52 mb
+  'view-ignored'.browserScan(Git, inverted)       Avg: 9.49 mb    Range: 9.47 mb … 9.52 mb
+  'ignore-walk'.walk(.gitignore)                  Avg: 19.36 mb   Range: 18.96 mb … 20.52 mb
 
                                               ┌                                            ┐
-       'view-ignored'.scan(Git, skipInternal) ┤ 3.08 ms
-'view-ignored'.browserScan(Git, skipInternal) ┤ 2.87 ms
-                     'view-ignored'.scan(Git) ┤■ 22.19 ms
-              'view-ignored'.browserScan(Git) ┤■ 22.12 ms
-           'view-ignored'.scan(Git, inverted) ┤■ 30.31 ms
-    'view-ignored'.browserScan(Git, inverted) ┤■ 29.17 ms
-               'ignore-walk'.walk(.gitignore) ┤■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■ 1.19 s
+       'view-ignored'.scan(Git, skipInternal) ┤ 3.41 ms
+'view-ignored'.browserScan(Git, skipInternal) ┤ 2.97 ms
+                     'view-ignored'.scan(Git) ┤ 23.71 ms
+              'view-ignored'.browserScan(Git) ┤ 20.85 ms
+           'view-ignored'.scan(Git, inverted) ┤■ 32.40 ms
+    'view-ignored'.browserScan(Git, inverted) ┤■ 31.76 ms
+               'ignore-walk'.walk(.gitignore) ┤■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■ 1.61 s
                                               └                                            ┘
 
 summary
   'view-ignored'.browserScan(Git, skipInternal)
-   1.08x faster than 'view-ignored'.scan(Git, skipInternal)
-   7.72x faster than 'view-ignored'.browserScan(Git)
-   7.74x faster than 'view-ignored'.scan(Git)
-   10.18x faster than 'view-ignored'.browserScan(Git, inverted)
-   10.57x faster than 'view-ignored'.scan(Git, inverted)
-   416.78x faster than 'ignore-walk'.walk(.gitignore)
+   1.15x faster than 'view-ignored'.scan(Git, skipInternal)
+   7.03x faster than 'view-ignored'.browserScan(Git)
+   8x faster than 'view-ignored'.scan(Git)
+   10.71x faster than 'view-ignored'.browserScan(Git, inverted)
+   10.93x faster than 'view-ignored'.scan(Git, inverted)
+   543.42x faster than 'ignore-walk'.walk(.gitignore)
 
 NPM target benchmark
-clk: ~1.81 GHz
+clk: ~1.59 GHz
 cpu: Intel(R) Pentium(R) Silver N6000 @ 1.10GHz
 runtime: node 26.7.0 (x64-win32)
 
 Memory Usage:
-  'view-ignored'.scan(NPM, skipInternal)          Avg: 277.06 kb  Range: 88.98 kb … 1.57 mb
-  'view-ignored'.browserScan(NPM, skipInternal)   Avg: 263.63 kb  Range: 127.01 kb … 1.34 mb
-  'view-ignored'.scan(NPM)                        Avg: 9.84 mb    Range: 9.69 mb … 10.35 mb
-  'view-ignored'.browserScan(NPM)                 Avg: 9.81 mb    Range: 9.69 mb … 10.23 mb
-  'view-ignored'.scan(NPM, inverted)              Avg: 9.40 mb    Range: 747.50 kb … 10.79 mb
-  'view-ignored'.browserScan(NPM, inverted)       Avg: 10.57 mb   Range: 10.53 mb … 10.65 mb
-  'npm-packlist'(preparedArbTree)                 Avg: 11.46 mb   Range: 10.12 mb … 16.21 mb
-  'ignore-walk'.walk(.gitignore, .npmignore)      Avg: 16.74 mb   Range: 16.12 mb … 18.79 mb
-  'npmcli/arborist'.loadActual()                  Avg: 452.35  b  Range: 90.23 b … 738.42 b
+  'view-ignored'.scan(NPM, skipInternal)          Avg: 271.40 kb  Range: 95.53 kb … 1.76 mb
+  'view-ignored'.browserScan(NPM, skipInternal)   Avg: 259.19 kb  Range: 157.05 kb … 1.39 mb
+  'view-ignored'.scan(NPM)                        Avg: 9.86 mb    Range: 9.77 mb … 10.37 mb
+  'view-ignored'.browserScan(NPM)                 Avg: 8.72 mb    Range: 1.01 mb … 10.32 mb
+  'view-ignored'.scan(NPM, inverted)              Avg: 10.65 mb   Range: 10.62 mb … 10.71 mb
+  'view-ignored'.browserScan(NPM, inverted)       Avg: 10.66 mb   Range: 10.64 mb … 10.70 mb
+  'npm-packlist'(preparedArbTree)                 Avg: 11.34 mb   Range: 10.06 mb … 16.15 mb
+  'ignore-walk'.walk(.gitignore, .npmignore)      Avg: 20.57 mb   Range: 20.20 mb … 22.12 mb
+  'npmcli/arborist'.loadActual()                  Avg: 448.18  b  Range: 59.58 b … 757.37 b
 
                                               ┌                                            ┐
-       'view-ignored'.scan(NPM, skipInternal) ┤ 3.21 ms
-'view-ignored'.browserScan(NPM, skipInternal) ┤ 2.92 ms
-                     'view-ignored'.scan(NPM) ┤■ 55.45 ms
-              'view-ignored'.browserScan(NPM) ┤■ 57.87 ms
-           'view-ignored'.scan(NPM, inverted) ┤■■ 64.94 ms
-    'view-ignored'.browserScan(NPM, inverted) ┤■ 57.57 ms
-              'npm-packlist'(preparedArbTree) ┤■■ 90.27 ms
-   'ignore-walk'.walk(.gitignore, .npmignore) ┤■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■ 1.28 s
+       'view-ignored'.scan(NPM, skipInternal) ┤ 3.94 ms
+'view-ignored'.browserScan(NPM, skipInternal) ┤ 3.67 ms
+                     'view-ignored'.scan(NPM) ┤■ 66.75 ms
+              'view-ignored'.browserScan(NPM) ┤■ 69.39 ms
+           'view-ignored'.scan(NPM, inverted) ┤■■ 78.68 ms
+    'view-ignored'.browserScan(NPM, inverted) ┤■ 76.34 ms
+              'npm-packlist'(preparedArbTree) ┤■■■ 127.88 ms
+   'ignore-walk'.walk(.gitignore, .npmignore) ┤■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■ 1.69 s
                                               └                                            ┘
                                               ┌                                            ┐
-               'npmcli/arborist'.loadActual() ┤ 367.85 ns
+               'npmcli/arborist'.loadActual() ┤ 422.42 ns
                                               └                                            ┘
 
 summary
   'view-ignored'.browserScan(NPM, skipInternal)
-   1.1x faster than 'view-ignored'.scan(NPM, skipInternal)
-   19.02x faster than 'view-ignored'.scan(NPM)
-   19.74x faster than 'view-ignored'.browserScan(NPM, inverted)
-   19.85x faster than 'view-ignored'.browserScan(NPM)
-   22.27x faster than 'view-ignored'.scan(NPM, inverted)
-   30.96x faster than 'npm-packlist'(preparedArbTree)
-   439.74x faster than 'ignore-walk'.walk(.gitignore, .npmignore)
+   1.07x faster than 'view-ignored'.scan(NPM, skipInternal)
+   18.19x faster than 'view-ignored'.scan(NPM)
+   18.91x faster than 'view-ignored'.browserScan(NPM)
+   20.8x faster than 'view-ignored'.browserScan(NPM, inverted)
+   21.44x faster than 'view-ignored'.scan(NPM, inverted)
+   34.84x faster than 'npm-packlist'(preparedArbTree)
+   460.52x faster than 'ignore-walk'.walk(.gitignore, .npmignore)
 ```
-
 <!-- BENCH_NODE_LOW_END -->
 
 ### Bun
@@ -302,84 +300,82 @@ Memory Usage:
 #### Low-end
 
 <!-- BENCH_BUN_LOW_START -->
-
 ```txt
 $ bun run --expose-gc benchmarks/git.js && bun run --expose-gc benchmarks/npm.js
 
 
 
 Git target benchmark
-clk: ~0.92 GHz
+clk: ~0.84 GHz
 cpu: Intel(R) Pentium(R) Silver N6000 @ 1.10GHz
 runtime: bun 1.4.0 (x64-win32)
 
 Memory Usage:
-  'view-ignored'.scan(Git, skipInternal)          Avg: 77.38 kb   Range: 0.00 b … 500.00 kb
-  'view-ignored'.browserScan(Git, skipInternal)   Avg: 68.24 kb   Range: 0.00 b … 484.00 kb
-  'view-ignored'.scan(Git)                        Avg: 606.48 kb  Range: 32.00 kb … 1.84 mb
-  'view-ignored'.browserScan(Git)                 Avg: 474.93 kb  Range: 0.00 b … 1.55 mb
-  'view-ignored'.scan(Git, inverted)              Avg: 1.02 mb    Range: 64.00 kb … 2.75 mb
-  'view-ignored'.browserScan(Git, inverted)       Avg: 738.72 kb  Range: 0.00 b … 3.30 mb
-  'ignore-walk'.walk(.gitignore)                  Avg: 2.52 mb    Range: 892.00 kb … 6.05 mb
+  'view-ignored'.scan(Git, skipInternal)          Avg: 82.64 kb   Range: 0.00 b … 592.00 kb
+  'view-ignored'.browserScan(Git, skipInternal)   Avg: 72.79 kb   Range: 0.00 b … 544.00 kb
+  'view-ignored'.scan(Git)                        Avg: 611.68 kb  Range: 12.00 kb … 3.67 mb
+  'view-ignored'.browserScan(Git)                 Avg: 854.55 kb  Range: 132.00 kb … 6.89 mb
+  'view-ignored'.scan(Git, inverted)              Avg: 1.68 mb    Range: 60.00 kb … 7.71 mb
+  'view-ignored'.browserScan(Git, inverted)       Avg: 1.62 mb    Range: 0.00 b … 8.57 mb
+  'ignore-walk'.walk(.gitignore)                  Avg: 3.27 mb    Range: 200.00 kb … 9.49 mb
 
                                               ┌                                            ┐
-       'view-ignored'.scan(Git, skipInternal) ┤ 2.22 ms
-'view-ignored'.browserScan(Git, skipInternal) ┤ 2.27 ms
-                     'view-ignored'.scan(Git) ┤■ 20.96 ms
-              'view-ignored'.browserScan(Git) ┤■ 19.50 ms
-           'view-ignored'.scan(Git, inverted) ┤■ 23.87 ms
-    'view-ignored'.browserScan(Git, inverted) ┤■ 23.27 ms
-               'ignore-walk'.walk(.gitignore) ┤■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■ 988.89 ms
+       'view-ignored'.scan(Git, skipInternal) ┤ 2.71 ms
+'view-ignored'.browserScan(Git, skipInternal) ┤ 2.68 ms
+                     'view-ignored'.scan(Git) ┤■ 24.79 ms
+              'view-ignored'.browserScan(Git) ┤■ 25.37 ms
+           'view-ignored'.scan(Git, inverted) ┤■ 31.10 ms
+    'view-ignored'.browserScan(Git, inverted) ┤■ 29.27 ms
+               'ignore-walk'.walk(.gitignore) ┤■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■ 1.29 s
                                               └                                            ┘
 
 summary
-  'view-ignored'.scan(Git, skipInternal)
-   1.02x faster than 'view-ignored'.browserScan(Git, skipInternal)
-   8.77x faster than 'view-ignored'.browserScan(Git)
-   9.42x faster than 'view-ignored'.scan(Git)
-   10.47x faster than 'view-ignored'.browserScan(Git, inverted)
-   10.73x faster than 'view-ignored'.scan(Git, inverted)
-   444.65x faster than 'ignore-walk'.walk(.gitignore)
+  'view-ignored'.browserScan(Git, skipInternal)
+   1.01x faster than 'view-ignored'.scan(Git, skipInternal)
+   9.26x faster than 'view-ignored'.scan(Git)
+   9.48x faster than 'view-ignored'.browserScan(Git)
+   10.93x faster than 'view-ignored'.browserScan(Git, inverted)
+   11.62x faster than 'view-ignored'.scan(Git, inverted)
+   481.79x faster than 'ignore-walk'.walk(.gitignore)
 
 NPM target benchmark
-clk: ~0.96 GHz
+clk: ~0.84 GHz
 cpu: Intel(R) Pentium(R) Silver N6000 @ 1.10GHz
 runtime: bun 1.4.0 (x64-win32)
 
 Memory Usage:
-  'view-ignored'.scan(NPM, skipInternal)          Avg: 139.34 kb  Range: 0.00 b … 1.79 mb
-  'view-ignored'.browserScan(NPM, skipInternal)   Avg: 109.48 kb  Range: 0.00 b … 308.00 kb
-  'view-ignored'.scan(NPM)                        Avg: 3.56 mb    Range: 212.00 kb … 8.86 mb
-  'view-ignored'.browserScan(NPM)                 Avg: 3.13 mb    Range: 148.00 kb … 8.40 mb
-  'view-ignored'.scan(NPM, inverted)              Avg: 4.90 mb    Range: 176.00 kb … 10.12 mb
-  'view-ignored'.browserScan(NPM, inverted)       Avg: 5.80 mb    Range: 1.52 mb … 10.16 mb
-  'npm-packlist'(preparedArbTree)                 Avg: 1.33 mb    Range: 20.00 kb … 5.16 mb
-  'ignore-walk'.walk(.gitignore, .npmignore)      Avg: 9.23 mb    Range: 1.36 mb … 16.26 mb
-  'npmcli/arborist'.loadActual()                  Avg: 18.91  b   Range: 0.00 b … 128.00 b
+  'view-ignored'.scan(NPM, skipInternal)          Avg: 135.18 kb  Range: 0.00 b … 940.00 kb
+  'view-ignored'.browserScan(NPM, skipInternal)   Avg: 123.31 kb  Range: 0.00 b … 304.00 kb
+  'view-ignored'.scan(NPM)                        Avg: 1.98 mb    Range: 984.00 kb … 6.68 mb
+  'view-ignored'.browserScan(NPM)                 Avg: 3.19 mb    Range: 644.00 kb … 7.85 mb
+  'view-ignored'.scan(NPM, inverted)              Avg: 3.65 mb    Range: 248.00 kb … 9.97 mb
+  'view-ignored'.browserScan(NPM, inverted)       Avg: 5.64 mb    Range: 944.00 kb … 9.36 mb
+  'npm-packlist'(preparedArbTree)                 Avg: 8.86 mb    Range: 324.00 kb … 17.09 mb
+  'ignore-walk'.walk(.gitignore, .npmignore)      Avg: 8.82 mb    Range: 3.96 mb … 15.68 mb
+  'npmcli/arborist'.loadActual()                  Avg: 22.93  b   Range: 0.00 b … 141.00 b
 
                                               ┌                                            ┐
-       'view-ignored'.scan(NPM, skipInternal) ┤ 2.65 ms
-'view-ignored'.browserScan(NPM, skipInternal) ┤ 3.52 ms
-                     'view-ignored'.scan(NPM) ┤■■ 56.31 ms
-              'view-ignored'.browserScan(NPM) ┤■■ 60.68 ms
-           'view-ignored'.scan(NPM, inverted) ┤■■■ 95.24 ms
-    'view-ignored'.browserScan(NPM, inverted) ┤■■ 59.67 ms
-              'npm-packlist'(preparedArbTree) ┤■■■ 87.81 ms
-   'ignore-walk'.walk(.gitignore, .npmignore) ┤■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■ 1.12 s
+       'view-ignored'.scan(NPM, skipInternal) ┤ 2.90 ms
+'view-ignored'.browserScan(NPM, skipInternal) ┤ 3.42 ms
+                     'view-ignored'.scan(NPM) ┤■ 64.22 ms
+              'view-ignored'.browserScan(NPM) ┤■ 66.17 ms
+           'view-ignored'.scan(NPM, inverted) ┤■ 69.14 ms
+    'view-ignored'.browserScan(NPM, inverted) ┤■■ 73.58 ms
+              'npm-packlist'(preparedArbTree) ┤■■ 115.74 ms
+   'ignore-walk'.walk(.gitignore, .npmignore) ┤■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■ 1.57 s
                                               └                                            ┘
                                               ┌                                            ┐
-               'npmcli/arborist'.loadActual() ┤ 223.35 ns
+               'npmcli/arborist'.loadActual() ┤ 266.23 ns
                                               └                                            ┘
 
 summary
   'view-ignored'.scan(NPM, skipInternal)
-   1.33x faster than 'view-ignored'.browserScan(NPM, skipInternal)
-   21.25x faster than 'view-ignored'.scan(NPM)
-   22.52x faster than 'view-ignored'.browserScan(NPM, inverted)
-   22.9x faster than 'view-ignored'.browserScan(NPM)
-   33.14x faster than 'npm-packlist'(preparedArbTree)
-   35.94x faster than 'view-ignored'.scan(NPM, inverted)
-   423.81x faster than 'ignore-walk'.walk(.gitignore, .npmignore)
+   1.18x faster than 'view-ignored'.browserScan(NPM, skipInternal)
+   22.14x faster than 'view-ignored'.scan(NPM)
+   22.82x faster than 'view-ignored'.browserScan(NPM)
+   23.84x faster than 'view-ignored'.scan(NPM, inverted)
+   25.37x faster than 'view-ignored'.browserScan(NPM, inverted)
+   39.91x faster than 'npm-packlist'(preparedArbTree)
+   541.37x faster than 'ignore-walk'.walk(.gitignore, .npmignore)
 ```
-
 <!-- BENCH_BUN_LOW_END -->
