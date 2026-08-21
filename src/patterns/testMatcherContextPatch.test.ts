@@ -837,6 +837,21 @@ describe("matcherContextRemovePath", () => {
 			// Should be back to state where out/ is included
 			expect(c.paths.has("out/")).toBeTrue()
 		})
+		test("cleans up entries in ctx.failed on path removal", async () => {
+			const c = {
+				external: new Map([["src", null]]),
+				failed: [
+					{
+						error: new Error("failed source"),
+						source: { dir: "src", inverted: false, path: "src/.gitignore", rules: [] },
+					},
+				],
+				paths: new Map(),
+				total: new Map(),
+			}
+			await matcherContextRemovePath(c, opt, "src/")
+			expect(c.failed.length).toBe(0)
+		})
 	})
 	describe("stat consistency", () => {
 		test("adding then removing ignored file restores totals", async () => {
