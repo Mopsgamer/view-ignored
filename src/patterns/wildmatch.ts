@@ -175,17 +175,11 @@ function wildmatchToRegexpSource(pattern: string): string {
 	}
 
 	const hasTrailingSlash = cleaned.length > 0 && cleaned.charCodeAt(cleaned.length - 1) === 47
-	if (hasTrailingSlash) {
-		cleaned = cleaned.slice(0, -1)
-	}
-	if (isRoot && cleaned.startsWith("/")) {
-		cleaned = cleaned.slice(1)
-	}
+	if (hasTrailingSlash) cleaned = cleaned.slice(0, -1)
+	if (isRoot && cleaned.startsWith("/")) cleaned = cleaned.slice(1)
 
 	// Standalone ** matches everything
-	if (cleaned === "**" || pattern === "**") {
-		return ".*"
-	}
+	if (cleaned === "**" || pattern === "**") return ".*"
 
 	// Anchored if starts with '/' or './' or has a slash anywhere in middle (unless unanchored by leading **/)
 	const isAnchored = (isRoot || isRelative || cleaned.includes("/")) && !hasLeadingGlobstar
@@ -199,11 +193,7 @@ function wildmatchToRegexpSource(pattern: string): string {
 
 		if (c === "\\") {
 			i++
-			if (i < len) {
-				res += cleaned[i]!.replace(REGEX_SPECIAL_CHARS, "\\$&")
-			} else {
-				res += "\\\\"
-			}
+			res += i < len ? cleaned[i]!.replace(REGEX_SPECIAL_CHARS, "\\$&") : "\\\\"
 			i++
 			continue
 		}
@@ -283,11 +273,8 @@ function wildmatchToRegexpSource(pattern: string): string {
 	}
 
 	let prefix = "(?:^|\\/)"
-	if (hasLeadingGlobstar) {
-		prefix = "(?:^|.*\\/)"
-	} else if (isAnchored) {
-		prefix = "^"
-	}
+	if (hasLeadingGlobstar) prefix = "(?:^|.*\\/)"
+	else if (isAnchored) prefix = "^"
 	const suffix = "(?:\\/|$)"
 	return prefix + res + suffix
 }
