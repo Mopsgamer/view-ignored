@@ -18,6 +18,11 @@ jobs:
         with:
           bun-version: "1.4.0"
 
+      - uses: actions/setup-node@v6
+        with:
+          token: ${{ secrets.GH_DOTCOM_TOKEN }}
+          node-version: 26
+
       - name: Bun install
         run: bun install
 
