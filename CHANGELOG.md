@@ -10,6 +10,7 @@ and this project adheres to
 
 - Handle mid-flight `AbortSignal` cancellation during directory scanning and source resolution.
 - Fix Bun's rule case-sensitivity mistake.
+- Optimize package resolution checks during NPM, Yarn, and Bun directory scans by skipping redundant `package.json` reads inside `node_modules`.
 
 ## [0.12.2] - 2026-08-21
 

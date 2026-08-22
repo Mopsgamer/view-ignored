@@ -89,14 +89,14 @@ function getWalkResult(match: RuleMatch, options: WalkOptions, isDir: boolean): 
 }
 
 function handleRuleResolvedCtx(
-	resolvedCtx: MatcherContext | null,
+	resolvedCtx: MatcherContext | 0 | null,
 	options: WalkOptions,
 	runIgnoresSync: () => WalkResult,
 ): WalkResult {
 	if (resolvedCtx === null) return runIgnoresSync()
 	const { entry, relPath: path, parentPath, depth } = options
 	return {
-		context: resolvedCtx,
+		context: resolvedCtx === 0 ? null : resolvedCtx,
 		depth,
 		entry,
 		includeParent: false,
@@ -146,12 +146,12 @@ function checkRulesList(
 		if (res === null) continue
 
 		if (res && typeof (res as Promise<unknown>).then === "function")
-			return (res as Promise<MatcherContext | null>).then(
+			return (res as Promise<MatcherContext | 0 | null>).then(
 				(resolvedCtx) => handleRuleResolvedCtx(resolvedCtx, options, runIgnoresSync),
 				throwErrorCallback,
 			)
 		return {
-			context: res as MatcherContext,
+			context: res === 0 ? null : (res as MatcherContext),
 			depth,
 			entry,
 			includeParent: false,

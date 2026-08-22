@@ -461,8 +461,17 @@ export function makePackageResolutionRule(ctx: NpmContext): SkipRule {
 		const isWorkspace = ctx.workspaceRegex !== null && ctx.workspaceRegex.test(entry)
 		if (!isWorkspace && ctx.rootDeps.size === 0) return null
 
+		if (
+			!isWorkspace &&
+			(entry === "node_modules" ||
+				entry.startsWith("node_modules/") ||
+				entry.includes("/node_modules"))
+		) {
+			return 0
+		}
+
 		const pkgPath = join(options.cwd, entry + "/package.json")
-		return new Promise<MatcherContext | null>((resolve) => {
+		return new Promise<MatcherContext | 0 | null>((resolve) => {
 			options.fs.readFile(pkgPath, (err, content) => {
 				if (err || !content) {
 					resolve(null)
@@ -474,12 +483,7 @@ export function makePackageResolutionRule(ctx: NpmContext): SkipRule {
 						pkg &&
 						(isWorkspace || (typeof pkg.name === "string" && ctx.rootDeps.has(pkg.name)))
 					) {
-						resolve({
-							external: new Map(),
-							failed: [],
-							paths: new Map(),
-							total: new Map(),
-						})
+						resolve(0)
 						return
 					}
 				} catch {
@@ -506,12 +510,7 @@ export function makeBundledDepsRule(
 		const remainingDepth = (options.depth ?? Infinity) - 2
 
 		if (remainingDepth < 0 || ctx.bundledDeps.length === 0) {
-			return {
-				external: new Map(),
-				failed: [],
-				paths: new Map(),
-				total: new Map(),
-			}
+			return 0
 		}
 
 		const mergedCtx = {
