@@ -125,7 +125,7 @@ export type CustomRule = {
  */
 export type SkipRule = (
 	options: IgnoresOptions,
-) => MatcherContext | Promise<MatcherContext | null> | null
+) => MatcherContext | Promise<MatcherContext | 0 | null> | 0 | null
 
 /**
  * Represents any supported target rule, which can be a glob-based rule,

@@ -115,8 +115,10 @@ export type ScanOptions = {
 	 * {@link MatcherContext.totalFiles},
 	 * and {@link MatcherContext.depthPaths}.
 	 *
-	 * It's recommended to use this option unless the target
-	 * allows overriding internal patterns and you don't care about these stats.
+	 * Recommended for fast scans (e.g. packing). Should NOT be used if:
+	 * 1) You need complete total file/dir counts inside ignored folders.
+	 * 2) The target overrides internal patterns or uses inverted matching (`invert: true`).
+	 *
 	 * This option should never affect {@link MatcherContext.totalMatchedFiles}.
 	 *
 	 * @default `false`
