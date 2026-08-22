@@ -21,11 +21,11 @@ export function makeVSCE(): Target {
 		packageJsonExtractor,
 		{
 			extract: extractNpmignore,
-			path: ".vscodeignore",
+			path: "./.vscodeignore",
 		},
 		{
 			extract: extractNpmignore,
-			path: ".gitignore",
+			path: "./.gitignore",
 		},
 	]
 
@@ -35,7 +35,7 @@ export function makeVSCE(): Target {
 		list: [
 			// The list of default ignored files and glob patterns used by VSCE when packaging extensions.
 			// https://github.com/microsoft/vscode-vsce/blob/70ca6ac250dfe5ca19214a3ad357368ffae471c5/src/package.ts#L1633
-			".vscodeignore",
+			"/.vscodeignore",
 			"package-lock.json",
 			"npm-debug.log",
 			"yarn.lock",

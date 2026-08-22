@@ -38,7 +38,7 @@ export function makeYarnClassic(mode: "list" | "publish" | "bundle" = "publish")
 		makePackageJsonExtractor(mode),
 		{
 			extract: extractNoCaseNpmignore,
-			path: ".yarnignore",
+			path: "./.yarnignore",
 		},
 		{
 			extract: extractNoCaseNpmignore,
