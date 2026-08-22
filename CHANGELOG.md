@@ -8,6 +8,7 @@ and this project adheres to
 
 ## [Unreleased]
 
+- Minimize README.md and create GitHub Wiki.
 - Handle mid-flight `AbortSignal` cancellation during directory scanning and source resolution.
 - Fix Bun's rule case-sensitivity mistake.
 - Optimize package resolution checks during NPM, Yarn, and Bun directory scans by skipping redundant `package.json` reads inside `node_modules`.
