@@ -60,6 +60,21 @@ describe("Yarn Classic", () => {
 		)
 	})
 
+	test("ignores nested .yarnignore as pattern extractor while keeping root .yarnignore", async (done) => {
+		await testScan(
+			done,
+			{
+				"package.json": packageJson,
+				sub: {
+					".yarnignore": "file.txt",
+					"file.txt": "hello",
+				},
+			},
+			["package.json", "sub/.yarnignore", "sub/file.txt"],
+			{ dirs: false, target: makeYarnClassic() },
+		)
+	})
+
 	test("throws an error if package.json is invalid", async (done) => {
 		expect(() =>
 			testScan(done, { "package.json": "{ invalid json }" }, () => {}, {
